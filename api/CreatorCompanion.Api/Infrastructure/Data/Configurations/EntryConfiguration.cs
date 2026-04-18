@@ -13,7 +13,7 @@ public class EntryConfiguration : IEntityTypeConfiguration<Entry>
         builder.Property(e => e.ContentType).HasMaxLength(50).IsRequired();
         builder.Property(e => e.EntrySource).HasConversion<string>().HasMaxLength(20);
         builder.Property(e => e.Visibility).HasConversion<string>().HasMaxLength(20);
-        builder.Property(e => e.Metadata).HasColumnType("nvarchar(max)").IsRequired();
+        builder.Property(e => e.Metadata).HasColumnType("text").IsRequired();
 
         // Critical indexes for streak computation and queries
         builder.HasIndex(e => e.UserId);

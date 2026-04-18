@@ -10,7 +10,7 @@ public class AnalyticsEventConfiguration : IEntityTypeConfiguration<AnalyticsEve
     {
         builder.HasKey(a => a.Id);
         builder.Property(a => a.EventType).HasConversion<string>().HasMaxLength(50);
-        builder.Property(a => a.Metadata).HasColumnType("nvarchar(max)").IsRequired();
+        builder.Property(a => a.Metadata).HasColumnType("text").IsRequired();
 
         builder.HasIndex(a => a.UserId);
         builder.HasIndex(a => new { a.UserId, a.EventType });

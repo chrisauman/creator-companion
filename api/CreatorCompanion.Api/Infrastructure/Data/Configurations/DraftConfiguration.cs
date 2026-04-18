@@ -10,7 +10,7 @@ public class DraftConfiguration : IEntityTypeConfiguration<Draft>
     {
         builder.HasKey(d => d.Id);
         builder.Property(d => d.ContentText).IsRequired();
-        builder.Property(d => d.Metadata).HasColumnType("nvarchar(max)").IsRequired();
+        builder.Property(d => d.Metadata).HasColumnType("text").IsRequired();
 
         // One draft per user per journal per date
         builder.HasIndex(d => new { d.UserId, d.JournalId, d.EntryDate }).IsUnique();

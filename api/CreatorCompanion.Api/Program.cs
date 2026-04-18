@@ -25,10 +25,32 @@ try
         .WriteTo.File("logs/app-.log", rollingInterval: RollingInterval.Day));
 
     // Database
+    // Support both DATABASE_URL (Railway postgres:// URL) and legacy Npgsql connection string
+    var rawDbUrl = Environment.GetEnvironmentVariable("DATABASE_URL")
+        ?? builder.Configuration.GetConnectionString("DefaultConnection")
+        ?? "Host=localhost;Database=creatorcompanion;Username=postgres;Password=postgres";
+
+    // Convert postgresql:// or postgres:// URL to Npgsql connection string
+    static string ResolveConnectionString(string raw)
+    {
+        if (!raw.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase) &&
+            !raw.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase))
+            return raw; // already a key=value connection string
+
+        var uri = new Uri(raw);
+        var userInfo = uri.UserInfo.Split(':');
+        var user = userInfo[0];
+        var pass = userInfo.Length > 1 ? userInfo[1] : string.Empty;
+        var host = uri.Host;
+        var port = uri.Port > 0 ? uri.Port : 5432;
+        var db   = uri.AbsolutePath.TrimStart('/');
+        return $"Host={host};Port={port};Database={db};Username={user};Password={pass};SSL Mode=Disable";
+    }
+
+    var connectionString = ResolveConnectionString(rawDbUrl);
+
     builder.Services.AddDbContext<AppDbContext>(options =>
-        options.UseSqlServer(
-            builder.Configuration.GetConnectionString("DefaultConnection"),
-            sql => sql.EnableRetryOnFailure(3)));
+        options.UseNpgsql(connectionString));
 
     // JWT Authentication
     var jwtSecret = builder.Configuration["Jwt:Secret"]
