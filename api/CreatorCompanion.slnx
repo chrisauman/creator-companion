@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="CreatorCompanion.Api/CreatorCompanion.Api.csproj" />
+  <Project Path="CreatorCompanion.Tests/CreatorCompanion.Tests.csproj" />
+</Solution>

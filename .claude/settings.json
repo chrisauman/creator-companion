@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet *)",
+      "Bash(~/.dotnet/tools/dotnet-ef *)",
+      "Bash(npx *)",
+      "Bash(npm *)",
+      "Bash(node *)",
+      "Bash(docker *)",
+      "Bash(lsof *)",
+      "Bash(kill *)",
+      "Bash(pkill *)",
+      "Bash(curl *)",
+      "Bash(sleep *)",
+      "Bash(cat *)",
+      "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(grep *)",
+      "Bash(find *)",
+      "Bash(ls *)",
+      "Bash(mkdir *)",
+      "Bash(rm *)",
+      "Bash(cp *)",
+      "Bash(mv *)",
+      "Bash(echo *)",
+      "Bash(export *)",
+      "Bash(ps *)",
+      "Bash(which *)",
+      "Bash(chmod *)",
+      "Bash(cd *)",
+      "Bash(pwd)",
+      "Bash(git *)",
+      "Bash(open *)"
+    ]
+  }
+}

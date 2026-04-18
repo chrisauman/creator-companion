@@ -1,0 +1,26 @@
+# ── .NET / ASP.NET Core ─────────────────────────────────────
+bin/
+obj/
+*.user
+*.suo
+.vs/
+*.log
+*.db
+*.db-shm
+*.db-wal
+
+# Secrets — never commit these
+appsettings.Development.json
+appsettings.Production.json
+
+# ── Angular ──────────────────────────────────────────────────
+web/creator-companion-web/node_modules/
+web/creator-companion-web/dist/
+web/creator-companion-web/.angular/
+
+# ── OS ───────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Uploads (local dev only) ─────────────────────────────────
+api/CreatorCompanion.Api/wwwroot/uploads/
