@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiBaseUrl: '/v1'
+  apiBaseUrl: 'https://creator-companion-api-production.up.railway.app/v1'
 };
