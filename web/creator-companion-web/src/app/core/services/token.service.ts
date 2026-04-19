@@ -1,44 +1,38 @@
-import { Injectable } from '@angular/core';
-
-const ACCESS_KEY  = 'cc_access_token';
-const REFRESH_KEY = 'cc_refresh_token';
-const EXPIRES_KEY = 'cc_token_expires';
+import { Injectable, signal } from '@angular/core';
 
 @Injectable({ providedIn: 'root' })
 export class TokenService {
+  // Access token lives in memory only — never touches localStorage.
+  // Refresh token is stored in an HttpOnly cookie managed by the API.
+  private _accessToken  = signal<string | null>(null);
+  private _expiresAt    = signal<Date | null>(null);
 
-  setTokens(accessToken: string, refreshToken: string, expiresAt: string): void {
-    localStorage.setItem(ACCESS_KEY,  accessToken);
-    localStorage.setItem(REFRESH_KEY, refreshToken);
-    localStorage.setItem(EXPIRES_KEY, expiresAt);
+  setTokens(accessToken: string, _refreshToken: string, expiresAt: string): void {
+    this._accessToken.set(accessToken);
+    this._expiresAt.set(new Date(expiresAt));
   }
 
   getAccessToken(): string | null {
-    return localStorage.getItem(ACCESS_KEY);
-  }
-
-  getRefreshToken(): string | null {
-    return localStorage.getItem(REFRESH_KEY);
+    return this._accessToken();
   }
 
   isAccessTokenExpired(): boolean {
-    const expires = localStorage.getItem(EXPIRES_KEY);
-    if (!expires) return true;
-    return new Date(expires) <= new Date();
+    const exp = this._expiresAt();
+    if (!exp) return true;
+    return exp <= new Date();
   }
 
   clear(): void {
-    localStorage.removeItem(ACCESS_KEY);
-    localStorage.removeItem(REFRESH_KEY);
-    localStorage.removeItem(EXPIRES_KEY);
+    this._accessToken.set(null);
+    this._expiresAt.set(null);
   }
 
   hasTokens(): boolean {
-    return !!this.getAccessToken() && !!this.getRefreshToken();
+    return !!this._accessToken() && !this.isAccessTokenExpired();
   }
 
   isAdmin(): boolean {
-    const token = this.getAccessToken();
+    const token = this._accessToken();
     if (!token) return false;
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));

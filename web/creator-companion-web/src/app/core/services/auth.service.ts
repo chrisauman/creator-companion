@@ -29,20 +29,18 @@ export class AuthService {
   }
 
   refreshToken(): Observable<AuthResponse> {
-    const rt = this.tokens.getRefreshToken();
-    if (!rt) return throwError(() => new Error('No refresh token'));
-    return this.api.refresh(rt).pipe(
+    return this.api.refresh().pipe(
       tap(res => this.handleAuth(res)),
       catchError(err => {
-        this.logout();
+        this.tokens.clear();
+        this._user.set(null);
         return throwError(() => err);
       })
     );
   }
 
   logout(): void {
-    const rt = this.tokens.getRefreshToken();
-    if (rt) this.api.revoke(rt).subscribe({ error: () => {} });
+    this.api.revoke().subscribe({ error: () => {} });
     this.tokens.clear();
     this._user.set(null);
     this.router.navigate(['/login']);

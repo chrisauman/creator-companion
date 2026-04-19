@@ -13,22 +13,24 @@ export class ApiService {
   private base = environment.apiBaseUrl;
 
   // ── Auth ────────────────────────────────────────────────────────────────
+  // withCredentials: true is required so the browser sends the HttpOnly
+  // refresh-token cookie on cross-origin requests to the Railway API.
   register(username: string, email: string, password: string, timeZoneId: string): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.base}/auth/register`,
-      { username, email, password, timeZoneId });
+      { username, email, password, timeZoneId }, { withCredentials: true });
   }
 
   login(emailOrUsername: string, password: string): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.base}/auth/login`,
-      { emailOrUsername, password });
+      { emailOrUsername, password }, { withCredentials: true });
   }
 
-  refresh(refreshToken: string): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.base}/auth/refresh`, { refreshToken });
+  refresh(): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.base}/auth/refresh`, {}, { withCredentials: true });
   }
 
-  revoke(refreshToken: string): Observable<void> {
-    return this.http.post<void>(`${this.base}/auth/revoke`, { refreshToken });
+  revoke(): Observable<void> {
+    return this.http.post<void>(`${this.base}/auth/revoke`, {}, { withCredentials: true });
   }
 
   forgotPassword(email: string): Observable<{ message: string; resetToken: string }> {

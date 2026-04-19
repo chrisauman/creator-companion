@@ -176,6 +176,17 @@ try
     if (app.Environment.IsDevelopment())
         app.MapOpenApi();
 
+    // Global exception handler — prevents stack traces leaking in production
+    if (!app.Environment.IsDevelopment())
+    {
+        app.UseExceptionHandler(errApp => errApp.Run(async ctx =>
+        {
+            ctx.Response.StatusCode  = 500;
+            ctx.Response.ContentType = "application/json";
+            await ctx.Response.WriteAsJsonAsync(new { error = "An unexpected error occurred." });
+        }));
+    }
+
     // Security headers
     app.Use(async (context, next) =>
     {

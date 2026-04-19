@@ -3,21 +3,51 @@ using CreatorCompanion.Api.Application.DTOs;
 using CreatorCompanion.Api.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Hosting;
 
 namespace CreatorCompanion.Api.Api.Controllers;
 
 [ApiController]
 [Route("v1/auth")]
-public class AuthController(IAuthService authService, ILogger<AuthController> logger, IWebHostEnvironment env) : ControllerBase
+public class AuthController(IAuthService authService, IWebHostEnvironment env) : ControllerBase
 {
+    // ── Cookie helpers ───────────────────────────────────────────────────────
+
+    private void SetRefreshCookie(string token, DateTime expiresAt)
+    {
+        Response.Cookies.Append("cc_refresh_token", token, new CookieOptions
+        {
+            HttpOnly  = true,
+            Secure    = !env.IsDevelopment(),
+            SameSite  = env.IsDevelopment() ? SameSiteMode.Lax : SameSiteMode.None,
+            Expires   = expiresAt,
+            Path      = "/"
+        });
+    }
+
+    private void ClearRefreshCookie()
+    {
+        Response.Cookies.Delete("cc_refresh_token", new CookieOptions
+        {
+            HttpOnly = true,
+            Secure   = !env.IsDevelopment(),
+            SameSite = env.IsDevelopment() ? SameSiteMode.Lax : SameSiteMode.None,
+            Path     = "/"
+        });
+    }
+
+    private string? GetRefreshCookie() =>
+        Request.Cookies.TryGetValue("cc_refresh_token", out var t) ? t : null;
+
+    // ── Endpoints ────────────────────────────────────────────────────────────
+
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
         try
         {
             var result = await authService.RegisterAsync(request);
-            return Ok(result);
+            SetRefreshCookie(result.RefreshToken, result.ExpiresAt.AddDays(30));
+            return Ok(result with { RefreshToken = string.Empty });
         }
         catch (InvalidOperationException ex)
         {
@@ -31,7 +61,8 @@ public class AuthController(IAuthService authService, ILogger<AuthController> lo
         try
         {
             var result = await authService.LoginAsync(request);
-            return Ok(result);
+            SetRefreshCookie(result.RefreshToken, result.ExpiresAt.AddDays(30));
+            return Ok(result with { RefreshToken = string.Empty });
         }
         catch (UnauthorizedAccessException ex)
         {
@@ -40,26 +71,36 @@ public class AuthController(IAuthService authService, ILogger<AuthController> lo
     }
 
     [HttpPost("refresh")]
-    public async Task<IActionResult> Refresh([FromBody] RefreshRequest request)
+    public async Task<IActionResult> Refresh()
     {
+        var refreshToken = GetRefreshCookie();
+        if (string.IsNullOrEmpty(refreshToken))
+            return Unauthorized(new { error = "No refresh token." });
+
         try
         {
-            var result = await authService.RefreshAsync(request.RefreshToken);
-            return Ok(result);
+            var result = await authService.RefreshAsync(refreshToken);
+            SetRefreshCookie(result.RefreshToken, result.ExpiresAt.AddDays(30));
+            return Ok(result with { RefreshToken = string.Empty });
         }
         catch (UnauthorizedAccessException ex)
         {
+            ClearRefreshCookie();
             return Unauthorized(new { error = ex.Message });
         }
     }
 
-    [Authorize]
     [HttpPost("revoke")]
-    public async Task<IActionResult> Revoke([FromBody] RefreshRequest request)
+    public async Task<IActionResult> Revoke()
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
-                  ?? User.FindFirstValue("sub");
-        await authService.RevokeAsync(request.RefreshToken, userId);
+        var refreshToken = GetRefreshCookie();
+        if (!string.IsNullOrEmpty(refreshToken))
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                      ?? User.FindFirstValue("sub");
+            await authService.RevokeAsync(refreshToken, userId);
+        }
+        ClearRefreshCookie();
         return NoContent();
     }
 
@@ -67,7 +108,6 @@ public class AuthController(IAuthService authService, ILogger<AuthController> lo
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
     {
         var token = await authService.ForgotPasswordAsync(request.Email);
-        // In dev, return the token directly for easy testing. In production, it's emailed.
         if (env.IsDevelopment())
             return Ok(new { message = "If that email is registered, a reset link has been sent.", resetToken = token });
         return Ok(new { message = "If that email is registered, a reset link has been sent." });
@@ -79,6 +119,7 @@ public class AuthController(IAuthService authService, ILogger<AuthController> lo
         try
         {
             await authService.ResetPasswordAsync(request.Token, request.NewPassword);
+            ClearRefreshCookie();
             return Ok(new { message = "Password updated successfully. Please sign in." });
         }
         catch (InvalidOperationException ex)

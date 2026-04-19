@@ -8,21 +8,22 @@ export const authInterceptor: HttpInterceptorFn = (
   req: HttpRequest<unknown>,
   next: HttpHandlerFn
 ) => {
-  const tokens  = inject(TokenService);
-  const auth    = inject(AuthService);
+  const tokens = inject(TokenService);
+  const auth   = inject(AuthService);
 
-  const token = tokens.getAccessToken();
+  const token   = tokens.getAccessToken();
   const authReq = token
     ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } })
     : req;
 
   return next(authReq).pipe(
     catchError((err: HttpErrorResponse) => {
-      if (err.status === 401 && tokens.getRefreshToken()) {
+      // On 401, try to get a new access token via the HttpOnly refresh cookie
+      if (err.status === 401) {
         return auth.refreshToken().pipe(
           switchMap(() => {
             const newToken = tokens.getAccessToken();
-            const retried = req.clone({ setHeaders: { Authorization: `Bearer ${newToken}` } });
+            const retried  = req.clone({ setHeaders: { Authorization: `Bearer ${newToken}` } });
             return next(retried);
           }),
           catchError(refreshErr => {
