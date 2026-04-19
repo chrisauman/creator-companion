@@ -4,8 +4,6 @@
     "builder": "NIXPACKS"
   },
   "deploy": {
-    "startCommand": "dotnet CreatorCompanion.Api.dll",
-    "healthcheckPath": "/health",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 3
   }
