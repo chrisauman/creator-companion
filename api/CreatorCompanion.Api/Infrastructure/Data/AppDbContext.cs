@@ -21,6 +21,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();
     public DbSet<MotivationEntry> MotivationEntries => Set<MotivationEntry>();
     public DbSet<UserMotivationShown> UserMotivationShown => Set<UserMotivationShown>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<EmailVerificationToken> EmailVerificationTokens => Set<EmailVerificationToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

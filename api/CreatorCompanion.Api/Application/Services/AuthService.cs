@@ -12,7 +12,7 @@ using System.Web;
 
 namespace CreatorCompanion.Api.Application.Services;
 
-public class AuthService(AppDbContext db, IConfiguration config, IEmailService emailService) : IAuthService
+public class AuthService(AppDbContext db, IConfiguration config, IEmailService emailService, IAuditService audit) : IAuthService
 {
     // In-memory lockout tracker: identifier → (failCount, windowStart)
     private static readonly Dictionary<string, (int Count, DateTime WindowStart)> _failedAttempts = new();
@@ -70,6 +70,16 @@ public class AuthService(AppDbContext db, IConfiguration config, IEmailService e
         };
 
         db.Users.Add(user);
+        await audit.LogAsync("user.registered", user.Id, $"username={user.Username}");
+
+        // Create email verification token (best-effort — email may not send until domain is set up)
+        var verificationToken = new Domain.Models.EmailVerificationToken
+        {
+            UserId    = user.Id,
+            Token     = GenerateSecureToken(),
+            ExpiresAt = DateTime.UtcNow.AddHours(24)
+        };
+        db.EmailVerificationTokens.Add(verificationToken);
 
         // Create default journal
         var journal = new Journal
@@ -93,7 +103,21 @@ public class AuthService(AppDbContext db, IConfiguration config, IEmailService e
 
         await db.SaveChangesAsync();
 
-        return await IssueTokensAsync(user);
+        var result = await IssueTokensAsync(user);
+
+        // Send verification email (best-effort)
+        try
+        {
+            var appBaseUrl  = config["App:BaseUrl"] ?? "https://creator-companion-web.vercel.app";
+            var verifyLink  = $"{appBaseUrl}/verify-email?token={System.Web.HttpUtility.UrlEncode(verificationToken.Token)}";
+            await emailService.SendVerificationEmailAsync(user.Email, verifyLink);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[WARN] Failed to send verification email to {user.Email}: {ex.Message}");
+        }
+
+        return result;
     }
 
     public async Task<AuthResponse> LoginAsync(LoginRequest request)
@@ -109,6 +133,7 @@ public class AuthService(AppDbContext db, IConfiguration config, IEmailService e
         if (user is null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
         {
             RecordFailure(identifier);
+            await audit.LogAsync("login.failed", null, $"identifier={identifier}");
             throw new UnauthorizedAccessException("Invalid credentials.");
         }
 
@@ -116,6 +141,7 @@ public class AuthService(AppDbContext db, IConfiguration config, IEmailService e
             throw new UnauthorizedAccessException("Account is inactive.");
 
         ClearFailures(identifier);
+        await audit.LogAsync("login.success", user.Id);
         return await IssueTokensAsync(user);
     }
 
@@ -185,6 +211,22 @@ public class AuthService(AppDbContext db, IConfiguration config, IEmailService e
         return resetToken.Token;
     }
 
+    public async Task<bool> VerifyEmailAsync(string token)
+    {
+        var record = await db.EmailVerificationTokens
+            .Include(t => t.User)
+            .FirstOrDefaultAsync(t => t.Token == token);
+
+        if (record is null || !record.IsValid) return false;
+
+        record.User.EmailVerified = true;
+        record.User.UpdatedAt     = DateTime.UtcNow;
+        db.EmailVerificationTokens.Remove(record);
+        await audit.LogAsync("email.verified", record.UserId);
+        await db.SaveChangesAsync();
+        return true;
+    }
+
     public async Task ResetPasswordAsync(string token, string newPassword)
     {
         var resetToken = await db.PasswordResetTokens
@@ -196,6 +238,8 @@ public class AuthService(AppDbContext db, IConfiguration config, IEmailService e
 
         resetToken.User.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
         resetToken.User.UpdatedAt = DateTime.UtcNow;
+
+        await audit.LogAsync("password.reset", resetToken.UserId);
 
         // Delete the used token rather than just marking it
         db.PasswordResetTokens.Remove(resetToken);

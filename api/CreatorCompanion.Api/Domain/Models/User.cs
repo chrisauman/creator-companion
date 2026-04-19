@@ -16,6 +16,7 @@ public class User
     public DateTime? TrialEndsAt { get; set; }
     public bool IsActive { get; set; } = true;
     public bool IsAdmin { get; set; } = false;
+    public bool EmailVerified { get; set; } = false;
 
     /// <summary>Whether the Daily Motivation card is shown on the dashboard (paid users only).</summary>
     public bool ShowMotivation { get; set; } = true;

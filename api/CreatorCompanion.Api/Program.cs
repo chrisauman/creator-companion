@@ -132,6 +132,8 @@ try
     builder.Services.AddScoped<IEmailService, ResendEmailService>();
 
     // Application services
+    builder.Services.AddHttpContextAccessor();
+    builder.Services.AddScoped<IAuditService, AuditService>();
     builder.Services.AddScoped<IAuthService, AuthService>();
     builder.Services.AddScoped<IEntitlementService, EntitlementService>();
     builder.Services.AddScoped<IStreakService, StreakService>();

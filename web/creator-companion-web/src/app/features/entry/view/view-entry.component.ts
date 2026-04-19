@@ -1,6 +1,8 @@
 import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink, ActivatedRoute } from '@angular/router';
+import { SecurityContext } from '@angular/core';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ApiService } from '../../../core/services/api.service';
 import { Entry } from '../../../core/models/models';
 import { environment } from '../../../../environments/environment';
@@ -213,9 +215,10 @@ import { marked } from 'marked';
   `]
 })
 export class ViewEntryComponent implements OnInit {
-  private api   = inject(ApiService);
-  private router = inject(Router);
-  private route  = inject(ActivatedRoute);
+  private api       = inject(ApiService);
+  private router    = inject(Router);
+  private route     = inject(ActivatedRoute);
+  private sanitizer = inject(DomSanitizer);
 
   readonly getMoodEmoji = getMoodEmoji;
   readonly apiBase = environment.apiBaseUrl;
@@ -227,11 +230,15 @@ export class ViewEntryComponent implements OnInit {
   favoriteLoading = signal(false);
   canFavorite     = signal(false);
 
-  renderedContent = computed(() => {
+  renderedContent = computed((): SafeHtml => {
     const raw = this.entry()?.contentText ?? '';
     if (!raw) return '';
-    if (raw.trimStart().startsWith('<')) return raw;
-    return marked.parse(raw) as string;
+    const html = raw.trimStart().startsWith('<')
+      ? raw
+      : marked.parse(raw) as string;
+    // Sanitize through Angular's SecurityContext before trusting the output
+    const safe = this.sanitizer.sanitize(SecurityContext.HTML, html) ?? '';
+    return this.sanitizer.bypassSecurityTrustHtml(safe);
   });
 
   ngOnInit(): void {

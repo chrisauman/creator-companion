@@ -10,4 +10,5 @@ public interface IAuthService
     Task RevokeAsync(string refreshToken, string? requestingUserId = null);
     Task<string> ForgotPasswordAsync(string email);
     Task ResetPasswordAsync(string token, string newPassword);
+    Task<bool> VerifyEmailAsync(string token);
 }

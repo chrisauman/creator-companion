@@ -104,6 +104,14 @@ public class AuthController(IAuthService authService, IWebHostEnvironment env) :
         return NoContent();
     }
 
+    [HttpGet("verify-email")]
+    public async Task<IActionResult> VerifyEmail([FromQuery] string token)
+    {
+        var success = await authService.VerifyEmailAsync(token);
+        if (!success) return BadRequest(new { error = "Verification link is invalid or has expired." });
+        return Ok(new { message = "Email verified successfully. You can now sign in." });
+    }
+
     [HttpPost("forgot-password")]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
     {
