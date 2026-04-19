@@ -108,12 +108,17 @@ try
         Log.Warning("  Vapid:PrivateKey = {Key}", keys.PrivateKey);
     }
 
+    var allowedOrigins = builder.Configuration["Cors:AllowedOrigins"]?.Split(',')
+        ?? ["http://localhost:4200", "http://192.168.127.165:4200"];
+
     builder.Services.AddCors(options =>
     {
-        options.AddPolicy("LocalDev", policy =>
+        options.AddPolicy("AppCors", policy =>
             policy.SetIsOriginAllowed(origin =>
                       Uri.TryCreate(origin, UriKind.Absolute, out var uri) &&
-                      (uri.Host == "localhost" || uri.Host == "192.168.127.165"))
+                      (uri.Host == "localhost" ||
+                       uri.Host == "192.168.127.165" ||
+                       allowedOrigins.Any(a => a.Trim().Equals(origin, StringComparison.OrdinalIgnoreCase))))
                   .AllowAnyHeader()
                   .AllowAnyMethod()
                   .AllowCredentials());
@@ -122,20 +127,18 @@ try
     var app = builder.Build();
 
     if (app.Environment.IsDevelopment())
-    {
         app.MapOpenApi();
-        app.UseCors("LocalDev");
-    }
 
+    app.UseCors("AppCors");
     app.UseSerilogRequestLogging();
     app.UseAuthentication();
     app.UseAuthorization();
     app.MapControllers();
+    app.MapGet("/health", () => Results.Ok(new { status = "healthy" }));
 
-    // Auto-apply migrations on startup in development
-    if (app.Environment.IsDevelopment())
+    // Auto-apply migrations on startup
+    using (var scope = app.Services.CreateScope())
     {
-        using var scope = app.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         db.Database.Migrate();
         Log.Information("Database migrations applied.");
