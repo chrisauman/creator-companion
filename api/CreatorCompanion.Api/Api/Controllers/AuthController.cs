@@ -1,5 +1,7 @@
+using System.Security.Claims;
 using CreatorCompanion.Api.Application.DTOs;
 using CreatorCompanion.Api.Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Hosting;
 
@@ -51,10 +53,13 @@ public class AuthController(IAuthService authService, ILogger<AuthController> lo
         }
     }
 
+    [Authorize]
     [HttpPost("revoke")]
     public async Task<IActionResult> Revoke([FromBody] RefreshRequest request)
     {
-        await authService.RevokeAsync(request.RefreshToken);
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                  ?? User.FindFirstValue("sub");
+        await authService.RevokeAsync(request.RefreshToken, userId);
         return NoContent();
     }
 

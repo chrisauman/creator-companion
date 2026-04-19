@@ -90,14 +90,18 @@ public class AuthService(AppDbContext db, IConfiguration config, IEmailService e
         return await IssueTokensAsync(token.User);
     }
 
-    public async Task RevokeAsync(string refreshToken)
+    public async Task RevokeAsync(string refreshToken, string? requestingUserId = null)
     {
         var token = await db.RefreshTokens.FirstOrDefaultAsync(r => r.Token == refreshToken);
-        if (token is not null && token.IsActive)
-        {
-            token.RevokedAt = DateTime.UtcNow;
-            await db.SaveChangesAsync();
-        }
+        if (token is null || !token.IsActive) return;
+
+        // If a userId was provided, ensure the token belongs to that user
+        if (requestingUserId is not null &&
+            !token.UserId.ToString().Equals(requestingUserId, StringComparison.OrdinalIgnoreCase))
+            return; // silently ignore — don't reveal whether the token exists
+
+        token.RevokedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync();
     }
 
     public async Task<string> ForgotPasswordAsync(string email)
@@ -147,7 +151,9 @@ public class AuthService(AppDbContext db, IConfiguration config, IEmailService e
 
         resetToken.User.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
         resetToken.User.UpdatedAt = DateTime.UtcNow;
-        resetToken.UsedAt = DateTime.UtcNow;
+
+        // Delete the used token rather than just marking it
+        db.PasswordResetTokens.Remove(resetToken);
 
         // Revoke all refresh tokens so existing sessions are invalidated
         var refreshTokens = await db.RefreshTokens

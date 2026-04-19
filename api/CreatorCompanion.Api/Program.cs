@@ -164,8 +164,8 @@ try
                       (uri.Host == "localhost" ||
                        uri.Host == "192.168.127.165" ||
                        allowedOrigins.Any(a => a.Trim().Equals(origin, StringComparison.OrdinalIgnoreCase))))
-                  .AllowAnyHeader()
-                  .AllowAnyMethod()
+                  .WithHeaders("Authorization", "Content-Type", "Accept", "X-Requested-With")
+                  .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
                   .AllowCredentials());
     });
 
