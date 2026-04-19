@@ -1,6 +1,7 @@
 using System.Text;
 using CreatorCompanion.Api.Application.Interfaces;
 using CreatorCompanion.Api.Application.Services;
+using CreatorCompanion.Api.Infrastructure.Services;
 using WebPush;
 using CreatorCompanion.Api.Common;
 using CreatorCompanion.Api.Infrastructure.Data;
@@ -8,9 +9,11 @@ using CreatorCompanion.Api.Infrastructure.Storage;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Resend;
 using Serilog;
+using SerilogLog = Serilog.Log;
 
-Log.Logger = new LoggerConfiguration()
+SerilogLog.Logger = new LoggerConfiguration()
     .WriteTo.Console()
     .CreateBootstrapLogger();
 
@@ -84,6 +87,14 @@ try
     builder.Services.Configure<EntryLimitsConfig>(
         builder.Configuration.GetSection("EntryLimits"));
 
+    // Resend email
+    builder.Services.AddOptions();
+    builder.Services.AddHttpClient<ResendClient>();
+    builder.Services.Configure<ResendClientOptions>(o =>
+        o.ApiToken = builder.Configuration["Resend:ApiKey"] ?? string.Empty);
+    builder.Services.AddTransient<IResend, ResendClient>();
+    builder.Services.AddScoped<IEmailService, ResendEmailService>();
+
     // Application services
     builder.Services.AddScoped<IAuthService, AuthService>();
     builder.Services.AddScoped<IEntitlementService, EntitlementService>();
@@ -103,9 +114,9 @@ try
     if (string.IsNullOrEmpty(vapidPublic))
     {
         var keys = WebPush.VapidHelper.GenerateVapidKeys();
-        Log.Warning("VAPID keys not configured. Add these to appsettings.json:");
-        Log.Warning("  Vapid:PublicKey  = {Key}", keys.PublicKey);
-        Log.Warning("  Vapid:PrivateKey = {Key}", keys.PrivateKey);
+        SerilogLog.Warning("VAPID keys not configured. Add these to appsettings.json:");
+        SerilogLog.Warning("  Vapid:PublicKey  = {Key}", keys.PublicKey);
+        SerilogLog.Warning("  Vapid:PrivateKey = {Key}", keys.PrivateKey);
     }
 
     var allowedOrigins = builder.Configuration["Cors:AllowedOrigins"]?.Split(',')
@@ -141,16 +152,16 @@ try
     {
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         db.Database.Migrate();
-        Log.Information("Database migrations applied.");
+        SerilogLog.Information("Database migrations applied.");
     }
 
     app.Run();
 }
 catch (Exception ex)
 {
-    Log.Fatal(ex, "Application failed to start.");
+    SerilogLog.Fatal(ex, "Application failed to start.");
 }
 finally
 {
-    Log.CloseAndFlush();
+    SerilogLog.CloseAndFlush();
 }

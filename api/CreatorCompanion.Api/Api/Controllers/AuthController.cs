@@ -1,12 +1,13 @@
 using CreatorCompanion.Api.Application.DTOs;
 using CreatorCompanion.Api.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Hosting;
 
 namespace CreatorCompanion.Api.Api.Controllers;
 
 [ApiController]
 [Route("v1/auth")]
-public class AuthController(IAuthService authService, ILogger<AuthController> logger) : ControllerBase
+public class AuthController(IAuthService authService, ILogger<AuthController> logger, IWebHostEnvironment env) : ControllerBase
 {
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
@@ -61,8 +62,10 @@ public class AuthController(IAuthService authService, ILogger<AuthController> lo
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
     {
         var token = await authService.ForgotPasswordAsync(request.Email);
-        // In production, email the token. In dev, return it directly.
-        return Ok(new { message = "If that email is registered, a reset link has been sent.", resetToken = token });
+        // In dev, return the token directly for easy testing. In production, it's emailed.
+        if (env.IsDevelopment())
+            return Ok(new { message = "If that email is registered, a reset link has been sent.", resetToken = token });
+        return Ok(new { message = "If that email is registered, a reset link has been sent." });
     }
 
     [HttpPost("reset-password")]

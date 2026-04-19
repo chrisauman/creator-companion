@@ -8,10 +8,11 @@ using CreatorCompanion.Api.Domain.Models;
 using CreatorCompanion.Api.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.Web;
 
 namespace CreatorCompanion.Api.Application.Services;
 
-public class AuthService(AppDbContext db, IConfiguration config) : IAuthService
+public class AuthService(AppDbContext db, IConfiguration config, IEmailService emailService) : IAuthService
 {
     public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
     {
@@ -119,6 +120,10 @@ public class AuthService(AppDbContext db, IConfiguration config) : IAuthService
         };
         db.PasswordResetTokens.Add(resetToken);
         await db.SaveChangesAsync();
+
+        var appBaseUrl = config["App:BaseUrl"] ?? "https://creator-companion-web.vercel.app";
+        var resetLink  = $"{appBaseUrl}/reset-password?token={HttpUtility.UrlEncode(resetToken.Token)}";
+        await emailService.SendPasswordResetAsync(user.Email, resetLink);
 
         return resetToken.Token;
     }
