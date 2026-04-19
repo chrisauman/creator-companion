@@ -107,7 +107,8 @@ p  { line-height: 1.7; }
 
   &--primary {
     background: var(--color-accent);
-    color: #1a3344;
+    color: #fff;
+    font-weight: 600;
     &:hover:not(:disabled) { background: var(--color-accent-dark); color: #fff; }
   }
 
