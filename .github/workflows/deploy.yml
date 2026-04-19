@@ -16,6 +16,9 @@ jobs:
 
       - name: Deploy to Railway
         working-directory: api/CreatorCompanion.Api
-        run: railway up --detach
+        run: railway up --detach --service $RAILWAY_SERVICE_ID
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_PROJECT_ID: e48927c8-5079-4f50-8789-2a5fd37b42ad
+          RAILWAY_SERVICE_ID: 9ca5e88b-30c9-45d6-8c3e-1ba097a469b8
+          RAILWAY_ENVIRONMENT_ID: 2efb8a1e-90a0-4fdc-b1dd-147a454959dc
