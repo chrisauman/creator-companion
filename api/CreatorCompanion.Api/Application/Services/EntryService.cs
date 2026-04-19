@@ -4,6 +4,7 @@ using CreatorCompanion.Api.Application.Interfaces;
 using CreatorCompanion.Api.Domain.Enums;
 using CreatorCompanion.Api.Domain.Models;
 using CreatorCompanion.Api.Infrastructure.Data;
+using Ganss.Xss;
 using Microsoft.EntityFrameworkCore;
 
 namespace CreatorCompanion.Api.Application.Services;
@@ -15,6 +16,14 @@ public class EntryService(
     IStorageService storage,
     ITagService tags) : IEntryService
 {
+    private static readonly HtmlSanitizer Sanitizer = new();
+
+    private static string SanitizeContent(string? content)
+    {
+        if (string.IsNullOrEmpty(content)) return string.Empty;
+        return Sanitizer.Sanitize(content);
+    }
+
     public async Task<EntryResponse> CreateAsync(Guid userId, CreateEntryRequest request)
     {
         var user = await db.Users.FindAsync(userId)
@@ -53,7 +62,7 @@ public class EntryService(
             JournalId = request.JournalId,
             EntryDate = request.EntryDate,
             Title = (request.Title ?? string.Empty).Trim(),
-            ContentText = request.ContentText,
+            ContentText = SanitizeContent(request.ContentText),
             Mood = request.Mood,
             EntrySource = isBackfill ? EntrySource.Backfill : EntrySource.Direct,
             Metadata = request.Metadata ?? "{}"
@@ -92,7 +101,7 @@ public class EntryService(
         entitlements.EnforceWordLimit(user!, request.ContentText);
 
         entry.Title = (request.Title ?? string.Empty).Trim();
-        entry.ContentText = request.ContentText;
+        entry.ContentText = SanitizeContent(request.ContentText);
         if (request.Mood != null) entry.Mood = request.Mood;
         entry.Metadata = request.Metadata ?? entry.Metadata;
         entry.UpdatedAt = DateTime.UtcNow;

@@ -59,6 +59,8 @@ try
     // JWT Authentication
     var jwtSecret = builder.Configuration["Jwt:Secret"]
         ?? throw new InvalidOperationException("Jwt:Secret is not configured.");
+    if (!builder.Environment.IsDevelopment() && jwtSecret.Length < 32)
+        throw new InvalidOperationException("Jwt:Secret must be at least 32 characters in production.");
     var jwtKey = Encoding.UTF8.GetBytes(jwtSecret);
 
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -173,6 +175,17 @@ try
 
     if (app.Environment.IsDevelopment())
         app.MapOpenApi();
+
+    // Security headers
+    app.Use(async (context, next) =>
+    {
+        context.Response.Headers["X-Content-Type-Options"]    = "nosniff";
+        context.Response.Headers["X-Frame-Options"]           = "DENY";
+        context.Response.Headers["X-XSS-Protection"]         = "1; mode=block";
+        context.Response.Headers["Referrer-Policy"]          = "strict-origin-when-cross-origin";
+        context.Response.Headers["Permissions-Policy"]       = "camera=(), microphone=(), geolocation=()";
+        await next();
+    });
 
     app.UseIpRateLimiting();
     app.UseCors("AppCors");

@@ -14,6 +14,43 @@ namespace CreatorCompanion.Api.Application.Services;
 
 public class AuthService(AppDbContext db, IConfiguration config, IEmailService emailService) : IAuthService
 {
+    // In-memory lockout tracker: identifier → (failCount, windowStart)
+    private static readonly Dictionary<string, (int Count, DateTime WindowStart)> _failedAttempts = new();
+    private static readonly Lock _lock = new();
+    private const int MaxFailedAttempts = 10;
+    private static readonly TimeSpan LockoutWindow = TimeSpan.FromMinutes(15);
+
+    private static bool IsLockedOut(string identifier)
+    {
+        lock (_lock)
+        {
+            if (!_failedAttempts.TryGetValue(identifier, out var entry)) return false;
+            if (DateTime.UtcNow - entry.WindowStart > LockoutWindow)
+            {
+                _failedAttempts.Remove(identifier);
+                return false;
+            }
+            return entry.Count >= MaxFailedAttempts;
+        }
+    }
+
+    private static void RecordFailure(string identifier)
+    {
+        lock (_lock)
+        {
+            if (_failedAttempts.TryGetValue(identifier, out var entry) &&
+                DateTime.UtcNow - entry.WindowStart <= LockoutWindow)
+                _failedAttempts[identifier] = (entry.Count + 1, entry.WindowStart);
+            else
+                _failedAttempts[identifier] = (1, DateTime.UtcNow);
+        }
+    }
+
+    private static void ClearFailures(string identifier)
+    {
+        lock (_lock) { _failedAttempts.Remove(identifier); }
+    }
+
     public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
     {
         var emailExists = await db.Users.AnyAsync(u => u.Email == request.Email.ToLower());
@@ -62,15 +99,23 @@ public class AuthService(AppDbContext db, IConfiguration config, IEmailService e
     public async Task<AuthResponse> LoginAsync(LoginRequest request)
     {
         var identifier = request.EmailOrUsername.ToLower();
+
+        if (IsLockedOut(identifier))
+            throw new UnauthorizedAccessException("Too many failed attempts. Please try again in 15 minutes.");
+
         var user = await db.Users
             .FirstOrDefaultAsync(u => u.Email == identifier || u.Username == identifier);
 
         if (user is null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+        {
+            RecordFailure(identifier);
             throw new UnauthorizedAccessException("Invalid credentials.");
+        }
 
         if (!user.IsActive)
             throw new UnauthorizedAccessException("Account is inactive.");
 
+        ClearFailures(identifier);
         return await IssueTokensAsync(user);
     }
 
