@@ -123,7 +123,15 @@ public class AuthService(AppDbContext db, IConfiguration config, IEmailService e
 
         var appBaseUrl = config["App:BaseUrl"] ?? "https://creator-companion-web.vercel.app";
         var resetLink  = $"{appBaseUrl}/reset-password?token={HttpUtility.UrlEncode(resetToken.Token)}";
-        await emailService.SendPasswordResetAsync(user.Email, resetLink);
+        try
+        {
+            await emailService.SendPasswordResetAsync(user.Email, resetLink);
+        }
+        catch (Exception ex)
+        {
+            // Log but don't fail — email sending is best-effort until a domain is verified
+            Console.WriteLine($"[WARN] Failed to send password reset email to {user.Email}: {ex.Message}");
+        }
 
         return resetToken.Token;
     }
