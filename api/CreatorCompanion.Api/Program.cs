@@ -1,4 +1,5 @@
 using System.Text;
+using AspNetCoreRateLimit;
 using CreatorCompanion.Api.Application.Interfaces;
 using CreatorCompanion.Api.Application.Services;
 using CreatorCompanion.Api.Infrastructure.Services;
@@ -87,6 +88,39 @@ try
     builder.Services.Configure<EntryLimitsConfig>(
         builder.Configuration.GetSection("EntryLimits"));
 
+    // Rate limiting
+    builder.Services.AddMemoryCache();
+    builder.Services.Configure<IpRateLimitOptions>(options =>
+    {
+        var authWindow  = builder.Configuration.GetValue<int>("RateLimit:AuthWindowSeconds", 60);
+        var authMax     = builder.Configuration.GetValue<int>("RateLimit:AuthMaxRequests", 10);
+        var writeWindow = builder.Configuration.GetValue<int>("RateLimit:WriteWindowSeconds", 60);
+        var writeMax    = builder.Configuration.GetValue<int>("RateLimit:WriteMaxRequests", 30);
+
+        options.EnableEndpointRateLimiting = true;
+        options.StackBlockedRequests       = false;
+        options.HttpStatusCode             = 429;
+        options.RealIpHeader               = "X-Forwarded-For";
+        options.ClientIdHeader             = "X-ClientId";
+        options.GeneralRules =
+        [
+            // Auth endpoints — tight window, low limit
+            new RateLimitRule { Endpoint = "POST:/v1/auth/login",            Limit = authMax, Period = $"{authWindow}s" },
+            new RateLimitRule { Endpoint = "POST:/v1/auth/register",         Limit = authMax, Period = $"{authWindow}s" },
+            new RateLimitRule { Endpoint = "POST:/v1/auth/forgot-password",  Limit = authMax, Period = $"{authWindow}s" },
+            new RateLimitRule { Endpoint = "POST:/v1/auth/reset-password",   Limit = authMax, Period = $"{authWindow}s" },
+            // Write endpoints — broader limit
+            new RateLimitRule { Endpoint = "POST:*",   Limit = writeMax, Period = $"{writeWindow}s" },
+            new RateLimitRule { Endpoint = "PUT:*",    Limit = writeMax, Period = $"{writeWindow}s" },
+            new RateLimitRule { Endpoint = "DELETE:*", Limit = writeMax, Period = $"{writeWindow}s" },
+            new RateLimitRule { Endpoint = "PATCH:*",  Limit = writeMax, Period = $"{writeWindow}s" },
+        ];
+    });
+    builder.Services.AddSingleton<IIpPolicyStore, MemoryCacheIpPolicyStore>();
+    builder.Services.AddSingleton<IRateLimitCounterStore, MemoryCacheRateLimitCounterStore>();
+    builder.Services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>();
+    builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
+
     // Resend email
     builder.Services.AddOptions();
     builder.Services.AddHttpClient<ResendClient>();
@@ -140,6 +174,7 @@ try
     if (app.Environment.IsDevelopment())
         app.MapOpenApi();
 
+    app.UseIpRateLimiting();
     app.UseCors("AppCors");
     app.UseSerilogRequestLogging();
     app.UseAuthentication();
