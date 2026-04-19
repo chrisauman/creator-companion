@@ -1,11 +1,12 @@
 using System.ComponentModel.DataAnnotations;
+using CreatorCompanion.Api.Application.Validation;
 
 namespace CreatorCompanion.Api.Application.DTOs;
 
 public record RegisterRequest(
     [Required, MinLength(3), MaxLength(50)] string Username,
     [Required, EmailAddress, MaxLength(256)] string Email,
-    [Required, MinLength(8), MaxLength(128)] string Password,
+    [Required, MaxLength(128), StrongPassword] string Password,
     [Required, MaxLength(100)] string TimeZoneId
 );
 
@@ -31,7 +32,7 @@ public record ForgotPasswordRequest(
 
 public record ResetPasswordRequest(
     [Required] string Token,
-    [Required, MinLength(8), MaxLength(128)] string NewPassword
+    [Required, MaxLength(128), StrongPassword] string NewPassword
 );
 
 public record UserSummary(

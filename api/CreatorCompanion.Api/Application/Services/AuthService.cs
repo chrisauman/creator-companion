@@ -165,6 +165,20 @@ public class AuthService(AppDbContext db, IConfiguration config, IEmailService e
         var expiresAt = DateTime.UtcNow.AddMinutes(expiryMinutes);
         var accessToken = GenerateJwt(user, expiresAt);
 
+        // Enforce max 5 active refresh tokens per user — revoke oldest first
+        const int maxActiveTokens = 5;
+        var activeTokens = await db.RefreshTokens
+            .Where(t => t.UserId == user.Id && t.RevokedAt == null && t.ExpiresAt > DateTime.UtcNow)
+            .OrderBy(t => t.CreatedAt)
+            .ToListAsync();
+
+        if (activeTokens.Count >= maxActiveTokens)
+        {
+            var toRevoke = activeTokens.Take(activeTokens.Count - maxActiveTokens + 1);
+            foreach (var old in toRevoke)
+                old.RevokedAt = DateTime.UtcNow;
+        }
+
         var refreshDays = config.GetValue<int>("Jwt:RefreshExpiryDays", 30);
         var refreshToken = new RefreshToken
         {

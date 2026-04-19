@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using CreatorCompanion.Api.Application.Validation;
 
 namespace CreatorCompanion.Api.Application.DTOs;
 
@@ -12,7 +13,7 @@ public record CompleteOnboardingRequest(
 
 public record ChangePasswordRequest(
     [Required] string CurrentPassword,
-    [Required, MinLength(8), MaxLength(100)] string NewPassword
+    [Required, MaxLength(100), StrongPassword] string NewPassword
 );
 
 public record UserProfileResponse(
@@ -30,7 +31,7 @@ public record UserProfileResponse(
 public record AdminUpdateUserRequest(
     [Required, MinLength(3), MaxLength(50)] string Username,
     [Required, EmailAddress, MaxLength(256)] string Email,
-    [MinLength(8), MaxLength(100)] string? NewPassword,
+    [MaxLength(100), StrongPassword] string? NewPassword,
     [Required] string Tier,
     [Required, MaxLength(100)] string TimeZoneId,
     bool IsAdmin,
