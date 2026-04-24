@@ -1,20 +1,48 @@
-name: Deploy
+name: CI
 
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
 
 jobs:
-  deploy-api:
-    name: Deploy API to Railway
+  build-api:
+    name: Build & verify API
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger Railway deployment
-        run: |
-          curl -s -X POST \
-            -H "Authorization: Bearer ${{ secrets.RAILWAY_TOKEN }}" \
-            -H "Content-Type: application/json" \
-            -d '{
-              "query": "mutation { serviceInstanceRedeploy(serviceId: \"9ca5e88b-30c9-45d6-8c3e-1ba097a469b8\", environmentId: \"2efb8a1e-90a0-4fdc-b1dd-147a454959dc\") }"
-            }' \
-            https://backboard.railway.app/graphql/v2
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore dependencies
+        working-directory: api/CreatorCompanion.Api
+        run: dotnet restore
+
+      - name: Build
+        working-directory: api/CreatorCompanion.Api
+        run: dotnet build --no-restore --configuration Release
+
+  build-web:
+    name: Build & verify web
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: web/creator-companion-web/package-lock.json
+
+      - name: Install dependencies
+        working-directory: web/creator-companion-web
+        run: npm ci
+
+      - name: Build
+        working-directory: web/creator-companion-web
+        run: npm run build -- --configuration production
