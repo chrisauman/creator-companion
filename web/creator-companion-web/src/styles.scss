@@ -106,10 +106,10 @@ p  { line-height: 1.7; }
   &:disabled { opacity: .5; cursor: not-allowed; }
 
   &--primary {
-    background: var(--color-accent);
+    background: var(--color-accent-dark);
     color: #fff;
     font-weight: 600;
-    &:hover:not(:disabled) { background: var(--color-accent-dark); color: #fff; }
+    &:hover:not(:disabled) { background: var(--color-accent); color: #fff; }
   }
 
   &--secondary {
