@@ -9,7 +9,6 @@ import { Subject, debounceTime, takeUntil, forkJoin, of, switchMap, catchError, 
 import { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
-import exifr from 'exifr';
 import { ApiService } from '../../../core/services/api.service';
 import { MOODS, getMoodEmoji } from '../../../core/constants/moods';
 import { TagInputComponent } from '../../../shared/tag-input.component';
@@ -92,20 +91,6 @@ interface PendingImage {
             class="tiptap-wrapper"
             (click)="focusEditor()"
           ></div>
-
-          <!-- EXIF date suggestion -->
-          @if (exifDateSuggestion()) {
-            <div class="exif-banner">
-              <span class="exif-banner__icon">📷</span>
-              <span class="exif-banner__text">
-                This photo was taken on <strong>{{ exifDateSuggestion()!.label }}</strong>. Use that as your entry date?
-              </span>
-              <div class="exif-banner__actions">
-                <button type="button" class="btn btn--primary btn--sm" (click)="acceptExifDate()">Use this date</button>
-                <button type="button" class="btn btn--ghost btn--sm" (click)="exifDateSuggestion.set(null)">Dismiss</button>
-              </div>
-            </div>
-          }
 
           <!-- Image section -->
           <div class="image-section">
@@ -370,20 +355,6 @@ interface PendingImage {
       &[contenteditable="false"] { opacity: .6; cursor: not-allowed; }
     }
 
-    /* EXIF date banner */
-    .exif-banner {
-      display: flex; align-items: center; flex-wrap: wrap; gap: .625rem;
-      background: var(--color-accent-light);
-      border: 1px solid var(--color-accent);
-      border-radius: var(--radius-md);
-      padding: .625rem .875rem;
-      margin-bottom: 1rem;
-      font-size: .875rem;
-    }
-    .exif-banner__icon { font-size: 1.1rem; flex-shrink: 0; }
-    .exif-banner__text { flex: 1; color: var(--color-text-2); min-width: 0; }
-    .exif-banner__actions { display: flex; gap: .375rem; flex-shrink: 0; }
-
     /* Image section */
     .image-section { margin-top: 1.5rem; }
 
@@ -522,7 +493,6 @@ export class NewEntryComponent implements OnInit, AfterViewInit, OnDestroy {
   selectedTags   = signal<string[]>([]);
   tagSuggestions = signal<string[]>([]);
   maxTags        = signal(3);
-  exifDateSuggestion = signal<{ iso: string; label: string } | null>(null);
 
   private draftLoaded = false;
 
@@ -669,67 +639,13 @@ export class NewEntryComponent implements OnInit, AfterViewInit, OnDestroy {
         continue;
       }
 
-      // EXIF date validation — reject if date metadata exists but is out of range
-      const exif = await this.readExifDate(file);
-      if (exif === 'out-of-range') {
-        this.imageError.set(`${file.name}: This image is outside the acceptable date range to continue this streak and cannot be attached.`);
-        continue;
-      }
-
       toAdd.push({ file, preview: URL.createObjectURL(file) });
-
-      // Prompt to switch entry date if EXIF is in range but different from selected
-      if (exif && !this.exifDateSuggestion()) {
-        this.exifDateSuggestion.set(exif);
-      }
     }
 
     if (files.length > slots)
       this.imageError.set(`Only ${slots} more image${slots !== 1 ? 's' : ''} can be added (limit ${this.maxImages()}).`);
 
     this.pendingImages.set([...current, ...toAdd]);
-  }
-
-  /**
-   * Reads EXIF date from a file and returns:
-   *  - null                      → no EXIF date found; allow the image silently
-   *  - 'out-of-range'            → EXIF date exists but is outside the acceptable window; reject
-   *  - { iso, label }            → EXIF date is within range and differs from selected date; prompt user
-   */
-  private async readExifDate(
-    file: File
-  ): Promise<{ iso: string; label: string } | 'out-of-range' | null> {
-    try {
-      const data = await exifr.parse(file, ['DateTimeOriginal', 'DateTime']);
-      const taken: Date | undefined = data?.DateTimeOriginal ?? data?.DateTime;
-      if (!taken) return null; // no EXIF date — allow
-
-      const iso = taken.toLocaleDateString('en-CA');
-
-      const today     = this.dateIso(0);
-      const yesterday = this.dateIso(1);
-      const dayBefore = this.dateIso(2);
-
-      // Determine the acceptable dates for this user
-      const acceptable = this.canBackfill()
-        ? [today, yesterday, dayBefore]
-        : [today];
-
-      if (!acceptable.includes(iso)) return 'out-of-range';
-      if (iso === this.selectedDate()) return null; // correct date already selected
-
-      const label = taken.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-      return { iso, label };
-    } catch {
-      return null; // EXIF parse failed — allow
-    }
-  }
-
-  acceptExifDate(): void {
-    const suggestion = this.exifDateSuggestion();
-    if (!suggestion) return;
-    this.changeDate(suggestion.iso);
-    this.exifDateSuggestion.set(null);
   }
 
   // ── Submission ────────────────────────────────────────────────────────────
