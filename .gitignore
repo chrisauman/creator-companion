@@ -24,4 +24,5 @@ Thumbs.db
 
 # ── Uploads (local dev only) ─────────────────────────────────
 api/CreatorCompanion.Api/wwwroot/uploads/
+api/CreatorCompanion.Api/uploads/
 .vercel
