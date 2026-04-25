@@ -60,6 +60,11 @@ import { marked } from 'marked';
             }
           </div>
 
+          <!-- Backfill notice -->
+          @if (entry()!.entrySource === 1) {
+            <p class="entry-backfill-notice">Backfilled on {{ createdAtLabel() }}</p>
+          }
+
           <!-- Content -->
           <div class="entry-content" [innerHTML]="renderedContent()"></div>
 
@@ -147,6 +152,10 @@ import { marked } from 'marked';
     }
     .entry-meta__date {
       font-size:.875rem; color:var(--color-text-3); font-weight:500;
+    }
+    .entry-backfill-notice {
+      font-size:.8125rem; color:var(--color-text-3);
+      margin-bottom:1.25rem; font-style:italic;
     }
     .entry-meta__mood {
       font-size:.875rem; font-weight:500;
@@ -261,6 +270,13 @@ export class ViewEntryComponent implements OnInit {
   entryDateLabel(): string {
     if (!this.entry()) return '';
     return new Date(this.entry()!.entryDate + 'T00:00:00').toLocaleDateString('en-US', {
+      weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
+    });
+  }
+
+  createdAtLabel(): string {
+    if (!this.entry()) return '';
+    return new Date(this.entry()!.createdAt).toLocaleDateString('en-US', {
       weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
     });
   }

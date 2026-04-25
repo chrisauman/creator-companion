@@ -40,10 +40,15 @@ export class AuthService {
   }
 
   logout(): void {
-    this.api.revoke().subscribe({ error: () => {} });
     this.tokens.clear();
     this._user.set(null);
-    this.router.navigate(['/login']);
+    // Must wait for revoke to complete before navigating — the refresh token lives
+    // in an HttpOnly cookie, so if we reload before the server invalidates it the
+    // app will silently restore the session on the next page load.
+    this.api.revoke().subscribe({
+      next:  () => window.location.replace('/login'),
+      error: () => window.location.replace('/login')
+    });
   }
 
   loadUser(): Observable<User> {

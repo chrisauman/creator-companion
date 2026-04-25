@@ -410,7 +410,7 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log an entry to keep your streak a
         <!-- Sign out -->
         <section class="card">
           <h2 style="margin-bottom:1rem">Session</h2>
-          <button class="btn btn--ghost" (click)="logout()">Sign out</button>
+          <button class="btn btn--secondary" (click)="logout()">Sign out</button>
         </section>
 
       </main>

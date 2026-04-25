@@ -66,7 +66,7 @@ interface PendingImage {
             type="text"
             [(ngModel)]="title"
             name="title"
-            placeholder="Give your entry a title…"
+            placeholder="Title (optional)"
             maxlength="150"
             [disabled]="submitting()"
             autofocus
@@ -222,7 +222,7 @@ interface PendingImage {
               <button
                 class="btn btn--primary"
                 (click)="submit()"
-                [disabled]="submitting() || !title.trim() || wordCount() < 10 || wordCount() > maxWords()"
+                [disabled]="submitting() || wordCount() < 10 || wordCount() > maxWords()"
               >
                 @if (submitting()) {
                   @if (uploadProgress()) { {{ uploadProgress() }} }
@@ -706,13 +706,6 @@ export class NewEntryComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const files = this.pendingImages().map(p => p.file);
 
-    if (!this.title.trim()) {
-      this.submitError.set('Please add a title before publishing.');
-      this.submitting.set(false);
-      this.editor?.setEditable(true);
-      return;
-    }
-
     const mood = this.canTrackMood() ? this.selectedMood() : undefined;
     const tags = this.selectedTags().length > 0 ? this.selectedTags() : undefined;
 
@@ -734,7 +727,13 @@ export class NewEntryComponent implements OnInit, AfterViewInit, OnDestroy {
         );
       })
     ).subscribe({
-      next: () => this.router.navigate(['/dashboard']),
+      next: () => {
+        // Clear the draft so it doesn't reappear on the next new entry
+        this.api.discardDraft(this.journalId(), this.selectedDate()).subscribe({
+          error: () => {} // best-effort, don't block navigation
+        });
+        this.router.navigate(['/dashboard']);
+      },
       error: err => {
         this.submitError.set(err?.error?.error ?? 'Could not publish entry. Please try again.');
         this.submitting.set(false);

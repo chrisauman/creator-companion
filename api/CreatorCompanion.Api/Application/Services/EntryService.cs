@@ -61,7 +61,9 @@ public class EntryService(
             UserId = userId,
             JournalId = request.JournalId,
             EntryDate = request.EntryDate,
-            Title = (request.Title ?? string.Empty).Trim(),
+            Title = string.IsNullOrWhiteSpace(request.Title)
+                ? GenerateTitle(request.ContentText)
+                : request.Title.Trim(),
             ContentText = SanitizeContent(request.ContentText),
             Mood = request.Mood,
             EntrySource = isBackfill ? EntrySource.Backfill : EntrySource.Direct,
@@ -100,7 +102,9 @@ public class EntryService(
         var user = await db.Users.FindAsync(userId)!;
         entitlements.EnforceWordLimit(user!, request.ContentText);
 
-        entry.Title = (request.Title ?? string.Empty).Trim();
+        entry.Title = string.IsNullOrWhiteSpace(request.Title)
+            ? GenerateTitle(request.ContentText)
+            : request.Title.Trim();
         entry.ContentText = SanitizeContent(request.ContentText);
         if (request.Mood != null) entry.Mood = request.Mood;
         entry.Metadata = request.Metadata ?? entry.Metadata;
@@ -135,7 +139,8 @@ public class EntryService(
     }
 
     public async Task<List<EntryListItem>> GetListAsync(
-        Guid userId, Guid? journalId, bool includeDeleted = false, string? tagName = null)
+        Guid userId, Guid? journalId, bool includeDeleted = false, string? tagName = null,
+        int? skip = null, int? take = null)
     {
         var query = db.Entries.Where(e => e.UserId == userId);
 
@@ -150,9 +155,15 @@ public class EntryService(
         if (tagName != null)
             query = query.Where(e => e.EntryTags.Any(et => et.Tag.Name == tagName));
 
-        var raw = await query
+        var orderedQuery = query
             .OrderByDescending(e => e.EntryDate)
-            .ThenByDescending(e => e.CreatedAt)
+            .ThenByDescending(e => e.CreatedAt);
+
+        var pagedQuery = skip.HasValue ? orderedQuery.Skip(skip.Value) : orderedQuery;
+        // Fetch one extra so the frontend can detect whether more entries exist
+        var pagedQueryWithTake = take.HasValue ? pagedQuery.Take(take.Value + 1) : pagedQuery;
+
+        var raw = await pagedQueryWithTake
             .Select(e => new
             {
                 e.Id,
@@ -204,6 +215,30 @@ public class EntryService(
             e.IsFavorited
         );
         }).ToList();
+    }
+
+    /// <summary>
+    /// Generates a title from content when none is provided.
+    /// Strips HTML/markdown, takes up to 60 chars at the nearest word boundary, appends "…".
+    /// </summary>
+    private static string GenerateTitle(string? contentText)
+    {
+        if (string.IsNullOrWhiteSpace(contentText)) return "Untitled";
+
+        // Strip HTML tags
+        var plain = Regex.Replace(contentText, @"<[^>]+>", " ");
+        // Collapse whitespace
+        plain = Regex.Replace(plain, @"\s+", " ").Trim();
+        // Strip markdown
+        plain = StripMarkdown(plain);
+
+        if (plain.Length <= 60) return plain;
+
+        // Cut at the nearest word boundary before 60 chars
+        var cut = plain.LastIndexOf(' ', 59);
+        return cut > 0
+            ? plain.Substring(0, cut) + "…"
+            : plain.Substring(0, 60) + "…";
     }
 
     private static string StripMarkdown(string text)

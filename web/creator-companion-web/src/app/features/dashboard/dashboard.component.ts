@@ -23,7 +23,6 @@ import { getMoodEmoji } from '../../core/constants/moods';
           <div style="display:flex;gap:.5rem">
             <button class="btn btn--ghost btn--sm" routerLink="/account">Account</button>
             <button *ngIf="isAdmin()" class="btn btn--ghost btn--sm" routerLink="/admin">Admin</button>
-            <button class="btn btn--ghost btn--sm" (click)="logout()">Sign out</button>
           </div>
         </div>
       </header>
@@ -162,10 +161,6 @@ import { getMoodEmoji } from '../../core/constants/moods';
                       <span class="sep">·</span>
                       <span>{{ getMoodEmoji(entry.mood) }} Feeling {{ entry.mood }}</span>
                     </ng-container>
-                    <ng-container *ngIf="entry.entrySource === 1">
-                      <span class="sep">·</span>
-                      <span class="sub-backfill">backfilled</span>
-                    </ng-container>
                   </div>
                   <!-- Tags row -->
                   <div class="entry-row__tags">
@@ -193,6 +188,13 @@ import { getMoodEmoji } from '../../core/constants/moods';
               </div>
             </ng-container>
           </ng-container>
+
+          <!-- Load more -->
+          <div class="load-more-wrap" *ngIf="hasMore()">
+            <button class="btn btn--ghost" (click)="loadMore()" [disabled]="loadingMore()">
+              {{ loadingMore() ? 'Loading…' : 'Load more entries' }}
+            </button>
+          </div>
         </section>
 
       </main>
@@ -367,12 +369,11 @@ import { getMoodEmoji } from '../../core/constants/moods';
     .section-title { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; }
 
     .date-divider {
-      font-size: .8125rem; font-weight: 600;
-      color: var(--color-text-3);
-      text-transform: uppercase; letter-spacing: .06em;
+      font-size: 1.0625rem; font-weight: 700;
+      color: var(--color-text);
       padding: .25rem 0;
-      margin: 1.25rem 0 .5rem;
-      border-bottom: 1px solid var(--color-border-light);
+      margin: 2rem 0 .75rem;
+      &:first-child { margin-top: .25rem; }
     }
 
     .entry-row {
@@ -452,6 +453,11 @@ import { getMoodEmoji } from '../../core/constants/moods';
       img { width: 100%; height: 100%; object-fit: cover; display: block; }
     }
 
+    .load-more-wrap {
+      display: flex; justify-content: center;
+      padding: 1.5rem 0 .5rem;
+    }
+
     .empty-state {
       text-align: center;
       padding: 3rem 1rem;
@@ -469,8 +475,12 @@ export class DashboardComponent implements OnInit {
   isAdmin = this.tokens.isAdmin.bind(this.tokens);
   private apiHost = environment.apiBaseUrl.replace(/\/v1$/, '');
 
+  readonly PAGE_SIZE = 60;
+
   streak     = signal<StreakStats | null>(null);
   entries    = signal<EntryListItem[]>([]);
+  hasMore    = signal(false);
+  loadingMore = signal(false);
   motivation = signal<MotivationEntry | null>(null);
   motivationExpanded = signal(false);
   loading = signal(true);
@@ -519,8 +529,13 @@ export class DashboardComponent implements OnInit {
       error: () => {}
     });
 
-    this.api.getEntries().subscribe({
-      next: e => { this.entries.set(e); this.loading.set(false); },
+    this.api.getEntries(undefined, false, undefined, 0, this.PAGE_SIZE).subscribe({
+      next: batch => {
+        const hasMore = batch.length > this.PAGE_SIZE;
+        this.entries.set(hasMore ? batch.slice(0, this.PAGE_SIZE) : batch);
+        this.hasMore.set(hasMore);
+        this.loading.set(false);
+      },
       error: () => {
         this.error.set('Could not load entries.');
         this.loading.set(false);
@@ -528,16 +543,40 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  groupedEntries(): { label: string; entries: EntryListItem[] }[] {
+  loadMore(): void {
+    if (this.loadingMore()) return;
+    this.loadingMore.set(true);
+    const skip = this.entries().length;
+    this.api.getEntries(undefined, false, undefined, skip, this.PAGE_SIZE).subscribe({
+      next: batch => {
+        const hasMore = batch.length > this.PAGE_SIZE;
+        const newItems = hasMore ? batch.slice(0, this.PAGE_SIZE) : batch;
+        this.entries.update(existing => [...existing, ...newItems]);
+        this.hasMore.set(hasMore);
+        this.loadingMore.set(false);
+      },
+      error: () => this.loadingMore.set(false)
+    });
+  }
+
+  groupedEntries(): { label: string; key: string; entries: EntryListItem[] }[] {
     const map = new Map<string, EntryListItem[]>();
     for (const e of this.filteredAndSorted()) {
-      const year = e.entryDate.substring(0, 4);
-      if (!map.has(year)) map.set(year, []);
-      map.get(year)!.push(e);
+      // key = "YYYY-MM" for sorting; label = "Month YYYY" for display
+      const key = e.entryDate.substring(0, 7);
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(e);
     }
-    // Respect sort order for year groups too
-    const pairs = Array.from(map.entries()).map(([year, entries]) => ({ label: year, entries }));
-    return this.sortOrder() === 'oldest' ? pairs.sort((a, b) => a.label.localeCompare(b.label)) : pairs;
+    const pairs = Array.from(map.entries()).map(([key, entries]) => {
+      const [year, month] = key.split('-').map(Number);
+      const label = new Date(year, month - 1, 1).toLocaleDateString('en-US', {
+        month: 'long', year: 'numeric'
+      });
+      return { key, label, entries };
+    });
+    return this.sortOrder() === 'oldest'
+      ? pairs.sort((a, b) => a.key.localeCompare(b.key))
+      : pairs.sort((a, b) => b.key.localeCompare(a.key));
   }
 
   fullImageUrl(relativeUrl: string): string {

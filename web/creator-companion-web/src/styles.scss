@@ -113,16 +113,19 @@ p  { line-height: 1.7; }
   }
 
   &--secondary {
-    background: var(--color-surface-2);
-    color: var(--color-text);
-    border-color: var(--color-border);
-    &:hover:not(:disabled) { background: var(--color-border); }
+    background: var(--color-accent-dark);
+    color: #fff;
+    font-weight: 600;
+    border-color: transparent;
+    &:hover:not(:disabled) { background: var(--color-accent); color: #fff; }
   }
 
   &--ghost {
-    background: transparent;
-    color: var(--color-text-2);
-    &:hover:not(:disabled) { background: var(--color-surface-2); color: var(--color-text); }
+    background: var(--color-accent-dark);
+    color: #fff;
+    font-weight: 600;
+    border-color: transparent;
+    &:hover:not(:disabled) { background: var(--color-accent); color: #fff; }
   }
 
   &--danger {

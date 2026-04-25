@@ -25,9 +25,11 @@ public class EntriesController(IEntryService entryService) : ControllerBase
     public async Task<IActionResult> GetList(
         [FromQuery] Guid? journalId,
         [FromQuery] bool includeDeleted = false,
-        [FromQuery] string? tagName = null)
+        [FromQuery] string? tagName = null,
+        [FromQuery] int? skip = null,
+        [FromQuery] int? take = null)
     {
-        var entries = await entryService.GetListAsync(UserId, journalId, includeDeleted, tagName);
+        var entries = await entryService.GetListAsync(UserId, journalId, includeDeleted, tagName, skip, take);
         return Ok(entries);
     }
 

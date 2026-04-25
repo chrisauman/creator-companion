@@ -76,7 +76,7 @@ export class ExportService {
         lines.push(date);
         lines.push('─'.repeat(date.length));
         lines.push('');
-        lines.push(e.contentText);
+        lines.push(this.stripHtml(e.contentText));
         lines.push('');
         lines.push('');
       }
@@ -87,6 +87,27 @@ export class ExportService {
         'text/plain'
       );
     });
+  }
+
+  private stripHtml(html: string): string {
+    // Replace block-level tags with newlines for readable paragraph breaks
+    const withBreaks = html
+      .replace(/<\/p>/gi, '\n')
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/li>/gi, '\n')
+      .replace(/<\/h[1-6]>/gi, '\n');
+    // Strip all remaining tags
+    const plain = withBreaks.replace(/<[^>]+>/g, '');
+    // Decode common HTML entities
+    return plain
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&nbsp;/g, ' ')
+      .replace(/\n{3,}/g, '\n\n') // collapse excess blank lines
+      .trim();
   }
 
   private download(content: string, filename: string, mimeType: string): void {

@@ -8,6 +8,7 @@ using CreatorCompanion.Api.Common;
 using CreatorCompanion.Api.Infrastructure.Data;
 using CreatorCompanion.Api.Infrastructure.Storage;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Resend;
@@ -90,6 +91,16 @@ try
     builder.Services.Configure<EntryLimitsConfig>(
         builder.Configuration.GetSection("EntryLimits"));
 
+    // Trust the single reverse proxy (Railway / Vercel edge) that sits in front of us.
+    // This ensures RemoteIpAddress reflects the real client, not the proxy.
+    builder.Services.Configure<ForwardedHeadersOptions>(options =>
+    {
+        options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+        options.ForwardLimit     = 1;          // only trust one hop
+        options.KnownIPNetworks.Clear();       // clear defaults — Railway uses dynamic proxy IPs,
+        options.KnownProxies.Clear();          // so we accept any single-hop forwarded IP
+    });
+
     // Rate limiting
     builder.Services.AddMemoryCache();
     builder.Services.Configure<IpRateLimitOptions>(options =>
@@ -102,7 +113,9 @@ try
         options.EnableEndpointRateLimiting = true;
         options.StackBlockedRequests       = false;
         options.HttpStatusCode             = 429;
-        options.RealIpHeader               = "X-Forwarded-For";
+        // UseForwardedHeaders middleware (registered below) resolves the real client IP
+        // into HttpContext.Connection.RemoteIpAddress before rate limiting runs,
+        // so we do NOT read the raw X-Forwarded-For header here (prevents spoofing).
         options.ClientIdHeader             = "X-ClientId";
         options.GeneralRules =
         [
@@ -193,6 +206,9 @@ try
         }));
     }
 
+    // Resolve real client IP from the trusted reverse proxy before any other middleware.
+    app.UseForwardedHeaders();
+
     // Security headers
     app.Use(async (context, next) =>
     {
@@ -201,6 +217,9 @@ try
         context.Response.Headers["X-XSS-Protection"]         = "1; mode=block";
         context.Response.Headers["Referrer-Policy"]          = "strict-origin-when-cross-origin";
         context.Response.Headers["Permissions-Policy"]       = "camera=(), microphone=(), geolocation=()";
+        // HSTS — only meaningful over HTTPS; omit in development to avoid breaking local HTTP
+        if (!context.Request.Host.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase))
+            context.Response.Headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains";
         await next();
     });
 

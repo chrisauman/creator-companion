@@ -6,7 +6,7 @@ namespace CreatorCompanion.Api.Application.DTOs;
 public record CreateEntryRequest(
     [Required] Guid JournalId,
     [Required] DateOnly EntryDate,
-    [Required, MaxLength(150)] string Title,
+    [MaxLength(150)] string? Title,
     [Required, MinLength(1)] string ContentText,
     string? Metadata,
     string? Mood = null,
@@ -14,7 +14,7 @@ public record CreateEntryRequest(
 );
 
 public record UpdateEntryRequest(
-    [Required, MaxLength(150)] string Title,
+    [MaxLength(150)] string? Title,
     [Required, MinLength(1)] string ContentText,
     string? Metadata,
     string? Mood = null,

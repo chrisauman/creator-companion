@@ -73,11 +73,13 @@ export class ApiService {
   }
 
   // ── Entries ─────────────────────────────────────────────────────────────
-  getEntries(journalId?: string, includeDeleted = false, tagName?: string): Observable<EntryListItem[]> {
+  getEntries(journalId?: string, includeDeleted = false, tagName?: string, skip?: number, take?: number): Observable<EntryListItem[]> {
     let params = new HttpParams();
     if (journalId) params = params.set('journalId', journalId);
     if (includeDeleted) params = params.set('includeDeleted', 'true');
     if (tagName) params = params.set('tagName', tagName);
+    if (skip != null) params = params.set('skip', skip.toString());
+    if (take != null) params = params.set('take', take.toString());
     return this.http.get<EntryListItem[]>(`${this.base}/entries`, { params });
   }
 

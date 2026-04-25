@@ -54,12 +54,9 @@ public class AuthService(AppDbContext db, IConfiguration config, IEmailService e
     public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
     {
         var emailExists = await db.Users.AnyAsync(u => u.Email == request.Email.ToLower());
-        if (emailExists)
-            throw new InvalidOperationException("Email is already registered.");
-
         var usernameExists = await db.Users.AnyAsync(u => u.Username == request.Username.ToLower());
-        if (usernameExists)
-            throw new InvalidOperationException("Username is already taken.");
+        if (emailExists || usernameExists)
+            throw new InvalidOperationException("An account with those details already exists.");
 
         var user = new User
         {
