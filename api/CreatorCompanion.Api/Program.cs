@@ -141,7 +141,11 @@ try
     builder.Services.AddScoped<IDraftService, DraftService>();
     builder.Services.AddScoped<IJournalService, JournalService>();
     builder.Services.AddScoped<IMediaService, MediaService>();
-    builder.Services.AddScoped<IStorageService, LocalStorageService>();
+    // Use R2 in production, local filesystem in development
+    if (builder.Environment.IsDevelopment())
+        builder.Services.AddScoped<IStorageService, LocalStorageService>();
+    else
+        builder.Services.AddSingleton<IStorageService, R2StorageService>();
     builder.Services.AddScoped<ITagService, TagService>();
     builder.Services.AddScoped<IPauseService, PauseService>();
     builder.Services.AddScoped<IPushSender, WebPushSender>();

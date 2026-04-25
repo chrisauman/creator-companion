@@ -265,8 +265,9 @@ export class ViewEntryComponent implements OnInit {
     });
   }
 
-  fullImageUrl(relativeUrl: string): string {
-    return this.apiBase.replace(/\/v1$/, '') + relativeUrl;
+  fullImageUrl(url: string): string {
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    return this.apiBase.replace(/\/v1$/, '') + url;
   }
 
   toggleFavorite(): void {
