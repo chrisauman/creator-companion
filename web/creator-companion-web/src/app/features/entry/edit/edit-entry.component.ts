@@ -11,6 +11,7 @@ import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import { marked } from 'marked';
 import { ApiService } from '../../../core/services/api.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { Entry, MediaItem } from '../../../core/models/models';
 import { environment } from '../../../../environments/environment';
 import { MOODS, getMoodEmoji } from '../../../core/constants/moods';
@@ -493,6 +494,7 @@ export class EditEntryComponent implements OnInit, OnDestroy {
   @ViewChild('editorContainer') private editorContainerRef!: ElementRef<HTMLDivElement>;
 
   private api      = inject(ApiService);
+  private auth     = inject(AuthService);
   private router   = inject(Router);
   private route    = inject(ActivatedRoute);
   private zone     = inject(NgZone);
@@ -543,7 +545,7 @@ export class EditEntryComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.entryId = this.route.snapshot.paramMap.get('id') ?? '';
 
-    this.api.getCapabilities().subscribe(caps => {
+    this.auth.loadCapabilities().subscribe(caps => {
       this.maxWords.set(caps.maxWordsPerEntry);
       this.maxImages.set(caps.maxImagesPerEntry);
       this.canTrackMood.set(caps.canTrackMood);

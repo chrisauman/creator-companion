@@ -4,6 +4,7 @@ import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { SecurityContext } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ApiService } from '../../../core/services/api.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { Entry } from '../../../core/models/models';
 import { environment } from '../../../../environments/environment';
 import { getMoodEmoji } from '../../../core/constants/moods';
@@ -225,6 +226,7 @@ import { marked } from 'marked';
 })
 export class ViewEntryComponent implements OnInit {
   private api       = inject(ApiService);
+  private auth      = inject(AuthService);
   private router    = inject(Router);
   private route     = inject(ActivatedRoute);
   private sanitizer = inject(DomSanitizer);
@@ -253,7 +255,7 @@ export class ViewEntryComponent implements OnInit {
   ngOnInit(): void {
     this.entryId = this.route.snapshot.paramMap.get('id') ?? '';
 
-    this.api.getCapabilities().subscribe(caps => {
+    this.auth.loadCapabilities().subscribe(caps => {
       this.canFavorite.set(caps.canFavorite);
     });
 

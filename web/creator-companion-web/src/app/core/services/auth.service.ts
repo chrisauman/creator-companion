@@ -1,9 +1,9 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { Router } from '@angular/router';
-import { Observable, tap, catchError, throwError } from 'rxjs';
+import { Observable, of, tap, catchError, throwError } from 'rxjs';
 import { ApiService } from './api.service';
 import { TokenService } from './token.service';
-import { User, AuthResponse } from '../models/models';
+import { User, AuthResponse, Capabilities } from '../models/models';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -11,10 +11,12 @@ export class AuthService {
   private tokens = inject(TokenService);
   private router = inject(Router);
 
-  private _user = signal<User | null>(null);
+  private _user         = signal<User | null>(null);
+  private _capabilities = signal<Capabilities | null>(null);
 
-  readonly user     = this._user.asReadonly();
-  readonly isLoggedIn = computed(() => !!this._user());
+  readonly user         = this._user.asReadonly();
+  readonly capabilities = this._capabilities.asReadonly();
+  readonly isLoggedIn   = computed(() => !!this._user());
 
   register(username: string, email: string, password: string, timeZoneId: string): Observable<AuthResponse> {
     return this.api.register(username, email, password, timeZoneId).pipe(
@@ -39,9 +41,22 @@ export class AuthService {
     );
   }
 
+  loadCapabilities(): Observable<Capabilities> {
+    const cached = this._capabilities();
+    if (cached) return of(cached);
+    return this.api.getCapabilities().pipe(
+      tap(caps => this._capabilities.set(caps))
+    );
+  }
+
+  invalidateCapabilities(): void {
+    this._capabilities.set(null);
+  }
+
   logout(): void {
     this.tokens.clear();
     this._user.set(null);
+    this._capabilities.set(null);
     // Must wait for revoke to complete before navigating — the refresh token lives
     // in an HttpOnly cookie, so if we reload before the server invalidates it the
     // app will silently restore the session on the next page load.

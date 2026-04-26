@@ -682,7 +682,7 @@ export class AccountComponent implements OnInit {
   pushDenied    = signal(false);
 
   ngOnInit(): void {
-    this.api.getCapabilities().subscribe(c => this.caps.set(c));
+    this.auth.loadCapabilities().subscribe(c => this.caps.set(c));
     this.api.getStreak().subscribe({ next: s => this.streak.set(s), error: () => {} });
     this.api.getMe().subscribe(u => {
       this.auth.setUser(u);

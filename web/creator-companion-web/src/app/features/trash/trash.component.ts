@@ -2,6 +2,7 @@ import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
+import { AuthService } from '../../core/services/auth.service';
 import { EntryListItem, Capabilities } from '../../core/models/models';
 
 @Component({
@@ -113,7 +114,8 @@ import { EntryListItem, Capabilities } from '../../core/models/models';
   `]
 })
 export class TrashComponent implements OnInit {
-  private api = inject(ApiService);
+  private api  = inject(ApiService);
+  private auth = inject(AuthService);
 
   entries   = signal<EntryListItem[]>([]);
   caps      = signal<Capabilities | null>(null);
@@ -122,7 +124,7 @@ export class TrashComponent implements OnInit {
   deleteTarget = signal<EntryListItem | null>(null);
 
   ngOnInit(): void {
-    this.api.getCapabilities().subscribe(c => this.caps.set(c));
+    this.auth.loadCapabilities().subscribe(c => this.caps.set(c));
     this.loadDeleted();
   }
 

@@ -25,8 +25,9 @@ export class BillingSuccessComponent implements OnInit {
   private router = inject(Router);
 
   ngOnInit(): void {
-    // Refresh the user so the tier badge updates
     this.api.getMe().subscribe(u => this.auth.setUser(u));
+    this.auth.invalidateCapabilities();
+    this.auth.loadCapabilities().subscribe();
   }
 
   go(): void { this.router.navigate(['/dashboard']); }

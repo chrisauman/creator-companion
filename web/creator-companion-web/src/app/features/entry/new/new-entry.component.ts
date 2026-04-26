@@ -10,6 +10,7 @@ import { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import { ApiService } from '../../../core/services/api.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { MOODS, getMoodEmoji } from '../../../core/constants/moods';
 import { TagInputComponent } from '../../../shared/tag-input.component';
 import { FormatToolbarComponent } from '../../../shared/format-toolbar.component';
@@ -461,6 +462,7 @@ export class NewEntryComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('editorContainer') private editorContainerRef!: ElementRef<HTMLDivElement>;
 
   private api      = inject(ApiService);
+  private auth     = inject(AuthService);
   private router   = inject(Router);
   private zone     = inject(NgZone);
   private destroy$ = new Subject<void>();
@@ -509,7 +511,7 @@ export class NewEntryComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly MAX_BYTES = 20 * 1024 * 1024;
 
   ngOnInit(): void {
-    this.api.getCapabilities().subscribe(caps => {
+    this.auth.loadCapabilities().subscribe(caps => {
       this.maxWords.set(caps.maxWordsPerEntry);
       this.maxImages.set(caps.maxImagesPerEntry);
       this.canTrackMood.set(caps.canTrackMood);
