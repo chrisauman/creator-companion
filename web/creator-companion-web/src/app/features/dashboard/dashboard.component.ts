@@ -580,8 +580,7 @@ export class DashboardComponent implements OnInit {
   }
 
   fullImageUrl(relativeUrl: string): string {
-    if (relativeUrl.startsWith('http://') || relativeUrl.startsWith('https://')) return relativeUrl;
-    return this.apiHost + relativeUrl;
+    return this.api.getImageUrl(relativeUrl);
   }
 
   readonly getMoodEmoji = getMoodEmoji;

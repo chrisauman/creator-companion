@@ -282,8 +282,7 @@ export class ViewEntryComponent implements OnInit {
   }
 
   fullImageUrl(url: string): string {
-    if (url.startsWith('http://') || url.startsWith('https://')) return url;
-    return this.apiBase.replace(/\/v1$/, '') + url;
+    return this.api.getImageUrl(url);
   }
 
   toggleFavorite(): void {

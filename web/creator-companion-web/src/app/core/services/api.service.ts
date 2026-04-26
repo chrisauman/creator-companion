@@ -278,6 +278,11 @@ export class ApiService {
   }
 
   // ── Media ───────────────────────────────────────────────────────────────
+  getImageUrl(storagePath: string): string {
+    if (storagePath.startsWith('http://') || storagePath.startsWith('https://')) return storagePath;
+    return this.base.replace(/\/v1$/, '') + storagePath;
+  }
+
   uploadMedia(entryId: string, file: File): Observable<MediaItem> {
     const form = new FormData();
     form.append('file', file);

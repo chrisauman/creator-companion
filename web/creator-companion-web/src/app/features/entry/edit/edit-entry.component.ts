@@ -653,8 +653,7 @@ export class EditEntryComponent implements OnInit, OnDestroy {
   }
 
   fullImageUrl(relativeUrl: string): string {
-    if (relativeUrl.startsWith('http://') || relativeUrl.startsWith('https://')) return relativeUrl;
-    return this.apiBase.replace(/\/v1$/, '') + relativeUrl;
+    return this.api.getImageUrl(relativeUrl);
   }
 
   toggleFavorite(): void {
