@@ -44,6 +44,13 @@ import { marked } from 'marked';
         <div class="loading-state">Loading…</div>
       }
 
+      @if (loadError()) {
+        <div class="container" style="padding-top:3rem;text-align:center">
+          <p class="text-muted" style="margin-bottom:1rem">Could not load this entry. It may have been deleted or there was a connection problem.</p>
+          <a routerLink="/dashboard" class="btn btn--secondary btn--sm">Back to dashboard</a>
+        </div>
+      }
+
       @if (!loading() && entry()) {
         <main class="container entry-body">
 
@@ -234,7 +241,8 @@ export class ViewEntryComponent implements OnInit {
 
   entryId  = '';
   entry    = signal<Entry | null>(null);
-  loading  = signal(true);
+  loading   = signal(true);
+  loadError = signal(false);
   isFavorited     = signal(false);
   favoriteLoading = signal(false);
   canFavorite     = signal(false);
@@ -263,7 +271,7 @@ export class ViewEntryComponent implements OnInit {
         this.isFavorited.set(e.isFavorited ?? false);
         this.loading.set(false);
       },
-      error: () => this.router.navigate(['/dashboard'])
+      error: () => { this.loading.set(false); this.loadError.set(true); }
     });
   }
 

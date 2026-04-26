@@ -31,7 +31,12 @@ import { getMoodEmoji } from '../../core/constants/moods';
 
         <div *ngIf="loading()" class="loading-state">Loading…</div>
 
-        <div *ngIf="!loading() && entries().length === 0" class="empty-state">
+        <div *ngIf="loadError()" class="empty-state">
+          <p>Could not load entries. Please check your connection and try again.</p>
+          <a routerLink="/dashboard" class="btn btn--secondary btn--sm" style="margin-top:1rem">Back to dashboard</a>
+        </div>
+
+        <div *ngIf="!loading() && !loadError() && entries().length === 0" class="empty-state">
           <p>No entries found with tag <strong>#{{ tagName() }}</strong>.</p>
           <a routerLink="/dashboard" class="btn btn--secondary btn--sm" style="margin-top:1rem">
             Back to dashboard
@@ -162,9 +167,10 @@ export class TaggedEntriesComponent implements OnInit {
   private router = inject(Router);
   readonly getMoodEmoji = getMoodEmoji;
 
-  tagName = signal('');
-  entries = signal<EntryListItem[]>([]);
-  loading = signal(true);
+  tagName   = signal('');
+  entries   = signal<EntryListItem[]>([]);
+  loading   = signal(true);
+  loadError = signal(false);
 
   ngOnInit(): void {
     const name = this.route.snapshot.paramMap.get('name') ?? '';
@@ -172,7 +178,7 @@ export class TaggedEntriesComponent implements OnInit {
 
     this.api.getEntries(undefined, false, name).subscribe({
       next: e => { this.entries.set(e); this.loading.set(false); },
-      error: () => { this.loading.set(false); }
+      error: () => { this.loading.set(false); this.loadError.set(true); }
     });
   }
 

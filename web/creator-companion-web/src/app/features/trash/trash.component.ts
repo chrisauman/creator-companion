@@ -25,7 +25,12 @@ import { EntryListItem, Capabilities } from '../../core/models/models';
           Recovery requires a paid plan. Entries will be permanently deleted after 48 hours.
         </div>
 
-        <div *ngIf="entries().length === 0 && !loading()" class="empty-state">
+        <div *ngIf="loadError()" class="empty-state">
+          <p class="text-muted">Could not load trash. Please check your connection and try again.</p>
+          <a routerLink="/dashboard" class="btn btn--secondary" style="margin-top:1rem">Back to journal</a>
+        </div>
+
+        <div *ngIf="entries().length === 0 && !loading() && !loadError()" class="empty-state">
           <p>Trash is empty.</p>
           <a routerLink="/dashboard" class="btn btn--secondary" style="margin-top:1rem">Back to journal</a>
         </div>
@@ -119,6 +124,7 @@ export class TrashComponent implements OnInit {
 
   entries   = signal<EntryListItem[]>([]);
   caps      = signal<Capabilities | null>(null);
+  loadError = signal(false);
   loading   = signal(true);
   recovering = signal('');
   deleteTarget = signal<EntryListItem | null>(null);
@@ -138,7 +144,7 @@ export class TrashComponent implements OnInit {
         this.entries.set(all);
         this.loading.set(false);
       },
-      error: () => this.loading.set(false)
+      error: () => { this.loading.set(false); this.loadError.set(true); }
     });
   }
 
