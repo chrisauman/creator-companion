@@ -1,4 +1,5 @@
 using CreatorCompanion.Api.Application.DTOs;
+using CreatorCompanion.Api.Application.Interfaces;
 using CreatorCompanion.Api.Application.Services;
 using CreatorCompanion.Tests.Helpers;
 using FluentAssertions;
@@ -8,6 +9,18 @@ namespace CreatorCompanion.Tests;
 
 public class AuthServiceTests
 {
+    // No-op stubs — auth tests don't exercise email or audit side-effects
+    private sealed class NullEmailService : IEmailService
+    {
+        public Task SendPasswordResetAsync(string toEmail, string resetLink) => Task.CompletedTask;
+        public Task SendVerificationEmailAsync(string toEmail, string verifyLink) => Task.CompletedTask;
+    }
+
+    private sealed class NullAuditService : IAuditService
+    {
+        public Task LogAsync(string eventName, Guid? userId = null, string? detail = null) => Task.CompletedTask;
+    }
+
     private static AuthService Build(AppDbContext db)
     {
         var config = new ConfigurationBuilder()
@@ -20,7 +33,7 @@ public class AuthServiceTests
                 ["Jwt:RefreshExpiryDays"] = "30"
             })
             .Build();
-        return new AuthService(db, config);
+        return new AuthService(db, config, new NullEmailService(), new NullAuditService());
     }
 
     [Fact]
@@ -53,7 +66,7 @@ public class AuthServiceTests
             await svc.RegisterAsync(new RegisterRequest("alice2", "alice@test.com", "Password1!", "UTC"));
 
         await act.Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage("*already registered*");
+            .WithMessage("*already exists*");
     }
 
     [Fact]
@@ -68,7 +81,7 @@ public class AuthServiceTests
             await svc.RegisterAsync(new RegisterRequest("alice", "other@test.com", "Password1!", "UTC"));
 
         await act.Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage("*already taken*");
+            .WithMessage("*already exists*");
     }
 
     [Fact]

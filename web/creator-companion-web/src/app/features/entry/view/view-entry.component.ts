@@ -6,7 +6,6 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ApiService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { Entry } from '../../../core/models/models';
-import { environment } from '../../../../environments/environment';
 import { getMoodEmoji } from '../../../core/constants/moods';
 import { marked } from 'marked';
 
@@ -232,7 +231,6 @@ export class ViewEntryComponent implements OnInit {
   private sanitizer = inject(DomSanitizer);
 
   readonly getMoodEmoji = getMoodEmoji;
-  readonly apiBase = environment.apiBaseUrl;
 
   entryId  = '';
   entry    = signal<Entry | null>(null);

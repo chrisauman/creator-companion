@@ -13,7 +13,6 @@ import { marked } from 'marked';
 import { ApiService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { Entry, MediaItem } from '../../../core/models/models';
-import { environment } from '../../../../environments/environment';
 import { MOODS, getMoodEmoji } from '../../../core/constants/moods';
 import { TagInputComponent } from '../../../shared/tag-input.component';
 import { FormatToolbarComponent } from '../../../shared/format-toolbar.component';
@@ -501,7 +500,6 @@ export class EditEntryComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   private autosave$ = new Subject<void>();
 
-  readonly apiBase = environment.apiBaseUrl;
   readonly MOODS   = MOODS;
   readonly getMoodEmoji = getMoodEmoji;
 
