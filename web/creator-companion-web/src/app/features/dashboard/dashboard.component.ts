@@ -29,6 +29,34 @@ import { getMoodEmoji } from '../../core/constants/moods';
 
       <main class="container main-content">
 
+        <!-- Daily Motivation card -->
+        @if (motivation()) {
+          <div class="motivation-card" [class.motivation-card--expanded]="motivationExpanded()">
+            <div class="motivation-header" (click)="motivationExpanded.set(!motivationExpanded())">
+              <div class="motivation-header__left">
+                <span class="motivation-label">Daily Motivation</span>
+                <p class="motivation-takeaway">{{ motivation()!.takeaway }}</p>
+              </div>
+              <button class="motivation-toggle" [attr.aria-expanded]="motivationExpanded()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                  fill="none" stroke="currentColor" stroke-width="2.5"
+                  stroke-linecap="round" stroke-linejoin="round"
+                  [style.transform]="motivationExpanded() ? 'rotate(180deg)' : 'rotate(0deg)'"
+                  style="transition:transform .25s ease">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </button>
+            </div>
+            <div class="motivation-body">
+              <h3 class="motivation-title">{{ motivation()!.title }}</h3>
+              <div class="motivation-category">
+                {{ categoryLabel(motivation()!.category) }}
+              </div>
+              <p class="motivation-content">{{ motivation()!.fullContent }}</p>
+            </div>
+          </div>
+        }
+
         <!-- New entry CTA -->
         <div class="new-entry-bar" routerLink="/entry/new">
           <span class="new-entry-bar__text">What are you working on today?</span>
@@ -63,34 +91,6 @@ import { getMoodEmoji } from '../../core/constants/moods';
           </div>
         </div>
 
-
-        <!-- Daily Motivation card -->
-        @if (motivation()) {
-          <div class="motivation-card" [class.motivation-card--expanded]="motivationExpanded()">
-            <div class="motivation-header" (click)="motivationExpanded.set(!motivationExpanded())">
-              <div class="motivation-header__left">
-                <span class="motivation-label">Daily Motivation</span>
-                <p class="motivation-takeaway">{{ motivation()!.takeaway }}</p>
-              </div>
-              <button class="motivation-toggle" [attr.aria-expanded]="motivationExpanded()">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                  fill="none" stroke="currentColor" stroke-width="2.5"
-                  stroke-linecap="round" stroke-linejoin="round"
-                  [style.transform]="motivationExpanded() ? 'rotate(180deg)' : 'rotate(0deg)'"
-                  style="transition:transform .25s ease">
-                  <polyline points="6 9 12 15 18 9"/>
-                </svg>
-              </button>
-            </div>
-            <div class="motivation-body">
-              <h3 class="motivation-title">{{ motivation()!.title }}</h3>
-              <div class="motivation-category">
-                {{ categoryLabel(motivation()!.category) }}
-              </div>
-              <p class="motivation-content">{{ motivation()!.fullContent }}</p>
-            </div>
-          </div>
-        }
 
         <!-- Entry list -->
         <section class="entries-section">
@@ -221,7 +221,7 @@ import { getMoodEmoji } from '../../core/constants/moods';
       justify-content: space-between;
       gap: 1rem;
       background: var(--color-surface);
-      border: 1.5px dashed var(--color-accent);
+      border: 1px solid var(--color-border);
       border-radius: var(--radius-lg);
       padding: 1rem 1.25rem;
       cursor: pointer;
@@ -257,7 +257,7 @@ import { getMoodEmoji } from '../../core/constants/moods';
     /* ── Daily Motivation ───────────────────────────────────────── */
     .motivation-card {
       background: var(--color-surface);
-      border: 1px solid var(--color-accent);
+      border: 1px solid var(--color-border);
       border-radius: var(--radius-lg);
       margin-bottom: 1.25rem;
       overflow: hidden;
