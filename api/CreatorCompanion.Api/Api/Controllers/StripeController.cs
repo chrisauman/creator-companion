@@ -34,6 +34,7 @@ public class StripeController(
         if (user == null) return Unauthorized();
 
         var appUrl = HttpContext.Request.Headers["Origin"].FirstOrDefault()
+            ?? HttpContext.Request.Headers["Referer"].FirstOrDefault()?.TrimEnd('/')
             ?? "https://app.creatorcompanionapp.com";
 
         try
@@ -59,6 +60,7 @@ public class StripeController(
         if (user == null) return Unauthorized();
 
         var appUrl = HttpContext.Request.Headers["Origin"].FirstOrDefault()
+            ?? HttpContext.Request.Headers["Referer"].FirstOrDefault()?.TrimEnd('/')
             ?? "https://app.creatorcompanionapp.com";
 
         try

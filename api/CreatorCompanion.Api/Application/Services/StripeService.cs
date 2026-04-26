@@ -90,6 +90,10 @@ public class StripeService(AppDbContext db, IOptions<StripeConfig> config) : ISt
             case EventTypes.CustomerSubscriptionDeleted:
                 await HandleSubscriptionDeletedAsync(stripeEvent.Data.Object as Subscription);
                 break;
+
+            case EventTypes.InvoicePaymentFailed:
+                await HandleInvoicePaymentFailedAsync(stripeEvent.Data.Object as Invoice);
+                break;
         }
     }
 
@@ -138,6 +142,26 @@ public class StripeService(AppDbContext db, IOptions<StripeConfig> config) : ISt
         user.UpdatedAt            = DateTime.UtcNow;
 
         await db.SaveChangesAsync();
+    }
+
+    private async Task HandleInvoicePaymentFailedAsync(Invoice? invoice)
+    {
+        if (invoice == null || string.IsNullOrEmpty(invoice.CustomerId)) return;
+
+        var user = await db.Users.FirstOrDefaultAsync(u => u.StripeCustomerId == invoice.CustomerId);
+        if (user == null) return;
+
+        // Only downgrade after Stripe has exhausted all retries (billing_reason = subscription_cycle
+        // failures arrive multiple times; the subscription status flips to past_due first, then
+        // unpaid/canceled — CustomerSubscriptionUpdated/Deleted handles final cancellation).
+        // Here we just downgrade immediately on any payment failure so users can't access paid
+        // features while their payment is in a failed state.
+        if (user.Tier == AccountTier.Paid)
+        {
+            user.Tier      = AccountTier.Free;
+            user.UpdatedAt = DateTime.UtcNow;
+            await db.SaveChangesAsync();
+        }
     }
 
     private async Task<string> EnsureCustomerAsync(User user)

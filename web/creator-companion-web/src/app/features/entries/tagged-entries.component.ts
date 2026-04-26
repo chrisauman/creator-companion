@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { RouterLink, ActivatedRoute, Router } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
 import { EntryListItem } from '../../core/models/models';
-import { environment } from '../../../environments/environment';
 import { getMoodEmoji } from '../../core/constants/moods';
 
 @Component({
@@ -161,8 +160,6 @@ export class TaggedEntriesComponent implements OnInit {
   private api    = inject(ApiService);
   private route  = inject(ActivatedRoute);
   private router = inject(Router);
-  private apiHost = environment.apiBaseUrl.replace(/\/v1$/, '');
-
   readonly getMoodEmoji = getMoodEmoji;
 
   tagName = signal('');
@@ -180,7 +177,7 @@ export class TaggedEntriesComponent implements OnInit {
   }
 
   fullImageUrl(relativeUrl: string): string {
-    return this.apiHost + relativeUrl;
+    return this.api.getImageUrl(relativeUrl);
   }
 
   getDayAbbr(d: string): string {
