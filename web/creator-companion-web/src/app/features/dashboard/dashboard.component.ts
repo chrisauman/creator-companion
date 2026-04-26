@@ -225,7 +225,7 @@ import { getMoodEmoji } from '../../core/constants/moods';
       transition: background .15s;
       &:hover { background: var(--color-accent-light); }
     }
-    .new-entry-bar__text { color: var(--color-text-2); font-size: .9375rem; }
+    .new-entry-bar__text { color: var(--color-text); font-size: .9375rem; }
 
     .stats-grid {
       display: grid;
@@ -247,7 +247,7 @@ import { getMoodEmoji } from '../../core/constants/moods';
     }
     .stat-value { font-size: 1.75rem; font-weight: 700; line-height: 1; }
     .streak-value { color: var(--color-streak); }
-    .stat-label { font-size: .8125rem; color: var(--color-text-2); }
+    .stat-label { font-size: .8125rem; color: var(--color-text); }
 
 
     /* ── Daily Motivation ───────────────────────────────────────── */
