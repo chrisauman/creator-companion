@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { ApiService } from '../../../core/services/api.service';
 
 @Component({
   selector: 'app-register',
@@ -15,6 +16,22 @@ import { AuthService } from '../../../core/services/auth.service';
           <span class="logo-mark">✦</span>
           <h1>Start your journey</h1>
           <p class="text-muted text-sm">Build a creative habit that lasts.</p>
+        </div>
+
+        <!-- Plan selector -->
+        <div class="plan-toggle">
+          <button class="plan-btn" [class.active]="plan() === 'free'" (click)="plan.set('free')">Free</button>
+          <button class="plan-btn" [class.active]="plan() === 'monthly'" (click)="plan.set('monthly')">$3 / month</button>
+          <button class="plan-btn" [class.active]="plan() === 'annual'" (click)="plan.set('annual')">$30 / year</button>
+        </div>
+        <div class="plan-summary">
+          @if (plan() === 'free') {
+            <strong>Free:</strong> 1 entry/day · 100 words · always free
+          } @else if (plan() === 'monthly') {
+            <strong>Paid — $3/mo:</strong> 5 entries/day · 2,500 words · all features
+          } @else {
+            <strong>Annual — $30/yr:</strong> Everything in Paid · save 2 months
+          }
         </div>
 
         <div *ngIf="error()" class="alert alert--error">{{ error() }}</div>
@@ -30,9 +47,7 @@ import { AuthService } from '../../../core/services/auth.service';
               name="username"
               placeholder="yourname"
               autocomplete="username"
-              required
-              minlength="3"
-              maxlength="50"
+              required minlength="3" maxlength="50"
               #usernameField="ngModel"
             />
             <span class="error-msg" *ngIf="usernameField.touched && usernameField.errors?.['minlength']">
@@ -68,8 +83,7 @@ import { AuthService } from '../../../core/services/auth.service';
               name="password"
               placeholder="Min. 8 characters"
               autocomplete="new-password"
-              required
-              minlength="8"
+              required minlength="8"
               #passwordField="ngModel"
             />
             <span class="error-msg" *ngIf="passwordField.touched && passwordField.errors?.['minlength']">
@@ -78,7 +92,7 @@ import { AuthService } from '../../../core/services/auth.service';
           </div>
 
           <button class="btn btn--primary btn--full btn--lg" type="submit" [disabled]="loading()">
-            {{ loading() ? 'Creating account…' : 'Create account' }}
+            {{ loading() ? (plan() === 'free' ? 'Creating account…' : 'Creating account…') : (plan() === 'free' ? 'Create free account' : 'Continue to payment') }}
           </button>
         </form>
 
@@ -97,19 +111,51 @@ import { AuthService } from '../../../core/services/auth.service';
       padding: 1.5rem;
       background: var(--color-bg);
     }
-    .auth-card { width: 100%; max-width: 420px; }
-    .auth-logo { text-align: center; margin-bottom: 2rem; }
+    .auth-card { width: 100%; max-width: 440px; }
+    .auth-logo { text-align: center; margin-bottom: 1.5rem; }
     .logo-mark { font-size: 2rem; color: var(--color-accent); display: block; margin-bottom: .5rem; }
     h1 { font-size: 1.375rem; margin-bottom: .25rem; }
+
+    .plan-toggle {
+      display: flex; gap: .25rem;
+      background: var(--color-surface-2);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: .25rem;
+      margin-bottom: .875rem;
+    }
+    .plan-btn {
+      flex: 1; padding: .5rem .25rem;
+      border: none; background: transparent;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-sans); font-size: .8125rem; font-weight: 600;
+      cursor: pointer; color: var(--color-text-2);
+      transition: background .15s, color .15s;
+    }
+    .plan-btn.active {
+      background: var(--color-accent-dark); color: #fff;
+      box-shadow: var(--shadow-sm);
+    }
+    .plan-summary {
+      background: var(--color-accent-light);
+      border: 1px solid var(--color-accent);
+      border-radius: var(--radius-md);
+      padding: .625rem .875rem;
+      font-size: .8125rem;
+      color: var(--color-accent-dark);
+      margin-bottom: 1.25rem;
+    }
   `]
 })
 export class RegisterComponent {
   private auth   = inject(AuthService);
+  private api    = inject(ApiService);
   private router = inject(Router);
 
   username = '';
   email    = '';
   password = '';
+  plan     = signal<'free' | 'monthly' | 'annual'>('free');
   loading  = signal(false);
   error    = signal('');
 
@@ -129,7 +175,26 @@ export class RegisterComponent {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 
     this.auth.register(this.username, this.email, this.password, tz).subscribe({
-      next: () => this.router.navigate(['/onboarding']),
+      next: () => {
+        if (this.plan() === 'free') {
+          this.router.navigate(['/onboarding']);
+          return;
+        }
+        // Paid plan: get config then redirect to Stripe Checkout
+        this.api.getStripeConfig().subscribe({
+          next: cfg => {
+            const priceId = this.plan() === 'monthly' ? cfg.monthlyPriceId : cfg.annualPriceId;
+            this.api.createCheckoutSession(priceId).subscribe({
+              next: res => { window.location.href = res.url; },
+              error: () => {
+                // Fall back to onboarding on Stripe error
+                this.router.navigate(['/onboarding']);
+              }
+            });
+          },
+          error: () => this.router.navigate(['/onboarding'])
+        });
+      },
       error: err => {
         this.error.set(err?.error?.error ?? 'Registration failed. Please try again.');
         this.loading.set(false);

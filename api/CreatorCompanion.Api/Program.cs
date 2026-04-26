@@ -91,6 +91,10 @@ try
     builder.Services.Configure<EntryLimitsConfig>(
         builder.Configuration.GetSection("EntryLimits"));
 
+    // Stripe
+    builder.Services.Configure<StripeConfig>(builder.Configuration.GetSection("Stripe"));
+    builder.Services.AddScoped<IStripeService, StripeService>();
+
     // Trust the single reverse proxy (Railway / Vercel edge) that sits in front of us.
     // This ensures RemoteIpAddress reflects the real client, not the proxy.
     builder.Services.Configure<ForwardedHeadersOptions>(options =>

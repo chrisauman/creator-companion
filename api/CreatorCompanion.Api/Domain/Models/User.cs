@@ -21,6 +21,9 @@ public class User
     /// <summary>Whether the Daily Motivation card is shown on the dashboard (paid users only).</summary>
     public bool ShowMotivation { get; set; } = true;
 
+    public string? StripeCustomerId { get; set; }
+    public string? StripeSubscriptionId { get; set; }
+
     public ICollection<Journal> Journals { get; set; } = new List<Journal>();
     public ICollection<Entry> Entries { get; set; } = new List<Entry>();
     public ICollection<Draft> Drafts { get; set; } = new List<Draft>();

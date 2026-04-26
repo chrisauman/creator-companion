@@ -86,5 +86,16 @@ export const routes: Routes = [
     loadComponent: () => import('./features/admin/admin-motivation.component').then(m => m.AdminMotivationComponent)
   },
 
+  {
+    path: 'billing/success',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/billing/billing-success.component').then(m => m.BillingSuccessComponent)
+  },
+  {
+    path: 'billing/cancel',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/billing/billing-cancel.component').then(m => m.BillingCancelComponent)
+  },
+
   { path: '**', redirectTo: 'dashboard' }
 ];

@@ -72,6 +72,31 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log an entry to keep your streak a
               }
             </div>
           </div>
+          @if (user()?.tier === 'Free') {
+            <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid var(--color-border-light)">
+              <p class="text-muted text-sm" style="margin-bottom:.875rem">
+                Upgrade for 5 entries/day, 2,500 words, multiple journals, and all features.
+              </p>
+              <div style="display:flex;gap:.625rem;flex-wrap:wrap">
+                <button class="btn btn--primary btn--sm" (click)="upgrade('monthly')" [disabled]="upgrading()">
+                  {{ upgrading() === 'monthly' ? 'Redirecting…' : 'Upgrade — $3/month' }}
+                </button>
+                <button class="btn btn--secondary btn--sm" (click)="upgrade('annual')" [disabled]="upgrading()">
+                  {{ upgrading() === 'annual' ? 'Redirecting…' : 'Upgrade — $30/year' }}
+                </button>
+              </div>
+              @if (upgradeError()) {
+                <p class="alert alert--error" style="margin-top:.75rem">{{ upgradeError() }}</p>
+              }
+            </div>
+          }
+          @if (user()?.tier === 'Paid') {
+            <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid var(--color-border-light)">
+              <button class="btn btn--secondary btn--sm" (click)="openBillingPortal()" [disabled]="portalLoading()">
+                {{ portalLoading() ? 'Opening…' : 'Manage billing & subscription' }}
+              </button>
+            </div>
+          }
         </section>
 
         <!-- Reminders -->
@@ -615,6 +640,9 @@ export class AccountComponent implements OnInit {
   caps      = signal<Capabilities | null>(null);
   streak    = signal<StreakStats | null>(null);
   exporting = signal(false);
+  upgrading    = signal<'monthly' | 'annual' | null>(null);
+  upgradeError = signal('');
+  portalLoading = signal(false);
 
   // Password change
   currentPassword  = '';
@@ -663,6 +691,35 @@ export class AccountComponent implements OnInit {
     this.loadTags();
     this.loadReminders();
     this.initPushState();
+  }
+
+  upgrade(plan: 'monthly' | 'annual'): void {
+    this.upgrading.set(plan);
+    this.upgradeError.set('');
+    this.api.getStripeConfig().subscribe({
+      next: cfg => {
+        const priceId = plan === 'monthly' ? cfg.monthlyPriceId : cfg.annualPriceId;
+        this.api.createCheckoutSession(priceId).subscribe({
+          next: res => { window.location.href = res.url; },
+          error: err => {
+            this.upgradeError.set(err?.error?.error ?? 'Could not start checkout. Please try again.');
+            this.upgrading.set(null);
+          }
+        });
+      },
+      error: () => {
+        this.upgradeError.set('Could not load billing config. Please try again.');
+        this.upgrading.set(null);
+      }
+    });
+  }
+
+  openBillingPortal(): void {
+    this.portalLoading.set(true);
+    this.api.createPortalSession().subscribe({
+      next: res => { window.location.href = res.url; },
+      error: () => this.portalLoading.set(false)
+    });
   }
 
   toggleMotivation(): void {

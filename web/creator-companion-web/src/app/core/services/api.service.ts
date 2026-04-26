@@ -264,6 +264,19 @@ export class ApiService {
     return this.http.delete<void>(`${this.base}/admin/users/${id}/pauses/all`);
   }
 
+  // ── Stripe ──────────────────────────────────────────────────────────────
+  getStripeConfig(): Observable<{ publishableKey: string; monthlyPriceId: string; annualPriceId: string }> {
+    return this.http.get<any>(`${this.base}/stripe/config`);
+  }
+
+  createCheckoutSession(priceId: string): Observable<{ url: string }> {
+    return this.http.post<{ url: string }>(`${this.base}/stripe/checkout`, { priceId });
+  }
+
+  createPortalSession(): Observable<{ url: string }> {
+    return this.http.post<{ url: string }>(`${this.base}/stripe/portal`, {});
+  }
+
   // ── Media ───────────────────────────────────────────────────────────────
   uploadMedia(entryId: string, file: File): Observable<MediaItem> {
     const form = new FormData();
