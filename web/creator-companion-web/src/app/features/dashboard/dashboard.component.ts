@@ -246,7 +246,7 @@ import { getMoodEmoji } from '../../core/constants/moods';
       text-align: center;
     }
     .stat-value { font-size: 1.75rem; font-weight: 700; line-height: 1; }
-    .streak-value { color: var(--color-streak); }
+    .streak-value { color: var(--color-accent-dark); }
     .stat-label { font-size: .8125rem; color: var(--color-text); }
 
 
