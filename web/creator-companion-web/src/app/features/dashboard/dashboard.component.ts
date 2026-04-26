@@ -21,8 +21,8 @@ import { getMoodEmoji } from '../../core/constants/moods';
         <div class="container topnav__inner">
           <span class="topnav__logo">✦ Creator Companion</span>
           <div style="display:flex;gap:.5rem">
-            <button class="btn btn--ghost btn--sm" routerLink="/account">Account</button>
-            <button *ngIf="isAdmin()" class="btn btn--ghost btn--sm" routerLink="/admin">Admin</button>
+            <a class="nav-link" routerLink="/account">Account</a>
+            <a *ngIf="isAdmin()" class="nav-link" routerLink="/admin">Admin</a>
           </div>
         </div>
       </header>
@@ -209,6 +209,7 @@ import { getMoodEmoji } from '../../core/constants/moods';
       height: 100%;
     }
     .topnav__logo { font-weight: 600; color: var(--color-accent); font-size: 1rem; }
+    .nav-link { color: var(--color-accent-dark); font-size: .9375rem; font-weight: 500; text-decoration: none; &:hover { text-decoration: underline; } }
 
     .main-content { padding-top: 1.5rem; padding-bottom: 4rem; }
 
