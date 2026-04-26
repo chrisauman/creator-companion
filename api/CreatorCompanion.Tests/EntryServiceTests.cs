@@ -20,14 +20,14 @@ public class EntryServiceTests
         {
             Free = new TierLimits
             {
-                MaxWordsPerEntry = 100, MaxImagesPerEntry = 1,
+                MaxCharsPerEntry = 500, MaxImagesPerEntry = 1,
                 CanBackfill = false, CanRecoverDeleted = false,
                 CanUsePause = false, MaxDiaries = 1, MaxRemindersPerDay = 1,
                 MaxEntriesPerDay = 1, MaxTagsPerEntry = 3
             },
             Paid = new TierLimits
             {
-                MaxWordsPerEntry = 2500, MaxImagesPerEntry = 20,
+                MaxCharsPerEntry = 25000, MaxImagesPerEntry = 20,
                 CanBackfill = true, CanRecoverDeleted = true,
                 CanUsePause = true, MaxDiaries = -1, MaxRemindersPerDay = 5,
                 MaxEntriesPerDay = 5, MaxTagsPerEntry = 20

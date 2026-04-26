@@ -15,15 +15,15 @@ public class EntitlementService(AppDbContext db, IOptions<EntryLimitsConfig> lim
     public TierLimits GetLimits(User user) =>
         user.Tier == AccountTier.Paid ? _limits.Paid : _limits.Free;
 
-    public void EnforceWordLimit(User user, string content)
+    public void EnforceCharLimit(User user, string content)
     {
         var limits = GetLimits(user);
-        var wordCount = CountWords(content);
-        if (wordCount < 10)
-            throw new InvalidOperationException("Entry must be at least 10 words.");
-        if (wordCount > limits.MaxWordsPerEntry)
+        var charCount = content?.Length ?? 0;
+        if (charCount < 10)
+            throw new InvalidOperationException("Entry must be at least 10 characters.");
+        if (charCount > limits.MaxCharsPerEntry)
             throw new InvalidOperationException(
-                $"Entry exceeds the {limits.MaxWordsPerEntry}-word limit for your plan.");
+                $"Entry exceeds the {limits.MaxCharsPerEntry}-character limit for your plan.");
     }
 
     public async Task EnforceImageLimitAsync(User user, Guid entryId)
@@ -68,8 +68,4 @@ public class EntitlementService(AppDbContext db, IOptions<EntryLimitsConfig> lim
                 $"Your plan allows a maximum of {limits.MaxDiaries} journal(s).");
     }
 
-    private static int CountWords(string text) =>
-        string.IsNullOrWhiteSpace(text)
-            ? 0
-            : text.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length;
 }

@@ -38,7 +38,7 @@ public class EntryService(
 
         var limits = entitlements.GetLimits(user);
         entitlements.EnforceBackfill(user, request.EntryDate, today);
-        entitlements.EnforceWordLimit(user, request.ContentText);
+        entitlements.EnforceCharLimit(user, request.ContentText);
 
         var existingCount = await db.Entries
             .CountAsync(e =>
@@ -100,7 +100,7 @@ public class EntryService(
             ?? throw new InvalidOperationException("Entry not found.");
 
         var user = await db.Users.FindAsync(userId)!;
-        entitlements.EnforceWordLimit(user!, request.ContentText);
+        entitlements.EnforceCharLimit(user!, request.ContentText);
 
         entry.Title = string.IsNullOrWhiteSpace(request.Title)
             ? GenerateTitle(request.ContentText)
