@@ -277,8 +277,7 @@ import { getMoodEmoji } from '../../core/constants/moods';
     }
     .motivation-takeaway {
       font-size: .9375rem; color: var(--color-text);
-      margin: 0; line-height: 1.45;
-      font-style: italic;
+      margin: 0; line-height: 1.7;
     }
     .motivation-toggle {
       flex-shrink: 0; margin-top: .1rem;
@@ -311,7 +310,7 @@ import { getMoodEmoji } from '../../core/constants/moods';
     }
     .motivation-content {
       font-size: .9375rem; line-height: 1.7;
-      color: var(--color-text-2); margin: 0;
+      color: var(--color-text); margin: 0;
       white-space: pre-wrap;
     }
     /* ── /Daily Motivation ──────────────────────────────────────── */
