@@ -223,8 +223,8 @@ import { getMoodEmoji } from '../../core/constants/moods';
       padding: 1rem 1.25rem;
       cursor: pointer;
       margin-bottom: 1.25rem;
-      transition: background .15s;
-      &:hover { background: var(--color-accent-light); }
+      transition: border-color .15s, box-shadow .15s;
+      &:hover { border-color: var(--color-accent); box-shadow: var(--shadow-md); }
     }
     .new-entry-bar__text { color: var(--color-text); font-size: .9375rem; }
 
@@ -258,13 +258,14 @@ import { getMoodEmoji } from '../../core/constants/moods';
       border-radius: var(--radius-lg);
       margin-bottom: 1.25rem;
       overflow: hidden;
+      transition: border-color .15s, box-shadow .15s;
+      &:hover { border-color: var(--color-accent); box-shadow: var(--shadow-md); }
     }
     .motivation-header {
       display: flex; align-items: flex-start; justify-content: space-between;
       gap: 1rem; padding: 1rem 1.25rem; cursor: pointer;
       user-select: none;
-      &:hover { background: var(--color-accent-light); }
-      transition: background .15s;
+      transition: none;
     }
     .motivation-header__left { flex: 1; min-width: 0; }
     .motivation-label {
