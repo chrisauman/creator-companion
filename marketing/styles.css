@@ -326,6 +326,29 @@ details[open] .faq-q::after { content: '−'; }
 .page-hero__title { font-size: clamp(2rem, 5vw, 3rem); font-weight: 800; letter-spacing: -.02em; margin-bottom: .875rem; }
 .page-hero__sub { font-size: 1.0625rem; color: var(--text-2); max-width: 520px; margin: 0 auto; line-height: 1.7; }
 
+/* ── PWA Install ─────────────────────────────────────────────────────────── */
+.pwa-section { background: var(--surface); }
+.pwa-inner {
+  display: flex; align-items: center; gap: 4rem;
+}
+.pwa-text { flex: 1; }
+.pwa-steps {
+  flex: 1; display: flex; flex-direction: column; gap: 1.25rem;
+}
+.pwa-step {
+  display: flex; align-items: flex-start; gap: 1rem;
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: 1rem 1.25rem;
+}
+.pwa-step__icon {
+  flex-shrink: 0; width: 40px; height: 40px;
+  background: var(--accent-light); border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--accent-dark);
+}
+.pwa-step__label { font-weight: 700; font-size: .9375rem; margin-bottom: .2rem; color: var(--text); }
+.pwa-step__desc { font-size: .875rem; color: var(--text-2); line-height: 1.5; }
+
 /* ── Responsive ──────────────────────────────────────────────────────────── */
 @media (max-width: 640px) {
   .nav__links { display: none; }
@@ -333,4 +356,5 @@ details[open] .faq-q::after { content: '−'; }
   .hero { padding: 4rem 0 3rem; }
   .form-card { padding: 1.75rem 1.25rem; }
   .footer__inner { flex-direction: column; align-items: flex-start; gap: .75rem; }
+  .pwa-inner { flex-direction: column; gap: 2rem; }
 }
