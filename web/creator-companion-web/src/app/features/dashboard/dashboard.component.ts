@@ -412,7 +412,7 @@ import { getMoodEmoji } from '../../core/constants/moods';
     }
     .entry-row__sub {
       display: flex; align-items: center; gap: .3rem;
-      font-size: .75rem; color: var(--color-text-3);
+      font-size: .75rem; color: var(--color-text);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .sep { color: var(--color-border); }
