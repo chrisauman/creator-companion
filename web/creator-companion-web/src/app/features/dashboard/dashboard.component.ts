@@ -48,7 +48,6 @@ import { getMoodEmoji } from '../../core/constants/moods';
               </button>
             </div>
             <div class="motivation-body">
-              <h3 class="motivation-title">{{ motivation()!.title }}</h3>
               <div class="motivation-category">
                 {{ categoryLabel(motivation()!.category) }}
               </div>
