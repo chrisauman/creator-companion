@@ -6,7 +6,7 @@ namespace CreatorCompanion.Api.Application.Interfaces;
 public interface IEntitlementService
 {
     TierLimits GetLimits(User user);
-    void EnforceCharLimit(User user, string content);
+    void EnforceWordLimit(User user, string content);
     Task EnforceImageLimitAsync(User user, Guid entryId);
     void EnforceBackfill(User user, DateOnly entryDate, DateOnly today);
     void EnforcePause(User user);

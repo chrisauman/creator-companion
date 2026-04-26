@@ -14,7 +14,7 @@ public class EntitlementServiceTests
         {
             Free = new TierLimits
             {
-                MaxCharsPerEntry = 500,
+                MaxWordsPerEntry = 100,
                 MaxImagesPerEntry = 1,
                 MaxRemindersPerDay = 1,
                 CanUsePause = false,
@@ -24,7 +24,7 @@ public class EntitlementServiceTests
             },
             Paid = new TierLimits
             {
-                MaxCharsPerEntry = 25000,
+                MaxWordsPerEntry = 2500,
                 MaxImagesPerEntry = 20,
                 MaxRemindersPerDay = 5,
                 CanUsePause = true,
@@ -34,53 +34,53 @@ public class EntitlementServiceTests
             }
         }));
 
-    // ── Character limit ──────────────────────────────────────────────────────
+    // ── Word limit ───────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task FreeUser_ExceedingCharLimit_Throws()
+    public async Task FreeUser_ExceedingWordLimit_Throws()
     {
         var (db, user, _) = await DbFactory.WithUserAndJournalAsync();
         var svc = Build(db);
-        var longText = new string('a', 501);
+        var longText = string.Join(" ", Enumerable.Repeat("word", 101));
 
-        var act = () => svc.EnforceCharLimit(user, longText);
+        var act = () => svc.EnforceWordLimit(user, longText);
 
         act.Should().Throw<InvalidOperationException>()
-            .WithMessage("*500-character limit*");
+            .WithMessage("*100-word limit*");
     }
 
     [Fact]
-    public async Task FreeUser_UnderCharLimit_DoesNotThrow()
+    public async Task FreeUser_UnderWordLimit_DoesNotThrow()
     {
         var (db, user, _) = await DbFactory.WithUserAndJournalAsync();
         var svc = Build(db);
-        var text = new string('a', 250);
+        var text = string.Join(" ", Enumerable.Repeat("word", 50));
 
-        var act = () => svc.EnforceCharLimit(user, text);
+        var act = () => svc.EnforceWordLimit(user, text);
 
         act.Should().NotThrow();
     }
 
     [Fact]
-    public async Task TooFewChars_Throws()
+    public async Task TooFewWords_Throws()
     {
         var (db, user, _) = await DbFactory.WithUserAndJournalAsync();
         var svc = Build(db);
 
-        var act = () => svc.EnforceCharLimit(user, "Too short.");
+        var act = () => svc.EnforceWordLimit(user, "Too short.");
 
         act.Should().Throw<InvalidOperationException>()
-            .WithMessage("*at least 10 characters*");
+            .WithMessage("*at least 10 words*");
     }
 
     [Fact]
-    public async Task PaidUser_CanExceedFreeCharLimit()
+    public async Task PaidUser_CanExceedFreeWordLimit()
     {
         var (db, user, _) = await DbFactory.WithUserAndJournalAsync(tier: AccountTier.Paid);
         var svc = Build(db);
-        var text = new string('a', 1000);
+        var text = string.Join(" ", Enumerable.Repeat("word", 200));
 
-        var act = () => svc.EnforceCharLimit(user, text);
+        var act = () => svc.EnforceWordLimit(user, text);
 
         act.Should().NotThrow();
     }

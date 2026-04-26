@@ -2,7 +2,7 @@ namespace CreatorCompanion.Api.Common;
 
 public class TierLimits
 {
-    public int MaxCharsPerEntry { get; set; }
+    public int MaxWordsPerEntry { get; set; }
     public int MaxImagesPerEntry { get; set; }
     public int MaxRemindersPerDay { get; set; }
     public bool CanUsePause { get; set; }
