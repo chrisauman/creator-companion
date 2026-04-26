@@ -222,7 +222,7 @@ import { getMoodEmoji } from '../../core/constants/moods';
       border-radius: var(--radius-lg);
       padding: 1rem 1.25rem;
       cursor: pointer;
-      margin-bottom: 1.5rem;
+      margin-bottom: 1.25rem;
       transition: background .15s;
       &:hover { background: var(--color-accent-light); }
     }
@@ -232,7 +232,7 @@ import { getMoodEmoji } from '../../core/constants/moods';
       display: grid;
       grid-template-columns: repeat(2, 1fr);
       gap: .75rem;
-      margin-bottom: 1rem;
+      margin-bottom: 1.25rem;
     }
     @media (min-width: 480px) {
       .stats-grid { grid-template-columns: repeat(4, 1fr); }
@@ -315,7 +315,7 @@ import { getMoodEmoji } from '../../core/constants/moods';
     /* ── Search bar ─────────────────────────────────────────────── */
     .search-bar {
       display: flex; align-items: center; gap: .625rem;
-      margin-bottom: 1rem;
+      margin-bottom: 1.25rem;
     }
     .search-input-wrap {
       flex: 1; position: relative;
