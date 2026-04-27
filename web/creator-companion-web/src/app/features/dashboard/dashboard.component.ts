@@ -53,10 +53,9 @@ import { getMoodEmoji } from '../../core/constants/moods';
         }
 
         <!-- New entry CTA -->
-        <div class="new-entry-bar" routerLink="/entry/new">
-          <span class="new-entry-bar__text">What are you working on today?</span>
-          <span class="btn btn--primary btn--sm">+ New entry</span>
-        </div>
+        <button class="new-entry-bar btn btn--primary btn--full" routerLink="/entry/new">
+          + Create New Entry
+        </button>
 
         <!-- Streak stats -->
         <div class="stats-grid" *ngIf="streak()">
@@ -214,19 +213,11 @@ import { getMoodEmoji } from '../../core/constants/moods';
     .main-content { padding-top: 1.5rem; padding-bottom: 4rem; }
 
     .new-entry-bar {
-      display: flex; align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-lg);
-      padding: 1rem 1.25rem;
-      cursor: pointer;
       margin-bottom: 1.25rem;
-      transition: border-color .15s, box-shadow .15s;
-      &:hover { border-color: var(--color-accent); box-shadow: var(--shadow-md); }
+      padding: 1rem;
+      font-size: 1rem;
+      border-radius: var(--radius-lg);
     }
-    .new-entry-bar__text { color: var(--color-text); font-size: .9375rem; }
 
     .stats-grid {
       display: grid;
