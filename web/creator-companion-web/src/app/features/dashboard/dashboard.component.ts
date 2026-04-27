@@ -130,11 +130,11 @@ import { getMoodEmoji } from '../../core/constants/moods';
           </p>
 
           <ng-container *ngIf="filteredAndSorted().length > 0">
-            <ng-container *ngFor="let group of groupedEntries()">
+            <ng-container *ngFor="let group of groupedEntries(); trackBy: trackByGroup">
               <div class="date-divider">{{ group.label }}</div>
               <div
                 class="entry-row card"
-                *ngFor="let entry of group.entries"
+                *ngFor="let entry of group.entries; trackBy: trackByEntry"
                 [routerLink]="['/entry', entry.id]"
               >
                 <!-- Calendar date block -->
@@ -555,10 +555,9 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  groupedEntries(): { label: string; key: string; entries: EntryListItem[] }[] {
+  groupedEntries = computed(() => {
     const map = new Map<string, EntryListItem[]>();
     for (const e of this.filteredAndSorted()) {
-      // key = "YYYY-MM" for sorting; label = "Month YYYY" for display
       const key = e.entryDate.substring(0, 7);
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(e);
@@ -573,7 +572,7 @@ export class DashboardComponent implements OnInit {
     return this.sortOrder() === 'oldest'
       ? pairs.sort((a, b) => a.key.localeCompare(b.key))
       : pairs.sort((a, b) => b.key.localeCompare(a.key));
-  }
+  });
 
   fullImageUrl(relativeUrl: string): string {
     return this.api.getImageUrl(relativeUrl);
@@ -584,6 +583,9 @@ export class DashboardComponent implements OnInit {
     console.error('[Image load failed]', img.src);
     img.style.display = 'none';
   }
+
+  trackByGroup(_: number, group: { key: string }): string { return group.key; }
+  trackByEntry(_: number, entry: EntryListItem): string { return entry.id; }
 
   readonly getMoodEmoji = getMoodEmoji;
 
