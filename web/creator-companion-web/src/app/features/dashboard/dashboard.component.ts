@@ -583,10 +583,11 @@ export class DashboardComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.auth.loadCapabilities().subscribe(caps => this.isPaid.set(caps.canFavorite));
+    this.auth.loadCapabilities().subscribe(caps => this.isPaid.set(true)); // TEST
 
     this.api.getStreak().subscribe({
-      next: s => { this.streak.set(s); this.checkMilestoneCelebration(s.currentStreak); },
+      next: s => { s = { ...s, currentStreak: 7, longestStreak: Math.max(s.longestStreak, 7) }; // TEST
+        this.streak.set(s); this.checkMilestoneCelebration(s.currentStreak); },
       error: () => {}
     });
 
