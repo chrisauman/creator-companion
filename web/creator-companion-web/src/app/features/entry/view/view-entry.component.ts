@@ -145,7 +145,14 @@ import { marked } from 'marked';
 
     /* Entry body */
     .entry-body {
-      max-width:680px; padding-top:2.5rem; padding-bottom:5rem;
+      max-width:680px;
+      background: var(--color-surface);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--color-border);
+      box-shadow: var(--shadow-sm);
+      padding: 2rem 1.75rem 4rem;
+      margin-top: 1.25rem;
+      margin-bottom: 2rem;
     }
 
     .entry-title {
