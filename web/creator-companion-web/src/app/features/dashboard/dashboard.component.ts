@@ -583,7 +583,11 @@ export class DashboardComponent implements OnInit {
 
   ngOnInit(): void {
     this.api.getStreak().subscribe({
-      next: s => { this.streak.set(s); this.checkMilestoneCelebration(s.currentStreak); },
+      next: s => {
+        // TEST ONLY — remove before shipping
+        s = { ...s, currentStreak: 7, longestStreak: Math.max(s.longestStreak, 7) };
+        this.streak.set(s); this.checkMilestoneCelebration(s.currentStreak);
+      },
       error: () => {}
     });
 
