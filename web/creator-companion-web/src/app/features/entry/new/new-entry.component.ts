@@ -248,7 +248,7 @@ interface PendingImage {
     </div>
   `,
   styles: [`
-    .editor-page { min-height: 100vh; display: flex; flex-direction: column; background: var(--color-surface); }
+    .editor-page { min-height: 100vh; display: flex; flex-direction: column; background: var(--color-bg); }
 
     .editor-nav {
       display: flex; align-items: center; justify-content: space-between;
@@ -288,7 +288,14 @@ interface PendingImage {
       &--error  { color: var(--color-danger); }
     }
 
-    .editor-main { flex: 1; padding: 2rem 0; }
+    .editor-main { flex: 1; padding: 1.25rem 0 3rem; }
+    .editor-main .container {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      padding: 2rem 1.75rem;
+    }
 
     .title-input {
       width: 100%; border: none; outline: none; background: transparent;
