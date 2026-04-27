@@ -31,6 +31,17 @@ export class TokenService {
     return !!this._accessToken() && !this.isAccessTokenExpired();
   }
 
+  getUserId(): string {
+    const token = this._accessToken();
+    if (!token) return 'anonymous';
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload['sub'] ?? payload['nameid'] ?? payload['nameidentifier'] ?? 'anonymous';
+    } catch {
+      return 'anonymous';
+    }
+  }
+
   isAdmin(): boolean {
     const token = this._accessToken();
     if (!token) return false;

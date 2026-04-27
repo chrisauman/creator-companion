@@ -7,6 +7,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { TokenService } from '../../core/services/token.service';
 import { StreakStats, EntryListItem, MotivationEntry } from '../../core/models/models';
 import { getMoodEmoji } from '../../core/constants/moods';
+import { MILESTONES, getMilestoneForDays, getMilestoneIndex, Milestone } from '../../core/constants/milestones';
 
 @Component({
   selector: 'app-dashboard',
@@ -14,6 +15,19 @@ import { getMoodEmoji } from '../../core/constants/moods';
   imports: [CommonModule, RouterLink, FormsModule],
   template: `
     <div class="dashboard">
+
+      <!-- Achievement celebration overlay -->
+      @if (showCelebration()) {
+        <div class="celebration-overlay" (click)="dismissCelebration()">
+          <div class="celebration-modal" (click)="$event.stopPropagation()">
+            <div class="celebration-icon">{{ celebrationMilestone()!.icon }}</div>
+            <p class="celebration-earned">You've earned a new title!</p>
+            <h2 class="celebration-title">{{ celebrationMilestone()!.title }}</h2>
+            <p class="celebration-days">{{ celebrationMilestone()!.days }} days of showing up. Keep going.</p>
+            <button class="btn btn--primary btn--lg" (click)="dismissCelebration()">Let's go!</button>
+          </div>
+        </div>
+      }
 
       <!-- Top nav -->
       <header class="topnav">
@@ -62,10 +76,18 @@ import { getMoodEmoji } from '../../core/constants/moods';
           <div class="stat-card">
             <span class="stat-value streak-value">{{ streak()!.currentStreak }}</span>
             <span class="stat-label">Day streak</span>
+            <div class="milestone-badge" *ngIf="currentStreakMilestone()"
+              [title]="currentStreakMilestone()!.description">
+              {{ currentStreakMilestone()!.icon }} {{ currentStreakMilestone()!.title }}
+            </div>
           </div>
           <div class="stat-card">
             <span class="stat-value">{{ streak()!.longestStreak }}</span>
             <span class="stat-label">Longest streak</span>
+            <div class="milestone-badge" *ngIf="longestStreakMilestone()"
+              [title]="longestStreakMilestone()!.description">
+              {{ longestStreakMilestone()!.icon }} {{ longestStreakMilestone()!.title }}
+            </div>
           </div>
           <div class="stat-card">
             <span class="stat-value">{{ streak()!.totalEntries }}</span>
@@ -452,6 +474,55 @@ import { getMoodEmoji } from '../../core/constants/moods';
       color: var(--color-text-2);
     }
     .skeleton { opacity: .5; }
+
+    /* ── Milestone badge in stat card ───────────────────────────── */
+    .milestone-badge {
+      margin-top: .375rem;
+      font-size: .6875rem; font-weight: 600;
+      background: var(--color-accent-light);
+      color: var(--color-accent-dark);
+      border: 1px solid var(--color-accent);
+      border-radius: var(--radius-sm);
+      padding: .15rem .5rem;
+      display: inline-flex; align-items: center; gap: .25rem;
+      cursor: default; white-space: nowrap;
+    }
+
+    /* ── Celebration overlay ─────────────────────────────────────── */
+    .celebration-overlay {
+      position: fixed; inset: 0; z-index: 1000;
+      background: rgba(0,0,0,.55);
+      display: flex; align-items: center; justify-content: center;
+      padding: 1.5rem;
+      animation: fadeIn .2s ease forwards;
+    }
+    .celebration-modal {
+      background: var(--color-surface);
+      border-radius: var(--radius-lg);
+      padding: 2.5rem 2rem;
+      max-width: 360px; width: 100%;
+      text-align: center;
+      box-shadow: var(--shadow-lg);
+      animation: celebrationIn .3s ease forwards;
+    }
+    .celebration-icon { font-size: 4rem; line-height: 1; margin-bottom: 1rem; }
+    .celebration-earned {
+      font-size: .75rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .08em; color: var(--color-accent-dark);
+      margin-bottom: .5rem;
+    }
+    .celebration-title {
+      font-size: 2rem; font-weight: 800;
+      color: var(--color-text); margin-bottom: .5rem;
+    }
+    .celebration-days {
+      font-size: .9375rem; color: var(--color-text-2);
+      line-height: 1.5; margin-bottom: 1.75rem;
+    }
+    @keyframes celebrationIn {
+      from { opacity: 0; transform: scale(.92) translateY(10px); }
+      to   { opacity: 1; transform: scale(1)   translateY(0); }
+    }
   `]
 })
 export class DashboardComponent implements OnInit {
@@ -465,6 +536,11 @@ export class DashboardComponent implements OnInit {
   readonly PAGE_SIZE = 60;
 
   streak     = signal<StreakStats | null>(null);
+  showCelebration    = signal(false);
+  celebrationMilestone = signal<Milestone | null>(null);
+
+  currentStreakMilestone = computed(() => getMilestoneForDays(this.streak()?.currentStreak ?? 0));
+  longestStreakMilestone = computed(() => getMilestoneForDays(this.streak()?.longestStreak ?? 0));
   entries    = signal<EntryListItem[]>([]);
   hasMore    = signal(false);
   loadingMore = signal(false);
@@ -507,7 +583,7 @@ export class DashboardComponent implements OnInit {
 
   ngOnInit(): void {
     this.api.getStreak().subscribe({
-      next: s => this.streak.set(s),
+      next: s => { this.streak.set(s); this.checkMilestoneCelebration(s.currentStreak); },
       error: () => {}
     });
 
@@ -579,6 +655,26 @@ export class DashboardComponent implements OnInit {
   trackByEntry(_: number, entry: EntryListItem): string { return entry.id; }
 
   readonly getMoodEmoji = getMoodEmoji;
+
+  private checkMilestoneCelebration(currentStreak: number): void {
+    const userId = this.tokens.getUserId();
+    const key = `cc_milestone_${userId}`;
+    const currentIndex = getMilestoneIndex(currentStreak);
+    const storedIndex = parseInt(localStorage.getItem(key) ?? '-1', 10);
+
+    if (currentIndex > storedIndex) {
+      this.celebrationMilestone.set(MILESTONES[currentIndex]);
+      this.showCelebration.set(true);
+      localStorage.setItem(key, currentIndex.toString());
+    } else if (currentIndex < storedIndex) {
+      // Streak broke below a threshold — reset so re-achieving fires again
+      localStorage.setItem(key, currentIndex.toString());
+    }
+  }
+
+  dismissCelebration(): void {
+    this.showCelebration.set(false);
+  }
 
   categoryLabel(cat: string): string {
     if (cat === 'BestPractice') return 'Best Practice';
