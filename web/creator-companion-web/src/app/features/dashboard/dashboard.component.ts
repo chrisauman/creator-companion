@@ -17,7 +17,7 @@ import { MILESTONES, getMilestoneForDays, getMilestoneIndex, Milestone } from '.
     <div class="dashboard">
 
       <!-- Achievement celebration overlay -->
-      @if (showCelebration()) {
+      @if (showCelebration() && isPaid()) {
         <div class="celebration-overlay" (click)="dismissCelebration()">
           <div class="celebration-modal" (click)="$event.stopPropagation()">
             <div class="celebration-icon">{{ celebrationMilestone()!.icon }}</div>
@@ -76,7 +76,7 @@ import { MILESTONES, getMilestoneForDays, getMilestoneIndex, Milestone } from '.
           <div class="stat-card">
             <span class="stat-value streak-value">{{ streak()!.currentStreak }}</span>
             <span class="stat-label">Day streak</span>
-            <div class="milestone-badge" *ngIf="currentStreakMilestone()"
+            <div class="milestone-badge" *ngIf="isPaid() && currentStreakMilestone()"
               [title]="currentStreakMilestone()!.description">
               {{ currentStreakMilestone()!.icon }} {{ currentStreakMilestone()!.title }}
             </div>
@@ -84,7 +84,7 @@ import { MILESTONES, getMilestoneForDays, getMilestoneIndex, Milestone } from '.
           <div class="stat-card">
             <span class="stat-value">{{ streak()!.longestStreak }}</span>
             <span class="stat-label">Longest streak</span>
-            <div class="milestone-badge" *ngIf="longestStreakMilestone()"
+            <div class="milestone-badge" *ngIf="isPaid() && longestStreakMilestone()"
               [title]="longestStreakMilestone()!.description">
               {{ longestStreakMilestone()!.icon }} {{ longestStreakMilestone()!.title }}
             </div>
@@ -479,9 +479,9 @@ import { MILESTONES, getMilestoneForDays, getMilestoneIndex, Milestone } from '.
     .milestone-badge {
       margin-top: .375rem;
       font-size: .6875rem; font-weight: 600;
-      background: var(--color-accent-light);
-      color: var(--color-accent-dark);
-      border: 1px solid var(--color-accent);
+      background: var(--color-surface-2);
+      color: var(--color-text-2);
+      border: 1px solid var(--color-border);
       border-radius: var(--radius-sm);
       padding: .15rem .5rem;
       display: inline-flex; align-items: center; gap: .25rem;
@@ -536,6 +536,7 @@ export class DashboardComponent implements OnInit {
   readonly PAGE_SIZE = 60;
 
   streak     = signal<StreakStats | null>(null);
+  isPaid     = signal(false);
   showCelebration    = signal(false);
   celebrationMilestone = signal<Milestone | null>(null);
 
@@ -582,6 +583,8 @@ export class DashboardComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    this.auth.loadCapabilities().subscribe(caps => this.isPaid.set(caps.canFavorite));
+
     this.api.getStreak().subscribe({
       next: s => { this.streak.set(s); this.checkMilestoneCelebration(s.currentStreak); },
       error: () => {}
