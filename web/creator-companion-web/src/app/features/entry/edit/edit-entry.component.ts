@@ -269,7 +269,7 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
     </div>
   `,
   styles: [`
-    .editor-page { min-height:100vh; display:flex; flex-direction:column; background:var(--color-bg); }
+    .editor-page { min-height:100vh; display:flex; flex-direction:column; background:var(--color-surface); }
     .editor-nav {
       display:flex; align-items:center; justify-content:space-between;
       padding:.75rem 1rem; border-bottom:1px solid var(--color-border);
@@ -385,7 +385,7 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
     .image-grid { display:flex; flex-wrap:wrap; gap:.625rem; }
 
     .image-thumb {
-      position:relative; width:110px; height:110px; border-radius:8px;
+      position:relative; width:110px; height:110px; border-radius:var(--radius-md);
       overflow:hidden; border:1px solid var(--color-border); flex-shrink:0;
       img { width:100%; height:100%; object-fit:cover; display:block; }
     }
@@ -399,7 +399,7 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
       &:disabled { opacity:.4; cursor:not-allowed; }
     }
     .image-add-btn {
-      width:110px; height:110px; border-radius:8px;
+      width:110px; height:110px; border-radius:var(--radius-md);
       border:2px dashed var(--color-border); background:transparent;
       cursor:pointer; display:flex; align-items:center; justify-content:center;
       color:var(--color-text-3); font-size:1.75rem; flex-shrink:0;
@@ -413,7 +413,7 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
     .drop-zone {
       display:flex; flex-direction:column; align-items:center; justify-content:center;
       gap:.35rem; padding:1.5rem; border:2px dashed var(--color-border);
-      border-radius:10px; cursor:pointer; transition:border-color .15s, background .15s;
+      border-radius:var(--radius-lg); cursor:pointer; transition:border-color .15s, background .15s;
       &:hover, &--over { border-color:var(--color-accent); background:color-mix(in srgb, var(--color-accent) 5%, transparent); }
     }
     .drop-zone__icon { font-size:1.5rem; }

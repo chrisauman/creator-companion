@@ -209,7 +209,7 @@ import { marked } from 'marked';
       margin-bottom:2rem;
     }
     .entry-image {
-      width:100%; height:auto; border-radius:10px;
+      width:100%; height:auto; border-radius:var(--radius-lg);
       display:block;
       box-shadow:0 2px 12px rgba(0,0,0,.08);
     }
