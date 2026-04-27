@@ -39,8 +39,10 @@ export class App implements OnInit {
   ngOnInit(): void {
     if (!this.swUpdate?.isEnabled) return;
 
-    this.swUpdate.versionUpdates.subscribe(event => {
+    this.swUpdate.versionUpdates.subscribe(async event => {
       if (event.type === 'VERSION_READY') {
+        // Activate the waiting SW immediately so stale JS doesn't linger
+        await this.swUpdate!.activateUpdate();
         this.updateAvailable = true;
       }
     });

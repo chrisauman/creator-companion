@@ -6,7 +6,6 @@ import { ApiService } from '../../core/services/api.service';
 import { AuthService } from '../../core/services/auth.service';
 import { TokenService } from '../../core/services/token.service';
 import { StreakStats, EntryListItem, MotivationEntry } from '../../core/models/models';
-import { environment } from '../../../environments/environment';
 import { getMoodEmoji } from '../../core/constants/moods';
 
 @Component({
@@ -179,7 +178,8 @@ import { getMoodEmoji } from '../../core/constants/moods';
 
                 <!-- Thumbnail -->
                 <div class="entry-row__thumb" *ngIf="entry.firstImageUrl">
-                  <img [src]="fullImageUrl(entry.firstImageUrl)" [alt]="entry.title" />
+                  <img [src]="fullImageUrl(entry.firstImageUrl)" [alt]="entry.title"
+                       (error)="onImgError($event)" />
                 </div>
               </div>
             </ng-container>
@@ -470,7 +470,6 @@ export class DashboardComponent implements OnInit {
   private router = inject(Router);
 
   isAdmin = this.tokens.isAdmin.bind(this.tokens);
-  private apiHost = environment.apiBaseUrl.replace(/\/v1$/, '');
 
   readonly PAGE_SIZE = 60;
 
@@ -578,6 +577,12 @@ export class DashboardComponent implements OnInit {
 
   fullImageUrl(relativeUrl: string): string {
     return this.api.getImageUrl(relativeUrl);
+  }
+
+  onImgError(event: Event): void {
+    const img = event.target as HTMLImageElement;
+    console.error('[Image load failed]', img.src);
+    img.style.display = 'none';
   }
 
   readonly getMoodEmoji = getMoodEmoji;

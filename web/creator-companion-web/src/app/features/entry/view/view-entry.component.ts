@@ -84,6 +84,7 @@ import { marked } from 'marked';
                   [src]="fullImageUrl(img.url)"
                   [alt]="img.fileName"
                   loading="lazy"
+                  (error)="onImgError($event)"
                 />
               }
             </div>
@@ -291,6 +292,12 @@ export class ViewEntryComponent implements OnInit {
 
   fullImageUrl(url: string): string {
     return this.api.getImageUrl(url);
+  }
+
+  onImgError(event: Event): void {
+    const img = event.target as HTMLImageElement;
+    console.error('[Image load failed]', img.src);
+    img.style.display = 'none';
   }
 
   toggleFavorite(): void {

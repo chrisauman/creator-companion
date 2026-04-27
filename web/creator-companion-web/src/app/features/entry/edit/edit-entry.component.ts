@@ -109,7 +109,7 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
               <div class="image-grid">
                 @for (img of mediaList(); track img.id) {
                   <div class="image-thumb">
-                    <img [src]="fullImageUrl(img.url)" [alt]="img.fileName" />
+                    <img [src]="fullImageUrl(img.url)" [alt]="img.fileName" (error)="onImgError($event)" />
                     <button
                       class="image-thumb__remove"
                       (click)="removeMedia(img.id)"
@@ -654,6 +654,12 @@ export class EditEntryComponent implements OnInit, OnDestroy {
 
   fullImageUrl(relativeUrl: string): string {
     return this.api.getImageUrl(relativeUrl);
+  }
+
+  onImgError(event: Event): void {
+    const img = event.target as HTMLImageElement;
+    console.error('[Image load failed]', img.src);
+    img.style.display = 'none';
   }
 
   toggleFavorite(): void {

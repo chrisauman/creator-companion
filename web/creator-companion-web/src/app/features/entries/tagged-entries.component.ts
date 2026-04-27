@@ -81,7 +81,7 @@ import { getMoodEmoji } from '../../core/constants/moods';
 
             <!-- Thumbnail -->
             <div class="entry-row__thumb" *ngIf="entry.firstImageUrl">
-              <img [src]="fullImageUrl(entry.firstImageUrl)" [alt]="entry.title" />
+              <img [src]="fullImageUrl(entry.firstImageUrl)" [alt]="entry.title" (error)="onImgError($event)" />
             </div>
           </div>
         </ng-container>
@@ -184,6 +184,12 @@ export class TaggedEntriesComponent implements OnInit {
 
   fullImageUrl(relativeUrl: string): string {
     return this.api.getImageUrl(relativeUrl);
+  }
+
+  onImgError(event: Event): void {
+    const img = event.target as HTMLImageElement;
+    console.error('[Image load failed]', img.src);
+    img.style.display = 'none';
   }
 
   getDayAbbr(d: string): string {

@@ -52,8 +52,15 @@ public class R2StorageService : IStorageService, IDisposable
         await _client.DeleteObjectAsync(_bucket, storagePath);
     }
 
-    public string GetUrl(string storagePath) =>
-        $"{_publicUrl.TrimEnd('/')}/{Uri.EscapeDataString(storagePath)}";
+    public string GetUrl(string storagePath)
+    {
+        // Guard: if storagePath is already an absolute URL (e.g. legacy row), return as-is.
+        if (storagePath.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+            storagePath.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            return storagePath;
+
+        return $"{_publicUrl.TrimEnd('/')}/{Uri.EscapeDataString(storagePath)}";
+    }
 
     public void Dispose() => _client.Dispose();
 }
