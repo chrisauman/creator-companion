@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pricing — Creator Companion</title>
-  <meta name="description" content="Simple, honest pricing. Start free, upgrade when you're ready. $3/month or $30/year for the full experience.">
+  <meta name="description" content="Simple, honest pricing. Start free with no credit card. Upgrade for the full creative journaling experience — $3/month or $30/year.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -21,6 +21,75 @@
   <meta name="twitter:description" content="Simple, honest pricing. Start free, upgrade when you're ready. $3/month or $30/year for the full experience.">
   <meta name="twitter:image" content="https://www.creatorcompanionapp.com/og-image.png">
   <link rel="canonical" href="https://www.creatorcompanionapp.com/pricing.html">
+  <style>
+    .group-label {
+      font-size: .6875rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--color-accent);
+      margin: 2.5rem 0 .875rem;
+    }
+    .feature-cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3rem;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    @media (max-width: 640px) {
+      .feature-cols { grid-template-columns: 1fr; gap: 2rem; }
+    }
+    .feature-col h3 {
+      font-size: 1.125rem;
+      font-weight: 700;
+      margin-bottom: 1.5rem;
+      padding-bottom: .75rem;
+      border-bottom: 2px solid var(--color-border);
+    }
+    .feature-col--paid h3 {
+      border-color: var(--color-accent);
+      color: var(--color-accent);
+    }
+    .feature-group { margin-bottom: 1.75rem; }
+    .feature-group__label {
+      font-size: .6875rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      color: #999;
+      margin-bottom: .625rem;
+    }
+    .feature-list { list-style: none; padding: 0; margin: 0; }
+    .feature-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: .5rem;
+      font-size: .9375rem;
+      color: #444;
+      padding: .3rem 0;
+      line-height: 1.45;
+    }
+    .feature-list li .icon {
+      flex-shrink: 0;
+      font-style: normal;
+      margin-top: .05rem;
+    }
+    .feature-list li .icon--check { color: #22c55e; font-weight: 700; }
+    .feature-list li .icon--star  { color: var(--color-accent); }
+    .paid-note {
+      display: inline-block;
+      font-size: .75rem;
+      font-weight: 600;
+      background: #fdf4ff;
+      color: var(--color-accent);
+      border: 1px solid #e9d5ff;
+      border-radius: 100px;
+      padding: .1rem .45rem;
+      margin-left: .25rem;
+      vertical-align: middle;
+    }
+  </style>
 </head>
 <body>
 
@@ -42,14 +111,16 @@
   <section class="page-hero">
     <div class="container">
       <h1 class="page-hero__title">Simple, honest pricing</h1>
-      <p class="page-hero__sub">Start free with no credit card. Upgrade any time for the full experience. Cancel any time — no questions asked.</p>
+      <p class="page-hero__sub">Start free with no credit card. Upgrade any time for the full experience.<br>Cancel any time — no questions asked.</p>
     </div>
   </section>
 
   <!-- Plan cards -->
   <section class="section">
     <div class="container">
-      <div class="pricing-preview" style="max-width:720px;margin:0 auto 4rem">
+      <div class="pricing-preview" style="max-width:760px;margin:0 auto 5rem">
+
+        <!-- Free card -->
         <div class="plan-card">
           <div class="plan-card__name">Free</div>
           <div class="plan-card__price">
@@ -62,13 +133,19 @@
             <li><span class="check">✓</span> 1 photo per entry</li>
             <li><span class="check">✓</span> 1 journal</li>
             <li><span class="check">✓</span> Up to 3 tags per entry</li>
-            <li><span class="check">✓</span> Streak tracking</li>
-            <li><span class="check">✓</span> Search by title, tag, or date</li>
-            <li><span class="check">✓</span> JSON &amp; text export</li>
+            <li><span class="check">✓</span> Daily streak tracking</li>
+            <li><span class="check">✓</span> Search entries by title, tag, or date</li>
             <li><span class="check">✓</span> Daily reminder at noon</li>
+            <li><span class="check">✓</span> 48-hour trash recovery</li>
+            <li><span class="check">✓</span> Data export (JSON &amp; text)</li>
+            <li><span class="check">✓</span> 100% private — no sharing, no audience</li>
+            <li><span class="check">✓</span> Secure cloud backup</li>
+            <li><span class="check">✓</span> Works as an app on iPhone &amp; Android</li>
           </ul>
           <a href="signup.html" class="btn btn--outline btn--full">Get started free</a>
         </div>
+
+        <!-- Paid card -->
         <div class="plan-card plan-card--featured">
           <div class="plan-card__badge">Most popular</div>
           <div class="plan-card__name">Paid</div>
@@ -77,25 +154,168 @@
             <div class="annual">or $30/year — save 2 months free</div>
           </div>
           <ul class="plan-features">
+            <li><span class="check">✓</span> <strong>Everything in Free</strong>, plus:</li>
             <li><span class="check">✓</span> Up to 5 entries per day</li>
             <li><span class="check">✓</span> Up to 2,500 words per entry</li>
             <li><span class="check">✓</span> Up to 20 photos per entry</li>
             <li><span class="check">✓</span> Unlimited journals</li>
             <li><span class="check">✓</span> Up to 20 tags per entry</li>
-            <li><span class="check">✓</span> Backfill past entries (up to 2 days)</li>
-            <li><span class="check">✓</span> Streak pause (10 days/month)</li>
-            <li><span class="check">✓</span> Recover deleted entries (48hr)</li>
-            <li><span class="check">✓</span> Mood tracking &amp; favorites</li>
-            <li><span class="check">✓</span> Daily motivation card</li>
-            <li><span class="check">✓</span> Custom reminders (up to 5)</li>
             <li><span class="check">✓</span> Rich text formatting</li>
+            <li><span class="check">✓</span> Mood tracking on every entry</li>
+            <li><span class="check">✓</span> Favorite &amp; filter entries</li>
+            <li><span class="check">✓</span> Backfill entries up to 2 days back</li>
+            <li><span class="check">✓</span> Streak Pause — up to 10 days/month</li>
+            <li><span class="check">✓</span> Recover deleted entries (48-hr window)</li>
+            <li><span class="check">✓</span> Custom reminder time &amp; message</li>
+            <li><span class="check">✓</span> Up to 5 additional custom reminders</li>
+            <li><span class="check">✓</span> Smart reminder throttling</li>
+            <li><span class="check">✓</span> Daily Spark — 290+ curated creative insights</li>
+            <li><span class="check">✓</span> Milestone titles &amp; achievement badges</li>
           </ul>
-          <a href="signup.html" class="btn btn--primary btn--full">Start free trial</a>
+          <a href="signup.html" class="btn btn--primary btn--full">Get started free</a>
+        </div>
+
+      </div>
+
+      <!-- Full feature breakdown -->
+      <h2 class="section__title" style="text-align:center;margin-bottom:.5rem">Everything you get</h2>
+      <p style="text-align:center;color:#777;margin-bottom:3rem;font-size:.9375rem">A full breakdown of every feature, by plan.</p>
+
+      <div class="feature-cols">
+
+        <!-- Free column -->
+        <div class="feature-col">
+          <h3>Free — $0 forever</h3>
+
+          <div class="feature-group">
+            <div class="feature-group__label">Writing</div>
+            <ul class="feature-list">
+              <li><i class="icon icon--check">✓</i> 1 entry per day</li>
+              <li><i class="icon icon--check">✓</i> Up to 100 words per entry</li>
+              <li><i class="icon icon--check">✓</i> 1 photo per entry</li>
+            </ul>
+          </div>
+
+          <div class="feature-group">
+            <div class="feature-group__label">Organization</div>
+            <ul class="feature-list">
+              <li><i class="icon icon--check">✓</i> 1 journal</li>
+              <li><i class="icon icon--check">✓</i> Up to 3 tags per entry</li>
+              <li><i class="icon icon--check">✓</i> Search by title, tag, or date</li>
+              <li><i class="icon icon--check">✓</i> Tag library (rename &amp; delete)</li>
+              <li><i class="icon icon--check">✓</i> Sort by newest, oldest, or date</li>
+            </ul>
+          </div>
+
+          <div class="feature-group">
+            <div class="feature-group__label">Streaks &amp; Progress</div>
+            <ul class="feature-list">
+              <li><i class="icon icon--check">✓</i> Daily streak counter</li>
+              <li><i class="icon icon--check">✓</i> Longest streak record</li>
+              <li><i class="icon icon--check">✓</i> Total entries &amp; active days</li>
+            </ul>
+          </div>
+
+          <div class="feature-group">
+            <div class="feature-group__label">Reminders</div>
+            <ul class="feature-list">
+              <li><i class="icon icon--check">✓</i> 1 daily reminder at 12:00 PM</li>
+              <li><i class="icon icon--check">✓</i> Enable / disable toggle</li>
+              <li><i class="icon icon--check">✓</i> Push notifications on any device</li>
+            </ul>
+          </div>
+
+          <div class="feature-group">
+            <div class="feature-group__label">Privacy &amp; Data</div>
+            <ul class="feature-list">
+              <li><i class="icon icon--check">✓</i> 100% private — no social features</li>
+              <li><i class="icon icon--check">✓</i> Secure cloud backup</li>
+              <li><i class="icon icon--check">✓</i> Export as JSON or plain text</li>
+              <li><i class="icon icon--check">✓</i> 48-hour trash recovery</li>
+            </ul>
+          </div>
+
+          <div class="feature-group">
+            <div class="feature-group__label">Account</div>
+            <ul class="feature-list">
+              <li><i class="icon icon--check">✓</i> Email &amp; password authentication</li>
+              <li><i class="icon icon--check">✓</i> Password reset via email</li>
+              <li><i class="icon icon--check">✓</i> Installs as an app on any device</li>
+              <li><i class="icon icon--check">✓</i> Works in any modern browser</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Paid column -->
+        <div class="feature-col feature-col--paid">
+          <h3>Paid — $3/mo or $30/yr</h3>
+
+          <div class="feature-group">
+            <div class="feature-group__label">Writing</div>
+            <ul class="feature-list">
+              <li><i class="icon icon--star">✦</i> Up to <strong>5 entries</strong> per day</li>
+              <li><i class="icon icon--star">✦</i> Up to <strong>2,500 words</strong> per entry</li>
+              <li><i class="icon icon--star">✦</i> Up to <strong>20 photos</strong> per entry</li>
+              <li><i class="icon icon--star">✦</i> Rich text formatting (bold, italic, lists)</li>
+              <li><i class="icon icon--star">✦</i> Mood tracking on every entry</li>
+              <li><i class="icon icon--star">✦</i> Favorite entries &amp; filter by favorites</li>
+              <li><i class="icon icon--star">✦</i> Backfill — write entries up to 2 days back</li>
+            </ul>
+          </div>
+
+          <div class="feature-group">
+            <div class="feature-group__label">Organization</div>
+            <ul class="feature-list">
+              <li><i class="icon icon--star">✦</i> <strong>Unlimited journals</strong></li>
+              <li><i class="icon icon--star">✦</i> Up to <strong>20 tags</strong> per entry</li>
+              <li><i class="icon icon--star">✦</i> Everything in Free</li>
+            </ul>
+          </div>
+
+          <div class="feature-group">
+            <div class="feature-group__label">Streak Protection</div>
+            <ul class="feature-list">
+              <li><i class="icon icon--star">✦</i> <strong>Streak Pause</strong> — pause up to 10 days/month for life, travel, or illness without losing your streak</li>
+              <li><i class="icon icon--star">✦</i> <strong>Backfill</strong> — missed yesterday? Add an entry for any of the past 2 days</li>
+              <li><i class="icon icon--star">✦</i> Milestone titles as your streak grows</li>
+              <li><i class="icon icon--star">✦</i> Achievement celebrations at every milestone</li>
+            </ul>
+          </div>
+
+          <div class="feature-group">
+            <div class="feature-group__label">Reminders</div>
+            <ul class="feature-list">
+              <li><i class="icon icon--star">✦</i> Set any reminder time (not just noon)</li>
+              <li><i class="icon icon--star">✦</i> Write a <strong>custom reminder message</strong></li>
+              <li><i class="icon icon--star">✦</i> Up to <strong>5 additional reminders</strong> at different times</li>
+              <li><i class="icon icon--star">✦</i> Smart throttling — reminders adapt based on how long you've been away</li>
+              <li><i class="icon icon--star">✦</i> Push notifications on every device you use</li>
+            </ul>
+          </div>
+
+          <div class="feature-group">
+            <div class="feature-group__label">Daily Spark</div>
+            <ul class="feature-list">
+              <li><i class="icon icon--star">✦</i> A fresh curated insight every single day</li>
+              <li><i class="icon icon--star">✦</i> 290+ entries across 17 creative categories</li>
+              <li><i class="icon icon--star">✦</i> Topics: resistance, discipline, deep work, originality, fear, mastery, courage, and more</li>
+              <li><i class="icon icon--star">✦</i> Rotates through the full library — no repeats until you've seen them all</li>
+              <li><i class="icon icon--star">✦</i> Toggle on or off from your account</li>
+            </ul>
+          </div>
+
+          <div class="feature-group">
+            <div class="feature-group__label">Privacy &amp; Data</div>
+            <ul class="feature-list">
+              <li><i class="icon icon--star">✦</i> <strong>Recover deleted entries</strong> within 48 hours</li>
+              <li><i class="icon icon--star">✦</i> Everything in Free</li>
+            </ul>
+          </div>
         </div>
       </div>
 
       <!-- Full comparison table -->
-      <h2 class="section__title" style="margin-bottom:1.5rem">Full feature comparison</h2>
+      <h2 class="section__title" style="margin-top:5rem;margin-bottom:1.5rem">Side-by-side comparison</h2>
       <div style="overflow-x:auto">
         <table class="compare-table">
           <thead>
@@ -107,99 +327,45 @@
           </thead>
           <tbody>
             <tr class="section-row"><td colspan="3">Writing</td></tr>
-            <tr>
-              <td>Entries per day</td>
-              <td>1</td>
-              <td>Up to 5</td>
-            </tr>
-            <tr>
-              <td>Words per entry</td>
-              <td>100</td>
-              <td>2,500</td>
-            </tr>
-            <tr>
-              <td>Rich text formatting</td>
-              <td><span class="check-no">✕</span></td>
-              <td><span class="check-yes">✓</span></td>
-            </tr>
-            <tr>
-              <td>Backfill past entries</td>
-              <td><span class="check-no">✕</span></td>
-              <td><span class="check-yes">✓</span> Up to 2 days back</td>
-            </tr>
+            <tr><td>Entries per day</td><td>1</td><td>Up to 5</td></tr>
+            <tr><td>Words per entry</td><td>100</td><td>2,500</td></tr>
+            <tr><td>Photos per entry</td><td>1</td><td>Up to 20</td></tr>
+            <tr><td>Rich text formatting</td><td><span class="check-no">✕</span></td><td><span class="check-yes">✓</span></td></tr>
+            <tr><td>Mood tracking</td><td><span class="check-no">✕</span></td><td><span class="check-yes">✓</span></td></tr>
+            <tr><td>Favorite entries</td><td><span class="check-no">✕</span></td><td><span class="check-yes">✓</span></td></tr>
+            <tr><td>Backfill past entries</td><td><span class="check-no">✕</span></td><td><span class="check-yes">✓</span> Up to 2 days back</td></tr>
 
-            <tr class="section-row"><td colspan="3">Media &amp; organization</td></tr>
-            <tr>
-              <td>Photos per entry</td>
-              <td>1</td>
-              <td>Up to 20</td>
-            </tr>
-            <tr>
-              <td>Journals</td>
-              <td>1</td>
-              <td>Unlimited</td>
-            </tr>
-            <tr>
-              <td>Tags per entry</td>
-              <td>Up to 3</td>
-              <td>Up to 20</td>
-            </tr>
-            <tr>
-              <td>Mood tracking</td>
-              <td><span class="check-no">✕</span></td>
-              <td><span class="check-yes">✓</span></td>
-            </tr>
-            <tr>
-              <td>Favorite entries</td>
-              <td><span class="check-no">✕</span></td>
-              <td><span class="check-yes">✓</span></td>
-            </tr>
+            <tr class="section-row"><td colspan="3">Organization</td></tr>
+            <tr><td>Journals</td><td>1</td><td>Unlimited</td></tr>
+            <tr><td>Tags per entry</td><td>Up to 3</td><td>Up to 20</td></tr>
+            <tr><td>Search entries</td><td><span class="check-yes">✓</span></td><td><span class="check-yes">✓</span></td></tr>
+            <tr><td>Tag library (rename &amp; delete)</td><td><span class="check-yes">✓</span></td><td><span class="check-yes">✓</span></td></tr>
 
-            <tr class="section-row"><td colspan="3">Streaks &amp; accountability</td></tr>
-            <tr>
-              <td>Streak tracking</td>
-              <td><span class="check-yes">✓</span></td>
-              <td><span class="check-yes">✓</span></td>
-            </tr>
-            <tr>
-              <td>Streak pause</td>
-              <td><span class="check-no">✕</span></td>
-              <td><span class="check-yes">✓</span> 10 days/month</td>
-            </tr>
-            <tr>
-              <td>Daily motivation card</td>
-              <td><span class="check-no">✕</span></td>
-              <td><span class="check-yes">✓</span></td>
-            </tr>
+            <tr class="section-row"><td colspan="3">Streaks &amp; Accountability</td></tr>
+            <tr><td>Daily streak tracking</td><td><span class="check-yes">✓</span></td><td><span class="check-yes">✓</span></td></tr>
+            <tr><td>Longest streak record</td><td><span class="check-yes">✓</span></td><td><span class="check-yes">✓</span></td></tr>
+            <tr><td>Streak Pause (10 days/month)</td><td><span class="check-no">✕</span></td><td><span class="check-yes">✓</span></td></tr>
+            <tr><td>Milestone titles &amp; badges</td><td><span class="check-no">✕</span></td><td><span class="check-yes">✓</span></td></tr>
+            <tr><td>Achievement celebrations</td><td><span class="check-no">✕</span></td><td><span class="check-yes">✓</span></td></tr>
+
+            <tr class="section-row"><td colspan="3">Daily Spark</td></tr>
+            <tr><td>Daily curated creative insight</td><td><span class="check-no">✕</span></td><td><span class="check-yes">✓</span></td></tr>
+            <tr><td>290+ entries across 17 categories</td><td><span class="check-no">✕</span></td><td><span class="check-yes">✓</span></td></tr>
+            <tr><td>No repeats until full library seen</td><td><span class="check-no">✕</span></td><td><span class="check-yes">✓</span></td></tr>
 
             <tr class="section-row"><td colspan="3">Reminders</td></tr>
-            <tr>
-              <td>Daily reminder</td>
-              <td>Noon (fixed)</td>
-              <td>Custom time &amp; message</td>
-            </tr>
-            <tr>
-              <td>Additional reminders</td>
-              <td><span class="check-no">✕</span></td>
-              <td><span class="check-yes">✓</span> Up to 5 total</td>
-            </tr>
+            <tr><td>Daily reminder</td><td>Noon (fixed)</td><td>Any time you choose</td></tr>
+            <tr><td>Custom reminder message</td><td><span class="check-no">✕</span></td><td><span class="check-yes">✓</span></td></tr>
+            <tr><td>Additional reminders</td><td><span class="check-no">✕</span></td><td><span class="check-yes">✓</span> Up to 5</td></tr>
+            <tr><td>Smart frequency throttling</td><td><span class="check-no">✕</span></td><td><span class="check-yes">✓</span></td></tr>
+            <tr><td>Push notifications</td><td><span class="check-yes">✓</span></td><td><span class="check-yes">✓</span></td></tr>
 
-            <tr class="section-row"><td colspan="3">Data &amp; privacy</td></tr>
-            <tr>
-              <td>Export (JSON &amp; text)</td>
-              <td><span class="check-yes">✓</span></td>
-              <td><span class="check-yes">✓</span></td>
-            </tr>
-            <tr>
-              <td>Recover deleted entries</td>
-              <td><span class="check-no">✕</span></td>
-              <td><span class="check-yes">✓</span> 48-hour window</td>
-            </tr>
-            <tr>
-              <td>Private &amp; secure</td>
-              <td><span class="check-yes">✓</span></td>
-              <td><span class="check-yes">✓</span></td>
-            </tr>
+            <tr class="section-row"><td colspan="3">Privacy &amp; Data</td></tr>
+            <tr><td>100% private entries</td><td><span class="check-yes">✓</span></td><td><span class="check-yes">✓</span></td></tr>
+            <tr><td>Secure cloud backup</td><td><span class="check-yes">✓</span></td><td><span class="check-yes">✓</span></td></tr>
+            <tr><td>Export as JSON or plain text</td><td><span class="check-yes">✓</span></td><td><span class="check-yes">✓</span></td></tr>
+            <tr><td>48-hour trash recovery</td><td><span class="check-yes">✓</span></td><td><span class="check-yes">✓</span></td></tr>
+            <tr><td>Recover deleted entries</td><td><span class="check-no">✕</span></td><td><span class="check-yes">✓</span></td></tr>
           </tbody>
         </table>
       </div>
@@ -234,13 +400,18 @@
         </details>
 
         <details class="faq-item">
-          <summary class="faq-q">What is streak pause?</summary>
-          <p class="faq-a">Life happens. The streak pause feature lets paid users pause their streak for up to 10 days per month — for vacations, illness, or anything else — without losing their progress. You set the pause dates in advance and your streak picks up right where it left off.</p>
+          <summary class="faq-q">What is Streak Pause?</summary>
+          <p class="faq-a">Life happens. The Streak Pause feature lets paid users pause their streak for up to 10 days per month — for vacations, illness, or anything else — without losing their progress. Your streak picks up right where it left off when you return.</p>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-q">What is Daily Spark?</summary>
+          <p class="faq-a">Daily Spark is a curated content card that appears on your dashboard each day. It delivers a fresh insight from a library of 290+ hand-curated entries covering creativity, resistance, discipline, deep work, originality, fear, long-term mastery, and more. Think of it as a daily nudge from some of the best thinking on the creative life — rotating through the full library with no repeats until you've seen them all.</p>
         </details>
 
         <details class="faq-item">
           <summary class="faq-q">Can I use Creator Companion on my phone?</summary>
-          <p class="faq-a">Yes. Creator Companion is a progressive web app, which means you can install it on your iPhone or Android home screen directly from your browser — no app store required. On iPhone, tap Share → Add to Home Screen. On Android, tap the menu → Install App. It opens full screen and feels like a native app.</p>
+          <p class="faq-a">Yes. Creator Companion is a progressive web app (PWA), which means you can install it on your iPhone or Android home screen directly from your browser — no app store required. On iPhone, tap Share → Add to Home Screen. On Android, tap the menu → Install App. It opens full screen and feels like a native app.</p>
         </details>
 
         <details class="faq-item">
