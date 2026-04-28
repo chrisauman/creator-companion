@@ -249,6 +249,9 @@ public class AuthService(AppDbContext db, IConfiguration config, IEmailService e
             rt.RevokedAt = DateTime.UtcNow;
 
         await db.SaveChangesAsync();
+
+        try { await emailService.SendPasswordChangedAsync(resetToken.User.Email); }
+        catch (Exception ex) { Console.WriteLine($"[WARN] Failed to send password changed email: {ex.Message}"); }
     }
 
     private async Task<AuthResponse> IssueTokensAsync(User user)

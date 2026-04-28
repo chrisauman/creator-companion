@@ -66,4 +66,72 @@ public class ResendEmailService(IResend resend, IConfiguration config) : IEmailS
 
         await resend.EmailSendAsync(message);
     }
+
+    public async Task SendPaymentReceiptAsync(string toEmail, string username)
+    {
+        var fromEmail = config["Resend:FromEmail"] ?? "noreply@creatorcompanion.app";
+        var appName   = config["App:Name"] ?? "Creator Companion";
+
+        var message = new EmailMessage
+        {
+            From    = $"{appName} <{fromEmail}>",
+            To      = { toEmail },
+            Subject = $"You're on the {appName} Paid plan!",
+            HtmlBody = $"""
+                <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:2rem">
+                  <h2 style="margin-bottom:.5rem">Welcome to the full experience, {username}!</h2>
+                  <p style="color:#555">Your subscription is active. All paid features are now unlocked:</p>
+                  <ul style="color:#555;line-height:2">
+                    <li>Up to 5 entries per day, 2,500 words each</li>
+                    <li>Multiple journals</li>
+                    <li>Image uploads, mood tracking, favorites</li>
+                    <li>Streak pause, backfill, and entry recovery</li>
+                    <li>Custom reminder times and messages</li>
+                    <li>Daily Spark — curated creative insights</li>
+                  </ul>
+                  <p style="color:#555">Keep showing up. That's all it takes.</p>
+                  <a href="https://app.creatorcompanionapp.com/dashboard"
+                     style="display:inline-block;margin:1.5rem 0;padding:.75rem 1.5rem;
+                            background:#6c63ff;color:#fff;border-radius:8px;
+                            text-decoration:none;font-weight:600">
+                    Go to dashboard
+                  </a>
+                  <p style="color:#999;font-size:.85rem">
+                    Manage your subscription anytime from Account settings.
+                  </p>
+                </div>
+                """
+        };
+
+        await resend.EmailSendAsync(message);
+    }
+
+    public async Task SendPasswordChangedAsync(string toEmail)
+    {
+        var fromEmail = config["Resend:FromEmail"] ?? "noreply@creatorcompanion.app";
+        var appName   = config["App:Name"] ?? "Creator Companion";
+
+        var message = new EmailMessage
+        {
+            From    = $"{appName} <{fromEmail}>",
+            To      = { toEmail },
+            Subject = $"Your {appName} password was changed",
+            HtmlBody = $"""
+                <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:2rem">
+                  <h2 style="margin-bottom:.5rem">Password changed</h2>
+                  <p style="color:#555">Your password was successfully updated. All existing sessions
+                     have been signed out as a security precaution.</p>
+                  <p style="color:#555">If you didn't make this change, please
+                     <a href="https://app.creatorcompanionapp.com/forgot-password"
+                        style="color:#6c63ff">reset your password immediately</a>
+                     and contact support.</p>
+                  <p style="color:#999;font-size:.85rem;margin-top:2rem">
+                    This is an automated security notification from {appName}.
+                  </p>
+                </div>
+                """
+        };
+
+        await resend.EmailSendAsync(message);
+    }
 }

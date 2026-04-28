@@ -1,6 +1,21 @@
 // Creator Companion Service Worker
-// Handles Web Push notifications. When Capacitor is added, this file
-// is replaced by Capacitor's native push plugin.
+// Handles Web Push notifications and offline fallback.
+
+const OFFLINE_PAGE = '/offline.html';
+
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open('cc-offline-v1').then(cache => cache.add(OFFLINE_PAGE))
+  );
+  self.skipWaiting();
+});
+
+self.addEventListener('fetch', event => {
+  if (event.request.mode !== 'navigate') return;
+  event.respondWith(
+    fetch(event.request).catch(() => caches.match(OFFLINE_PAGE))
+  );
+});
 
 self.addEventListener('push', event => {
   if (!event.data) return;

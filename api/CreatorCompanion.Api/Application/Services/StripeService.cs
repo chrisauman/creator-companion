@@ -1,4 +1,5 @@
 using CreatorCompanion.Api.Application.Interfaces;
+using Microsoft.Extensions.Logging;
 using CreatorCompanion.Api.Common;
 using CreatorCompanion.Api.Domain.Enums;
 using CreatorCompanion.Api.Domain.Models;
@@ -10,7 +11,7 @@ using Stripe.Checkout;
 
 namespace CreatorCompanion.Api.Application.Services;
 
-public class StripeService(AppDbContext db, IOptions<StripeConfig> config) : IStripeService
+public class StripeService(AppDbContext db, IOptions<StripeConfig> config, IEmailService email) : IStripeService
 {
     private readonly StripeConfig _cfg = config.Value;
 
@@ -112,6 +113,9 @@ public class StripeService(AppDbContext db, IOptions<StripeConfig> config) : ISt
         user.UpdatedAt            = DateTime.UtcNow;
 
         await db.SaveChangesAsync();
+
+        try { await email.SendPaymentReceiptAsync(user.Email, user.Username); }
+        catch (Exception ex) { Console.WriteLine($"[WARN] Failed to send receipt email to {user.Email}: {ex.Message}"); }
     }
 
     private async Task HandleSubscriptionUpdatedAsync(Subscription? sub)

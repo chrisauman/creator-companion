@@ -102,5 +102,5 @@ export const routes: Routes = [
     loadComponent: () => import('./features/billing/billing-cancel.component').then(m => m.BillingCancelComponent)
   },
 
-  { path: '**', redirectTo: 'dashboard' }
+  { path: '**', loadComponent: () => import('./features/not-found/not-found.component').then(m => m.NotFoundComponent) }
 ];
