@@ -235,12 +235,14 @@ try
     app.MapControllers();
     app.MapGet("/health", () => Results.Ok(new { status = "healthy" }));
 
-    // Auto-apply migrations on startup
+    // Auto-apply migrations and seed data on startup
     using (var scope = app.Services.CreateScope())
     {
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         db.Database.Migrate();
         SerilogLog.Information("Database migrations applied.");
+        await MotivationSeeder.SeedAsync(db);
+        SerilogLog.Information("Motivation library seeded.");
     }
 
     app.Run();
