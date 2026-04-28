@@ -18,5 +18,6 @@ public enum MotivationCategory
     ArtisticCourage,
     CreativeRelationships,
     EnvironmentAndRitual,
-    PerfectionismAndFinishing
+    PerfectionismAndFinishing,
+    RecommendedBooks
 }

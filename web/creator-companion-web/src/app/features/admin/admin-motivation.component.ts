@@ -24,6 +24,7 @@ const CATEGORIES: Category[] = [
   'CreativeRelationships',
   'EnvironmentAndRitual',
   'PerfectionismAndFinishing',
+  'RecommendedBooks',
 ];
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -44,6 +45,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   CreativeRelationships:          'Creative Relationships',
   EnvironmentAndRitual:           'Environment & Ritual',
   PerfectionismAndFinishing:      'Perfectionism & Finishing',
+  RecommendedBooks:               'Recommended Books',
 };
 
 @Component({
