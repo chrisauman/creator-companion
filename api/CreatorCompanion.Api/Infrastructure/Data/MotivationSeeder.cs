@@ -9,7 +9,10 @@ public static class MotivationSeeder
 {
     public static async Task SeedAsync(AppDbContext db)
     {
-        if (await db.MotivationEntries.AnyAsync()) return;
+        if (await db.MotivationEntries.CountAsync() >= 50) return;
+
+        var existing = await db.MotivationEntries.ToListAsync();
+        db.MotivationEntries.RemoveRange(existing);
 
         var entries = new List<MotivationEntry>
         {

@@ -19,7 +19,7 @@ import { ReminderConfigResponse, UpdateReminderConfigRequest } from '../../core/
       <nav class="admin-nav">
         <a routerLink="/admin" class="admin-nav__link">Overview</a>
         <a routerLink="/admin/users" class="admin-nav__link">Users</a>
-        <a routerLink="/admin/motivation" class="admin-nav__link">Motivation</a>
+        <a routerLink="/admin/motivation" class="admin-nav__link">Content Library</a>
         <a routerLink="/admin/reminders" class="admin-nav__link admin-nav__link--active">Reminders</a>
       </nav>
 
