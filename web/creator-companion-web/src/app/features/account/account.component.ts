@@ -737,7 +737,13 @@ export class AccountComponent implements OnInit {
   private async initPushState(): Promise<void> {
     this.pushSupported.set(this.push.isSupported);
     if (this.push.isSupported) {
-      this.pushEnabled.set(await this.push.isSubscribed());
+      const subscribed = await this.push.isSubscribed();
+      this.pushEnabled.set(subscribed);
+      if (subscribed) {
+        // Re-sync to server on every load — keeps the server in sync if the
+        // subscription was ever saved to the browser but not the server.
+        this.push.syncToServer();
+      }
     }
   }
 

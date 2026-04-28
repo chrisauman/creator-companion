@@ -24,6 +24,29 @@ export class PushService {
     }
   }
 
+  /**
+   * If the browser already has a push subscription, re-save it to the server.
+   * Handles cases where the server lost the record (e.g. first enable failed
+   * mid-flight, or the subscription pre-dated the current server state).
+   */
+  async syncToServer(): Promise<void> {
+    if (!this.isSupported) return;
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+      if (!sub) return;
+      const json = sub.toJSON();
+      await this.api.pushSubscribe({
+        endpoint: json.endpoint!,
+        p256dh:   (json.keys as any)['p256dh'],
+        auth:     (json.keys as any)['auth'],
+        platform: 'web'
+      }).toPromise();
+    } catch {
+      // Best-effort — don't surface errors to the user
+    }
+  }
+
   async subscribe(): Promise<boolean> {
     if (!this.isSupported) return false;
 

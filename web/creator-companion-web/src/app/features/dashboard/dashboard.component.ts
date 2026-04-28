@@ -719,7 +719,11 @@ export class DashboardComponent implements OnInit {
   private async initPushNudge(): Promise<void> {
     if (!this.push.isSupported) return;
     const subscribed = await this.push.isSubscribed();
-    if (!subscribed) this.showPushNudge.set(true);
+    if (subscribed) {
+      this.push.syncToServer();
+    } else {
+      this.showPushNudge.set(true);
+    }
   }
 
   async enablePushFromNudge(): Promise<void> {
