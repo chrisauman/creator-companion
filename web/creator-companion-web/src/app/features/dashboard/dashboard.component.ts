@@ -48,7 +48,7 @@ import { PushService } from '../../core/services/push.service';
           <div class="motivation-card" [class.motivation-card--expanded]="motivationExpanded()">
             <div class="motivation-header" (click)="motivationExpanded.set(!motivationExpanded())">
               <div class="motivation-header__left">
-                <span class="motivation-label">Daily Motivation</span>
+                <span class="motivation-label">Daily Spark</span>
                 <p class="motivation-takeaway">{{ motivation()!.takeaway }}</p>
               </div>
               <button class="motivation-toggle" [attr.aria-expanded]="motivationExpanded()">

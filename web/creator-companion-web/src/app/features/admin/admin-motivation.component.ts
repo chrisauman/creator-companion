@@ -55,7 +55,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   template: `
     <div class="admin-page">
       <header class="admin-header">
-        <h1>Motivation Library</h1>
+        <h1>Daily Spark Library</h1>
         <a routerLink="/dashboard" class="btn btn--ghost btn--sm">← Back to App</a>
       </header>
 

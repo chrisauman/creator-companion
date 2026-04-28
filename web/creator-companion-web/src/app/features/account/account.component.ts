@@ -260,8 +260,8 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log an entry to keep your streak a
             </div>
             <div class="pref-row">
               <div class="pref-info">
-                <p class="pref-label">Daily Motivation</p>
-                <p class="text-sm text-muted">Show an encouraging message on your dashboard each day.</p>
+                <p class="pref-label">Daily Spark</p>
+                <p class="text-sm text-muted">Show a daily insight on creativity, resistance, mastery, and more.</p>
               </div>
               <label class="toggle-switch">
                 <input type="checkbox"
