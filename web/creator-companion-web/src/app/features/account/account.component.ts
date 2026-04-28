@@ -75,7 +75,7 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log an entry to keep your streak a
           @if (user()?.tier === 'Free') {
             <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid var(--color-border-light)">
               <p class="text-muted text-sm" style="margin-bottom:.875rem">
-                Upgrade for 5 entries/day, 2,500 words, multiple journals, and all features.
+                Upgrade for 5 entries/day, 2,500 words, photos, mood tracking, and all features.
               </p>
               <div style="display:flex;gap:.625rem;flex-wrap:wrap">
                 <button class="btn btn--primary btn--sm" (click)="upgrade('monthly')" [disabled]="upgrading()">
