@@ -20,7 +20,7 @@ const STEPS: Step[] = [
   {
     icon: '🔥',
     title: 'Your streak is your story.',
-    body: 'Every day you write, your streak grows. Missing a day breaks it. That gentle pressure is the whole point — it turns intention into action, and action into identity.'
+    body: 'Every day you write, your streak grows. Missing a day breaks it. That gentle pressure is the whole point — it turns intention into action, and action into identity. Tip: If you miss a day, you can go back and add an entry within 48 hours.'
   },
   {
     icon: '🔒',
@@ -30,7 +30,7 @@ const STEPS: Step[] = [
   {
     icon: '🔔',
     title: 'Never miss a day.',
-    body: 'A daily reminder is the difference between a habit you intend to build and one you actually build. Enable notifications and we\'ll nudge you at the right time.'
+    body: 'A daily reminder is the difference between a habit you intend to build and one you actually build. Enable notifications and we\'ll nudge you at the right time. Tip: You may create up to 5 additional, custom reminders.'
   },
   {
     icon: '✏️',
