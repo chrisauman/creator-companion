@@ -6,6 +6,12 @@
       "runtimeExecutable": "npx",
       "runtimeArgs": ["serve", "-l", "4300", "."],
       "port": 4300
+    },
+    {
+      "name": "marketing",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "-l", "4301", "marketing"],
+      "port": 4301
     }
   ]
 }

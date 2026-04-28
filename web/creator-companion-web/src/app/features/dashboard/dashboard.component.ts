@@ -8,6 +8,7 @@ import { TokenService } from '../../core/services/token.service';
 import { StreakStats, EntryListItem, MotivationEntry } from '../../core/models/models';
 import { getMoodEmoji } from '../../core/constants/moods';
 import { MILESTONES, getMilestoneForDays, getMilestoneIndex, Milestone } from '../../core/constants/milestones';
+import { PushService } from '../../core/services/push.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -63,6 +64,21 @@ import { MILESTONES, getMilestoneForDays, getMilestoneIndex, Milestone } from '.
             <div class="motivation-body">
               <p class="motivation-content">{{ motivation()!.fullContent }}</p>
             </div>
+          </div>
+        }
+
+        <!-- Push notification nudge -->
+        @if (showPushNudge()) {
+          <div class="push-nudge">
+            <div class="push-nudge__text">
+              <span class="push-nudge__icon">🔔</span>
+              <span>Enable notifications to receive daily reminders and keep your streak alive.</span>
+            </div>
+            <button class="btn btn--sm push-nudge__btn"
+                    [disabled]="pushNudgeWorking()"
+                    (click)="enablePushFromNudge()">
+              {{ pushNudgeWorking() ? 'Enabling…' : 'Enable' }}
+            </button>
           </div>
         }
 
@@ -233,6 +249,21 @@ import { MILESTONES, getMilestoneForDays, getMilestoneIndex, Milestone } from '.
     .nav-link { color: var(--color-accent-dark); font-size: .9375rem; font-weight: 500; text-decoration: none; &:hover { text-decoration: underline; } }
 
     .main-content { padding-top: 1.5rem; padding-bottom: 4rem; }
+
+    .push-nudge {
+      display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+      padding: .75rem 1rem;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      margin-bottom: 1rem;
+    }
+    .push-nudge__text {
+      display: flex; align-items: center; gap: .5rem;
+      font-size: .875rem; color: var(--color-text-2); line-height: 1.4;
+    }
+    .push-nudge__icon { font-size: 1rem; flex-shrink: 0; }
+    .push-nudge__btn { flex-shrink: 0; }
 
     .new-entry-bar {
       margin-bottom: 1.25rem;
@@ -529,11 +560,15 @@ export class DashboardComponent implements OnInit {
   private api    = inject(ApiService);
   private auth   = inject(AuthService);
   private tokens = inject(TokenService);
+  private push   = inject(PushService);
   private router = inject(Router);
 
   isAdmin = this.tokens.isAdmin.bind(this.tokens);
 
   readonly PAGE_SIZE = 60;
+
+  showPushNudge   = signal(false);
+  pushNudgeWorking = signal(false);
 
   streak     = signal<StreakStats | null>(null);
   isPaid     = signal(false);
@@ -584,6 +619,8 @@ export class DashboardComponent implements OnInit {
 
   ngOnInit(): void {
     this.auth.loadCapabilities().subscribe(caps => this.isPaid.set(caps.canFavorite));
+    this.initPushNudge();
+
 
     this.api.getStreak().subscribe({
       next: s => { this.streak.set(s); this.checkMilestoneCelebration(s.currentStreak); },
@@ -677,6 +714,19 @@ export class DashboardComponent implements OnInit {
 
   dismissCelebration(): void {
     this.showCelebration.set(false);
+  }
+
+  private async initPushNudge(): Promise<void> {
+    if (!this.push.isSupported) return;
+    const subscribed = await this.push.isSubscribed();
+    if (!subscribed) this.showPushNudge.set(true);
+  }
+
+  async enablePushFromNudge(): Promise<void> {
+    this.pushNudgeWorking.set(true);
+    const ok = await this.push.subscribe();
+    this.pushNudgeWorking.set(false);
+    if (ok) this.showPushNudge.set(false);
   }
 
   categoryLabel(cat: string): string {

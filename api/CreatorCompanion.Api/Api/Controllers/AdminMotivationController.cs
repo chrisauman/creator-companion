@@ -33,10 +33,11 @@ public class AdminMotivationController(AppDbContext db) : ControllerBase
         if (!Enum.TryParse<MotivationCategory>(request.Category, out var category))
             return BadRequest(new { error = "Invalid category. Use Encouragement, BestPractice, or Quote." });
 
+        var takeaway = request.Takeaway.Trim();
         var entry = new MotivationEntry
         {
-            Title       = request.Title.Trim(),
-            Takeaway    = request.Takeaway.Trim(),
+            Title       = takeaway.Length > 200 ? takeaway[..200] : takeaway,
+            Takeaway    = takeaway,
             FullContent = request.FullContent.Trim(),
             Category    = category
         };
@@ -58,8 +59,9 @@ public class AdminMotivationController(AppDbContext db) : ControllerBase
         if (!Enum.TryParse<MotivationCategory>(request.Category, out var category))
             return BadRequest(new { error = "Invalid category. Use Encouragement, BestPractice, or Quote." });
 
-        entry.Title       = request.Title.Trim();
-        entry.Takeaway    = request.Takeaway.Trim();
+        var updatedTakeaway = request.Takeaway.Trim();
+        entry.Title       = updatedTakeaway.Length > 200 ? updatedTakeaway[..200] : updatedTakeaway;
+        entry.Takeaway    = updatedTakeaway;
         entry.FullContent = request.FullContent.Trim();
         entry.Category    = category;
         entry.UpdatedAt   = DateTime.UtcNow;

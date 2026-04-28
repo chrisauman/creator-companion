@@ -18,6 +18,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Tag> Tags => Set<Tag>();
     public DbSet<EntryTag> EntryTags => Set<EntryTag>();
     public DbSet<Reminder> Reminders => Set<Reminder>();
+    public DbSet<ReminderConfig> ReminderConfigs => Set<ReminderConfig>();
     public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();
     public DbSet<MotivationEntry> MotivationEntries => Set<MotivationEntry>();
     public DbSet<UserMotivationShown> UserMotivationShown => Set<UserMotivationShown>();
@@ -37,6 +38,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.ApplyConfiguration(new TagConfiguration());
         modelBuilder.ApplyConfiguration(new EntryTagConfiguration());
         modelBuilder.ApplyConfiguration(new ReminderConfiguration());
+        modelBuilder.ApplyConfiguration(new ReminderConfigConfiguration());
         modelBuilder.ApplyConfiguration(new PushSubscriptionConfiguration());
         modelBuilder.ApplyConfiguration(new MotivationEntryConfiguration());
         modelBuilder.ApplyConfiguration(new UserMotivationShownConfiguration());

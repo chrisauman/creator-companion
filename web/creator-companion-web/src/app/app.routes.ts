@@ -85,6 +85,11 @@ export const routes: Routes = [
     canActivate: [adminGuard],
     loadComponent: () => import('./features/admin/admin-motivation.component').then(m => m.AdminMotivationComponent)
   },
+  {
+    path: 'admin/reminders',
+    canActivate: [adminGuard],
+    loadComponent: () => import('./features/admin/admin-reminders.component').then(m => m.AdminRemindersComponent)
+  },
 
   {
     path: 'billing/success',

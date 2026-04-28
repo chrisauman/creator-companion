@@ -13,14 +13,12 @@ public record MotivationEntryResponse(
 );
 
 public record CreateMotivationRequest(
-    [Required, MaxLength(200)]  string Title,
     [Required, MaxLength(500)]  string Takeaway,
     [Required]                  string FullContent,
     [Required]                  string Category     // "Encouragement" | "BestPractice" | "Quote"
 );
 
 public record UpdateMotivationRequest(
-    [Required, MaxLength(200)]  string Title,
     [Required, MaxLength(500)]  string Takeaway,
     [Required]                  string FullContent,
     [Required]                  string Category

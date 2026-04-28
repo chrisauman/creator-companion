@@ -19,6 +19,7 @@ import { ApiService } from '../../core/services/api.service';
         <a routerLink="/admin" class="admin-nav__link">Overview</a>
         <a routerLink="/admin/users" class="admin-nav__link admin-nav__link--active">Users</a>
         <a routerLink="/admin/motivation" class="admin-nav__link">Motivation</a>
+        <a routerLink="/admin/reminders" class="admin-nav__link">Reminders</a>
       </nav>
 
       <div class="toolbar">

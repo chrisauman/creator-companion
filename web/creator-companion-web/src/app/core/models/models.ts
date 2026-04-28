@@ -126,6 +126,29 @@ export interface Reminder {
   createdAt: string;
 }
 
+export interface ReminderConfigResponse {
+  dailyUpToDays: number;
+  every2DaysUpToDays: number;
+  every3DaysUpToDays: number;
+  messageActiveStreak: string;
+  messageJustBroke: string;
+  messageShortLapse: string;
+  messageMediumLapse: string;
+  messageLongAbsence: string;
+  updatedAt: string;
+}
+
+export interface UpdateReminderConfigRequest {
+  dailyUpToDays: number;
+  every2DaysUpToDays: number;
+  every3DaysUpToDays: number;
+  messageActiveStreak: string;
+  messageJustBroke: string;
+  messageShortLapse: string;
+  messageMediumLapse: string;
+  messageLongAbsence: string;
+}
+
 export interface Capabilities {
   maxWordsPerEntry: number;
   maxImagesPerEntry: number;

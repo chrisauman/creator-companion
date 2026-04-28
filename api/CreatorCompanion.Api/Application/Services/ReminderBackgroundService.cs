@@ -1,4 +1,5 @@
 using CreatorCompanion.Api.Application.Interfaces;
+using CreatorCompanion.Api.Domain.Models;
 using CreatorCompanion.Api.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using WebPushLib = WebPush;
@@ -9,37 +10,30 @@ public class ReminderBackgroundService(
     IServiceScopeFactory scopeFactory,
     ILogger<ReminderBackgroundService> logger) : BackgroundService
 {
-    private const string DefaultMessage = "Remember to log an entry to keep your streak alive.";
-
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         logger.LogInformation("Reminder background service started.");
 
         while (!stoppingToken.IsCancellationRequested)
         {
-            try
-            {
-                await ProcessRemindersAsync();
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Error processing reminders.");
-            }
+            try { await ProcessRemindersAsync(); }
+            catch (Exception ex) { logger.LogError(ex, "Error processing reminders."); }
 
-            // Run every minute
             await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
         }
     }
 
     private async Task ProcessRemindersAsync()
     {
-        using var scope = scopeFactory.CreateScope();
+        using var scope  = scopeFactory.CreateScope();
         var db     = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var sender = scope.ServiceProvider.GetRequiredService<IPushSender>();
 
+        // Load admin config (singleton row — fall back to defaults if missing)
+        var config = await db.ReminderConfigs.FindAsync(1) ?? new ReminderConfig();
+
         var utcNow = DateTime.UtcNow;
 
-        // Load all enabled reminders with their user's timezone and subscriptions
         var reminders = await db.Reminders
             .Where(r => r.IsEnabled)
             .Include(r => r.User)
@@ -47,89 +41,134 @@ public class ReminderBackgroundService(
 
         foreach (var reminder in reminders)
         {
-            try
-            {
-                var userTz  = TimeZoneInfo.FindSystemTimeZoneById(reminder.User.TimeZoneId);
-                var userNow = TimeZoneInfo.ConvertTimeFromUtc(utcNow, userTz);
-                var userTime = TimeOnly.FromDateTime(userNow);
-
-                // Check if the reminder is due this minute
-                if (userTime.Hour != reminder.Time.Hour || userTime.Minute != reminder.Time.Minute)
-                    continue;
-
-                // Check if already sent today in the user's timezone
-                if (reminder.LastSentAt.HasValue)
-                {
-                    var lastSentLocal = TimeZoneInfo.ConvertTimeFromUtc(reminder.LastSentAt.Value, userTz);
-                    if (lastSentLocal.Date == userNow.Date)
-                        continue;
-                }
-
-                // Skip if user is on an active streak pause
-                var today = DateOnly.FromDateTime(userNow);
-                var isPaused = await db.Pauses.AnyAsync(p =>
-                    p.UserId == reminder.UserId &&
-                    p.Status == Domain.Enums.PauseStatus.Active &&
-                    p.StartDate <= today &&
-                    p.EndDate >= today);
-                if (isPaused) continue;
-
-                // Smart: skip if user already logged an entry today
-                var alreadyLogged = await db.Entries.AnyAsync(e =>
-                    e.UserId == reminder.UserId &&
-                    e.EntryDate == today &&
-                    e.DeletedAt == null);
-                if (alreadyLogged) continue;
-
-                // Get all push subscriptions for this user
-                var subscriptions = await db.PushSubscriptions
-                    .Where(s => s.UserId == reminder.UserId)
-                    .ToListAsync();
-
-                if (!subscriptions.Any()) continue;
-
-                var title = "Creator Companion";
-                var body  = reminder.Message ?? DefaultMessage;
-
-                var expiredEndpoints = new List<string>();
-
-                foreach (var sub in subscriptions)
-                {
-                    try
-                    {
-                        await sender.SendAsync(sub, title, body);
-                    }
-                    catch (WebPushLib.WebPushException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Gone)
-                    {
-                        expiredEndpoints.Add(sub.Endpoint);
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.LogWarning(ex, "Failed to send to subscription {Id}", sub.Id);
-                    }
-                }
-
-                // Clean up expired subscriptions
-                if (expiredEndpoints.Any())
-                {
-                    var expired = await db.PushSubscriptions
-                        .Where(s => expiredEndpoints.Contains(s.Endpoint))
-                        .ToListAsync();
-                    db.PushSubscriptions.RemoveRange(expired);
-                }
-
-                // Mark reminder as sent
-                reminder.LastSentAt = utcNow;
-                await db.SaveChangesAsync();
-
-                logger.LogInformation(
-                    "Sent reminder to user {UserId} ({Count} device(s))",
-                    reminder.UserId, subscriptions.Count - expiredEndpoints.Count);
-            }
+            try { await ProcessOneAsync(db, sender, config, reminder, utcNow); }
             catch (Exception ex)
             {
                 logger.LogError(ex, "Error processing reminder {ReminderId}", reminder.Id);
             }
         }
+
+        await db.SaveChangesAsync();
     }
+
+    private async Task ProcessOneAsync(
+        AppDbContext db,
+        IPushSender sender,
+        ReminderConfig config,
+        Reminder reminder,
+        DateTime utcNow)
+    {
+        var userTz   = TimeZoneInfo.FindSystemTimeZoneById(reminder.User.TimeZoneId);
+        var userNow  = TimeZoneInfo.ConvertTimeFromUtc(utcNow, userTz);
+        var userTime = TimeOnly.FromDateTime(userNow);
+        var today    = DateOnly.FromDateTime(userNow);
+
+        // ── Time match ───────────────────────────────────────────────────────
+        if (userTime.Hour != reminder.Time.Hour || userTime.Minute != reminder.Time.Minute)
+            return;
+
+        // ── Skip if streak is paused ─────────────────────────────────────────
+        var isPaused = await db.Pauses.AnyAsync(p =>
+            p.UserId == reminder.UserId &&
+            p.Status == Domain.Enums.PauseStatus.Active &&
+            p.StartDate <= today &&
+            p.EndDate >= today);
+        if (isPaused) return;
+
+        // ── Skip if user already logged today ────────────────────────────────
+        var alreadyLogged = await db.Entries.AnyAsync(e =>
+            e.UserId == reminder.UserId &&
+            e.EntryDate == today &&
+            e.DeletedAt == null);
+        if (alreadyLogged) return;
+
+        // ── Days since last entry ────────────────────────────────────────────
+        var lastEntryDate = await db.Entries
+            .Where(e => e.UserId == reminder.UserId && e.DeletedAt == null)
+            .OrderByDescending(e => e.EntryDate)
+            .Select(e => (DateOnly?)e.EntryDate)
+            .FirstOrDefaultAsync();
+
+        var daysSinceLastEntry = lastEntryDate.HasValue
+            ? today.DayNumber - lastEntryDate.Value.DayNumber
+            : int.MaxValue;
+
+        // ── Frequency throttling (default reminders only) ────────────────────
+        // Custom (non-default) reminders always fire on their set schedule.
+        if (reminder.IsDefault)
+        {
+            var requiredInterval = daysSinceLastEntry <= config.DailyUpToDays      ? 1
+                                 : daysSinceLastEntry <= config.Every2DaysUpToDays ? 2
+                                 : daysSinceLastEntry <= config.Every3DaysUpToDays ? 3
+                                 : 7;
+
+            if (reminder.LastSentAt.HasValue)
+            {
+                var lastSentLocal    = TimeZoneInfo.ConvertTimeFromUtc(reminder.LastSentAt.Value, userTz);
+                var daysSinceLastSent = today.DayNumber - DateOnly.FromDateTime(lastSentLocal).DayNumber;
+                if (daysSinceLastSent < requiredInterval) return;
+            }
+        }
+        else
+        {
+            // Custom reminder: still prevent duplicate sends on the same day
+            if (reminder.LastSentAt.HasValue)
+            {
+                var lastSentLocal = TimeZoneInfo.ConvertTimeFromUtc(reminder.LastSentAt.Value, userTz);
+                if (DateOnly.FromDateTime(lastSentLocal) == today) return;
+            }
+        }
+
+        // ── Select message ───────────────────────────────────────────────────
+        var body = reminder.Message ?? SelectMessage(config, daysSinceLastEntry);
+
+        // ── Send to all subscriptions ────────────────────────────────────────
+        var subscriptions = await db.PushSubscriptions
+            .Where(s => s.UserId == reminder.UserId)
+            .ToListAsync();
+
+        if (!subscriptions.Any()) return;
+
+        var expiredEndpoints = new List<string>();
+
+        foreach (var sub in subscriptions)
+        {
+            try
+            {
+                await sender.SendAsync(sub, "Creator Companion", body);
+            }
+            catch (WebPushLib.WebPushException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Gone)
+            {
+                expiredEndpoints.Add(sub.Endpoint);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Failed to send to subscription {Id}", sub.Id);
+            }
+        }
+
+        if (expiredEndpoints.Any())
+        {
+            var expired = await db.PushSubscriptions
+                .Where(s => expiredEndpoints.Contains(s.Endpoint))
+                .ToListAsync();
+            db.PushSubscriptions.RemoveRange(expired);
+        }
+
+        reminder.LastSentAt = utcNow;
+
+        logger.LogInformation(
+            "Sent reminder to user {UserId} ({Count} device(s), interval={Interval}d, daysSinceLast={Days})",
+            reminder.UserId,
+            subscriptions.Count - expiredEndpoints.Count,
+            reminder.IsDefault ? "throttled" : "1",
+            daysSinceLastEntry == int.MaxValue ? "∞" : daysSinceLastEntry.ToString());
+    }
+
+    private static string SelectMessage(ReminderConfig config, int daysSinceLastEntry) =>
+        daysSinceLastEntry <= 1                          ? config.MessageActiveStreak
+        : daysSinceLastEntry <= 2                        ? config.MessageJustBroke
+        : daysSinceLastEntry <= config.Every2DaysUpToDays ? config.MessageShortLapse
+        : daysSinceLastEntry <= config.Every3DaysUpToDays ? config.MessageMediumLapse
+        : config.MessageLongAbsence;
 }

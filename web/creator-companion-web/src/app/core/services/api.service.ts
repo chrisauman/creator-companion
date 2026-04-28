@@ -4,7 +4,8 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
   AuthResponse, User, Journal, Entry, EntryListItem,
-  Draft, StreakStats, Capabilities, MediaItem, Tag, Pause, MotivationEntry
+  Draft, StreakStats, Capabilities, MediaItem, Tag, Pause, MotivationEntry,
+  ReminderConfigResponse, UpdateReminderConfigRequest
 } from '../models/models';
 
 @Injectable({ providedIn: 'root' })
@@ -291,5 +292,14 @@ export class ApiService {
 
   deleteMedia(mediaId: string): Observable<void> {
     return this.http.delete<void>(`${this.base}/media/${mediaId}`);
+  }
+
+  // ── Admin: Reminder Config ───────────────────────────────────────────────
+  adminGetReminderConfig(): Observable<ReminderConfigResponse> {
+    return this.http.get<ReminderConfigResponse>(`${this.base}/admin/reminder-config`);
+  }
+
+  adminUpdateReminderConfig(payload: UpdateReminderConfigRequest): Observable<ReminderConfigResponse> {
+    return this.http.put<ReminderConfigResponse>(`${this.base}/admin/reminder-config`, payload);
   }
 }

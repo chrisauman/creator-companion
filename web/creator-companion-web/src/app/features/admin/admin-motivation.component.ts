@@ -23,6 +23,7 @@ const CATEGORIES: Category[] = ['Encouragement', 'BestPractice', 'Quote'];
         <a routerLink="/admin" class="admin-nav__link">Overview</a>
         <a routerLink="/admin/users" class="admin-nav__link">Users</a>
         <a routerLink="/admin/motivation" class="admin-nav__link admin-nav__link--active">Motivation</a>
+        <a routerLink="/admin/reminders" class="admin-nav__link">Reminders</a>
       </nav>
 
       <!-- Add / Edit form -->
@@ -30,11 +31,6 @@ const CATEGORIES: Category[] = ['Encouragement', 'BestPractice', 'Quote'];
         <h2 class="form-title">{{ editingId() ? 'Edit Entry' : 'Add New Entry' }}</h2>
 
         <div class="form-grid">
-          <div class="field-group field-group--full">
-            <label class="field-label">Title</label>
-            <input class="input" type="text" maxlength="200" [(ngModel)]="form.title"
-                   placeholder="Short headline for the expanded view" />
-          </div>
           <div class="field-group field-group--full">
             <label class="field-label">Takeaway <span class="hint">(shown collapsed on dashboard)</span></label>
             <input class="input" type="text" maxlength="500" [(ngModel)]="form.takeaway"
@@ -64,7 +60,7 @@ const CATEGORIES: Category[] = ['Encouragement', 'BestPractice', 'Quote'];
             <button class="btn btn--ghost btn--sm" (click)="cancelEdit()">Cancel</button>
           }
           <button class="btn btn--primary btn--sm"
-                  [disabled]="saving() || !form.title.trim() || !form.takeaway.trim() || !form.fullContent.trim()"
+                  [disabled]="saving() || !form.takeaway.trim() || !form.fullContent.trim()"
                   (click)="save()">
             {{ saving() ? 'Saving…' : editingId() ? 'Update entry' : 'Add entry' }}
           </button>
@@ -98,7 +94,7 @@ const CATEGORIES: Category[] = ['Encouragement', 'BestPractice', 'Quote'];
         @for (entry of filteredEntries(); track entry.id) {
           <div class="entry-card card" [class.entry-card--editing]="editingId() === entry.id">
             <div class="entry-card__cat-badge">{{ catLabel(entry.category) }}</div>
-            <h3 class="entry-card__title">{{ entry.title }}</h3>
+            <h3 class="entry-card__title">{{ entry.takeaway }}</h3>
             <p class="entry-card__takeaway">{{ entry.takeaway }}</p>
             <p class="entry-card__content">{{ entry.fullContent }}</p>
             <div class="entry-card__actions">
@@ -196,7 +192,7 @@ export class AdminMotivationComponent implements OnInit {
   filterCat = signal<string>('');
   formError = signal('');
 
-  form = { title: '', takeaway: '', fullContent: '', category: 'Encouragement' as Category };
+  form = { takeaway: '', fullContent: '', category: 'Encouragement' as Category };
 
   filteredEntries = () => {
     const cat = this.filterCat();
@@ -217,11 +213,10 @@ export class AdminMotivationComponent implements OnInit {
 
   save(): void {
     this.formError.set('');
-    if (!this.form.title.trim() || !this.form.takeaway.trim() || !this.form.fullContent.trim()) return;
+    if (!this.form.takeaway.trim() || !this.form.fullContent.trim()) return;
     this.saving.set(true);
 
     const payload = {
-      title: this.form.title.trim(),
       takeaway: this.form.takeaway.trim(),
       fullContent: this.form.fullContent.trim(),
       category: this.form.category
@@ -252,7 +247,6 @@ export class AdminMotivationComponent implements OnInit {
   startEdit(entry: MotivationEntry): void {
     this.editingId.set(entry.id);
     this.form = {
-      title: entry.title,
       takeaway: entry.takeaway,
       fullContent: entry.fullContent,
       category: entry.category as Category
@@ -282,7 +276,7 @@ export class AdminMotivationComponent implements OnInit {
 
   private resetForm(): void {
     this.editingId.set(null);
-    this.form = { title: '', takeaway: '', fullContent: '', category: 'Encouragement' };
+    this.form = { takeaway: '', fullContent: '', category: 'Encouragement' };
     this.formError.set('');
   }
 }
