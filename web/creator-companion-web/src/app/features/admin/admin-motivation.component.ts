@@ -5,8 +5,46 @@ import { RouterLink } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
 import { MotivationEntry } from '../../core/models/models';
 
-type Category = 'Encouragement' | 'BestPractice' | 'Quote';
-const CATEGORIES: Category[] = ['Encouragement', 'BestPractice', 'Quote'];
+type Category = string;
+const CATEGORIES: Category[] = [
+  'Encouragement',
+  'BestPractice',
+  'Quote',
+  'ResistanceAndProcrastination',
+  'DisciplineAndRoutine',
+  'IdentityAndConfidence',
+  'FearAndSelfDoubt',
+  'OriginalityAndInfluence',
+  'SharingAndVisibility',
+  'FocusAndDeepWork',
+  'CreativeRecoveryAndBurnout',
+  'MeaningAndPurpose',
+  'LongTermMastery',
+  'ArtisticCourage',
+  'CreativeRelationships',
+  'EnvironmentAndRitual',
+  'PerfectionismAndFinishing',
+];
+
+const CATEGORY_LABELS: Record<string, string> = {
+  Encouragement:                  'Encouragement',
+  BestPractice:                   'Best Practice',
+  Quote:                          'Quote',
+  ResistanceAndProcrastination:   'Resistance & Procrastination',
+  DisciplineAndRoutine:           'Discipline & Routine',
+  IdentityAndConfidence:          'Identity & Confidence',
+  FearAndSelfDoubt:               'Fear & Self-Doubt',
+  OriginalityAndInfluence:        'Originality & Influence',
+  SharingAndVisibility:           'Sharing & Visibility',
+  FocusAndDeepWork:               'Focus & Deep Work',
+  CreativeRecoveryAndBurnout:     'Creative Recovery & Burnout',
+  MeaningAndPurpose:              'Meaning & Purpose',
+  LongTermMastery:                'Long-Term Mastery',
+  ArtisticCourage:                'Artistic Courage',
+  CreativeRelationships:          'Creative Relationships',
+  EnvironmentAndRitual:           'Environment & Ritual',
+  PerfectionismAndFinishing:      'Perfectionism & Finishing',
+};
 
 @Component({
   selector: 'app-admin-motivation',
@@ -44,9 +82,9 @@ const CATEGORIES: Category[] = ['Encouragement', 'BestPractice', 'Quote'];
           <div class="field-group">
             <label class="field-label">Category</label>
             <select class="input" [(ngModel)]="form.category">
-              <option value="Encouragement">Encouragement</option>
-              <option value="BestPractice">Best Practice</option>
-              <option value="Quote">Quote</option>
+              @for (cat of CATEGORIES; track cat) {
+                <option [value]="cat">{{ catLabel(cat) }}</option>
+              }
             </select>
           </div>
         </div>
@@ -270,8 +308,7 @@ export class AdminMotivationComponent implements OnInit {
   }
 
   catLabel(cat: string): string {
-    if (cat === 'BestPractice') return 'Best Practice';
-    return cat;
+    return CATEGORY_LABELS[cat] ?? cat;
   }
 
   private resetForm(): void {

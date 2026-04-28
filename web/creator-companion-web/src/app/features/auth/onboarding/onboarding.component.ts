@@ -69,7 +69,7 @@ const NOTIF_STEP = 3;
               <p class="notif-blocked">
                 Notifications are blocked in your browser settings. You can enable them later in Account settings.
               </p>
-            } @else if (pushSupported()) {
+            } @else if (pushSupported) {
               <button class="btn btn--primary btn--full btn--lg"
                       [disabled]="notifState() === 'requesting'"
                       (click)="enableNotifications()">

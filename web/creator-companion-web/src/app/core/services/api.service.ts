@@ -205,11 +205,11 @@ export class ApiService {
     return this.http.get<MotivationEntry[]>(`${this.base}/admin/motivation`);
   }
 
-  adminCreateMotivation(payload: { title: string; takeaway: string; fullContent: string; category: string }): Observable<MotivationEntry> {
+  adminCreateMotivation(payload: { takeaway: string; fullContent: string; category: string }): Observable<MotivationEntry> {
     return this.http.post<MotivationEntry>(`${this.base}/admin/motivation`, payload);
   }
 
-  adminUpdateMotivation(id: string, payload: { title: string; takeaway: string; fullContent: string; category: string }): Observable<MotivationEntry> {
+  adminUpdateMotivation(id: string, payload: { takeaway: string; fullContent: string; category: string }): Observable<MotivationEntry> {
     return this.http.put<MotivationEntry>(`${this.base}/admin/motivation/${id}`, payload);
   }
 

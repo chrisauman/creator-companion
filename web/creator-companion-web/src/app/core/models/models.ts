@@ -15,7 +15,7 @@ export interface MotivationEntry {
   title: string;
   takeaway: string;
   fullContent: string;
-  category: 'Encouragement' | 'BestPractice' | 'Quote';
+  category: string;
   createdAt: string;
   updatedAt: string;
 }

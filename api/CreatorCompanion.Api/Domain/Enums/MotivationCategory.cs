@@ -4,5 +4,19 @@ public enum MotivationCategory
 {
     Encouragement,
     BestPractice,
-    Quote
+    Quote,
+    ResistanceAndProcrastination,
+    DisciplineAndRoutine,
+    IdentityAndConfidence,
+    FearAndSelfDoubt,
+    OriginalityAndInfluence,
+    SharingAndVisibility,
+    FocusAndDeepWork,
+    CreativeRecoveryAndBurnout,
+    MeaningAndPurpose,
+    LongTermMastery,
+    ArtisticCourage,
+    CreativeRelationships,
+    EnvironmentAndRitual,
+    PerfectionismAndFinishing
 }
