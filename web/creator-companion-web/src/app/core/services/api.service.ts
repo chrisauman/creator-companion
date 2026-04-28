@@ -265,6 +265,14 @@ export class ApiService {
     return this.http.delete<void>(`${this.base}/admin/users/${id}/pauses/all`);
   }
 
+  adminGetPushSubscriptions(id: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.base}/admin/users/${id}/push-subscriptions`);
+  }
+
+  adminSendTestNotification(id: string): Observable<{ sent: number; failed: number; message: string }> {
+    return this.http.post<any>(`${this.base}/admin/users/${id}/test-notification`, {});
+  }
+
   // ── Stripe ──────────────────────────────────────────────────────────────
   getStripeConfig(): Observable<{ publishableKey: string; monthlyPriceId: string; annualPriceId: string }> {
     return this.http.get<any>(`${this.base}/stripe/config`);

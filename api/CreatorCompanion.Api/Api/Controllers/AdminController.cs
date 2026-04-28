@@ -1,11 +1,12 @@
 using System.Security.Claims;
 using CreatorCompanion.Api.Application.DTOs;
+using CreatorCompanion.Api.Application.Interfaces;
 using CreatorCompanion.Api.Domain.Enums;
 using CreatorCompanion.Api.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using CreatorCompanion.Api.Application.Interfaces;
+using WebPush;
 
 namespace CreatorCompanion.Api.Api.Controllers;
 
@@ -260,6 +261,66 @@ public class AdminController(AppDbContext db) : ControllerBase
         await db.SaveChangesAsync();
 
         return Ok(new { id = user.Id, isActive = user.IsActive });
+    }
+
+    [HttpGet("users/{id:guid}/push-subscriptions")]
+    public async Task<IActionResult> GetPushSubscriptions(Guid id)
+    {
+        var subs = await db.PushSubscriptions
+            .Where(s => s.UserId == id)
+            .OrderByDescending(s => s.LastSeenAt)
+            .Select(s => new
+            {
+                s.Id,
+                s.Platform,
+                EndpointPreview = s.Endpoint.Length > 60 ? s.Endpoint.Substring(0, 60) + "…" : s.Endpoint,
+                s.CreatedAt,
+                s.LastSeenAt
+            })
+            .ToListAsync();
+
+        return Ok(subs);
+    }
+
+    [HttpPost("users/{id:guid}/test-notification")]
+    public async Task<IActionResult> SendTestNotification(Guid id, [FromServices] IPushSender sender)
+    {
+        var subs = await db.PushSubscriptions
+            .Where(s => s.UserId == id)
+            .ToListAsync();
+
+        if (!subs.Any())
+            return Ok(new { sent = 0, failed = 0, message = "No push subscriptions found for this user." });
+
+        int sent = 0, failed = 0;
+        var expiredIds = new List<Guid>();
+
+        foreach (var sub in subs)
+        {
+            try
+            {
+                await sender.SendAsync(sub, "Creator Companion", "🔔 Test notification — your push is working!");
+                sent++;
+            }
+            catch (WebPush.WebPushException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Gone)
+            {
+                expiredIds.Add(sub.Id);
+                failed++;
+            }
+            catch
+            {
+                failed++;
+            }
+        }
+
+        if (expiredIds.Any())
+        {
+            var expired = await db.PushSubscriptions.Where(s => expiredIds.Contains(s.Id)).ToListAsync();
+            db.PushSubscriptions.RemoveRange(expired);
+            await db.SaveChangesAsync();
+        }
+
+        return Ok(new { sent, failed, message = $"Sent to {sent} device(s). {failed} failed/expired." });
     }
 
     [HttpGet("users/{id:guid}/entries")]

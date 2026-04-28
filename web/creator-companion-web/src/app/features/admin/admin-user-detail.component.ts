@@ -147,6 +147,41 @@ import { ApiService } from '../../core/services/api.service';
               </dl>
             </div>
 
+            <!-- ── Push subscriptions ───────────────────────────── -->
+            <div class="form-section">
+              <h3 class="section-title">Push Devices</h3>
+              @if (pushLoading()) {
+                <p class="text-sm text-muted">Loading…</p>
+              } @else if (pushSubs().length === 0) {
+                <p class="text-sm text-muted">No push subscriptions registered.</p>
+              } @else {
+                <div class="push-list">
+                  @for (s of pushSubs(); track s.id) {
+                    <div class="push-row">
+                      <div>
+                        <span class="push-platform">{{ s.platform }}</span>
+                        <span class="push-endpoint text-muted">{{ s.endpointPreview }}</span>
+                      </div>
+                      <div class="text-muted" style="font-size:.75rem">
+                        Last seen {{ s.lastSeenAt | date:'mediumDate' }}
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+              <div class="action-row" style="margin-top:.875rem">
+                <button class="btn btn--secondary btn--sm" [disabled]="testingPush()"
+                        (click)="sendTestNotification()">
+                  {{ testingPush() ? 'Sending…' : '🔔 Send test notification' }}
+                </button>
+              </div>
+              @if (testResult()) {
+                <p class="text-sm action-msg" [class.text-success]="!testFailed()" [class.text-danger]="testFailed()">
+                  {{ testResult() }}
+                </p>
+              }
+            </div>
+
             <!-- ── Danger zone ───────────────────────────────────── -->
             <div class="danger-zone">
               <h3 class="section-title section-title--danger">Danger Zone</h3>
@@ -283,6 +318,14 @@ import { ApiService } from '../../core/services/api.service';
 
     .btn--danger { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
     .btn--danger:hover:not(:disabled) { background: #fca5a5; }
+
+    .push-list { display: flex; flex-direction: column; gap: .5rem; }
+    .push-row { display: flex; flex-direction: column; gap: .15rem; padding: .5rem .625rem;
+                background: var(--color-surface-2); border-radius: 6px;
+                border: 1px solid var(--color-border); font-size: .8125rem; }
+    .push-platform { font-weight: 600; text-transform: uppercase; font-size: .7rem;
+                     letter-spacing: .05em; color: var(--color-accent-dark); margin-right: .4rem; }
+    .push-endpoint { font-size: .75rem; word-break: break-all; }
   `]
 })
 export class AdminUserDetailComponent implements OnInit {
@@ -304,6 +347,12 @@ export class AdminUserDetailComponent implements OnInit {
   deleteConfirmText = '';
   deleteError    = signal('');
 
+  pushSubs     = signal<any[]>([]);
+  pushLoading  = signal(true);
+  testingPush  = signal(false);
+  testResult   = signal('');
+  testFailed   = signal(false);
+
   private readonly pageSize = 10;
   private currentPage = 1;
 
@@ -324,6 +373,10 @@ export class AdminUserDetailComponent implements OnInit {
     this.api.adminGetUserEntries(this.userId, 1, this.pageSize).subscribe({
       next: res => { this.entries.set(res.entries); this.entryTotal.set(res.total); this.entriesLoading.set(false); },
       error: () => this.entriesLoading.set(false)
+    });
+    this.api.adminGetPushSubscriptions(this.userId).subscribe({
+      next: subs => { this.pushSubs.set(subs); this.pushLoading.set(false); },
+      error: () => this.pushLoading.set(false)
     });
   }
 
@@ -412,6 +465,27 @@ export class AdminUserDetailComponent implements OnInit {
         this.actionMsg.set('Pause history cleared.'); this.actionError.set(false); this.saving.set(false);
       },
       error: () => { this.actionMsg.set('Failed to clear pause history.'); this.actionError.set(true); this.saving.set(false); }
+    });
+  }
+
+  sendTestNotification(): void {
+    this.testingPush.set(true);
+    this.testResult.set('');
+    this.api.adminSendTestNotification(this.userId).subscribe({
+      next: res => {
+        this.testResult.set(res.message);
+        this.testFailed.set(res.sent === 0);
+        this.testingPush.set(false);
+        // Refresh subscription list in case any expired ones were removed
+        this.api.adminGetPushSubscriptions(this.userId).subscribe({
+          next: subs => this.pushSubs.set(subs)
+        });
+      },
+      error: () => {
+        this.testResult.set('Failed to send test notification.');
+        this.testFailed.set(true);
+        this.testingPush.set(false);
+      }
     });
   }
 
