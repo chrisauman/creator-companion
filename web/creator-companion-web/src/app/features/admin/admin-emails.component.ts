@@ -22,6 +22,7 @@ const TEMPLATES = [
       <nav class="admin-nav">
         <a routerLink="/admin" class="admin-nav__link">Overview</a>
         <a routerLink="/admin/users" class="admin-nav__link">Users</a>
+        <a routerLink="/admin/motivation" class="admin-nav__link">Content Library</a>
         <a routerLink="/admin/reminders" class="admin-nav__link">Reminders</a>
         <span class="admin-nav__link admin-nav__link--active">Emails</span>
       </nav>
@@ -58,7 +59,7 @@ const TEMPLATES = [
             <div class="field">
               <label>Body content</label>
               <p class="text-muted text-sm" style="margin-bottom:.5rem">
-                Use <code>{{'{'}}username{'}'}</code> to insert the recipient's name.
+                Use <code>&#123;username&#125;</code> to insert the recipient's name.
               </p>
 
               <!-- Formatting toolbar -->
