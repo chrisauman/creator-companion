@@ -39,7 +39,7 @@ public class ReminderBackgroundService(
             .Include(r => r.User)
             .ToListAsync();
 
-        logger.LogInformation("ReminderTick: UTC={UtcNow}, checking {Count} enabled reminder(s).",
+        logger.LogDebug("ReminderTick: UTC={UtcNow}, checking {Count} enabled reminder(s).",
             utcNow.ToString("HH:mm:ss"), reminders.Count);
 
         foreach (var reminder in reminders)
@@ -66,7 +66,7 @@ public class ReminderBackgroundService(
         var userTime = TimeOnly.FromDateTime(userNow);
         var today    = DateOnly.FromDateTime(userNow);
 
-        logger.LogInformation(
+        logger.LogDebug(
             "ReminderCheck: reminder={ReminderId} set={Set} userNow={UserNow} tz={Tz} match={Match}",
             reminder.Id, reminder.Time.ToString("HH:mm"), userTime.ToString("HH:mm"),
             reminder.User.TimeZoneId, userTime.Hour == reminder.Time.Hour && userTime.Minute == reminder.Time.Minute);
@@ -81,14 +81,14 @@ public class ReminderBackgroundService(
             p.Status == Domain.Enums.PauseStatus.Active &&
             p.StartDate <= today &&
             p.EndDate >= today);
-        if (isPaused) { logger.LogInformation("ReminderSkip: {ReminderId} — streak paused.", reminder.Id); return; }
+        if (isPaused) { logger.LogDebug("ReminderSkip: {ReminderId} — streak paused.", reminder.Id); return; }
 
         // ── Skip if user already logged today ────────────────────────────────
         var alreadyLogged = await db.Entries.AnyAsync(e =>
             e.UserId == reminder.UserId &&
             e.EntryDate == today &&
             e.DeletedAt == null);
-        if (alreadyLogged) { logger.LogInformation("ReminderSkip: {ReminderId} — already logged today.", reminder.Id); return; }
+        if (alreadyLogged) { logger.LogDebug("ReminderSkip: {ReminderId} — already logged today.", reminder.Id); return; }
 
         // ── Days since last entry ────────────────────────────────────────────
         var lastEntryDate = await db.Entries
@@ -116,7 +116,7 @@ public class ReminderBackgroundService(
                 var daysSinceLastSent = today.DayNumber - DateOnly.FromDateTime(lastSentLocal).DayNumber;
                 if (daysSinceLastSent < requiredInterval)
                 {
-                    logger.LogInformation("ReminderSkip: {ReminderId} — throttled (lastSent={Days}d ago, required={Req}d).", reminder.Id, daysSinceLastSent, requiredInterval);
+                    logger.LogDebug("ReminderSkip: {ReminderId} — throttled (lastSent={Days}d ago, required={Req}d).", reminder.Id, daysSinceLastSent, requiredInterval);
                     return;
                 }
             }
@@ -129,7 +129,7 @@ public class ReminderBackgroundService(
                 var lastSentLocal = TimeZoneInfo.ConvertTimeFromUtc(reminder.LastSentAt.Value, userTz);
                 if (DateOnly.FromDateTime(lastSentLocal) == today)
                 {
-                    logger.LogInformation("ReminderSkip: {ReminderId} — already sent today.", reminder.Id);
+                    logger.LogDebug("ReminderSkip: {ReminderId} — already sent today.", reminder.Id);
                     return;
                 }
             }

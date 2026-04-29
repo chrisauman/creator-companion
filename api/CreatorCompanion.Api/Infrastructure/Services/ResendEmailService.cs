@@ -1,10 +1,26 @@
 using CreatorCompanion.Api.Application.Interfaces;
+using CreatorCompanion.Api.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 using Resend;
 
 namespace CreatorCompanion.Api.Infrastructure.Services;
 
-public class ResendEmailService(IResend resend, IConfiguration config) : IEmailService
+public class ResendEmailService(IResend resend, IConfiguration config, AppDbContext db) : IEmailService
 {
+    private static readonly string DefaultWelcomeSubject = "Welcome to Creator Companion — let's get started";
+
+    private static readonly string DefaultWelcomeContent = """
+        <h2 style="margin-bottom:.5rem">Welcome, {username}!</h2>
+        <p style="color:#555">You've taken the first step. Creator Companion is your private space to show up, write, and build a creative practice that sticks.</p>
+        <h3 style="margin-top:1.5rem;margin-bottom:.5rem">A few things to try first:</h3>
+        <ul style="color:#555;line-height:2">
+          <li><strong>Write your first entry</strong> — head to the dashboard and start today's entry</li>
+          <li><strong>Set a daily reminder</strong> — a nudge at the right time makes all the difference</li>
+          <li><strong>Check your Daily Spark</strong> — a fresh creative insight every day to fuel your work</li>
+        </ul>
+        <p style="color:#555">Consistency is the skill. See you tomorrow.</p>
+        """;
+
     public async Task SendVerificationEmailAsync(string toEmail, string verifyLink)
     {
         var fromEmail = config["Resend:FromEmail"] ?? "noreply@creatorcompanion.app";
@@ -127,6 +143,42 @@ public class ResendEmailService(IResend resend, IConfiguration config) : IEmailS
                      and contact support.</p>
                   <p style="color:#999;font-size:.85rem;margin-top:2rem">
                     This is an automated security notification from {appName}.
+                  </p>
+                </div>
+                """
+        };
+
+        await resend.EmailSendAsync(message);
+    }
+
+    public async Task SendWelcomeAsync(string toEmail, string username)
+    {
+        var fromEmail = config["Resend:FromEmail"] ?? "noreply@creatorcompanion.app";
+        var appName   = config["App:Name"] ?? "Creator Companion";
+
+        var template = await db.EmailTemplates.FirstOrDefaultAsync(t => t.Key == "welcome");
+        var subject  = template?.Subject ?? DefaultWelcomeSubject;
+        var content  = (template?.HtmlContent ?? DefaultWelcomeContent)
+                           .Replace("{username}", username);
+
+        var message = new EmailMessage
+        {
+            From    = $"{appName} <{fromEmail}>",
+            To      = { toEmail },
+            Subject = subject,
+            HtmlBody = $"""
+                <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:2rem">
+                  {content}
+                  <div style="margin-top:2rem">
+                    <a href="https://app.creatorcompanionapp.com/dashboard"
+                       style="display:inline-block;padding:.75rem 1.5rem;
+                              background:#6c63ff;color:#fff;border-radius:8px;
+                              text-decoration:none;font-weight:600">
+                      Go to dashboard
+                    </a>
+                  </div>
+                  <p style="color:#999;font-size:.85rem;margin-top:2rem">
+                    You're receiving this because you created a {appName} account.
                   </p>
                 </div>
                 """

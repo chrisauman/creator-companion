@@ -114,6 +114,10 @@ public class AuthService(AppDbContext db, IConfiguration config, IEmailService e
             Console.WriteLine($"[WARN] Failed to send verification email to {user.Email}: {ex.Message}");
         }
 
+        // Send welcome email (best-effort)
+        try { await emailService.SendWelcomeAsync(user.Email, user.Username); }
+        catch (Exception ex) { Console.WriteLine($"[WARN] Failed to send welcome email to {user.Email}: {ex.Message}"); }
+
         return result;
     }
 

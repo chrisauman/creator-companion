@@ -310,4 +310,13 @@ export class ApiService {
   adminUpdateReminderConfig(payload: UpdateReminderConfigRequest): Observable<ReminderConfigResponse> {
     return this.http.put<ReminderConfigResponse>(`${this.base}/admin/reminder-config`, payload);
   }
+
+  // ── Admin: Email Templates ───────────────────────────────────────────────
+  adminGetEmailTemplate(key: string): Observable<any> {
+    return this.http.get<any>(`${this.base}/admin/email-templates/${key}`);
+  }
+
+  adminSaveEmailTemplate(key: string, subject: string, htmlContent: string): Observable<any> {
+    return this.http.put<any>(`${this.base}/admin/email-templates/${key}`, { subject, htmlContent });
+  }
 }
