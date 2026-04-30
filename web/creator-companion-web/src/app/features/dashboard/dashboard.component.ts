@@ -44,6 +44,47 @@ import { ActionItemsCardComponent } from './action-items-card.component';
 
       <main class="container main-content">
 
+        <!-- New entry CTA -->
+        <button class="new-entry-bar btn btn--primary btn--full" routerLink="/entry/new">
+          + Create New Entry
+        </button>
+
+        <!-- Streak stats -->
+        <div class="stats-grid" *ngIf="streak()">
+          <div class="stat-card">
+            <span class="stat-value streak-value">{{ streak()!.currentStreak }}</span>
+            <span class="stat-label">Day streak</span>
+            <div class="milestone-badge" *ngIf="isPaid() && currentStreakMilestone()"
+              [title]="currentStreakMilestone()!.description">
+              {{ currentStreakMilestone()!.icon }} {{ currentStreakMilestone()!.title }}
+            </div>
+          </div>
+          <div class="stat-card">
+            <span class="stat-value">{{ streak()!.longestStreak }}</span>
+            <span class="stat-label">Longest streak</span>
+            <div class="milestone-badge" *ngIf="isPaid() && longestStreakMilestone()"
+              [title]="longestStreakMilestone()!.description">
+              {{ longestStreakMilestone()!.icon }} {{ longestStreakMilestone()!.title }}
+            </div>
+          </div>
+          <div class="stat-card">
+            <span class="stat-value">{{ streak()!.totalEntries }}</span>
+            <span class="stat-label">Total entries</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-value">{{ streak()!.totalActiveDays }}</span>
+            <span class="stat-label">Days active</span>
+          </div>
+        </div>
+
+        <!-- Streak loading skeleton -->
+        <div class="stats-grid" *ngIf="!streak() && !error()">
+          <div class="stat-card skeleton" *ngFor="let i of [1,2,3,4]">
+            <span class="stat-value">—</span>
+            <span class="stat-label">Loading…</span>
+          </div>
+        </div>
+
         <!-- Daily Motivation card -->
         @if (motivation()) {
           <div class="motivation-card" [class.motivation-card--expanded]="motivationExpanded()">
@@ -87,47 +128,6 @@ import { ActionItemsCardComponent } from './action-items-card.component';
             </button>
           </div>
         }
-
-        <!-- New entry CTA -->
-        <button class="new-entry-bar btn btn--primary btn--full" routerLink="/entry/new">
-          + Create New Entry
-        </button>
-
-        <!-- Streak stats -->
-        <div class="stats-grid" *ngIf="streak()">
-          <div class="stat-card">
-            <span class="stat-value streak-value">{{ streak()!.currentStreak }}</span>
-            <span class="stat-label">Day streak</span>
-            <div class="milestone-badge" *ngIf="isPaid() && currentStreakMilestone()"
-              [title]="currentStreakMilestone()!.description">
-              {{ currentStreakMilestone()!.icon }} {{ currentStreakMilestone()!.title }}
-            </div>
-          </div>
-          <div class="stat-card">
-            <span class="stat-value">{{ streak()!.longestStreak }}</span>
-            <span class="stat-label">Longest streak</span>
-            <div class="milestone-badge" *ngIf="isPaid() && longestStreakMilestone()"
-              [title]="longestStreakMilestone()!.description">
-              {{ longestStreakMilestone()!.icon }} {{ longestStreakMilestone()!.title }}
-            </div>
-          </div>
-          <div class="stat-card">
-            <span class="stat-value">{{ streak()!.totalEntries }}</span>
-            <span class="stat-label">Total entries</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-value">{{ streak()!.totalActiveDays }}</span>
-            <span class="stat-label">Days active</span>
-          </div>
-        </div>
-
-        <!-- Streak loading skeleton -->
-        <div class="stats-grid" *ngIf="!streak() && !error()">
-          <div class="stat-card skeleton" *ngFor="let i of [1,2,3,4]">
-            <span class="stat-value">—</span>
-            <span class="stat-label">Loading…</span>
-          </div>
-        </div>
 
 
         <!-- Entry list -->
