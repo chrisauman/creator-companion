@@ -262,7 +262,7 @@ import { ActionItemsCardComponent } from './action-items-card.component';
       background: var(--color-surface);
       border: 1px solid var(--color-border);
       border-radius: var(--radius-md);
-      margin-bottom: 1rem;
+      margin-bottom: 1.25rem;
     }
     .push-nudge__text {
       display: flex; align-items: center; gap: .5rem;

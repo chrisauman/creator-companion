@@ -217,7 +217,7 @@ import { ActionItem } from '../../core/models/models';
       border: 1px solid var(--color-border);
       border-radius: var(--radius-lg);
       overflow: hidden;
-      margin-bottom: 1rem;
+      margin-bottom: 1.25rem;
       transition: border-color .15s, box-shadow .15s;
       &:hover { border-color: var(--color-accent); box-shadow: var(--shadow-md); }
     }
@@ -227,10 +227,10 @@ import { ActionItem } from '../../core/models/models';
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: .875rem 1rem;
+      padding: 1rem 1.25rem;
       cursor: pointer;
       user-select: none;
-      gap: .75rem;
+      gap: 1rem;
     }
     .ai-header__left { flex: 1; min-width: 0; }
     .ai-label {
@@ -263,7 +263,7 @@ import { ActionItem } from '../../core/models/models';
     /* ── Body (hidden unless expanded) ──────────────────────────── */
     .ai-body {
       display: none;
-      padding: 0 .75rem .875rem;
+      padding: 0 1.25rem 1.25rem;
     }
     .ai-card--expanded .ai-body { display: block; }
     .ai-card--expanded .ai-header { padding-bottom: .25rem; }
