@@ -788,7 +788,7 @@ export class AccountComponent implements OnInit {
       next: res => { window.location.href = res.url; },
       error: err => {
         this.portalLoading.set(false);
-        this.portalError.set(err?.error?.error ?? 'Could not open billing portal. Please try again.');
+        this.portalError.set('Could not open billing portal. If you subscribed recently, please try again in a moment or contact support.');
       }
     });
   }
