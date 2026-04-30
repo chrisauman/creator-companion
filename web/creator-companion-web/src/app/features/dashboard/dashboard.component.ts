@@ -173,8 +173,8 @@ import { ActionItemsCardComponent } from './action-items-card.component';
           </p>
 
           <ng-container *ngIf="filteredAndSorted().length > 0">
-            <ng-container *ngFor="let group of groupedEntries(); trackBy: trackByGroup">
-              <div class="date-divider">{{ group.label }}</div>
+            <ng-container *ngFor="let group of groupedEntries(); trackBy: trackByGroup; let first = first">
+              <div class="date-divider" [class.date-divider--first]="first">{{ group.label }}</div>
               <div
                 class="entry-row card"
                 *ngFor="let entry of group.entries; trackBy: trackByEntry"
@@ -421,7 +421,7 @@ import { ActionItemsCardComponent } from './action-items-card.component';
       color: var(--color-text);
       padding: .25rem 0;
       margin: 2rem 0 .75rem;
-      &:first-child { margin-top: .25rem; }
+      &.date-divider--first { margin-top: .375rem; }
     }
 
     .entry-row {
