@@ -300,7 +300,7 @@ import { ActionItem } from '../../core/models/models';
       display: flex;
       align-items: center;
       gap: .5rem;
-      padding: .45rem .25rem;
+      padding: .2rem 0;
       border-radius: var(--radius-sm);
       position: relative;
       &:hover { background: var(--color-surface-2); }
@@ -365,15 +365,18 @@ import { ActionItem } from '../../core/models/models';
 
     /* ── Item action buttons ─────────────────────────────────────── */
     .ai-item-actions {
-      display: flex; align-items: center; gap: .1rem;
+      display: flex; align-items: center; gap: .15rem;
       opacity: 0;
       transition: opacity .15s;
       flex-shrink: 0;
     }
     .ai-action-btn {
       background: none; border: none;
-      font-size: .75rem; cursor: pointer;
-      padding: .2rem .35rem; border-radius: var(--radius-sm);
+      font-size: .875rem; cursor: pointer;
+      /* 44px minimum touch target */
+      min-width: 2.75rem; min-height: 2.75rem;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: var(--radius-sm);
       font-family: var(--font-sans);
       transition: background .12s, color .12s;
     }
@@ -388,24 +391,35 @@ import { ActionItem } from '../../core/models/models';
     .ai-action-btn--save {
       color: white; background: var(--color-accent);
       border-radius: var(--radius-sm);
-      font-weight: 600;
+      font-weight: 600; font-size: .8125rem;
+      min-width: auto; padding: 0 .75rem;
       &:hover { background: var(--color-accent-dark); }
       &:disabled { opacity: .5; cursor: default; }
     }
     .ai-action-btn--cancel {
       color: var(--color-text-2);
+      min-width: auto; padding: 0 .5rem;
       &:hover { background: var(--color-surface-2); }
     }
 
-    /* ── Up/Down arrows (mobile reorder) ─────────────────────────── */
+    /* ── Up/Down arrows (reorder) ────────────────────────────────── */
     .ai-arrow {
       background: none; border: none;
-      font-size: .6rem; cursor: pointer;
-      padding: .15rem .25rem; line-height: 1;
+      font-size: .75rem; cursor: pointer;
+      /* 44px minimum touch target */
+      min-width: 2.75rem; min-height: 2.75rem;
+      display: flex; align-items: center; justify-content: center;
       color: var(--color-text-3);
       border-radius: var(--radius-sm);
       &:hover:not([disabled]) { background: var(--color-surface-2); color: var(--color-text); }
       &[disabled] { opacity: .25; cursor: default; }
+    }
+
+    /* ── Always show controls on touch devices ───────────────────── */
+    @media (pointer: coarse) {
+      .ai-item-actions { opacity: 1; }
+      .ai-drag-handle { opacity: 1; }
+      .ai-item--done .ai-action-btn--delete { opacity: 1; }
     }
 
     /* ── Add/Edit input row ──────────────────────────────────────── */
