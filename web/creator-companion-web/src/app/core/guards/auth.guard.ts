@@ -2,7 +2,7 @@ import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { TokenService } from '../services/token.service';
 import { AuthService } from '../services/auth.service';
-import { catchError, map, of, switchMap } from 'rxjs';
+import { catchError, map, of, switchMap, take } from 'rxjs';
 
 export const authGuard: CanActivateFn = () => {
   const tokens = inject(TokenService);
@@ -59,9 +59,13 @@ export const publicGuard: CanActivateFn = () => {
     return false;
   }
 
-  // Try cookie restore — if it works, user is still logged in
-  return auth.refreshToken().pipe(
-    map(() => { router.navigate(['/dashboard']); return false; }),
-    catchError(() => of(true)) // no valid cookie = show public page
-  );
+  // Show the login page immediately — don't block on a cold API round-trip.
+  // Fire the refresh check in the background; if the cookie is still valid
+  // the user will be silently redirected to the dashboard once it resolves.
+  auth.refreshToken().subscribe({
+    next:  () => router.navigate(['/dashboard']),
+    error: () => {} // no valid cookie — user stays on the login page
+  });
+
+  return true;
 };
