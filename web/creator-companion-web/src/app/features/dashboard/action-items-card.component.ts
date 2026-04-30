@@ -235,18 +235,18 @@ import { ActionItem } from '../../core/models/models';
     .ai-header__left { flex: 1; min-width: 0; }
     .ai-label {
       display: block;
-      font-size: .625rem;
+      font-size: .6875rem;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: .1em;
+      letter-spacing: .07em;
       color: var(--color-accent-dark);
-      margin-bottom: .2rem;
+      margin-bottom: .3rem;
     }
     .ai-summary {
       margin: 0;
       font-size: .9375rem;
-      font-weight: 500;
-      color: var(--color-text-2);
+      font-weight: 400;
+      color: var(--color-text);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
