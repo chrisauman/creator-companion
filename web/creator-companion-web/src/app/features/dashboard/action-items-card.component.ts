@@ -17,16 +17,18 @@ import { ActionItem } from '../../core/models/models';
       <!-- ── Header ─────────────────────────────────────────────── -->
       <div class="ai-header" (click)="toggleExpanded()">
         <div class="ai-header__left">
-          <span class="ai-label">Daily Reminders</span>
-          <p class="ai-summary">
-            @if (allCaughtUp()) {
-              All caught up!
-            } @else if (activeItems().length === 0) {
-              Add your first reminder
-            } @else {
-              {{ activeItems()[0].text }}
-            }
-          </p>
+          <span class="ai-label">Daily Reminders / Next Actions</span>
+          @if (!expanded()) {
+            <p class="ai-summary">
+              @if (allCaughtUp()) {
+                All caught up!
+              } @else if (activeItems().length === 0) {
+                Add your first reminder
+              } @else {
+                {{ activeItems()[0].text }}
+              }
+            </p>
+          }
         </div>
         <button class="ai-toggle" [attr.aria-expanded]="expanded()">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
@@ -48,7 +50,7 @@ import { ActionItem } from '../../core/models/models';
             <p class="ai-empty__text">
               Use Daily Reminders to track your to-dos, next actions, or anything you want to get done. Add up to 20 active items.
             </p>
-            <button class="btn btn--sm btn--outline" (click)="startAdd()">
+            <button class="btn btn--sm btn--primary" (click)="startAdd()">
               + Add your first item
             </button>
           </div>
@@ -58,7 +60,7 @@ import { ActionItem } from '../../core/models/models';
         @if (allCaughtUp() && !showAddForm()) {
           <div class="ai-caught-up">
             <p>🎉 All caught up!</p>
-            <button class="btn btn--sm btn--outline" (click)="startAdd()">
+            <button class="btn btn--sm btn--primary" (click)="startAdd()">
               + Add item
             </button>
           </div>
@@ -155,7 +157,7 @@ import { ActionItem } from '../../core/models/models';
         @if (!showAddForm() && (activeItems().length > 0 || completedItems().length > 0)) {
           <div class="ai-add-bar">
             @if (activeItems().length < 20) {
-              <button class="btn btn--sm btn--ghost ai-add-btn" (click)="startAdd()">
+              <button class="btn btn--sm btn--primary" (click)="startAdd()">
                 + Add item
               </button>
             } @else {
@@ -203,8 +205,7 @@ import { ActionItem } from '../../core/models/models';
                 }
               </ul>
 
-              <button class="btn btn--sm btn--ghost ai-clear-btn"
-                (click)="clearCompleted()">
+              <button class="ai-clear-link" (click)="clearCompleted()">
                 Clear completed
               </button>
             }
@@ -222,6 +223,8 @@ import { ActionItem } from '../../core/models/models';
       border-radius: var(--radius-lg);
       overflow: hidden;
       margin-bottom: 1rem;
+      transition: border-color .15s, box-shadow .15s;
+      &:hover { border-color: var(--color-accent); box-shadow: var(--shadow-md); }
     }
 
     /* ── Header ─────────────────────────────────────────────────── */
@@ -233,7 +236,6 @@ import { ActionItem } from '../../core/models/models';
       cursor: pointer;
       user-select: none;
       gap: .75rem;
-      &:hover { background: var(--color-surface-2); }
     }
     .ai-header__left { flex: 1; min-width: 0; }
     .ai-label {
@@ -442,11 +444,6 @@ import { ActionItem } from '../../core/models/models';
       margin-top: .5rem;
       display: flex; align-items: center;
     }
-    .ai-add-btn {
-      font-size: .8125rem;
-      color: var(--color-text-2);
-      &:hover { color: var(--color-accent-dark); }
-    }
     .ai-limit-note {
       font-size: .75rem;
       color: var(--color-text-3);
@@ -483,11 +480,17 @@ import { ActionItem } from '../../core/models/models';
       .ai-action-btn--delete { opacity: 0; transition: opacity .15s; }
       &:hover { background: var(--color-surface-2); }
     }
-    .ai-clear-btn {
+    .ai-clear-link {
+      background: none; border: none;
       margin-top: .5rem;
       font-size: .75rem;
-      color: #dc2626;
-      &:hover { background: #fee2e2; }
+      font-family: var(--font-sans);
+      color: var(--color-text-3);
+      cursor: pointer;
+      padding: 0;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      &:hover { color: #dc2626; }
     }
   `]
 })
