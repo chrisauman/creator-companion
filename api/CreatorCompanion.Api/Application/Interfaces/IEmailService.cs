@@ -7,4 +7,5 @@ public interface IEmailService
     Task SendPaymentReceiptAsync(string toEmail, string username);
     Task SendPasswordChangedAsync(string toEmail);
     Task SendWelcomeAsync(string toEmail, string username);
+    Task SendAccountDeletionConfirmationAsync(string toEmail, string username);
 }

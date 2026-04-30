@@ -168,6 +168,13 @@ public class StripeService(AppDbContext db, IOptions<StripeConfig> config, IEmai
         }
     }
 
+    public async Task CancelSubscriptionAsync(string subscriptionId)
+    {
+        StripeConfiguration.ApiKey = _cfg.SecretKey;
+        var svc = new SubscriptionService();
+        await svc.CancelAsync(subscriptionId);
+    }
+
     private async Task<string> EnsureCustomerAsync(User user)
     {
         if (!string.IsNullOrEmpty(user.StripeCustomerId))

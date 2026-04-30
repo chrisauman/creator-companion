@@ -186,4 +186,42 @@ public class ResendEmailService(IResend resend, IConfiguration config, AppDbCont
 
         await resend.EmailSendAsync(message);
     }
+
+    public async Task SendAccountDeletionConfirmationAsync(string toEmail, string username)
+    {
+        var fromEmail = config["Resend:FromEmail"] ?? "noreply@creatorcompanion.app";
+        var appName   = config["App:Name"] ?? "Creator Companion";
+
+        var message = new EmailMessage
+        {
+            From    = $"{appName} <{fromEmail}>",
+            To      = { toEmail },
+            Subject = $"Your {appName} account has been deleted",
+            HtmlBody = $"""
+                <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:2rem">
+                  <h2 style="margin-bottom:.5rem">Account deleted</h2>
+                  <p style="color:#555">Hi {username}, your Creator Companion account and all associated data
+                     have been permanently deleted as requested.</p>
+                  <p style="color:#555">The following data has been removed:</p>
+                  <ul style="color:#555;line-height:2">
+                    <li>All journal entries and drafts</li>
+                    <li>All tags, reminders, and preferences</li>
+                    <li>All uploaded images and media</li>
+                    <li>Your account credentials and profile</li>
+                  </ul>
+                  <p style="color:#555">If you had an active subscription, it has been cancelled and
+                     you will not be charged again. Billing records are retained by Stripe as required
+                     by financial regulations.</p>
+                  <p style="color:#555">We're sorry to see you go. If you ever want to start fresh,
+                     you're always welcome back.</p>
+                  <p style="color:#999;font-size:.85rem;margin-top:2rem">
+                    If you did not request this deletion, please contact us immediately at
+                    support@creatorcompanionapp.com.
+                  </p>
+                </div>
+                """
+        };
+
+        await resend.EmailSendAsync(message);
+    }
 }

@@ -92,9 +92,16 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log an entry to keep your streak a
           }
           @if (user()?.tier === 'Paid') {
             <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid var(--color-border-light)">
+              <p class="text-muted text-sm" style="margin-bottom:.75rem">
+                To cancel your subscription and keep your data, use the billing portal below.
+                Your account will continue to exist on the free plan.
+              </p>
               <button class="btn btn--secondary btn--sm" (click)="openBillingPortal()" [disabled]="portalLoading()">
                 {{ portalLoading() ? 'Opening…' : 'Manage billing & subscription' }}
               </button>
+              @if (portalError()) {
+                <p class="alert alert--error" style="margin-top:.75rem">{{ portalError() }}</p>
+              }
             </div>
           }
         </section>
@@ -438,6 +445,52 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log an entry to keep your streak a
           <button class="btn btn--secondary" (click)="logout()">Sign out</button>
         </section>
 
+        <!-- Delete account -->
+        <section class="card card--danger">
+          <h2 style="margin-bottom:.375rem">Delete account</h2>
+          <p class="text-muted text-sm" style="margin-bottom:1.25rem">
+            Permanently delete your account and all data — entries, journals, tags, images, reminders,
+            and preferences. This cannot be undone.
+            @if (user()?.tier === 'Paid') {
+              Your active subscription will also be cancelled immediately.
+            }
+          </p>
+
+          @if (!deleteStep()) {
+            <button class="btn btn--danger btn--sm" (click)="startDelete()">
+              Delete my account…
+            </button>
+          }
+
+          @if (deleteStep() === 'confirm') {
+            <div class="delete-confirm">
+              <p class="text-sm" style="margin-bottom:.875rem">
+                Enter your password to confirm. <strong>All your data will be permanently erased.</strong>
+              </p>
+              <div class="field-group" style="margin-bottom:.875rem">
+                <label class="field-label" for="deletePw">Your password</label>
+                <input id="deletePw" type="password" class="new-tag-input"
+                  [(ngModel)]="deletePassword"
+                  placeholder="Enter your password"
+                  autocomplete="current-password" />
+              </div>
+              @if (deleteError()) {
+                <p class="pw-error" style="margin-bottom:.625rem">{{ deleteError() }}</p>
+              }
+              <div style="display:flex;gap:.625rem;flex-wrap:wrap">
+                <button class="btn btn--danger btn--sm"
+                  [disabled]="!deletePassword || deleting()"
+                  (click)="confirmDelete()">
+                  {{ deleting() ? 'Deleting…' : 'Yes, permanently delete everything' }}
+                </button>
+                <button class="btn btn--ghost btn--sm" [disabled]="deleting()" (click)="cancelDelete()">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          }
+        </section>
+
       </main>
     </div>
   `,
@@ -625,6 +678,13 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log an entry to keep your streak a
       padding:.375rem .625rem; font-size:.9375rem; font-family:var(--font-sans);
       outline:none; background:var(--color-surface); color:var(--color-text);
     }
+
+    /* Danger zone */
+    .card--danger {
+      border-color: var(--color-danger, #dc2626);
+      background: #fff5f5;
+    }
+    .delete-confirm { display:flex; flex-direction:column; }
   `]
 })
 
@@ -643,6 +703,7 @@ export class AccountComponent implements OnInit {
   upgrading    = signal<'monthly' | 'annual' | null>(null);
   upgradeError = signal('');
   portalLoading = signal(false);
+  portalError   = signal('');
 
   // Password change
   currentPassword  = '';
@@ -681,6 +742,12 @@ export class AccountComponent implements OnInit {
   pushWorking   = signal(false);
   pushDenied    = signal(false);
 
+  // Account deletion
+  deleteStep    = signal<null | 'confirm'>(null);
+  deletePassword = '';
+  deleting      = signal(false);
+  deleteError   = signal('');
+
   ngOnInit(): void {
     this.auth.loadCapabilities().subscribe(c => this.caps.set(c));
     this.api.getStreak().subscribe({ next: s => this.streak.set(s), error: () => {} });
@@ -716,9 +783,13 @@ export class AccountComponent implements OnInit {
 
   openBillingPortal(): void {
     this.portalLoading.set(true);
+    this.portalError.set('');
     this.api.createPortalSession().subscribe({
       next: res => { window.location.href = res.url; },
-      error: () => this.portalLoading.set(false)
+      error: err => {
+        this.portalLoading.set(false);
+        this.portalError.set(err?.error?.error ?? 'Could not open billing portal. Please try again.');
+      }
     });
   }
 
@@ -967,5 +1038,33 @@ export class AccountComponent implements OnInit {
 
   logout(): void {
     this.auth.logout();
+  }
+
+  startDelete(): void {
+    this.deleteStep.set('confirm');
+    this.deletePassword = '';
+    this.deleteError.set('');
+  }
+
+  cancelDelete(): void {
+    this.deleteStep.set(null);
+    this.deletePassword = '';
+    this.deleteError.set('');
+  }
+
+  confirmDelete(): void {
+    if (!this.deletePassword) return;
+    this.deleting.set(true);
+    this.deleteError.set('');
+    this.api.deleteAccount(this.deletePassword).subscribe({
+      next: () => {
+        // Auth service clears state and navigates to login
+        this.auth.logout();
+      },
+      error: err => {
+        this.deleting.set(false);
+        this.deleteError.set(err?.error?.error ?? 'Could not delete account. Please try again.');
+      }
+    });
   }
 }

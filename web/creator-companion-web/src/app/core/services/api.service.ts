@@ -311,6 +311,10 @@ export class ApiService {
     return this.http.put<ReminderConfigResponse>(`${this.base}/admin/reminder-config`, payload);
   }
 
+  deleteAccount(password: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/users/me`, { body: { password } });
+  }
+
   // ── Admin: Email Templates ───────────────────────────────────────────────
   adminGetEmailTemplate(key: string): Observable<any> {
     return this.http.get<any>(`${this.base}/admin/email-templates/${key}`);
