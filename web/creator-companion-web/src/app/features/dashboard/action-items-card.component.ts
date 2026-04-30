@@ -50,9 +50,7 @@ import { ActionItem } from '../../core/models/models';
             <p class="ai-empty__text">
               Use Daily Reminders to track your to-dos, next actions, or anything you want to get done. Add up to 20 active items.
             </p>
-            <button class="btn btn--sm btn--primary" (click)="startAdd()">
-              + Add your first item
-            </button>
+            <button class="ai-add-link" (click)="startAdd()">+ Add item</button>
           </div>
         }
 
@@ -60,9 +58,18 @@ import { ActionItem } from '../../core/models/models';
         @if (allCaughtUp() && !showAddForm()) {
           <div class="ai-caught-up">
             <p>🎉 All caught up!</p>
-            <button class="btn btn--sm btn--primary" (click)="startAdd()">
-              + Add item
-            </button>
+            <button class="ai-add-link" (click)="startAdd()">+ Add item</button>
+          </div>
+        }
+
+        <!-- Add link (top, when list exists and form not open) -->
+        @if (!showAddForm() && (activeItems().length > 0 || completedItems().length > 0)) {
+          <div class="ai-add-bar">
+            @if (activeItems().length < 20) {
+              <button class="ai-add-link" (click)="startAdd()">+ Add item</button>
+            } @else {
+              <span class="ai-limit-note">20 active item limit reached</span>
+            }
           </div>
         }
 
@@ -153,18 +160,6 @@ import { ActionItem } from '../../core/models/models';
           </div>
         }
 
-        <!-- Add button (when list exists) -->
-        @if (!showAddForm() && (activeItems().length > 0 || completedItems().length > 0)) {
-          <div class="ai-add-bar">
-            @if (activeItems().length < 20) {
-              <button class="btn btn--sm btn--primary" (click)="startAdd()">
-                + Add item
-              </button>
-            } @else {
-              <span class="ai-limit-note">20 active item limit reached</span>
-            }
-          </div>
-        }
 
         <!-- Error -->
         @if (error()) {
@@ -440,10 +435,21 @@ import { ActionItem } from '../../core/models/models';
       flex-shrink: 0;
     }
 
-    /* ── Add bar ─────────────────────────────────────────────────── */
+    /* ── Add bar (top of list) ───────────────────────────────────── */
     .ai-add-bar {
-      margin-top: .5rem;
+      margin-bottom: .25rem;
       display: flex; align-items: center;
+    }
+    .ai-add-link {
+      background: none; border: none;
+      font-family: var(--font-sans);
+      font-size: .9rem;
+      color: var(--color-text-3);
+      cursor: pointer;
+      padding: .25rem 0;
+      display: flex; align-items: center; gap: .4rem;
+      transition: color .12s;
+      &:hover { color: var(--color-accent-dark); }
     }
     .ai-limit-note {
       font-size: .75rem;
