@@ -271,6 +271,7 @@ import { ActionItem } from '../../core/models/models';
       padding: 0 .75rem .875rem;
     }
     .ai-card--expanded .ai-body { display: block; }
+    .ai-card--expanded .ai-header { padding-bottom: .25rem; }
 
     /* ── Empty / caught-up states ────────────────────────────────── */
     .ai-empty {
@@ -297,7 +298,7 @@ import { ActionItem } from '../../core/models/models';
     /* ── List ────────────────────────────────────────────────────── */
     .ai-list {
       list-style: none;
-      margin: .5rem 0 0;
+      margin: .125rem 0 0;
       padding: 0;
     }
     .ai-item {
