@@ -25,6 +25,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<EmailVerificationToken> EmailVerificationTokens => Set<EmailVerificationToken>();
     public DbSet<EmailTemplate> EmailTemplates => Set<EmailTemplate>();
+    public DbSet<ActionItem> ActionItems => Set<ActionItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -44,5 +45,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.ApplyConfiguration(new MotivationEntryConfiguration());
         modelBuilder.ApplyConfiguration(new UserMotivationShownConfiguration());
         modelBuilder.ApplyConfiguration(new EmailTemplateConfiguration());
+        modelBuilder.ApplyConfiguration(new ActionItemConfiguration());
     }
 }

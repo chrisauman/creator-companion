@@ -8,6 +8,7 @@ export interface User {
   createdAt: string;
   trialEndsAt?: string;
   showMotivation: boolean;
+  showActionItems: boolean;
 }
 
 export interface MotivationEntry {
@@ -147,6 +148,15 @@ export interface UpdateReminderConfigRequest {
   messageShortLapse: string;
   messageMediumLapse: string;
   messageLongAbsence: string;
+}
+
+export interface ActionItem {
+  id: number;
+  text: string;
+  sortOrder: number;
+  isCompleted: boolean;
+  completedAt?: string;
+  createdAt: string;
 }
 
 export interface Capabilities {

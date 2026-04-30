@@ -25,7 +25,31 @@ public record UserProfileResponse(
     bool OnboardingCompleted,
     DateTime CreatedAt,
     DateTime? TrialEndsAt,
-    bool ShowMotivation
+    bool ShowMotivation,
+    bool ShowActionItems
+);
+
+// ── Action Items ────────────────────────────────────────────────────────────
+
+public record ActionItemResponse(
+    int Id,
+    string Text,
+    int SortOrder,
+    bool IsCompleted,
+    DateTime? CompletedAt,
+    DateTime CreatedAt
+);
+
+public record CreateActionItemRequest(
+    [Required, MaxLength(150)] string Text
+);
+
+public record UpdateActionItemRequest(
+    [Required, MaxLength(150)] string Text
+);
+
+public record ReorderActionItemsRequest(
+    [Required] List<int> Ids
 );
 
 public record AdminUpdateUserRequest(

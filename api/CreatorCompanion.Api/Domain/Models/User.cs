@@ -21,6 +21,9 @@ public class User
     /// <summary>Whether the Daily Motivation card is shown on the dashboard (paid users only).</summary>
     public bool ShowMotivation { get; set; } = true;
 
+    /// <summary>Whether the Daily Reminders (action items) card is shown on the dashboard (paid users only).</summary>
+    public bool ShowActionItems { get; set; } = true;
+
     public string? StripeCustomerId { get; set; }
     public string? StripeSubscriptionId { get; set; }
 

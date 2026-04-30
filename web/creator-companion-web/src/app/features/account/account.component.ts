@@ -106,10 +106,10 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log an entry to keep your streak a
           }
         </section>
 
-        <!-- Reminders -->
+        <!-- Notifications -->
         <section class="card">
           <div class="section-head">
-            <h2>Reminders</h2>
+            <h2>Notifications</h2>
           </div>
 
           <!-- Push permission row -->
@@ -275,6 +275,19 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log an entry to keep your streak a
                        [checked]="showMotivation()"
                        [disabled]="motivationPrefWorking()"
                        (change)="toggleMotivation()" />
+                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              </label>
+            </div>
+            <div class="pref-row" style="border-top:1px solid var(--color-border-light);margin-top:.75rem;padding-top:.75rem">
+              <div class="pref-info">
+                <p class="pref-label">Daily Reminders</p>
+                <p class="text-sm text-muted">Show your to-do/next-action list on the dashboard.</p>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox"
+                       [checked]="showActionItems()"
+                       [disabled]="actionItemsPrefWorking()"
+                       (change)="toggleActionItems()" />
                 <span class="toggle-track"><span class="toggle-thumb"></span></span>
               </label>
             </div>
@@ -736,6 +749,10 @@ export class AccountComponent implements OnInit {
   showMotivation       = signal(true);
   motivationPrefWorking = signal(false);
 
+  // Action items preference
+  showActionItems       = signal(true);
+  actionItemsPrefWorking = signal(false);
+
   // Push
   pushSupported = signal(false);
   pushEnabled   = signal(false);
@@ -754,6 +771,7 @@ export class AccountComponent implements OnInit {
     this.api.getMe().subscribe(u => {
       this.auth.setUser(u);
       this.showMotivation.set(u.showMotivation ?? true);
+      this.showActionItems.set(u.showActionItems ?? true);
     });
     this.loadTags();
     this.loadReminders();
@@ -802,6 +820,18 @@ export class AccountComponent implements OnInit {
         this.motivationPrefWorking.set(false);
       },
       error: () => this.motivationPrefWorking.set(false)
+    });
+  }
+
+  toggleActionItems(): void {
+    this.actionItemsPrefWorking.set(true);
+    const newVal = !this.showActionItems();
+    this.api.updateActionItemsPreference(newVal).subscribe({
+      next: res => {
+        this.showActionItems.set(res.showActionItems);
+        this.actionItemsPrefWorking.set(false);
+      },
+      error: () => this.actionItemsPrefWorking.set(false)
     });
   }
 

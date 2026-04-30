@@ -5,7 +5,7 @@ import { environment } from '../../../environments/environment';
 import {
   AuthResponse, User, Journal, Entry, EntryListItem,
   Draft, StreakStats, Capabilities, MediaItem, Tag, Pause, MotivationEntry,
-  ReminderConfigResponse, UpdateReminderConfigRequest
+  ReminderConfigResponse, UpdateReminderConfigRequest, ActionItem
 } from '../models/models';
 
 @Injectable({ providedIn: 'root' })
@@ -313,6 +313,39 @@ export class ApiService {
 
   deleteAccount(password: string): Observable<void> {
     return this.http.delete<void>(`${this.base}/users/me`, { body: { password } });
+  }
+
+  updateActionItemsPreference(show: boolean): Observable<{ showActionItems: boolean }> {
+    return this.http.patch<{ showActionItems: boolean }>(`${this.base}/users/me/action-items-preference`, { show });
+  }
+
+  // ── Action Items ─────────────────────────────────────────────────────────
+  getActionItems(): Observable<ActionItem[]> {
+    return this.http.get<ActionItem[]>(`${this.base}/action-items`);
+  }
+
+  createActionItem(text: string): Observable<ActionItem> {
+    return this.http.post<ActionItem>(`${this.base}/action-items`, { text });
+  }
+
+  updateActionItem(id: number, text: string): Observable<ActionItem> {
+    return this.http.put<ActionItem>(`${this.base}/action-items/${id}`, { text });
+  }
+
+  toggleActionItem(id: number): Observable<ActionItem> {
+    return this.http.post<ActionItem>(`${this.base}/action-items/${id}/toggle`, {});
+  }
+
+  reorderActionItems(ids: number[]): Observable<void> {
+    return this.http.put<void>(`${this.base}/action-items/reorder`, { ids });
+  }
+
+  deleteActionItem(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/action-items/${id}`);
+  }
+
+  clearCompletedActionItems(): Observable<void> {
+    return this.http.delete<void>(`${this.base}/action-items/completed`);
   }
 
   // ── Admin: Email Templates ───────────────────────────────────────────────

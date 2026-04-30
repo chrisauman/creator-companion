@@ -18,7 +18,7 @@ import { ApiService } from '../../core/services/api.service';
         <a routerLink="/admin" class="admin-nav__link admin-nav__link--active">Overview</a>
         <a routerLink="/admin/users" class="admin-nav__link">Users</a>
         <a routerLink="/admin/motivation" class="admin-nav__link">Content Library</a>
-        <a routerLink="/admin/reminders" class="admin-nav__link">Reminders</a>
+        <a routerLink="/admin/reminders" class="admin-nav__link">Notifications</a>
         <a routerLink="/admin/emails" class="admin-nav__link">Emails</a>
       </nav>
 

@@ -26,7 +26,7 @@ public class UsersController(AppDbContext db) : ControllerBase
             user.Id, user.Username, user.Email,
             user.Tier.ToString(), user.TimeZoneId,
             user.OnboardingCompleted, user.CreatedAt, user.TrialEndsAt,
-            user.ShowMotivation));
+            user.ShowMotivation, user.ShowActionItems));
     }
 
     [HttpPatch("me/timezone")]
@@ -95,6 +95,19 @@ public class UsersController(AppDbContext db) : ControllerBase
         return Ok(limits);
     }
 
+    [HttpPatch("me/action-items-preference")]
+    public async Task<IActionResult> UpdateActionItemsPreference([FromBody] UpdateActionItemsPreferenceRequest request)
+    {
+        var user = await db.Users.FindAsync(UserId);
+        if (user is null) return NotFound();
+
+        user.ShowActionItems = request.Show;
+        user.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync();
+
+        return Ok(new { showActionItems = user.ShowActionItems });
+    }
+
     [HttpDelete("me")]
     public async Task<IActionResult> DeleteAccount(
         [FromBody] DeleteAccountRequest request,
@@ -152,3 +165,4 @@ public class UsersController(AppDbContext db) : ControllerBase
 }
 
 public record DeleteAccountRequest(string Password);
+public record UpdateActionItemsPreferenceRequest(bool Show);

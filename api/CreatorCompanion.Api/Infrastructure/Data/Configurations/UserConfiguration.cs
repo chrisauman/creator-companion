@@ -15,6 +15,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.TimeZoneId).HasMaxLength(100).IsRequired();
         builder.Property(u => u.Tier).HasConversion<string>().HasMaxLength(20);
         builder.Property(u => u.ShowMotivation).HasDefaultValue(true);
+        builder.Property(u => u.ShowActionItems).HasDefaultValue(true);
         builder.Property(u => u.StripeCustomerId).HasMaxLength(255);
         builder.Property(u => u.StripeSubscriptionId).HasMaxLength(255);
 

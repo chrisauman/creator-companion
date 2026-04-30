@@ -9,11 +9,12 @@ import { StreakStats, EntryListItem, MotivationEntry } from '../../core/models/m
 import { getMoodEmoji } from '../../core/constants/moods';
 import { MILESTONES, getMilestoneForDays, getMilestoneIndex, Milestone } from '../../core/constants/milestones';
 import { PushService } from '../../core/services/push.service';
+import { ActionItemsCardComponent } from './action-items-card.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule],
+  imports: [CommonModule, RouterLink, FormsModule, ActionItemsCardComponent],
   template: `
     <div class="dashboard">
 
@@ -65,6 +66,11 @@ import { PushService } from '../../core/services/push.service';
               <p class="motivation-content">{{ motivation()!.fullContent }}</p>
             </div>
           </div>
+        }
+
+        <!-- Daily Reminders / Action Items card (paid users only) -->
+        @if (isPaid() && showActionItems()) {
+          <app-action-items-card />
         }
 
         <!-- Push notification nudge -->
@@ -582,6 +588,7 @@ export class DashboardComponent implements OnInit {
   loadingMore = signal(false);
   motivation = signal<MotivationEntry | null>(null);
   motivationExpanded = signal(false);
+  showActionItems = signal(true);
   loading = signal(true);
   error   = signal('');
 
@@ -629,6 +636,11 @@ export class DashboardComponent implements OnInit {
 
     this.api.getTodayMotivation().subscribe({
       next: m => this.motivation.set(m),
+      error: () => {}
+    });
+
+    this.api.getMe().subscribe({
+      next: u => this.showActionItems.set(u.showActionItems),
       error: () => {}
     });
 
