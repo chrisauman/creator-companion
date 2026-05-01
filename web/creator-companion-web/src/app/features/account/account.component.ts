@@ -7,22 +7,29 @@ import { AuthService } from '../../core/services/auth.service';
 import { ExportService } from '../../core/services/export.service';
 import { PushService } from '../../core/services/push.service';
 import { User, Capabilities, Tag, StreakStats, Reminder } from '../../core/models/models';
+import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
+import { MobileNavComponent } from '../../shared/mobile-nav/mobile-nav.component';
 
 const DEFAULT_REMINDER_MESSAGE = "Remember to log an entry to keep your streak alive.";
 
 @Component({
   selector: 'app-account',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule],
+  imports: [CommonModule, RouterLink, FormsModule, SidebarComponent, MobileNavComponent],
   template: `
     <div class="page">
-      <header class="topnav">
-        <div class="container topnav__inner">
-          <button class="btn btn--ghost btn--sm" routerLink="/dashboard">← Dashboard</button>
-          <span class="topnav__title">Account</span>
-          <span></span>
-        </div>
+
+      <!-- Desktop sidebar -->
+      <app-sidebar active="account" />
+
+      <!-- Mobile top bar -->
+      <header class="topbar">
+        <img src="logo-full.png" alt="Creator Companion" class="topbar__logo">
+        <span class="topbar__title">Account</span>
       </header>
+
+      <!-- Mobile bottom nav -->
+      <app-mobile-nav active="account" />
 
       <main class="container main-content stack stack--lg" *ngIf="user()">
 
@@ -508,14 +515,31 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log an entry to keep your streak a
     </div>
   `,
   styles: [`
-    .topnav {
-      position:sticky; top:0; z-index:100;
-      background:var(--color-surface); border-bottom:1px solid var(--color-border);
-      height:var(--nav-h);
+    /* ── Page shell ─────────────────────────────────────────────── */
+    .page { display: flex; flex-direction: column; min-height: 100vh; }
+    @media (min-width: 768px) { .page { flex-direction: row; } }
+
+    /* ── Mobile top bar ──────────────────────────────────────────── */
+    .topbar {
+      position: sticky; top: 0; z-index: 100;
+      background: #111318;
+      border-bottom: 1px solid rgba(255,255,255,.07);
+      height: 52px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 1.125rem;
     }
-    .topnav__inner { display:flex; align-items:center; justify-content:space-between; height:100%; }
-    .topnav__title { font-weight:600; font-size:1rem; }
-    .main-content { padding-top:1.5rem; padding-bottom:4rem; }
+    @media (min-width: 768px) { .topbar { display: none; } }
+    .topbar__logo { height: 26px; width: auto; display: block; }
+    .topbar__title { font-size: .9375rem; font-weight: 600; color: rgba(255,255,255,.8); }
+
+    .main-content {
+      flex: 1; min-width: 0;
+      padding-top: 1.5rem;
+      padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+    }
+    @media (min-width: 768px) {
+      .main-content { padding-bottom: 4rem; }
+    }
     .section-head {
       display:flex; align-items:center; justify-content:space-between;
       margin-bottom:1rem;

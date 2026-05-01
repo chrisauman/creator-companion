@@ -5,7 +5,6 @@ import { ApiService } from '../../core/services/api.service';
 import { TokenService } from '../../core/services/token.service';
 import { AuthService } from '../../core/services/auth.service';
 import { StreakStats } from '../../core/models/models';
-import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-sidebar',

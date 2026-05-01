@@ -3,23 +3,25 @@ import { CommonModule } from '@angular/common';
 import { ApiService } from '../../core/services/api.service';
 import { MotivationEntry } from '../../core/models/models';
 import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
+import { MobileNavComponent } from '../../shared/mobile-nav/mobile-nav.component';
 
 @Component({
   selector: 'app-favorite-sparks',
   standalone: true,
-  imports: [CommonModule, SidebarComponent],
+  imports: [CommonModule, SidebarComponent, MobileNavComponent],
   template: `
     <div class="page">
 
       <!-- Desktop sidebar -->
       <app-sidebar active="favorites" />
 
-      <!-- Mobile top nav -->
-      <header class="topnav">
-        <div class="topnav__inner">
-          <img src="logo-full.png" alt="Creator Companion" class="topnav__logo-img">
-        </div>
+      <!-- Mobile top bar -->
+      <header class="topbar">
+        <img src="logo-full.png" alt="Creator Companion" class="topbar__logo">
       </header>
+
+      <!-- Mobile bottom nav -->
+      <app-mobile-nav active="favorites" />
 
       <!-- Main content -->
       <main class="main-content">
@@ -101,23 +103,22 @@ import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
       .page { flex-direction: row; }
     }
 
-    /* ── Mobile top nav ──────────────────────────────────────────── */
-    .topnav {
+    /* ── Mobile top bar ──────────────────────────────────────────── */
+    .topbar {
       position: sticky; top: 0; z-index: 100;
-      background: var(--color-surface);
-      border-bottom: 1px solid var(--color-border);
-      height: var(--nav-h);
+      background: #111318;
+      border-bottom: 1px solid rgba(255,255,255,.07);
+      height: 52px;
       display: flex; align-items: center;
-      padding: 0 1rem;
+      padding: 0 1.125rem;
     }
-    @media (min-width: 768px) { .topnav { display: none; } }
-    .topnav__inner { display: flex; align-items: center; }
-    .topnav__logo-img { height: 28px; width: auto; display: block; }
+    @media (min-width: 768px) { .topbar { display: none; } }
+    .topbar__logo { height: 26px; width: auto; display: block; }
 
     /* ── Main content ────────────────────────────────────────────── */
     .main-content {
       flex: 1; min-width: 0;
-      padding: 1.5rem 1rem 4rem;
+      padding: 1.25rem 1rem calc(80px + env(safe-area-inset-bottom, 0px));
       background: var(--color-bg);
     }
     @media (min-width: 768px) {

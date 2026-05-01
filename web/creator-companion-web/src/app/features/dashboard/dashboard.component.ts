@@ -10,11 +10,12 @@ import { getMoodEmoji } from '../../core/constants/moods';
 import { MILESTONES, getMilestoneForDays, getMilestoneIndex, Milestone } from '../../core/constants/milestones';
 import { PushService } from '../../core/services/push.service';
 import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
+import { MobileNavComponent } from '../../shared/mobile-nav/mobile-nav.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, SidebarComponent],
+  imports: [CommonModule, RouterLink, FormsModule, SidebarComponent, MobileNavComponent],
   template: `
     <div class="dashboard">
 
@@ -34,16 +35,14 @@ import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
       <!-- ── Desktop sidebar ─────────────────────────────────── -->
       <app-sidebar active="dashboard" />
 
-      <!-- ── Mobile top nav ──────────────────────────────────── -->
-      <header class="topnav">
-        <div class="container topnav__inner">
-          <img src="logo-full.png" alt="Creator Companion" class="topnav__logo-img">
-          <div style="display:flex;gap:.5rem">
-            <a class="nav-link" routerLink="/account">Account</a>
-            <a *ngIf="isAdmin()" class="nav-link" routerLink="/admin">Admin</a>
-          </div>
-        </div>
+      <!-- ── Mobile top bar ──────────────────────────────────── -->
+      <header class="topbar">
+        <img src="logo-full.png" alt="Creator Companion" class="topbar__logo">
+        <a *ngIf="isAdmin()" class="topbar__admin" routerLink="/admin">Admin</a>
       </header>
+
+      <!-- ── Mobile bottom nav ───────────────────────────────── -->
+      <app-mobile-nav active="dashboard" />
 
       <!-- ── Main content ────────────────────────────────────── -->
       <main class="main-content">
@@ -242,32 +241,33 @@ import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
       .dashboard { flex-direction: row; }
     }
 
-    /* ── Mobile top nav ──────────────────────────────────────────── */
-    .topnav {
+    /* ── Mobile top bar ──────────────────────────────────────────── */
+    .topbar {
       position: sticky; top: 0; z-index: 100;
-      background: var(--color-surface);
-      border-bottom: 1px solid var(--color-border);
-      height: var(--nav-h);
-    }
-    @media (min-width: 768px) {
-      .topnav { display: none; }
-    }
-    .topnav__inner {
+      background: #111318;
+      border-bottom: 1px solid rgba(255,255,255,.07);
+      height: 52px;
       display: flex; align-items: center;
-      justify-content: space-between; height: 100%;
+      padding: 0 1.125rem;
+      justify-content: space-between;
     }
-    .topnav__logo-img { height: 28px; width: auto; display: block; }
-    .nav-link {
-      color: var(--color-accent); font-size: .9375rem;
-      font-weight: 500; text-decoration: none;
-      &:hover { text-decoration: underline; }
+    @media (min-width: 768px) { .topbar { display: none; } }
+    .topbar__logo { height: 26px; width: auto; display: block; }
+    .topbar__admin {
+      font-size: .8125rem; font-weight: 600;
+      color: rgba(255,255,255,.5); text-decoration: none;
+      padding: .25rem .625rem;
+      border: 1px solid rgba(255,255,255,.15);
+      border-radius: 6px;
+      &:hover { color: #fff; border-color: rgba(255,255,255,.3); }
     }
 
     /* ── Main content ────────────────────────────────────────────── */
     .main-content {
       flex: 1;
       min-width: 0;
-      padding: 1.5rem 1rem 4rem;
+      /* extra bottom padding = nav bar height + safe-area + breathing room */
+      padding: 1.25rem 1rem calc(80px + env(safe-area-inset-bottom, 0px));
       background: var(--color-bg);
     }
     @media (min-width: 768px) {

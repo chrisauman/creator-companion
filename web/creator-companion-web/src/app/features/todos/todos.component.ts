@@ -1,24 +1,24 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
 import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
+import { MobileNavComponent } from '../../shared/mobile-nav/mobile-nav.component';
 import { ActionItemsCardComponent } from '../dashboard/action-items-card.component';
 
 @Component({
   selector: 'app-todos',
   standalone: true,
-  imports: [CommonModule, RouterLink, SidebarComponent, ActionItemsCardComponent],
+  imports: [CommonModule, SidebarComponent, MobileNavComponent, ActionItemsCardComponent],
   template: `
     <div class="page">
       <app-sidebar active="todos" />
 
-      <!-- Mobile top nav -->
-      <header class="topnav">
-        <div class="topnav__inner container">
-          <img src="logo-full.png" alt="Creator Companion" class="topnav__logo-img">
-          <a class="nav-link" routerLink="/account">Account</a>
-        </div>
+      <!-- Mobile top bar -->
+      <header class="topbar">
+        <img src="logo-full.png" alt="Creator Companion" class="topbar__logo">
       </header>
+
+      <!-- Mobile bottom nav -->
+      <app-mobile-nav active="todos" />
 
       <main class="main-content">
         <div class="page-header">
@@ -39,20 +39,20 @@ import { ActionItemsCardComponent } from '../dashboard/action-items-card.compone
       .page { flex-direction: row; }
     }
 
-    .topnav {
+    .topbar {
       position: sticky; top: 0; z-index: 100;
-      background: var(--color-surface);
-      border-bottom: 1px solid var(--color-border);
-      height: var(--nav-h);
+      background: #111318;
+      border-bottom: 1px solid rgba(255,255,255,.07);
+      height: 52px;
+      display: flex; align-items: center;
+      padding: 0 1.125rem;
     }
-    @media (min-width: 768px) { .topnav { display: none; } }
-    .topnav__inner { display: flex; align-items: center; justify-content: space-between; height: 100%; }
-    .topnav__logo-img { height: 28px; width: auto; display: block; }
-    .nav-link { color: var(--color-accent); font-size: .9375rem; font-weight: 500; text-decoration: none; }
+    @media (min-width: 768px) { .topbar { display: none; } }
+    .topbar__logo { height: 26px; width: auto; display: block; }
 
     .main-content {
       flex: 1; min-width: 0;
-      padding: 1.5rem 1rem 4rem;
+      padding: 1.25rem 1rem calc(80px + env(safe-area-inset-bottom, 0px));
       background: var(--color-bg);
     }
     @media (min-width: 768px) {
