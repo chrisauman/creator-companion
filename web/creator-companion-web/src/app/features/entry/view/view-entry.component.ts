@@ -27,7 +27,6 @@ import { MobileNavComponent } from '../../../shared/mobile-nav/mobile-nav.compon
           <img src="logo-icon.png" alt="" class="topbar__brand-icon">
           <span class="topbar__brand-name">Creator Companion</span>
         </a>
-        <span class="topbar__date">{{ entryDateLabel() }}</span>
         <div class="topbar__actions">
           @if (entry()) {
             <button class="icon-btn" [class.icon-btn--active]="isFavorited()"
@@ -155,12 +154,7 @@ import { MobileNavComponent } from '../../../shared/mobile-nav/mobile-nav.compon
     .topbar__brand { display: flex; align-items: center; gap: .5rem; text-decoration: none; flex-shrink: 0; }
     .topbar__brand-icon { height: 22px; width: auto; display: block; }
     .topbar__brand-name { font-family: 'Fraunces', Georgia, serif; font-size: .875rem; font-weight: 700; color: #fff; }
-    .topbar__date {
-      flex: 1; font-size: .8125rem; font-weight: 500;
-      color: rgba(255,255,255,.5); text-align: center;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      min-width: 0;
-    }
+    .topbar__actions { margin-left: auto; }
     .topbar__actions { display: flex; align-items: center; gap: .25rem; flex-shrink: 0; }
 
     /* ── Main content ────────────────────────────────────────────── */
