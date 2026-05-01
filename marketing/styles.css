@@ -35,8 +35,8 @@ html { font-size: 16px; -webkit-font-smoothing: antialiased; scroll-behavior: sm
 body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; }
 h1, h2, h3 { font-family: var(--font-display); font-weight: 900; }
 img { display: block; max-width: 100%; }
-a { color: var(--accent-dark); text-decoration: none; }
-a:hover { text-decoration: underline; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; color: var(--accent-dark); }
 
 /* ── Layout ──────────────────────────────────────────────────────────────── */
 .container { width: 100%; max-width: var(--max-w); margin: 0 auto; padding: 0 1.5rem; }
@@ -74,10 +74,10 @@ a:hover { text-decoration: underline; }
 .btn:hover { text-decoration: none; transform: translateY(-1px); }
 .btn:active { transform: translateY(0); }
 .btn--primary {
-  background: var(--accent-dark); color: #fff;
-  box-shadow: 0 2px 8px rgba(14,116,144,.35);
+  background: var(--accent); color: #fff;
+  box-shadow: 0 2px 8px rgba(18,196,227,.35);
 }
-.btn--primary:hover { background: #0a6277; }
+.btn--primary:hover { background: var(--accent-dark); }
 .btn--secondary {
   background: var(--accent-light); color: var(--accent-dark);
   border: 1.5px solid var(--accent);

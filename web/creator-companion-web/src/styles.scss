@@ -58,7 +58,7 @@ body {
   min-height: 100vh;
 }
 
-a { color: var(--color-accent-dark); text-decoration: none; }
+a { color: var(--color-accent); text-decoration: none; }
 a:hover { text-decoration: underline; color: var(--color-accent-dark); }
 
 img, svg { display: block; max-width: 100%; }
@@ -108,26 +108,26 @@ p  { line-height: 1.7; }
   &:disabled { opacity: .5; cursor: not-allowed; }
 
   &--primary {
-    background: var(--color-accent-dark);
+    background: var(--color-accent);
     color: #fff;
     font-weight: 600;
-    &:hover:not(:disabled) { background: var(--color-accent); color: #fff; }
+    &:hover:not(:disabled) { background: var(--color-accent-dark); color: #fff; }
   }
 
   &--secondary {
-    background: var(--color-accent-dark);
+    background: var(--color-accent);
     color: #fff;
     font-weight: 600;
     border-color: transparent;
-    &:hover:not(:disabled) { background: var(--color-accent); color: #fff; }
+    &:hover:not(:disabled) { background: var(--color-accent-dark); color: #fff; }
   }
 
   &--ghost {
-    background: var(--color-accent-dark);
+    background: var(--color-accent);
     color: #fff;
     font-weight: 600;
     border-color: transparent;
-    &:hover:not(:disabled) { background: var(--color-accent); color: #fff; }
+    &:hover:not(:disabled) { background: var(--color-accent-dark); color: #fff; }
   }
 
   &--danger {
