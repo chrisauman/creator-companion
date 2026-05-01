@@ -31,7 +31,58 @@ import { ActionItemsCardComponent } from './action-items-card.component';
         </div>
       }
 
-      <!-- Top nav -->
+      <!-- ── Desktop sidebar ─────────────────────────────────── -->
+      <aside class="sidebar">
+        <!-- Logo -->
+        <div class="sidebar__logo-wrap">
+          <img src="logo-icon.png" alt="" class="sidebar__logo-icon">
+          <span class="sidebar__logo-text">Creator Companion</span>
+        </div>
+
+        <!-- Streak block -->
+        <div class="sidebar__streak-block" *ngIf="streak()">
+          <div class="sidebar__streak-num">{{ streak()!.currentStreak }}</div>
+          <div class="sidebar__streak-label">Day streak 🔥</div>
+          @if (isPaid() && currentStreakMilestone()) {
+            <div class="sidebar__milestone">
+              {{ currentStreakMilestone()!.icon }} {{ currentStreakMilestone()!.title }}
+            </div>
+          }
+          <div class="sidebar__streak-sub">
+            Longest: {{ streak()!.longestStreak }} &nbsp;·&nbsp; {{ streak()!.totalEntries }} entries
+          </div>
+        </div>
+        <div class="sidebar__streak-block sidebar__streak-block--loading" *ngIf="!streak()">
+          <div class="sidebar__streak-num">—</div>
+          <div class="sidebar__streak-label">Day streak</div>
+        </div>
+
+        <!-- Nav -->
+        <nav class="sidebar__nav">
+          <a class="sidebar__nav-item sidebar__nav-item--active" routerLink="/dashboard">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            Journal
+          </a>
+          <a class="sidebar__nav-item" routerLink="/account">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+            Account
+          </a>
+          <a *ngIf="isAdmin()" class="sidebar__nav-item" routerLink="/admin">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+            Admin
+          </a>
+        </nav>
+
+        <div class="sidebar__spacer"></div>
+
+        <!-- Footer -->
+        <div class="sidebar__footer">
+          <div class="sidebar__avatar">{{ userInitial() }}</div>
+          <span class="sidebar__username">{{ username() }}</span>
+        </div>
+      </aside>
+
+      <!-- ── Mobile top nav ──────────────────────────────────── -->
       <header class="topnav">
         <div class="container topnav__inner">
           <img src="logo-full.png" alt="Creator Companion" class="topnav__logo-img">
@@ -42,30 +93,23 @@ import { ActionItemsCardComponent } from './action-items-card.component';
         </div>
       </header>
 
-      <main class="container main-content">
+      <!-- ── Main content ────────────────────────────────────── -->
+      <main class="main-content">
 
         <!-- New entry CTA -->
         <button class="new-entry-bar btn btn--primary btn--full" routerLink="/entry/new">
           + Create New Entry
         </button>
 
-        <!-- Streak stats -->
-        <div class="stats-grid" *ngIf="streak()">
+        <!-- Mobile-only stat cards -->
+        <div class="stats-grid stats-grid--mobile" *ngIf="streak()">
           <div class="stat-card">
             <span class="stat-value streak-value">{{ streak()!.currentStreak }}</span>
             <span class="stat-label">Day streak</span>
-            <div class="milestone-badge" *ngIf="isPaid() && currentStreakMilestone()"
-              [title]="currentStreakMilestone()!.description">
-              {{ currentStreakMilestone()!.icon }} {{ currentStreakMilestone()!.title }}
-            </div>
           </div>
           <div class="stat-card">
             <span class="stat-value">{{ streak()!.longestStreak }}</span>
             <span class="stat-label">Longest streak</span>
-            <div class="milestone-badge" *ngIf="isPaid() && longestStreakMilestone()"
-              [title]="longestStreakMilestone()!.description">
-              {{ longestStreakMilestone()!.icon }} {{ longestStreakMilestone()!.title }}
-            </div>
           </div>
           <div class="stat-card">
             <span class="stat-value">{{ streak()!.totalEntries }}</span>
@@ -76,9 +120,7 @@ import { ActionItemsCardComponent } from './action-items-card.component';
             <span class="stat-label">Days active</span>
           </div>
         </div>
-
-        <!-- Streak loading skeleton -->
-        <div class="stats-grid" *ngIf="!streak() && !error()">
+        <div class="stats-grid stats-grid--mobile" *ngIf="!streak() && !error()">
           <div class="stat-card skeleton" *ngFor="let i of [1,2,3,4]">
             <span class="stat-value">—</span>
             <span class="stat-label">Loading…</span>
@@ -128,7 +170,6 @@ import { ActionItemsCardComponent } from './action-items-card.component';
             </button>
           </div>
         }
-
 
         <!-- Entry list -->
         <section class="entries-section">
@@ -180,13 +221,10 @@ import { ActionItemsCardComponent } from './action-items-card.component';
                 *ngFor="let entry of group.entries; trackBy: trackByEntry"
                 [routerLink]="['/entry', entry.id]"
               >
-                <!-- Calendar date block -->
                 <div class="entry-cal">
                   <span class="entry-cal__dow">{{ getDayAbbr(entry.entryDate) }}</span>
                   <span class="entry-cal__num">{{ getDayNum(entry.entryDate) }}</span>
                 </div>
-
-                <!-- Body -->
                 <div class="entry-row__body">
                   <p class="entry-row__title">{{ entry.title || '(Untitled)' }}</p>
                   <div class="entry-row__sub">
@@ -200,26 +238,18 @@ import { ActionItemsCardComponent } from './action-items-card.component';
                       <span>{{ getMoodEmoji(entry.mood) }} Feeling {{ entry.mood }}</span>
                     </ng-container>
                   </div>
-                  <!-- Tags row -->
                   <div class="entry-row__tags">
                     <ng-container *ngIf="entry.tags && entry.tags.length > 0">
-                      <button
-                        class="entry-tag-chip"
-                        type="button"
+                      <button class="entry-tag-chip" type="button"
                         *ngFor="let tag of entry.tags"
-                        (click)="navigateToTag($event, tag)"
-                      >#{{ tag }}</button>
+                        (click)="navigateToTag($event, tag)">#{{ tag }}</button>
                     </ng-container>
-                    <button
-                      class="entry-tag-add"
-                      type="button"
+                    <button class="entry-tag-add" type="button"
                       (click)="navigateToEditTags($event, entry.id)"
                       [title]="entry.tags && entry.tags.length ? 'Edit tags' : 'Add tags'"
                     >{{ entry.tags && entry.tags.length ? '···' : '+ tag' }}</button>
                   </div>
                 </div>
-
-                <!-- Thumbnail -->
                 <div class="entry-row__thumb" *ngIf="entry.firstImageUrl">
                   <img [src]="fullImageUrl(entry.firstImageUrl)" [alt]="entry.title"
                        (error)="onImgError($event)" />
@@ -228,7 +258,6 @@ import { ActionItemsCardComponent } from './action-items-card.component';
             </ng-container>
           </ng-container>
 
-          <!-- Load more -->
           <div class="load-more-wrap" *ngIf="hasMore()">
             <button class="btn btn--ghost" (click)="loadMore()" [disabled]="loadingMore()">
               {{ loadingMore() ? 'Loading…' : 'Load more entries' }}
@@ -240,22 +269,200 @@ import { ActionItemsCardComponent } from './action-items-card.component';
     </div>
   `,
   styles: [`
+
+    /* ── Page shell ─────────────────────────────────────────────── */
+    .dashboard {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    @media (min-width: 768px) {
+      .dashboard { flex-direction: row; }
+    }
+
+    /* ── Desktop sidebar ─────────────────────────────────────────── */
+    .sidebar {
+      display: none;
+    }
+    @media (min-width: 768px) {
+      .sidebar {
+        display: flex;
+        flex-direction: column;
+        width: 260px;
+        min-width: 260px;
+        height: 100vh;
+        position: sticky;
+        top: 0;
+        background: #111318;
+        overflow-y: auto;
+        padding: 1.5rem 0 1rem;
+        flex-shrink: 0;
+      }
+    }
+
+    /* Logo */
+    .sidebar__logo-wrap {
+      display: flex; align-items: center; gap: .625rem;
+      padding: 0 1.25rem 1.25rem;
+      border-bottom: 1px solid rgba(255,255,255,.07);
+      margin-bottom: 1.25rem;
+    }
+    .sidebar__logo-icon { height: 28px; width: auto; }
+    .sidebar__logo-text {
+      font-size: .9375rem; font-weight: 800; color: #fff;
+      letter-spacing: -.01em; line-height: 1;
+    }
+
+    /* Streak block */
+    .sidebar__streak-block {
+      margin: 0 .875rem 1.25rem;
+      background: rgba(18,196,227,.1);
+      border: 1px solid rgba(18,196,227,.2);
+      border-radius: 10px;
+      padding: 1.125rem 1.25rem;
+    }
+    .sidebar__streak-block--loading { opacity: .4; }
+    .sidebar__streak-num {
+      font-size: 3rem; font-weight: 900; line-height: 1;
+      color: #12C4E3; font-family: var(--font-display);
+      letter-spacing: -.03em;
+    }
+    .sidebar__streak-label {
+      font-size: .8125rem; font-weight: 600;
+      color: rgba(255,255,255,.7); margin-top: .25rem;
+    }
+    .sidebar__milestone {
+      display: inline-flex; align-items: center; gap: .25rem;
+      margin-top: .5rem;
+      font-size: .6875rem; font-weight: 600;
+      background: rgba(18,196,227,.15); color: #12C4E3;
+      border: 1px solid rgba(18,196,227,.25);
+      border-radius: 100px; padding: .2rem .6rem;
+    }
+    .sidebar__streak-sub {
+      font-size: .75rem; color: rgba(255,255,255,.35);
+      margin-top: .625rem; line-height: 1.5;
+    }
+
+    /* Nav */
+    .sidebar__nav {
+      display: flex; flex-direction: column;
+      padding: 0 .625rem;
+      gap: .125rem;
+    }
+    .sidebar__nav-item {
+      display: flex; align-items: center; gap: .625rem;
+      padding: .5625rem .875rem;
+      font-size: .875rem; font-weight: 500;
+      color: rgba(255,255,255,.4);
+      border-radius: 7px;
+      text-decoration: none;
+      transition: background .15s, color .15s;
+      svg { flex-shrink: 0; opacity: .7; }
+      &:hover {
+        background: rgba(255,255,255,.06);
+        color: rgba(255,255,255,.8);
+        text-decoration: none;
+      }
+    }
+    .sidebar__nav-item--active {
+      background: rgba(18,196,227,.12);
+      color: #12C4E3; font-weight: 600;
+      svg { opacity: 1; }
+      &:hover { background: rgba(18,196,227,.18); color: #12C4E3; }
+    }
+
+    .sidebar__spacer { flex: 1; }
+
+    /* Footer */
+    .sidebar__footer {
+      display: flex; align-items: center; gap: .625rem;
+      padding: .875rem 1.25rem;
+      border-top: 1px solid rgba(255,255,255,.07);
+      margin-top: .5rem;
+    }
+    .sidebar__avatar {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: #12C4E3; color: #fff;
+      font-size: .75rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .sidebar__username {
+      font-size: .8125rem; color: rgba(255,255,255,.4);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+
+    /* ── Mobile top nav ──────────────────────────────────────────── */
     .topnav {
       position: sticky; top: 0; z-index: 100;
       background: var(--color-surface);
       border-bottom: 1px solid var(--color-border);
       height: var(--nav-h);
     }
+    @media (min-width: 768px) {
+      .topnav { display: none; }
+    }
     .topnav__inner {
       display: flex; align-items: center;
-      justify-content: space-between;
-      height: 100%;
+      justify-content: space-between; height: 100%;
     }
     .topnav__logo-img { height: 28px; width: auto; display: block; }
-    .nav-link { color: var(--color-accent-dark); font-size: .9375rem; font-weight: 500; text-decoration: none; &:hover { text-decoration: underline; } }
+    .nav-link {
+      color: var(--color-accent); font-size: .9375rem;
+      font-weight: 500; text-decoration: none;
+      &:hover { text-decoration: underline; }
+    }
 
-    .main-content { padding-top: 1.5rem; padding-bottom: 4rem; }
+    /* ── Main content ────────────────────────────────────────────── */
+    .main-content {
+      flex: 1;
+      min-width: 0;
+      padding: 1.5rem 1rem 4rem;
+      background: var(--color-bg);
+    }
+    @media (min-width: 768px) {
+      .main-content {
+        padding: 2.5rem 3rem 4rem;
+        background: #f7f7f5;
+      }
+    }
 
+    /* ── New entry button ────────────────────────────────────────── */
+    .new-entry-bar {
+      margin-bottom: 1.5rem;
+      padding: 1rem;
+      font-size: 1rem;
+      border-radius: var(--radius-lg);
+    }
+
+    /* ── Mobile-only stat grid ───────────────────────────────────── */
+    .stats-grid--mobile {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: .75rem;
+      margin-bottom: 1.5rem;
+    }
+    @media (min-width: 480px) {
+      .stats-grid--mobile { grid-template-columns: repeat(4, 1fr); }
+    }
+    @media (min-width: 768px) {
+      .stats-grid--mobile { display: none; }
+    }
+    .stat-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      display: flex; flex-direction: column; align-items: center;
+      gap: .25rem; text-align: center;
+    }
+    .stat-value { font-size: 1.75rem; font-weight: 900; line-height: 1; font-family: var(--font-display); }
+    .streak-value { color: var(--color-accent); }
+    .stat-label { font-size: .8125rem; color: var(--color-text-2); }
+    .skeleton { opacity: .5; }
+
+    /* ── Push nudge ──────────────────────────────────────────────── */
     .push-nudge {
       display: flex; align-items: center; justify-content: space-between; gap: 1rem;
       padding: .75rem 1rem;
@@ -271,37 +478,7 @@ import { ActionItemsCardComponent } from './action-items-card.component';
     .push-nudge__icon { font-size: 1rem; flex-shrink: 0; }
     .push-nudge__btn { flex-shrink: 0; }
 
-    .new-entry-bar {
-      margin-bottom: 1.25rem;
-      padding: 1rem;
-      font-size: 1rem;
-      border-radius: var(--radius-lg);
-    }
-
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: .75rem;
-      margin-bottom: 1.25rem;
-    }
-    @media (min-width: 480px) {
-      .stats-grid { grid-template-columns: repeat(4, 1fr); }
-    }
-    .stat-card {
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-md);
-      padding: 1rem;
-      display: flex; flex-direction: column; align-items: center;
-      gap: .25rem;
-      text-align: center;
-    }
-    .stat-value { font-size: 1.75rem; font-weight: 900; line-height: 1; font-family: var(--font-display); }
-    .streak-value { color: var(--color-accent-dark); }
-    .stat-label { font-size: .8125rem; color: var(--color-text); }
-
-
-    /* ── Daily Motivation ───────────────────────────────────────── */
+    /* ── Daily Motivation ────────────────────────────────────────── */
     .motivation-card {
       background: var(--color-surface);
       border: 1px solid var(--color-border);
@@ -313,20 +490,15 @@ import { ActionItemsCardComponent } from './action-items-card.component';
     }
     .motivation-header {
       display: flex; align-items: flex-start; justify-content: space-between;
-      gap: 1rem; padding: 1rem 1.25rem; cursor: pointer;
-      user-select: none;
-      transition: none;
+      gap: 1rem; padding: 1rem 1.25rem; cursor: pointer; user-select: none;
     }
     .motivation-header__left { flex: 1; min-width: 0; }
     .motivation-label {
       font-size: .6875rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: .07em; color: var(--color-accent-dark);
+      letter-spacing: .07em; color: var(--color-accent);
       display: block; margin-bottom: .3rem;
     }
-    .motivation-takeaway {
-      font-size: .9375rem; color: var(--color-text);
-      margin: 0; line-height: 1.7;
-    }
+    .motivation-takeaway { font-size: .9375rem; color: var(--color-text); margin: 0; line-height: 1.7; }
     .motivation-toggle {
       flex-shrink: 0; margin-top: .1rem;
       background: none; border: none; cursor: pointer;
@@ -339,55 +511,25 @@ import { ActionItemsCardComponent } from './action-items-card.component';
       transition: max-height .35s ease, padding .35s ease;
       padding: 0 1.25rem;
     }
-    .motivation-card--expanded .motivation-body {
-      max-height: 600px;
-      padding: 0 1.25rem 1.25rem;
-    }
-    .motivation-title {
-      font-size: 1rem; font-weight: 700;
-      color: var(--color-text); margin: 0 0 .375rem;
-    }
-    .motivation-category {
-      display: inline-block;
-      font-size: .6875rem; font-weight: 600; text-transform: uppercase;
-      letter-spacing: .06em; padding: .15rem .6rem;
-      border-radius: 100px;
-      background: var(--color-accent-light); color: var(--color-accent-dark);
-      border: 1px solid var(--color-accent);
-      margin-bottom: .875rem;
-    }
-    .motivation-content {
-      font-size: .9375rem; line-height: 1.7;
-      color: var(--color-text); margin: 0;
-      white-space: pre-wrap;
-    }
-    /* ── /Daily Motivation ──────────────────────────────────────── */
+    .motivation-card--expanded .motivation-body { max-height: 600px; padding: 0 1.25rem 1.25rem; }
+    .motivation-content { font-size: .9375rem; line-height: 1.7; color: var(--color-text); margin: 0; white-space: pre-wrap; }
 
-    /* ── Search bar ─────────────────────────────────────────────── */
+    /* ── Search bar ──────────────────────────────────────────────── */
     .search-bar {
       display: flex; align-items: center; gap: .625rem;
-      margin-top: 1.25rem;
-      margin-bottom: .125rem;
+      margin-top: 1.25rem; margin-bottom: .125rem;
     }
-    .search-input-wrap {
-      flex: 1; position: relative;
-      display: flex; align-items: center;
-    }
+    .search-input-wrap { flex: 1; position: relative; display: flex; align-items: center; }
     .search-icon {
       position: absolute; left: .625rem;
-      width: 1rem; height: 1rem;
-      color: var(--color-text-3);
-      pointer-events: none; flex-shrink: 0;
+      width: 1rem; height: 1rem; color: var(--color-text-3); pointer-events: none;
     }
     .search-input {
-      width: 100%; padding: .4375rem .625rem .4375rem 2rem;
+      width: 100%; padding: .5rem .625rem .5rem 2rem;
       border: 1px solid var(--color-border);
-      border-radius: var(--radius-sm, 6px);
-      background: var(--color-surface);
-      color: var(--color-text);
-      font-size: .875rem;
-      font-family: var(--font-sans);
-      box-sizing: border-box;
+      border-radius: var(--radius-sm);
+      background: var(--color-surface); color: var(--color-text);
+      font-size: .875rem; font-family: var(--font-sans); box-sizing: border-box;
       &:focus { outline: none; border-color: var(--color-accent); }
     }
     .search-clear {
@@ -398,66 +540,38 @@ import { ActionItemsCardComponent } from './action-items-card.component';
       &:hover { color: var(--color-text); background: var(--color-surface-2); }
     }
     .sort-select {
-      padding: .4375rem .625rem;
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-sm, 6px);
-      background: var(--color-surface);
-      color: var(--color-text);
-      font-size: .8125rem;
-      font-family: var(--font-sans);
-      cursor: pointer; flex-shrink: 0;
+      padding: .5rem .625rem;
+      border: 1px solid var(--color-border); border-radius: var(--radius-sm);
+      background: var(--color-surface); color: var(--color-text);
+      font-size: .8125rem; font-family: var(--font-sans); cursor: pointer; flex-shrink: 0;
       &:focus { outline: none; border-color: var(--color-accent); }
     }
-    .search-results-count {
-      font-size: .8125rem; color: var(--color-text-3);
-      margin: 0 0 .75rem;
-    }
-    /* ── /Search bar ─────────────────────────────────────────────── */
+    .search-results-count { font-size: .8125rem; color: var(--color-text-3); margin: 0 0 .75rem; }
 
-    .section-title { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; }
-
+    /* ── Entry list ──────────────────────────────────────────────── */
     .date-divider {
-      font-size: 1.0625rem; font-weight: 900;
-      font-family: var(--font-display);
-      color: var(--color-text);
-      padding: .25rem 0;
-      margin: 2rem 0 .75rem;
+      font-size: 1.0625rem; font-weight: 900; font-family: var(--font-display);
+      color: var(--color-text); padding: .25rem 0; margin: 2rem 0 .75rem;
       &.date-divider--first { margin-top: .375rem; }
     }
-
     .entry-row {
-      cursor: pointer;
-      margin-bottom: .625rem;
+      cursor: pointer; margin-bottom: .625rem;
       transition: box-shadow .15s, border-color .15s;
-      padding: .875rem 1rem;
-      display: flex; align-items: center; gap: .875rem;
+      padding: 1rem 1.25rem;
+      display: flex; align-items: center; gap: 1rem;
       &:hover { border-color: var(--color-accent); box-shadow: var(--shadow-md); }
     }
-
-    /* Calendar date block */
     .entry-cal {
-      flex-shrink: 0;
-      width: 52px; height: 58px;
-      background: var(--color-surface-2);
-      border: 1px solid var(--color-border);
+      flex-shrink: 0; width: 52px; height: 58px;
+      background: var(--color-surface-2); border: 1px solid var(--color-border);
       border-radius: var(--radius-md);
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      gap: 1px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
     }
     .entry-cal__dow {
-      font-size: .5625rem; font-weight: 700;
-      text-transform: uppercase; letter-spacing: .07em;
-      color: var(--color-accent-dark);
-      line-height: 1;
+      font-size: .5625rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .07em; color: var(--color-accent); line-height: 1;
     }
-    .entry-cal__num {
-      font-size: 1.5rem; font-weight: 900; line-height: 1;
-      font-family: var(--font-display);
-      color: var(--color-text);
-    }
-
-    /* Body */
+    .entry-cal__num { font-size: 1.5rem; font-weight: 900; line-height: 1; font-family: var(--font-display); color: var(--color-text); }
     .entry-row__body { flex: 1; min-width: 0; }
     .entry-row__title {
       font-size: .9375rem; font-weight: 600; line-height: 1.35;
@@ -466,16 +580,11 @@ import { ActionItemsCardComponent } from './action-items-card.component';
     }
     .entry-row__sub {
       display: flex; align-items: center; gap: .3rem;
-      font-size: .75rem; color: var(--color-text);
+      font-size: .75rem; color: var(--color-text-2);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .sep { color: var(--color-border); }
-    .sub-backfill { color: var(--color-accent-dark); }
-
-    /* Tags */
-    .entry-row__tags {
-      display: flex; flex-wrap: wrap; align-items: center; gap: .3rem; margin-top: .375rem;
-    }
+    .entry-row__tags { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem; margin-top: .375rem; }
     .entry-tag-chip {
       display: inline-block; padding: .1rem .45rem;
       border-radius: 100px; font-size: .7rem; font-weight: 400;
@@ -483,7 +592,7 @@ import { ActionItemsCardComponent } from './action-items-card.component';
       border: 1px solid var(--color-border); cursor: pointer;
       font-family: var(--font-sans); line-height: 1.4;
       transition: color .12s, border-color .12s;
-      &:hover { color: var(--color-accent-dark); border-color: var(--color-accent); }
+      &:hover { color: var(--color-accent); border-color: var(--color-accent); }
     }
     .entry-tag-add {
       display: inline-block; padding: .1rem .4rem;
@@ -492,76 +601,39 @@ import { ActionItemsCardComponent } from './action-items-card.component';
       border: 1px dashed var(--color-border); cursor: pointer;
       font-family: var(--font-sans); line-height: 1.4;
       transition: border-color .12s, color .12s;
-      &:hover { border-color: var(--color-accent); color: var(--color-accent-dark); }
+      &:hover { border-color: var(--color-accent); color: var(--color-accent); }
     }
-
-    /* Thumbnail */
     .entry-row__thumb {
-      flex-shrink: 0; width: 64px; height: 64px;
-      border-radius: var(--radius-md); overflow: hidden;
-      border: 1px solid var(--color-border);
+      flex-shrink: 0; width: 72px; height: 72px;
+      border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--color-border);
       img { width: 100%; height: 100%; object-fit: cover; display: block; }
     }
-
-    .load-more-wrap {
-      display: flex; justify-content: center;
-      padding: 1.5rem 0 .5rem;
-    }
-
-    .empty-state {
-      text-align: center;
-      padding: 3rem 1rem;
-      color: var(--color-text-2);
-    }
-    .skeleton { opacity: .5; }
-
-    /* ── Milestone badge in stat card ───────────────────────────── */
-    .milestone-badge {
-      margin-top: .375rem;
-      font-size: .6875rem; font-weight: 600;
-      background: var(--color-surface-2);
-      color: var(--color-text-2);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-sm);
-      padding: .15rem .5rem;
-      display: inline-flex; align-items: center; gap: .25rem;
-      cursor: default; white-space: nowrap;
-    }
+    .load-more-wrap { display: flex; justify-content: center; padding: 1.5rem 0 .5rem; }
+    .empty-state { text-align: center; padding: 4rem 1rem; color: var(--color-text-2); }
 
     /* ── Celebration overlay ─────────────────────────────────────── */
     .celebration-overlay {
       position: fixed; inset: 0; z-index: 1000;
       background: rgba(0,0,0,.55);
       display: flex; align-items: center; justify-content: center;
-      padding: 1.5rem;
-      animation: fadeIn .2s ease forwards;
+      padding: 1.5rem; animation: fadeIn .2s ease forwards;
     }
     .celebration-modal {
-      background: var(--color-surface);
-      border-radius: var(--radius-lg);
-      padding: 2.5rem 2rem;
-      max-width: 360px; width: 100%;
-      text-align: center;
-      box-shadow: var(--shadow-lg);
+      background: var(--color-surface); border-radius: var(--radius-lg);
+      padding: 2.5rem 2rem; max-width: 360px; width: 100%;
+      text-align: center; box-shadow: var(--shadow-lg);
       animation: celebrationIn .3s ease forwards;
     }
     .celebration-icon { font-size: 4rem; line-height: 1; margin-bottom: 1rem; }
     .celebration-earned {
       font-size: .75rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: .08em; color: var(--color-accent-dark);
-      margin-bottom: .5rem;
+      letter-spacing: .08em; color: var(--color-accent); margin-bottom: .5rem;
     }
-    .celebration-title {
-      font-size: 2rem; font-weight: 800;
-      color: var(--color-text); margin-bottom: .5rem;
-    }
-    .celebration-days {
-      font-size: .9375rem; color: var(--color-text-2);
-      line-height: 1.5; margin-bottom: 1.75rem;
-    }
+    .celebration-title { font-size: 2rem; font-weight: 800; color: var(--color-text); margin-bottom: .5rem; }
+    .celebration-days { font-size: .9375rem; color: var(--color-text-2); line-height: 1.5; margin-bottom: 1.75rem; }
     @keyframes celebrationIn {
       from { opacity: 0; transform: scale(.92) translateY(10px); }
-      to   { opacity: 1; transform: scale(1)   translateY(0); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
     }
   `]
 })
@@ -573,6 +645,9 @@ export class DashboardComponent implements OnInit {
   private router = inject(Router);
 
   isAdmin = this.tokens.isAdmin.bind(this.tokens);
+
+  username     = computed(() => this.tokens.getCachedUser()?.username ?? '');
+  userInitial  = computed(() => (this.tokens.getCachedUser()?.username?.[0] ?? '?').toUpperCase());
 
   readonly PAGE_SIZE = 60;
 
