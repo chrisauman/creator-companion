@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
 import { MobileNavComponent } from '../../shared/mobile-nav/mobile-nav.component';
 import { ActionItemsCardComponent } from '../dashboard/action-items-card.component';
@@ -7,14 +8,17 @@ import { ActionItemsCardComponent } from '../dashboard/action-items-card.compone
 @Component({
   selector: 'app-todos',
   standalone: true,
-  imports: [CommonModule, SidebarComponent, MobileNavComponent, ActionItemsCardComponent],
+  imports: [CommonModule, RouterLink, SidebarComponent, MobileNavComponent, ActionItemsCardComponent],
   template: `
     <div class="page">
       <app-sidebar active="todos" />
 
       <!-- Mobile top bar -->
       <header class="topbar">
-        <img src="logo-full.png" alt="Creator Companion" class="topbar__logo">
+        <a class="topbar__brand" routerLink="/dashboard">
+          <img src="logo-icon.png" alt="" class="topbar__brand-icon">
+          <span class="topbar__brand-name">Creator Companion</span>
+        </a>
       </header>
 
       <!-- Mobile bottom nav -->
@@ -48,7 +52,9 @@ import { ActionItemsCardComponent } from '../dashboard/action-items-card.compone
       padding: 0 1.125rem;
     }
     @media (min-width: 768px) { .topbar { display: none; } }
-    .topbar__logo { height: 26px; width: auto; display: block; }
+    .topbar__brand { display: flex; align-items: center; gap: .5rem; text-decoration: none; }
+    .topbar__brand-icon { height: 24px; width: auto; display: block; }
+    .topbar__brand-name { font-family: 'Fraunces', Georgia, serif; font-size: .9375rem; font-weight: 700; color: #fff; }
 
     .main-content {
       flex: 1; min-width: 0;

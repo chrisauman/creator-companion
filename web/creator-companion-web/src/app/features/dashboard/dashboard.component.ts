@@ -37,7 +37,10 @@ import { MobileNavComponent } from '../../shared/mobile-nav/mobile-nav.component
 
       <!-- ── Mobile top bar ──────────────────────────────────── -->
       <header class="topbar">
-        <img src="logo-full.png" alt="Creator Companion" class="topbar__logo">
+        <a class="topbar__brand" routerLink="/dashboard">
+          <img src="logo-icon.png" alt="" class="topbar__brand-icon">
+          <span class="topbar__brand-name">Creator Companion</span>
+        </a>
         <a *ngIf="isAdmin()" class="topbar__admin" routerLink="/admin">Admin</a>
       </header>
 
@@ -252,7 +255,12 @@ import { MobileNavComponent } from '../../shared/mobile-nav/mobile-nav.component
       justify-content: space-between;
     }
     @media (min-width: 768px) { .topbar { display: none; } }
-    .topbar__logo { height: 26px; width: auto; display: block; }
+    .topbar__brand { display: flex; align-items: center; gap: .5rem; text-decoration: none; }
+    .topbar__brand-icon { height: 24px; width: auto; display: block; }
+    .topbar__brand-name {
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: .9375rem; font-weight: 700; color: #fff;
+    }
     .topbar__admin {
       font-size: .8125rem; font-weight: 600;
       color: rgba(255,255,255,.5); text-decoration: none;

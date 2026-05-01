@@ -14,10 +14,10 @@ import { StreakStats } from '../../core/models/models';
     <aside class="sidebar">
 
       <!-- Logo -->
-      <div class="sidebar__logo-wrap">
+      <a class="sidebar__logo-wrap" routerLink="/dashboard">
         <img src="logo-icon.png" alt="" class="sidebar__logo-icon">
         <span class="sidebar__logo-text">Creator Companion</span>
-      </div>
+      </a>
 
       <!-- Streak block -->
       <div class="sidebar__streak-block" *ngIf="streak()">
@@ -94,6 +94,7 @@ import { StreakStats } from '../../core/models/models';
       padding: 0 1.25rem 1.25rem;
       border-bottom: 1px solid rgba(255,255,255,.07);
       margin-bottom: 1.25rem;
+      text-decoration: none;
     }
     .sidebar__logo-icon { height: 28px; width: auto; }
     .sidebar__logo-text {

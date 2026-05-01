@@ -23,7 +23,10 @@ import { MobileNavComponent } from '../../../shared/mobile-nav/mobile-nav.compon
 
       <!-- Mobile top bar -->
       <header class="topbar">
-        <button class="topbar__back btn btn--ghost btn--sm" routerLink="/dashboard">← Back</button>
+        <a class="topbar__brand" routerLink="/dashboard">
+          <img src="logo-icon.png" alt="" class="topbar__brand-icon">
+          <span class="topbar__brand-name">Creator Companion</span>
+        </a>
         <span class="topbar__date">{{ entryDateLabel() }}</span>
         <div class="topbar__actions">
           @if (entry()) {
@@ -149,7 +152,9 @@ import { MobileNavComponent } from '../../../shared/mobile-nav/mobile-nav.compon
       gap: .5rem;
     }
     @media (min-width: 768px) { .topbar { display: none; } }
-    .topbar__back { flex-shrink: 0; }
+    .topbar__brand { display: flex; align-items: center; gap: .5rem; text-decoration: none; flex-shrink: 0; }
+    .topbar__brand-icon { height: 22px; width: auto; display: block; }
+    .topbar__brand-name { font-family: 'Fraunces', Georgia, serif; font-size: .875rem; font-weight: 700; color: #fff; }
     .topbar__date {
       flex: 1; font-size: .8125rem; font-weight: 500;
       color: rgba(255,255,255,.5); text-align: center;

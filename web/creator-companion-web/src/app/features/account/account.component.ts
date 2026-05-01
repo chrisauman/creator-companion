@@ -24,8 +24,10 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log an entry to keep your streak a
 
       <!-- Mobile top bar -->
       <header class="topbar">
-        <img src="logo-full.png" alt="Creator Companion" class="topbar__logo">
-        <span class="topbar__title">Account</span>
+        <a class="topbar__brand" routerLink="/dashboard">
+          <img src="logo-icon.png" alt="" class="topbar__brand-icon">
+          <span class="topbar__brand-name">Creator Companion</span>
+        </a>
       </header>
 
       <!-- Mobile bottom nav -->
@@ -395,8 +397,9 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log an entry to keep your streak a
       padding: 0 1.125rem;
     }
     @media (min-width: 768px) { .topbar { display: none; } }
-    .topbar__logo { height: 26px; width: auto; display: block; }
-    .topbar__title { font-size: .9375rem; font-weight: 600; color: rgba(255,255,255,.8); }
+    .topbar__brand { display: flex; align-items: center; gap: .5rem; text-decoration: none; }
+    .topbar__brand-icon { height: 24px; width: auto; display: block; }
+    .topbar__brand-name { font-family: 'Fraunces', Georgia, serif; font-size: .9375rem; font-weight: 700; color: #fff; }
 
     .main-content {
       flex: 1; min-width: 0;
