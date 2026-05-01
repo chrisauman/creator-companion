@@ -77,8 +77,9 @@ a:hover { text-decoration: underline; }
 /* Dark hero: icon + white text name */
 .nav__logo-icon { height: 30px; width: auto; display: block; }
 .nav__logo-name {
-  font-size: .9375rem; font-weight: 700; color: #fff;
-  white-space: nowrap; letter-spacing: -.01em;
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 1rem; font-weight: 700; color: #fff;
+  white-space: nowrap; letter-spacing: .01em;
   transition: color .3s;
 }
 .nav__logo-full { display: none; }
