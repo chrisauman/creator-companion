@@ -12,8 +12,8 @@ import { ApiService } from '../../../core/services/api.service';
     <div class="auth-page">
       <div class="auth-card card fade-in">
         <div class="auth-logo">
-          <span class="logo-mark">✦</span>
-          <h1>Choose a new password</h1>
+          <img src="logo-full.png" alt="Creator Companion" class="logo-img">
+          <h2 style="margin-bottom:.25rem">Choose a new password</h2>
           <p class="text-muted text-sm">Paste your reset token and set a new password.</p>
         </div>
 
@@ -77,7 +77,7 @@ import { ApiService } from '../../../core/services/api.service';
     .auth-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1.5rem; background: var(--color-bg); }
     .auth-card { width: 100%; max-width: 420px; }
     .auth-logo { text-align: center; margin-bottom: 2rem; }
-    .logo-mark { font-size: 2rem; color: var(--color-accent); display: block; margin-bottom: .5rem; }
+    .logo-img { display: block; width: 260px; margin: 0 auto .75rem; }
     h1 { font-size: 1.375rem; margin-bottom: .25rem; }
     .alert--success { background: #d4f0e0; color: #166534; border: 1px solid #86efac; border-radius: 8px; padding: .75rem 1rem; }
     .error-msg { font-size: .8rem; color: var(--color-error, #dc2626); margin-top: .25rem; display: block; }

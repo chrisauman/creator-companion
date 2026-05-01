@@ -34,7 +34,7 @@ import { ActionItemsCardComponent } from './action-items-card.component';
       <!-- Top nav -->
       <header class="topnav">
         <div class="container topnav__inner">
-          <span class="topnav__logo">✦ Creator Companion</span>
+          <img src="logo-full.png" alt="Creator Companion" class="topnav__logo-img">
           <div style="display:flex;gap:.5rem">
             <a class="nav-link" routerLink="/account">Account</a>
             <a *ngIf="isAdmin()" class="nav-link" routerLink="/admin">Admin</a>
@@ -251,7 +251,7 @@ import { ActionItemsCardComponent } from './action-items-card.component';
       justify-content: space-between;
       height: 100%;
     }
-    .topnav__logo { font-weight: 600; color: var(--color-accent); font-size: 1rem; }
+    .topnav__logo-img { height: 28px; width: auto; display: block; }
     .nav-link { color: var(--color-accent-dark); font-size: .9375rem; font-weight: 500; text-decoration: none; &:hover { text-decoration: underline; } }
 
     .main-content { padding-top: 1.5rem; padding-bottom: 4rem; }

@@ -12,8 +12,7 @@ import { AuthService } from '../../../core/services/auth.service';
     <div class="auth-page">
       <div class="auth-card card fade-in">
         <div class="auth-logo">
-          <span class="logo-mark">✦</span>
-          <h1>Creator Companion</h1>
+          <img src="logo-full.png" alt="Creator Companion" class="logo-img">
           <p class="text-muted text-sm">Welcome back. Keep the streak alive.</p>
         </div>
 
@@ -80,13 +79,11 @@ import { AuthService } from '../../../core/services/auth.service';
       text-align: center;
       margin-bottom: 2rem;
     }
-    .logo-mark {
-      font-size: 2rem;
-      color: var(--color-accent);
+    .logo-img {
       display: block;
-      margin-bottom: .5rem;
+      width: 260px;
+      margin: 0 auto .75rem;
     }
-    h1 { font-size: 1.375rem; margin-bottom: .25rem; }
   `]
 })
 export class LoginComponent {

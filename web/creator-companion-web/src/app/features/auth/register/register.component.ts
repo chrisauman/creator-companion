@@ -13,8 +13,7 @@ import { ApiService } from '../../../core/services/api.service';
     <div class="auth-page">
       <div class="auth-card card fade-in">
         <div class="auth-logo">
-          <span class="logo-mark">✦</span>
-          <h1>Start your journey</h1>
+          <img src="logo-full.png" alt="Creator Companion" class="logo-img">
           <p class="text-muted text-sm">Build a creative habit that lasts.</p>
         </div>
 
@@ -113,7 +112,7 @@ import { ApiService } from '../../../core/services/api.service';
     }
     .auth-card { width: 100%; max-width: 440px; }
     .auth-logo { text-align: center; margin-bottom: 1.5rem; }
-    .logo-mark { font-size: 2rem; color: var(--color-accent); display: block; margin-bottom: .5rem; }
+    .logo-img { display: block; width: 260px; margin: 0 auto .75rem; }
     h1 { font-size: 1.375rem; margin-bottom: .25rem; }
 
     .plan-toggle {
