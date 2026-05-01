@@ -8,15 +8,13 @@
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,600;1,700;1,800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
-  <!-- Open Graph -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://www.creatorcompanionapp.com">
   <meta property="og:title" content="Creator Companion — The daily journal for creative people">
   <meta property="og:description" content="Build your creative streak. Write every day, track your progress, and never lose what you create. Free to start.">
   <meta property="og:image" content="https://www.creatorcompanionapp.com/og-image.png">
-  <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Creator Companion — The daily journal for creative people">
   <meta name="twitter:description" content="Build your creative streak. Write every day, track your progress, and never lose what you create. Free to start.">
@@ -25,9 +23,9 @@
 </head>
 <body>
 
-  <!-- Nav -->
-  <nav class="nav">
-    <div class="container nav__inner">
+  <!-- ── Nav ─────────────────────────────────────────────────────────── -->
+  <nav class="nav" id="nav">
+    <div class="nav__inner">
       <a href="index.html" class="nav__logo">
         <img src="logo-full.png" alt="Creator Companion">
       </a>
@@ -35,190 +33,259 @@
         <a href="pricing.html">Pricing</a>
         <a href="pricing.html#faq">FAQ</a>
         <a href="https://app.creatorcompanionapp.com/login" class="nav__login">Log in</a>
-        <a href="signup.html" class="btn btn--primary btn--sm nav__cta">Get started free</a>
+        <a href="signup.html" class="btn btn--primary btn--sm">Get started free</a>
       </div>
+      <button class="nav__hamburger" id="hamburger" aria-label="Open menu">
+        <span></span><span></span><span></span>
+      </button>
     </div>
   </nav>
 
-  <!-- Hero -->
+  <!-- Mobile menu overlay -->
+  <div class="mobile-menu" id="mobileMenu">
+    <a href="pricing.html">Pricing</a>
+    <a href="pricing.html#faq">FAQ</a>
+    <a href="https://app.creatorcompanionapp.com/login">Log in</a>
+    <a href="signup.html" class="btn btn--primary btn--sm">Get started free</a>
+  </div>
+
+  <!-- ── Hero ─────────────────────────────────────────────────────────── -->
   <section class="hero">
-    <div class="container">
-      <span class="hero__eyebrow">Free to start · No credit card required</span>
+    <div class="hero__glow" aria-hidden="true"></div>
+    <div class="hero__content">
+      <div class="hero__badge">
+        <span class="hero__badge-dot"></span>
+        Free to start &mdash; no credit card required
+      </div>
       <h1 class="hero__title">
-        The daily journal for<br><em>creative people</em>
+        The daily journal<br>for <em>creative people</em>
       </h1>
       <p class="hero__sub">
-        Show up for your creative work every day. Write, reflect, and build a streak that keeps you accountable — all in one private, beautifully simple journal.
+        Show up for your creative work every day. Write, reflect, and build a streak
+        that keeps you accountable — all in one private, beautifully simple journal.
       </p>
       <div class="hero__actions">
-        <a href="signup.html" class="btn btn--primary btn--lg">Start writing for free</a>
-        <a href="pricing.html" class="btn btn--secondary btn--lg">See plans</a>
+        <a href="signup.html" class="btn btn--hero-primary">Start writing for free</a>
+        <a href="pricing.html" class="btn btn--hero-ghost">See pricing →</a>
       </div>
-      <p class="hero__note">Free forever · Upgrade any time · Your data always belongs to you</p>
     </div>
-  </section>
-
-  <!-- Features -->
-  <section class="section section--alt">
-    <div class="container">
-      <p class="section__label">Why Creator Companion</p>
-      <h2 class="section__title">Built around one powerful habit</h2>
-      <p class="section__sub">
-        Most journaling apps try to do everything. Creator Companion does one thing: helps creative people show up every single day.
-      </p>
-      <div class="features-grid">
-        <div class="feature-card">
-          <div class="feature-card__icon">🔥</div>
-          <div class="feature-card__title">Streak tracking</div>
-          <div class="feature-card__body">Your streak grows every day you write. That gentle pressure turns intention into identity. Miss a day and it resets — so you won't want to miss a day.</div>
-        </div>
-        <div class="feature-card">
-          <div class="feature-card__icon">🔒</div>
-          <div class="feature-card__title">Completely private</div>
-          <div class="feature-card__body">No social features. No public posts. No audience. Everything you write is encrypted and private — this is your space, not a performance.</div>
-        </div>
-        <div class="feature-card">
-          <div class="feature-card__icon">📷</div>
-          <div class="feature-card__title">Photos & media</div>
-          <div class="feature-card__body">Attach photos to your entries. Document your process, your workspace, your finished work. Your journal can hold the full picture.</div>
-        </div>
-        <div class="feature-card">
-          <div class="feature-card__icon">🏷️</div>
-          <div class="feature-card__title">Tags & search</div>
-          <div class="feature-card__body">Tag entries by project, mood, or theme. Search your entire history by title, tag, or date. Your archive becomes a resource you can actually use.</div>
-        </div>
-        <div class="feature-card">
-          <div class="feature-card__icon">💡</div>
-          <div class="feature-card__title">Daily motivation</div>
-          <div class="feature-card__body">A fresh creative insight or challenge delivered every morning. Curated for people who make things for a living — not generic productivity advice.</div>
-        </div>
-        <div class="feature-card">
-          <div class="feature-card__icon">📤</div>
-          <div class="feature-card__title">Export your data</div>
-          <div class="feature-card__body">Download all your entries as JSON or plain text any time. You own your words. We'll never hold your data hostage.</div>
-        </div>
+    <div class="hero__strips" aria-hidden="true">
+      <div class="hero__strip">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Free forever plan
+      </div>
+      <div class="hero__strip-div" aria-hidden="true"></div>
+      <div class="hero__strip">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        Private &amp; encrypted
+      </div>
+      <div class="hero__strip-div" aria-hidden="true"></div>
+      <div class="hero__strip">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22V12"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/><circle cx="12" cy="5" r="3"/></svg>
+        Install on any device
+      </div>
+      <div class="hero__strip-div" aria-hidden="true"></div>
+      <div class="hero__strip">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+        Cancel any time
       </div>
     </div>
   </section>
 
-  <!-- How it works -->
-  <section class="section">
+  <!-- ── Features bento ───────────────────────────────────────────────── -->
+  <section class="features">
     <div class="container">
-      <p class="section__label">How it works</p>
-      <h2 class="section__title">Simple by design</h2>
-      <p class="section__sub">No complicated setup. You're writing in under a minute.</p>
+      <div class="section-eyebrow">Features</div>
+      <h2 class="section-heading">Built around one<br>powerful habit.</h2>
+      <p class="section-sub">Most journaling apps try to do everything. Creator Companion does one thing exceptionally well: helps creative people show up every single day.</p>
+
+      <div class="bento">
+
+        <!-- Streak — wide -->
+        <div class="bento-card bento-card--wide bento-card--streak">
+          <div class="bento-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+          </div>
+          <h3>Build an unbreakable streak</h3>
+          <p>Your streak grows every day you write. That gentle pressure turns intention into identity. The longer it gets, the more it means.</p>
+          <div class="streak-demo">
+            <div class="streak-days">
+              <span class="sd sd--on"><span>M</span></span>
+              <span class="sd sd--on"><span>T</span></span>
+              <span class="sd sd--on"><span>W</span></span>
+              <span class="sd sd--on"><span>T</span></span>
+              <span class="sd sd--on"><span>F</span></span>
+              <span class="sd sd--today"><span>S</span></span>
+              <span class="sd"><span>S</span></span>
+            </div>
+            <div class="streak-label">
+              <strong>5</strong>&thinsp;day streak
+            </div>
+          </div>
+        </div>
+
+        <!-- Private — dark -->
+        <div class="bento-card bento-card--dark">
+          <div class="bento-icon bento-icon--inv">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <h3>Completely private</h3>
+          <p>No social features. No public posts. No audience. Everything you write is private — this is your space, not a performance.</p>
+        </div>
+
+        <!-- Photos -->
+        <div class="bento-card">
+          <div class="bento-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          </div>
+          <h3>Photos &amp; media</h3>
+          <p>Attach photos to your entries. Document your process, your workspace, your finished work. Your journal holds the full picture.</p>
+        </div>
+
+        <!-- Daily Spark — accent -->
+        <div class="bento-card bento-card--accent">
+          <div class="bento-icon bento-icon--accent">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          </div>
+          <h3>Daily creative spark</h3>
+          <p>A fresh insight or challenge delivered every morning, curated for creative people — not generic productivity platitudes.</p>
+        </div>
+
+        <!-- Tags -->
+        <div class="bento-card">
+          <div class="bento-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+          </div>
+          <h3>Tags &amp; search</h3>
+          <p>Tag entries by project, mood, or theme. Search your entire archive instantly. Your history becomes a resource you can actually use.</p>
+        </div>
+
+        <!-- Export — wide -->
+        <div class="bento-card bento-card--wide bento-card--export">
+          <div class="bento-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </div>
+          <div class="bento-export-content">
+            <div>
+              <h3>Your data, always yours</h3>
+              <p>Download all your entries as JSON or plain text any time, no permission needed. We'll never hold your words hostage.</p>
+            </div>
+            <div class="export-badges">
+              <span class="export-badge">JSON</span>
+              <span class="export-badge">Plain text</span>
+              <span class="export-badge">Any time</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ── How it works ──────────────────────────────────────────────────── -->
+  <section class="how">
+    <div class="container">
+      <div class="section-eyebrow section-eyebrow--inv">How it works</div>
+      <h2 class="section-heading section-heading--inv">Simple by design.</h2>
+      <p class="section-sub section-sub--inv">No complicated setup. You're writing in under a minute.</p>
       <div class="steps">
         <div class="step">
-          <div class="step__num">1</div>
-          <div class="step__body">
-            <div class="step__title">Create your free account</div>
-            <div class="step__text">Sign up with your email. No credit card required. You get a full-featured free account from day one.</div>
-          </div>
+          <div class="step__num">01</div>
+          <h3>Create your free account</h3>
+          <p>Sign up with your email. No credit card. You get a full-featured account from day one.</p>
         </div>
         <div class="step">
-          <div class="step__num">2</div>
-          <div class="step__body">
-            <div class="step__title">Write your first entry</div>
-            <div class="step__text">Open the app, tap "New entry," and write. It can be a sentence or a thousand words — anything counts toward your streak.</div>
-          </div>
+          <div class="step__num">02</div>
+          <h3>Write your first entry</h3>
+          <p>Open the app, tap "New entry," and write. A sentence or a thousand words — it all counts.</p>
         </div>
         <div class="step">
-          <div class="step__num">3</div>
-          <div class="step__body">
-            <div class="step__title">Build the habit</div>
-            <div class="step__text">Come back tomorrow. And the day after. Watch your streak grow and your archive fill with your creative journey.</div>
-          </div>
+          <div class="step__num">03</div>
+          <h3>Build the habit</h3>
+          <p>Come back tomorrow. Watch your streak grow and your archive fill with your creative journey.</p>
         </div>
         <div class="step">
-          <div class="step__num">4</div>
-          <div class="step__body">
-            <div class="step__title">Upgrade when you're ready</div>
-            <div class="step__text">Unlock unlimited words, multiple journals, backfilling, and more for just $3/month. Cancel any time.</div>
-          </div>
+          <div class="step__num">04</div>
+          <h3>Upgrade when ready</h3>
+          <p>Unlock unlimited words, multiple journals, and more for just $3/month. Cancel any time.</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Pricing preview -->
-  <section class="section section--alt">
+  <!-- ── Pricing ───────────────────────────────────────────────────────── -->
+  <section class="pricing-section">
     <div class="container">
-      <p class="section__label">Pricing</p>
-      <h2 class="section__title" style="text-align:center">Simple, honest pricing</h2>
-      <p class="section__sub" style="text-align:center;margin-left:auto;margin-right:auto">Start free. Upgrade when you need more.</p>
-      <div class="pricing-preview">
-        <div class="plan-card">
-          <div class="plan-card__name">Free</div>
-          <div class="plan-card__price">
-            <span class="amount">$0</span>
-            <span class="per"> / forever</span>
-          </div>
-          <ul class="plan-features">
-            <li><span class="check">✓</span> 1 entry per day</li>
-            <li><span class="check">✓</span> Up to 100 words per entry</li>
-            <li><span class="check">✓</span> 1 photo per entry</li>
-            <li><span class="check">✓</span> Streak tracking</li>
-            <li><span class="check">✓</span> Tags &amp; search</li>
-            <li><span class="check">✓</span> JSON &amp; text export</li>
-            <li><span class="cross" style="color:var(--text-3)">✕</span> Backfilling past entries</li>
-            <li><span class="cross" style="color:var(--text-3)">✕</span> Multiple journals</li>
+      <div class="section-eyebrow">Pricing</div>
+      <h2 class="section-heading" style="text-align:center">Simple, honest pricing.</h2>
+      <p class="section-sub" style="text-align:center;margin-left:auto;margin-right:auto">Start free. Upgrade when you need more.</p>
+
+      <div class="plans">
+        <div class="plan">
+          <div class="plan__name">Free</div>
+          <div class="plan__price"><span class="plan__amount">$0</span> <span class="plan__per">/ forever</span></div>
+          <ul class="plan__features">
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> 1 entry per day</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Up to 100 words per entry</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> 1 photo per entry</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Streak tracking</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Tags &amp; search</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> JSON &amp; text export</li>
+            <li class="plan__feature--dim"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Multiple journals</li>
+            <li class="plan__feature--dim"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Backfill past entries</li>
           </ul>
-          <a href="signup.html" class="btn btn--outline btn--full">Get started free</a>
+          <a href="signup.html" class="btn btn--plan-outline">Get started free</a>
         </div>
-        <div class="plan-card plan-card--featured">
-          <div class="plan-card__badge">Most popular</div>
-          <div class="plan-card__name">Paid</div>
-          <div class="plan-card__price">
-            <div><span class="amount">$3</span><span class="per"> / month</span></div>
-            <div class="annual">or $30/year — save 2 months</div>
-          </div>
-          <ul class="plan-features">
-            <li><span class="check">✓</span> Up to 5 entries per day</li>
-            <li><span class="check">✓</span> Up to 2,500 words per entry</li>
-            <li><span class="check">✓</span> Up to 20 photos per entry</li>
-            <li><span class="check">✓</span> Unlimited journals</li>
-            <li><span class="check">✓</span> Backfill past entries (2 days)</li>
-            <li><span class="check">✓</span> Streak pause (10 days/month)</li>
-            <li><span class="check">✓</span> Mood tracking &amp; favorites</li>
-            <li><span class="check">✓</span> Daily motivation card</li>
+
+        <div class="plan plan--featured">
+          <div class="plan__badge">Most popular</div>
+          <div class="plan__name">Paid</div>
+          <div class="plan__price"><span class="plan__amount">$3</span> <span class="plan__per">/ month</span></div>
+          <div class="plan__annual">or $30/year — save 2 months</div>
+          <ul class="plan__features">
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Up to 5 entries per day</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Up to 2,500 words per entry</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Up to 20 photos per entry</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Unlimited journals</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Backfill past entries (2 days)</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Streak pause (10 days/month)</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Mood tracking &amp; favorites</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Daily creative spark card</li>
           </ul>
-          <a href="signup.html" class="btn btn--primary btn--full">Start free trial</a>
+          <a href="signup.html" class="btn btn--plan-primary">Start free trial</a>
         </div>
       </div>
-      <p style="text-align:center;margin-top:1.5rem;font-size:.875rem;color:var(--text-3)">
-        <a href="pricing.html" style="color:var(--accent-dark)">See full feature comparison →</a>
-      </p>
+
+      <p class="pricing-link"><a href="pricing.html">See full feature comparison →</a></p>
     </div>
   </section>
 
-  <!-- PWA Install -->
-  <section class="section pwa-section">
+  <!-- ── Install strip ─────────────────────────────────────────────────── -->
+  <section class="install-strip">
     <div class="container">
-      <div class="pwa-inner">
-        <div class="pwa-text">
-          <h2 class="section-title" style="text-align:left">Take it with you</h2>
-          <p class="section-sub" style="text-align:left;max-width:480px">
-            Add Creator Companion to your home screen for a full app experience — no App Store required.
-          </p>
-          <a href="https://app.creatorcompanionapp.com" class="btn btn--primary" style="margin-top:1.5rem">Open the app</a>
+      <div class="install-inner">
+        <div class="install-text">
+          <h2>Take it with you.</h2>
+          <p>Add Creator Companion to your home screen for a full app experience — no App Store required.</p>
+          <a href="https://app.creatorcompanionapp.com" class="btn btn--install">Open the app</a>
         </div>
-        <div class="pwa-steps">
-          <div class="pwa-step">
-            <div class="pwa-step__icon">
-              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>
+        <div class="install-steps">
+          <div class="install-step">
+            <div class="install-step__icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>
             </div>
             <div>
-              <p class="pwa-step__label">iPhone / iPad</p>
-              <p class="pwa-step__desc">Tap <strong>Share</strong> in Safari, then <strong>Add to Home Screen</strong></p>
+              <p class="install-step__label">iPhone / iPad</p>
+              <p class="install-step__desc">Tap <strong>Share</strong> in Safari → <strong>Add to Home Screen</strong></p>
             </div>
           </div>
-          <div class="pwa-step">
-            <div class="pwa-step__icon">
-              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><circle cx="12" cy="17" r="1"/></svg>
+          <div class="install-step">
+            <div class="install-step__icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><circle cx="12" cy="17" r="1"/></svg>
             </div>
             <div>
-              <p class="pwa-step__label">Android</p>
-              <p class="pwa-step__desc">Tap the browser <strong>menu (⋮)</strong>, then <strong>Add to Home Screen</strong></p>
+              <p class="install-step__label">Android</p>
+              <p class="install-step__desc">Tap browser <strong>menu (⋮)</strong> → <strong>Add to Home Screen</strong></p>
             </div>
           </div>
         </div>
@@ -226,28 +293,67 @@
     </div>
   </section>
 
-  <!-- CTA Banner -->
-  <section class="cta-banner">
+  <!-- ── Final CTA ─────────────────────────────────────────────────────── -->
+  <section class="cta-final">
+    <div class="cta-final__glow" aria-hidden="true"></div>
     <div class="container">
-      <h2 class="cta-banner__title">Your streak starts today.</h2>
-      <p class="cta-banner__sub">Join creative people who show up every day. Free to start, no credit card needed.</p>
-      <a href="signup.html" class="btn btn--primary btn--lg">Start writing for free</a>
+      <p class="cta-final__eyebrow">Start today</p>
+      <h2 class="cta-final__title">Your streak starts<br><em>right now.</em></h2>
+      <p class="cta-final__sub">Join creative people who show up every day. Free to start, no credit card needed.</p>
+      <a href="signup.html" class="btn btn--cta-primary">Start writing for free</a>
+      <p class="cta-final__note">Free forever plan available · Upgrade any time · Your data belongs to you</p>
     </div>
   </section>
 
-  <!-- Footer -->
-  <footer class="footer">
-    <div class="container footer__inner">
-      <span class="footer__logo"><img src="logo-full.png" alt="Creator Companion"></span>
-      <div class="footer__links">
-        <a href="pricing.html">Pricing</a>
-        <a href="pricing.html#faq">FAQ</a>
-        <a href="signup.html">Sign up</a>
-        <a href="#">Privacy</a>
+  <!-- ── Footer ────────────────────────────────────────────────────────── -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="site-footer__top">
+        <a href="index.html" class="site-footer__logo">
+          <img src="logo-full.png" alt="Creator Companion">
+        </a>
+        <nav class="site-footer__nav">
+          <a href="pricing.html">Pricing</a>
+          <a href="pricing.html#faq">FAQ</a>
+          <a href="signup.html">Sign up</a>
+          <a href="https://app.creatorcompanionapp.com/login">Log in</a>
+          <a href="#">Privacy</a>
+        </nav>
       </div>
-      <span class="footer__copy">© 2026 Creator Companion</span>
+      <div class="site-footer__bottom">
+        <span>© 2026 Creator Companion. All rights reserved.</span>
+      </div>
     </div>
   </footer>
 
+  <script>
+    // Nav scroll behaviour
+    const nav = document.getElementById('nav');
+    const observer = new IntersectionObserver(
+      ([e]) => nav.classList.toggle('nav--scrolled', !e.isIntersecting),
+      { threshold: 0 }
+    );
+    observer.observe(document.querySelector('.hero'));
+
+    // Mobile hamburger
+    const hamburger = document.getElementById('hamburger');
+    const menu = document.getElementById('mobileMenu');
+    hamburger.addEventListener('click', () => {
+      hamburger.classList.toggle('open');
+      menu.classList.toggle('open');
+    });
+    menu.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+      hamburger.classList.remove('open');
+      menu.classList.remove('open');
+    }));
+
+    // Fade-in on scroll
+    const fadeEls = document.querySelectorAll('.bento-card, .step, .plan');
+    const fadeObserver = new IntersectionObserver(
+      (entries) => entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); fadeObserver.unobserve(e.target); } }),
+      { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
+    );
+    fadeEls.forEach(el => fadeObserver.observe(el));
+  </script>
 </body>
 </html>
