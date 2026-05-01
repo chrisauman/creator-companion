@@ -1,6 +1,6 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { Router } from '@angular/router';
-import { Observable, of, tap, catchError, throwError, shareReplay, finalize } from 'rxjs';
+import { Observable, of, tap, catchError, throwError, shareReplay, delay, finalize } from 'rxjs';
 import { ApiService } from './api.service';
 import { TokenService } from './token.service';
 import { User, AuthResponse, Capabilities } from '../models/models';
@@ -52,10 +52,13 @@ export class AuthService {
         }
         return throwError(() => err);
       }),
-      // Keep the result cached for concurrent subscribers, then clear so the
-      // next manual refresh (e.g. after token expiry) fires a fresh request.
+      // shareReplay(1) lets late subscribers (e.g. the HTTP interceptor arriving
+      // just after the guard's refresh completes) still get the cached result
+      // without firing a second HTTP request. We clear _refresh$ after a short
+      // delay so any in-flight 401 retries can still join the same observable,
+      // but subsequent independent refreshes start fresh.
       shareReplay(1),
-      finalize(() => { this._refresh$ = null; })
+      finalize(() => { setTimeout(() => { this._refresh$ = null; }, 5000); })
     );
 
     return this._refresh$;

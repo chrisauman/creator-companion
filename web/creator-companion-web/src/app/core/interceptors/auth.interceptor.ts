@@ -18,26 +18,38 @@ export const authInterceptor: HttpInterceptorFn = (
 
   return next(authReq).pipe(
     catchError((err: HttpErrorResponse) => {
-      // On 401, try to get a new access token via the HttpOnly refresh cookie
-      if (err.status === 401) {
-        return auth.refreshToken().pipe(
-          switchMap(() => {
-            const newToken = tokens.getAccessToken();
-            const retried  = req.clone({ setHeaders: { Authorization: `Bearer ${newToken}` } });
-            return next(retried);
-          }),
-          catchError(refreshErr => {
-            // Only force a full logout when the server definitively rejects the
-            // refresh token. 5xx / network errors mean Railway is cold-starting —
-            // don't log the user out just because the API is momentarily down.
-            if (refreshErr?.status === 401 || refreshErr?.status === 403) {
-              auth.logout();
-            }
-            return throwError(() => refreshErr);
-          })
-        );
+      if (err.status !== 401) return throwError(() => err);
+
+      // ── Race-condition guard ──────────────────────────────────────────────
+      // The auth guard fires a background refresh on page load. By the time a
+      // 401 bounces back from the API, that refresh may have already completed
+      // and placed a fresh token in memory. If so, skip the refresh entirely
+      // and just retry the original request with the token we already have.
+      const freshToken = tokens.getAccessToken();
+      if (freshToken && !tokens.isAccessTokenExpired()) {
+        const retried = req.clone({ setHeaders: { Authorization: `Bearer ${freshToken}` } });
+        return next(retried);
       }
-      return throwError(() => err);
+
+      // ── Normal 401 refresh path ───────────────────────────────────────────
+      // refreshToken() deduplicates concurrent calls via shareReplay, so if
+      // the guard's refresh is still in-flight this subscribes to the same
+      // Observable instead of issuing a second HTTP request.
+      return auth.refreshToken().pipe(
+        switchMap(() => {
+          const newToken = tokens.getAccessToken();
+          const retried  = req.clone({ setHeaders: { Authorization: `Bearer ${newToken}` } });
+          return next(retried);
+        }),
+        catchError(refreshErr => {
+          // Only force a full logout on a definitive auth rejection.
+          // 5xx / network errors = Railway cold-starting; keep the session.
+          if (refreshErr?.status === 401 || refreshErr?.status === 403) {
+            auth.logout();
+          }
+          return throwError(() => refreshErr);
+        })
+      );
     })
   );
 };
