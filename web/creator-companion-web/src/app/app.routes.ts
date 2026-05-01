@@ -1,13 +1,19 @@
 import { Routes } from '@angular/router';
 import { authGuard, publicGuard, adminGuard } from './core/guards/auth.guard';
+import { LoginComponent } from './features/auth/login/login.component';
 
 export const routes: Routes = [
-  { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+  // Default to login — publicGuard immediately shows the page and silently
+  // redirects to /dashboard in the background if a valid session is found.
+  // This avoids running authGuard (which blocks on a Railway API call) for
+  // unauthenticated users, eliminating the cold-start delay on first load.
+  { path: '', redirectTo: 'login', pathMatch: 'full' },
 
   {
     path: 'login',
     canActivate: [publicGuard],
-    loadComponent: () => import('./features/auth/login/login.component').then(m => m.LoginComponent)
+    // Eagerly loaded so the login page renders with zero extra chunk download.
+    component: LoginComponent
   },
   {
     path: 'register',

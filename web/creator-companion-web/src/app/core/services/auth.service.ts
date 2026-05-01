@@ -1,6 +1,6 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { Router } from '@angular/router';
-import { Observable, of, tap, catchError, throwError } from 'rxjs';
+import { Observable, of, tap, catchError, throwError, shareReplay, finalize } from 'rxjs';
 import { ApiService } from './api.service';
 import { TokenService } from './token.service';
 import { User, AuthResponse, Capabilities } from '../models/models';
@@ -13,6 +13,13 @@ export class AuthService {
 
   private _user         = signal<User | null>(null);
   private _capabilities = signal<Capabilities | null>(null);
+
+  // Shared in-flight refresh — any caller that arrives while a refresh is
+  // already in progress gets the same Observable instead of firing a second
+  // HTTP request. This prevents token-rotation race conditions when the guard
+  // and the HTTP interceptor both try to refresh at the same time (e.g. on
+  // page reload before the new access token is back in memory).
+  private _refresh$: Observable<AuthResponse> | null = null;
 
   readonly user         = this._user.asReadonly();
   readonly capabilities = this._capabilities.asReadonly();
@@ -31,14 +38,27 @@ export class AuthService {
   }
 
   refreshToken(): Observable<AuthResponse> {
-    return this.api.refresh().pipe(
+    if (this._refresh$) return this._refresh$;
+
+    this._refresh$ = this.api.refresh().pipe(
       tap(res => this.handleAuth(res)),
       catchError(err => {
-        this.tokens.clear();
-        this._user.set(null);
+        // Only clear stored tokens on a definitive "not authenticated" response.
+        // 5xx / network errors mean the API is temporarily down — keep the
+        // cached session so the user isn't logged out unnecessarily on reload.
+        if (err?.status === 401 || err?.status === 403) {
+          this.tokens.clear();
+          this._user.set(null);
+        }
         return throwError(() => err);
-      })
+      }),
+      // Keep the result cached for concurrent subscribers, then clear so the
+      // next manual refresh (e.g. after token expiry) fires a fresh request.
+      shareReplay(1),
+      finalize(() => { this._refresh$ = null; })
     );
+
+    return this._refresh$;
   }
 
   loadCapabilities(): Observable<Capabilities> {

@@ -27,7 +27,12 @@ export const authInterceptor: HttpInterceptorFn = (
             return next(retried);
           }),
           catchError(refreshErr => {
-            auth.logout();
+            // Only force a full logout when the server definitively rejects the
+            // refresh token. 5xx / network errors mean Railway is cold-starting —
+            // don't log the user out just because the API is momentarily down.
+            if (refreshErr?.status === 401 || refreshErr?.status === 403) {
+              auth.logout();
+            }
             return throwError(() => refreshErr);
           })
         );

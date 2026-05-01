@@ -366,7 +366,7 @@ import { ActionItemsCardComponent } from './action-items-card.component';
     /* ── Search bar ─────────────────────────────────────────────── */
     .search-bar {
       display: flex; align-items: center; gap: .625rem;
-      margin-top: 2rem;
+      margin-top: 1.25rem;
       margin-bottom: .125rem;
     }
     .search-input-wrap {
