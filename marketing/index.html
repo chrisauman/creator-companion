@@ -92,90 +92,307 @@
     </div>
   </section>
 
-  <!-- ── Features bento ───────────────────────────────────────────────── -->
-  <section class="features">
+  <!-- ── Feature 1: Streak ────────────────────────────────────────────── -->
+  <section class="feat-section feat-section--light">
     <div class="container">
-      <div class="section-eyebrow">Features</div>
-      <h2 class="section-heading">Built around one<br>powerful habit.</h2>
-      <p class="section-sub">Most journaling apps try to do everything. Creator Companion does one thing exceptionally well: helps creative people show up every single day.</p>
+      <div class="feat feat--text-left">
 
-      <div class="bento">
+        <div class="feat__copy">
+          <span class="feat__eyebrow">Streak Tracking</span>
+          <h2 class="feat__heading">Miss a day and it resets.<br>So you won't miss a day.</h2>
+          <p class="feat__body">Your streak is the heartbeat of your creative practice. Every entry extends it. Every day you skip resets it to zero. That gentle, compounding pressure is what separates people who want to journal from people who actually do.</p>
+          <ul class="feat__bullets">
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Visual day-by-day calendar in the app
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Daily reminder notifications you set yourself
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Pause up to 10 days/month without losing your streak (Paid)
+            </li>
+          </ul>
+        </div>
 
-        <!-- Streak — wide -->
-        <div class="bento-card bento-card--wide bento-card--streak">
-          <div class="bento-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
-          </div>
-          <h3>Build an unbreakable streak</h3>
-          <p>Your streak grows every day you write. That gentle pressure turns intention into identity. The longer it gets, the more it means.</p>
-          <div class="streak-demo">
-            <div class="streak-days">
-              <span class="sd sd--on"><span>M</span></span>
-              <span class="sd sd--on"><span>T</span></span>
-              <span class="sd sd--on"><span>W</span></span>
-              <span class="sd sd--on"><span>T</span></span>
-              <span class="sd sd--on"><span>F</span></span>
-              <span class="sd sd--today"><span>S</span></span>
-              <span class="sd"><span>S</span></span>
+        <div class="feat__visual">
+          <!-- Phone mockup: dashboard -->
+          <div class="mock-phone">
+            <div class="mock-phone__notch"></div>
+            <div class="mock-phone__screen">
+
+              <div class="mapp-header">
+                <span class="mapp-title">Journal</span>
+                <span class="mapp-streak">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+                  12
+                </span>
+              </div>
+
+              <div class="mapp-month">May 2026</div>
+
+              <div class="mapp-week">
+                <div class="mw-day mw-day--done"><span>M</span></div>
+                <div class="mw-day mw-day--done"><span>T</span></div>
+                <div class="mw-day mw-day--done"><span>W</span></div>
+                <div class="mw-day mw-day--done"><span>T</span></div>
+                <div class="mw-day mw-day--done"><span>F</span></div>
+                <div class="mw-day mw-day--today"><span>S</span></div>
+                <div class="mw-day"><span>S</span></div>
+              </div>
+
+              <div class="mapp-entries">
+                <div class="mentry">
+                  <div class="mentry__meta">
+                    <span class="mentry__date">Today · May 1</span>
+                  </div>
+                  <div class="mentry__title">The resistance is always loudest at the start</div>
+                  <div class="mentry__preview">Sat down at 7am and almost talked myself out of it again. But I opened the app...</div>
+                </div>
+                <div class="mentry">
+                  <div class="mentry__meta">
+                    <span class="mentry__date">Wed · Apr 30</span>
+                    <span class="mentry__mood">😌</span>
+                  </div>
+                  <div class="mentry__title">Finished the chapter draft</div>
+                  <div class="mentry__preview">Three weeks of false starts and today it finally clicked. The key was letting go of...</div>
+                </div>
+                <div class="mentry">
+                  <div class="mentry__meta">
+                    <span class="mentry__date">Tue · Apr 29</span>
+                  </div>
+                  <div class="mentry__title">Morning pages + a weird idea</div>
+                  <div class="mentry__preview">What if I structured the whole thing around questions instead of answers? Going to sit with this...</div>
+                </div>
+              </div>
+
+              <div class="mapp-nav">
+                <div class="mnav-item mnav-item--active">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  <span>Journal</span>
+                </div>
+                <div class="mnav-item">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                  <span>Alerts</span>
+                </div>
+                <div class="mnav-item">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                  <span>To Do</span>
+                </div>
+                <div class="mnav-item">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                  <span>Account</span>
+                </div>
+              </div>
             </div>
-            <div class="streak-label">
-              <strong>5</strong>&thinsp;day streak
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Feature 2: Writing experience ────────────────────────────────── -->
+  <section class="feat-section feat-section--dim">
+    <div class="container">
+      <div class="feat feat--text-right">
+
+        <div class="feat__visual">
+          <!-- Desktop browser mockup: entry editor -->
+          <div class="mock-browser">
+            <div class="mock-browser__bar">
+              <div class="mock-browser__dots">
+                <span class="dot-red"></span>
+                <span class="dot-yellow"></span>
+                <span class="dot-green"></span>
+              </div>
+              <div class="mock-browser__url">app.creatorcompanionapp.com</div>
+            </div>
+            <div class="mock-browser__body">
+              <div class="mdesk-sidebar">
+                <div class="mdesk-sidebar__logo">CC</div>
+                <div class="mdesk-nav">
+                  <div class="mdesk-nav-item mdesk-nav-item--active">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  </div>
+                  <div class="mdesk-nav-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  </div>
+                  <div class="mdesk-nav-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg>
+                  </div>
+                  <div class="mdesk-nav-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                  </div>
+                </div>
+              </div>
+              <div class="mdesk-editor">
+                <div class="mdesk-editor__topbar">
+                  <span class="mdesk-editor__date">Thursday, May 1, 2026</span>
+                  <div class="mdesk-editor__actions">
+                    <span class="mdesk-tag">#writing</span>
+                    <span class="mdesk-tag">#morning</span>
+                    <span class="mdesk-mood">😊</span>
+                  </div>
+                </div>
+                <div class="mdesk-editor__title">The resistance is always loudest at the start</div>
+                <div class="mdesk-editor__body">
+                  <div class="mdesk-editor__para">Sat down at 7am and almost talked myself out of it again. The inner critic was particularly loud — "you don't have anything to say today." But I opened the app anyway.</div>
+                  <div class="mdesk-editor__para">Three sentences in, something loosened. The critic went quiet. That's the magic no one tells you: you don't wait to feel ready. You just start, and the readiness comes.</div>
+                  <div class="mdesk-editor__cursor"></div>
+                </div>
+                <div class="mdesk-editor__footer">
+                  <span class="mdesk-wc">147 words</span>
+                  <span class="mdesk-saved">✓ Saved</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- Private — dark -->
-        <div class="bento-card bento-card--dark">
-          <div class="bento-icon bento-icon--inv">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          </div>
-          <h3>Completely private</h3>
-          <p>No social features. No public posts. No audience. Everything you write is private — this is your space, not a performance.</p>
+        <div class="feat__copy">
+          <span class="feat__eyebrow">Writing Experience</span>
+          <h2 class="feat__heading">A blank page that actually<br>wants you to fill it.</h2>
+          <p class="feat__body">The editor gets out of your way. No distracting toolbars, no formatting rabbit holes. Just you and your thoughts — with just enough structure to keep you writing instead of fiddling.</p>
+          <ul class="feat__bullets">
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Rich text formatting when you need it
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Attach photos — up to 20 per entry (Paid)
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Mood tracking, tags, and multiple journals
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Auto-saves every keystroke — nothing is lost
+            </li>
+          </ul>
         </div>
 
-        <!-- Photos -->
-        <div class="bento-card">
-          <div class="bento-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-          </div>
-          <h3>Photos &amp; media</h3>
-          <p>Attach photos to your entries. Document your process, your workspace, your finished work. Your journal holds the full picture.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Feature 3: Daily Spark ─────────────────────────────────────── -->
+  <section class="feat-section feat-section--dark">
+    <div class="container">
+      <div class="feat feat--text-left">
+
+        <div class="feat__copy">
+          <span class="feat__eyebrow feat__eyebrow--inv">Daily Spark</span>
+          <h2 class="feat__heading feat__heading--inv">Creative fuel,<br>every morning.</h2>
+          <p class="feat__body feat__body--inv">Each day opens with a fresh insight, quote, or creative challenge — handpicked for people who make things for a living. Not generic productivity advice. Real wisdom for the creative life.</p>
+          <ul class="feat__bullets feat__bullets--inv">
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              New card every day, across dozens of categories
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Favorite the ones that hit hardest
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Browse your saved sparks any time
+            </li>
+          </ul>
         </div>
 
-        <!-- Daily Spark — accent -->
-        <div class="bento-card bento-card--accent">
-          <div class="bento-icon bento-icon--accent">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          </div>
-          <h3>Daily creative spark</h3>
-          <p>A fresh insight or challenge delivered every morning, curated for creative people — not generic productivity platitudes.</p>
-        </div>
-
-        <!-- Tags -->
-        <div class="bento-card">
-          <div class="bento-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
-          </div>
-          <h3>Tags &amp; search</h3>
-          <p>Tag entries by project, mood, or theme. Search your entire archive instantly. Your history becomes a resource you can actually use.</p>
-        </div>
-
-        <!-- Export — wide -->
-        <div class="bento-card bento-card--wide bento-card--export">
-          <div class="bento-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          </div>
-          <div class="bento-export-content">
-            <div>
-              <h3>Your data, always yours</h3>
-              <p>Download all your entries as JSON or plain text any time, no permission needed. We'll never hold your words hostage.</p>
+        <div class="feat__visual feat__visual--centered">
+          <!-- Spark card mockup -->
+          <div class="mock-spark-wrap">
+            <div class="mock-spark">
+              <div class="mock-spark__label">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12" stroke="white" stroke-width="2"/><line x1="12" y1="16" x2="12.01" y2="16" stroke="white" stroke-width="2"/></svg>
+                Daily Spark
+              </div>
+              <div class="mock-spark__category">Resistance &amp; Procrastination</div>
+              <blockquote class="mock-spark__quote">"The amateur believes he must first overcome his fear; then he can do his work. The professional knows that fear can never be overcome. He knows there is no such thing as a fearless warrior or a dread-free artist."</blockquote>
+              <div class="mock-spark__author">— Steven Pressfield, The War of Art</div>
+              <div class="mock-spark__takeaway">
+                <strong>Today's takeaway:</strong> Fear isn't a bug in your creative process. It's confirmation you're working on something that matters.
+              </div>
+              <div class="mock-spark__actions">
+                <button class="mock-spark__btn mock-spark__btn--fav">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                  Saved
+                </button>
+                <button class="mock-spark__btn">Start writing →</button>
+              </div>
             </div>
-            <div class="export-badges">
-              <span class="export-badge">JSON</span>
-              <span class="export-badge">Plain text</span>
-              <span class="export-badge">Any time</span>
+            <!-- Second card peeking behind -->
+            <div class="mock-spark mock-spark--behind"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Feature 4: Privacy + Ownership ───────────────────────────────── -->
+  <section class="feat-section feat-section--light">
+    <div class="container">
+      <div class="feat feat--text-right">
+
+        <div class="feat__visual">
+          <!-- Two-panel trust mockup -->
+          <div class="mock-trust">
+            <div class="mock-trust-card">
+              <div class="mock-trust-card__icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              </div>
+              <h4>Completely private</h4>
+              <p>No social features. No public posts. No feed. No audience. What you write stays between you and the page — always.</p>
+              <div class="mock-trust-card__pills">
+                <span>No sharing</span>
+                <span>No tracking</span>
+                <span>No ads</span>
+              </div>
+            </div>
+            <div class="mock-trust-card">
+              <div class="mock-trust-card__icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              </div>
+              <h4>Your data, always yours</h4>
+              <p>Download everything as JSON or plain text any time, no questions asked. We'll never hold your words hostage behind a paywall.</p>
+              <div class="mock-trust-card__pills">
+                <span>JSON export</span>
+                <span>Plain text</span>
+                <span>Any time</span>
+              </div>
             </div>
           </div>
+        </div>
+
+        <div class="feat__copy">
+          <span class="feat__eyebrow">Privacy &amp; Ownership</span>
+          <h2 class="feat__heading">Your words belong<br>to you. Full stop.</h2>
+          <p class="feat__body">Journaling is one of the most intimate things a person can do. Creator Companion has no social layer, no advertising, and no incentive to monetize your writing. Your entries exist for one person: you.</p>
+          <ul class="feat__bullets">
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              No social features or public profiles
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Export everything to JSON or plain text, any time
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Deleted entries recoverable for 48 hours (Paid)
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Cancel any time — your export comes with you
+            </li>
+          </ul>
         </div>
 
       </div>
@@ -348,7 +565,7 @@
     }));
 
     // Fade-in on scroll
-    const fadeEls = document.querySelectorAll('.bento-card, .step, .plan');
+    const fadeEls = document.querySelectorAll('.feat, .step, .plan');
     const fadeObserver = new IntersectionObserver(
       (entries) => entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); fadeObserver.unobserve(e.target); } }),
       { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
