@@ -631,6 +631,18 @@ export class DashboardComponent implements OnInit {
     this.auth.loadCapabilities().subscribe(caps => this.isPaid.set(caps.canFavorite));
     this.initPushNudge();
 
+    // Safety net: if any API call hangs past 20 s, exit the loading state
+    // gracefully rather than spinning forever. This covers Railway cold starts
+    // and iOS PWA scenarios where network requests can be delayed.
+    const safetyTimer = setTimeout(() => {
+      if (!this.streak()) {
+        this.streak.set({ currentStreak: 0, longestStreak: 0, totalEntries: 0,
+          totalMediaCount: 0, totalActiveDays: 0, isPaused: false, pauseDaysUsedThisMonth: 0 });
+      }
+      if (this.loading()) {
+        this.loading.set(false);
+      }
+    }, 20000);
 
     this.api.getStreak().subscribe({
       next: s => { this.streak.set(s); this.checkMilestoneCelebration(s.currentStreak); },
@@ -649,12 +661,14 @@ export class DashboardComponent implements OnInit {
 
     this.api.getEntries(undefined, false, undefined, 0, this.PAGE_SIZE).subscribe({
       next: batch => {
+        clearTimeout(safetyTimer);
         const hasMore = batch.length > this.PAGE_SIZE;
         this.entries.set(hasMore ? batch.slice(0, this.PAGE_SIZE) : batch);
         this.hasMore.set(hasMore);
         this.loading.set(false);
       },
       error: () => {
+        clearTimeout(safetyTimer);
         this.error.set('Could not load entries.');
         this.loading.set(false);
       }

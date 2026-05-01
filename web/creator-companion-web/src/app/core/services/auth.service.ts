@@ -1,6 +1,6 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { Router } from '@angular/router';
-import { Observable, of, tap, catchError, throwError, shareReplay, delay, finalize } from 'rxjs';
+import { Observable, of, tap, catchError, throwError, shareReplay, delay, finalize, timeout } from 'rxjs';
 import { ApiService } from './api.service';
 import { TokenService } from './token.service';
 import { User, AuthResponse, Capabilities } from '../models/models';
@@ -41,6 +41,7 @@ export class AuthService {
     if (this._refresh$) return this._refresh$;
 
     this._refresh$ = this.api.refresh().pipe(
+      timeout(15000), // fail fast if Railway is cold-starting rather than hanging forever
       tap(res => this.handleAuth(res)),
       catchError(err => {
         // Only clear stored tokens on a definitive "not authenticated" response.
@@ -80,13 +81,15 @@ export class AuthService {
     this.tokens.clear();
     this._user.set(null);
     this._capabilities.set(null);
-    // Must wait for revoke to complete before navigating — the refresh token lives
-    // in an HttpOnly cookie, so if we reload before the server invalidates it the
-    // app will silently restore the session on the next page load.
-    this.api.revoke().subscribe({
-      next:  () => window.location.replace('/login'),
-      error: () => window.location.replace('/login')
-    });
+    // Fire revoke in the background — do NOT wait for it before navigating.
+    // Railway cold starts can stall the revoke response for 8+ seconds, which
+    // previously blocked window.location.replace('/login') from ever firing,
+    // leaving the user stuck on the dashboard indefinitely (especially on iOS PWA
+    // where the access token is lost from memory every time the app is backgrounded).
+    // The refresh token is also stored in localStorage and cleared above, so the
+    // client cannot reuse it regardless of whether the server-side revoke completes.
+    this.api.revoke().subscribe({ error: () => {} });
+    window.location.replace('/login');
   }
 
   loadUser(): Observable<User> {
