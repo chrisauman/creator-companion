@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { TokenService } from './token.service';
 import {
   AuthResponse, User, Journal, Entry, EntryListItem,
   Draft, StreakStats, Capabilities, MediaItem, Tag, Pause, MotivationEntry,
@@ -10,8 +11,9 @@ import {
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
-  private http = inject(HttpClient);
-  private base = environment.apiBaseUrl;
+  private http   = inject(HttpClient);
+  private tokens = inject(TokenService);
+  private base   = environment.apiBaseUrl;
 
   // ── Auth ────────────────────────────────────────────────────────────────
   // withCredentials: true is required so the browser sends the HttpOnly
@@ -27,11 +29,18 @@ export class ApiService {
   }
 
   refresh(): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.base}/auth/refresh`, {}, { withCredentials: true });
+    // Send the stored refresh token in the body as a fallback for browsers
+    // that block cross-origin HttpOnly cookies (Safari ITP, iOS, etc.).
+    // The API accepts from either the cookie or the body.
+    const rt = this.tokens.getRefreshToken();
+    const body = rt ? { refreshToken: rt } : {};
+    return this.http.post<AuthResponse>(`${this.base}/auth/refresh`, body, { withCredentials: true });
   }
 
   revoke(): Observable<void> {
-    return this.http.post<void>(`${this.base}/auth/revoke`, {}, { withCredentials: true });
+    const rt = this.tokens.getRefreshToken();
+    const body = rt ? { refreshToken: rt } : {};
+    return this.http.post<void>(`${this.base}/auth/revoke`, body, { withCredentials: true });
   }
 
   forgotPassword(email: string): Observable<{ message: string; resetToken: string }> {

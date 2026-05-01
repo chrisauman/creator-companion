@@ -2,14 +2,25 @@ import { Injectable, signal } from '@angular/core';
 
 @Injectable({ providedIn: 'root' })
 export class TokenService {
-  // Access token lives in memory only — never touches localStorage.
-  // Refresh token is stored in an HttpOnly cookie managed by the API.
+  // Access token lives in memory only (lost on page close — by design).
+  // Refresh token is stored in an HttpOnly cookie (primary) AND in
+  // localStorage (fallback for browsers that block cross-origin cookies,
+  // e.g. Safari ITP, iOS, private browsing).
   private _accessToken  = signal<string | null>(null);
   private _expiresAt    = signal<Date | null>(null);
 
-  setTokens(accessToken: string, _refreshToken: string, expiresAt: string): void {
+  private static readonly RT_KEY = 'cc_rt';
+
+  setTokens(accessToken: string, refreshToken: string, expiresAt: string): void {
     this._accessToken.set(accessToken);
     this._expiresAt.set(new Date(expiresAt));
+    if (refreshToken) {
+      try { localStorage.setItem(TokenService.RT_KEY, refreshToken); } catch {}
+    }
+  }
+
+  getRefreshToken(): string | null {
+    try { return localStorage.getItem(TokenService.RT_KEY); } catch { return null; }
   }
 
   getAccessToken(): string | null {
@@ -25,6 +36,7 @@ export class TokenService {
   clear(): void {
     this._accessToken.set(null);
     this._expiresAt.set(null);
+    try { localStorage.removeItem(TokenService.RT_KEY); } catch {}
   }
 
   hasTokens(): boolean {

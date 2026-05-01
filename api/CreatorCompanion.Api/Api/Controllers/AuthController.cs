@@ -46,8 +46,11 @@ public class AuthController(IAuthService authService, IWebHostEnvironment env) :
         try
         {
             var result = await authService.RegisterAsync(request);
-            SetRefreshCookie(result.RefreshToken, result.ExpiresAt.AddDays(30));
-            return Ok(result with { RefreshToken = string.Empty });
+            // Set HttpOnly cookie (works when cookies aren't blocked) and
+            // also return the token in the body so the client can store it
+            // in localStorage as a cross-origin fallback.
+            SetRefreshCookie(result.RefreshToken, DateTime.UtcNow.AddDays(90));
+            return Ok(result);
         }
         catch (InvalidOperationException ex)
         {
@@ -61,8 +64,8 @@ public class AuthController(IAuthService authService, IWebHostEnvironment env) :
         try
         {
             var result = await authService.LoginAsync(request);
-            SetRefreshCookie(result.RefreshToken, result.ExpiresAt.AddDays(30));
-            return Ok(result with { RefreshToken = string.Empty });
+            SetRefreshCookie(result.RefreshToken, DateTime.UtcNow.AddDays(90));
+            return Ok(result);
         }
         catch (UnauthorizedAccessException ex)
         {
@@ -71,17 +74,22 @@ public class AuthController(IAuthService authService, IWebHostEnvironment env) :
     }
 
     [HttpPost("refresh")]
-    public async Task<IActionResult> Refresh()
+    public async Task<IActionResult> Refresh([FromBody] RefreshRequest? request = null)
     {
-        var refreshToken = GetRefreshCookie();
+        // Accept refresh token from the HttpOnly cookie (preferred) or from
+        // the request body (localStorage fallback for browsers that block
+        // cross-origin cookies — Safari ITP, private browsing, etc.)
+        var refreshToken = GetRefreshCookie()
+                        ?? request?.RefreshToken;
+
         if (string.IsNullOrEmpty(refreshToken))
             return Unauthorized(new { error = "No refresh token." });
 
         try
         {
             var result = await authService.RefreshAsync(refreshToken);
-            SetRefreshCookie(result.RefreshToken, result.ExpiresAt.AddDays(30));
-            return Ok(result with { RefreshToken = string.Empty });
+            SetRefreshCookie(result.RefreshToken, DateTime.UtcNow.AddDays(90));
+            return Ok(result);
         }
         catch (UnauthorizedAccessException ex)
         {
@@ -91,9 +99,10 @@ public class AuthController(IAuthService authService, IWebHostEnvironment env) :
     }
 
     [HttpPost("revoke")]
-    public async Task<IActionResult> Revoke()
+    public async Task<IActionResult> Revoke([FromBody] RevokeRequest? request = null)
     {
-        var refreshToken = GetRefreshCookie();
+        // Accept token from cookie or body (matches the refresh fallback pattern)
+        var refreshToken = GetRefreshCookie() ?? request?.RefreshToken;
         if (!string.IsNullOrEmpty(refreshToken))
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
@@ -136,3 +145,6 @@ public class AuthController(IAuthService authService, IWebHostEnvironment env) :
         }
     }
 }
+
+public record RefreshRequest(string? RefreshToken = null);
+public record RevokeRequest(string? RefreshToken = null);
