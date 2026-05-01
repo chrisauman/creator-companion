@@ -160,8 +160,8 @@ import { MobileNavComponent } from '../../../shared/mobile-nav/mobile-nav.compon
     /* ── Main content ────────────────────────────────────────────── */
     .main-content {
       flex: 1; min-width: 0;
-      padding: 1rem 1rem calc(80px + env(safe-area-inset-bottom, 0px));
-      background: var(--color-bg);
+      padding: 0 0 calc(72px + env(safe-area-inset-bottom, 0px));
+      background: var(--color-surface);
     }
     @media (min-width: 768px) {
       .main-content { padding: 2rem 3rem 4rem; background: #f7f7f5; }
@@ -185,22 +185,28 @@ import { MobileNavComponent } from '../../../shared/mobile-nav/mobile-nav.compon
       color: var(--color-text-3); font-size: .9375rem;
     }
     .error-state {
-      max-width: 680px; margin: 3rem auto; text-align: center;
+      padding: 3rem 1.5rem; text-align: center;
       p { color: var(--color-text-2); margin-bottom: 1rem; }
+    }
+    @media (min-width: 768px) {
+      .error-state { max-width: 680px; margin: 0 auto; }
     }
 
     /* ── Entry card ──────────────────────────────────────────────── */
     .entry-card {
-      max-width: 680px;
-      margin: 0 auto;
-      background: var(--color-surface);
-      border-radius: var(--radius-lg);
-      border: 1px solid var(--color-border);
-      box-shadow: var(--shadow-sm);
-      padding: 1.75rem 1.25rem 2.5rem;
+      /* Mobile: full-bleed, no card chrome */
+      padding: 1.5rem 1.125rem 3rem;
     }
     @media (min-width: 768px) {
-      .entry-card { padding: 2rem 1.75rem 3rem; }
+      .entry-card {
+        max-width: 680px;
+        margin: 0 auto;
+        background: var(--color-surface);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--color-border);
+        box-shadow: var(--shadow-sm);
+        padding: 2rem 1.75rem 3rem;
+      }
     }
 
     /* ── Icon button (star/favorite) ─────────────────────────────── */
