@@ -378,6 +378,17 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log an entry to keep your streak a
           }
         </section>
 
+        <!-- Help & Support -->
+        <section class="card support-card">
+          <div class="support-card__inner">
+            <div class="support-card__text">
+              <p class="support-card__title">Help &amp; Support</p>
+              <p class="support-card__sub">Browse FAQs or get in touch with our team.</p>
+            </div>
+            <a routerLink="/support" class="btn btn--ghost btn--sm">Get Support →</a>
+          </div>
+        </section>
+
       </main>
 
       <!-- Sign out — outside *ngIf so it's always visible -->
@@ -452,6 +463,15 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log an entry to keep your streak a
       display: flex; align-items: center; gap: .625rem;
       color: var(--color-text); font-size: .9375rem; font-weight: 500;
       svg { color: var(--color-text-3); flex-shrink: 0; }
+    }
+    .support-card__inner {
+      display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+    }
+    .support-card__title {
+      font-size: .9375rem; font-weight: 600; color: var(--color-text); margin: 0 0 .2rem;
+    }
+    .support-card__sub {
+      font-size: .8125rem; color: var(--color-text-2); margin: 0;
     }
     .section-head {
       display:flex; align-items:center; justify-content:space-between;

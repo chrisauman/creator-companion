@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sidebar Style Preview</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: #1a1916;
+      color: #1a1916;
+      min-height: 100vh;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    h1 {
+      color: #fff;
+      font-size: 1.125rem;
+      font-weight: 600;
+      letter-spacing: -.01em;
+      margin-bottom: .25rem;
+    }
+    .section-label {
+      color: #888;
+      font-size: .8125rem;
+      margin-bottom: 1rem;
+    }
+
+    /* ── Shared mockup shell ── */
+    .mockup {
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,.5);
+      display: flex;
+      height: 520px;
+    }
+
+    /* ── Shared content area ── */
+    .content {
+      flex: 1;
+      background: #f5f5f5;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .content-inner {
+      padding: 2rem 2.5rem;
+      flex: 1;
+    }
+    .content-title {
+      font-size: 1.5rem;
+      font-weight: 900;
+      color: #1a1916;
+      margin-bottom: 1.5rem;
+      letter-spacing: -.02em;
+    }
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: .75rem;
+      margin-bottom: 1.5rem;
+    }
+    .stat {
+      background: #fff;
+      border: 1px solid #e8e6e1;
+      border-radius: 10px;
+      padding: 1rem;
+      text-align: center;
+    }
+    .stat-num { font-size: 2rem; font-weight: 900; color: #12C4E3; line-height: 1; }
+    .stat-label { font-size: .75rem; color: #888; margin-top: .3rem; }
+
+    .entry-list { display: flex; flex-direction: column; gap: .5rem; }
+    .entry {
+      background: #fff;
+      border: 1px solid #e8e6e1;
+      border-radius: 8px;
+      padding: .75rem 1rem;
+      display: flex; align-items: center; gap: .75rem;
+    }
+    .entry-cal {
+      width: 40px; height: 44px;
+      background: #f5f5f5;
+      border: 1px solid #e8e6e1;
+      border-radius: 6px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .entry-cal-dow { font-size: .5rem; font-weight: 700; text-transform: uppercase; color: #12C4E3; }
+    .entry-cal-num { font-size: 1.1rem; font-weight: 900; color: #1a1916; line-height: 1; }
+    .entry-title { font-size: .875rem; font-weight: 600; color: #1a1916; }
+    .entry-sub { font-size: .75rem; color: #aaa; margin-top: .15rem; }
+
+    /* ── New entry button ── */
+    .new-entry-btn {
+      background: #12C4E3;
+      color: #fff;
+      font-weight: 700;
+      font-size: .875rem;
+      padding: .6rem 1rem;
+      border-radius: 8px;
+      text-align: center;
+      margin-bottom: 1.25rem;
+    }
+
+    /* ════════════════════════════════════
+       OPTION A — Icon rail (60px)
+    ════════════════════════════════════ */
+    .sidebar-a {
+      width: 64px;
+      background: #fff;
+      border-right: 1px solid #e8e6e1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1rem 0;
+      gap: .25rem;
+    }
+    .sidebar-a .logo-icon {
+      width: 36px; height: 36px;
+      background: #12C4E3;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: .75rem;
+      font-size: 1rem;
+    }
+    .sidebar-a .nav-icon {
+      width: 40px; height: 40px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .sidebar-a .nav-icon.active { background: #e0f7fc; }
+    .sidebar-a .nav-icon:not(.active) { color: #aaa; }
+    .sidebar-a .spacer { flex: 1; }
+
+    /* ════════════════════════════════════
+       OPTION B — Standard nav (220px)
+    ════════════════════════════════════ */
+    .sidebar-b {
+      width: 220px;
+      background: #fff;
+      border-right: 1px solid #e8e6e1;
+      display: flex;
+      flex-direction: column;
+      padding: 1.25rem 0;
+    }
+    .sidebar-b .logo-wrap {
+      padding: 0 1.25rem 1.25rem;
+      border-bottom: 1px solid #f0ede8;
+      margin-bottom: .75rem;
+    }
+    .sidebar-b .logo-text {
+      font-size: .9375rem; font-weight: 800;
+      color: #1a1916; letter-spacing: -.01em;
+      display: flex; align-items: center; gap: .5rem;
+    }
+    .sidebar-b .logo-text .dot { color: #12C4E3; font-size: 1.25rem; }
+    .sidebar-b .nav-item {
+      display: flex; align-items: center; gap: .625rem;
+      padding: .5rem 1.25rem;
+      font-size: .875rem; font-weight: 500;
+      color: #6b6860; cursor: pointer;
+      border-radius: 0;
+      margin: 0 .5rem;
+      border-radius: 6px;
+    }
+    .sidebar-b .nav-item.active {
+      background: #e0f7fc; color: #0e7490; font-weight: 600;
+    }
+    .sidebar-b .nav-item .icon { font-size: 1rem; width: 20px; text-align: center; }
+    .sidebar-b .spacer { flex: 1; }
+    .sidebar-b .footer {
+      padding: .75rem 1rem;
+      border-top: 1px solid #f0ede8;
+      font-size: .75rem; color: #aaa;
+      display: flex; align-items: center; gap: .5rem;
+    }
+    .sidebar-b .footer .avatar {
+      width: 26px; height: 26px; border-radius: 50%;
+      background: #12C4E3; color: #fff;
+      font-size: .7rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* ════════════════════════════════════
+       OPTION C — Wide with streak stats
+    ════════════════════════════════════ */
+    .sidebar-c {
+      width: 260px;
+      background: #0f1117;
+      display: flex;
+      flex-direction: column;
+      padding: 1.25rem 0;
+    }
+    .sidebar-c .logo-wrap {
+      padding: 0 1.25rem 1.25rem;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      margin-bottom: 1rem;
+    }
+    .sidebar-c .logo-text {
+      font-size: .9375rem; font-weight: 800;
+      color: #fff; letter-spacing: -.01em;
+      display: flex; align-items: center; gap: .5rem;
+    }
+    .sidebar-c .logo-text .dot { color: #12C4E3; }
+    .sidebar-c .streak-block {
+      margin: 0 .75rem 1rem;
+      background: rgba(18,196,227,.1);
+      border: 1px solid rgba(18,196,227,.2);
+      border-radius: 10px;
+      padding: 1rem;
+    }
+    .sidebar-c .streak-num {
+      font-size: 2.5rem; font-weight: 900;
+      color: #12C4E3; line-height: 1;
+    }
+    .sidebar-c .streak-label {
+      font-size: .75rem; color: rgba(255,255,255,.5);
+      margin-top: .2rem;
+    }
+    .sidebar-c .streak-sub {
+      font-size: .75rem; color: rgba(255,255,255,.35);
+      margin-top: .5rem;
+    }
+    .sidebar-c .nav-item {
+      display: flex; align-items: center; gap: .625rem;
+      padding: .5rem 1rem;
+      font-size: .875rem; font-weight: 500;
+      color: rgba(255,255,255,.45); cursor: pointer;
+      margin: 0 .5rem;
+      border-radius: 6px;
+    }
+    .sidebar-c .nav-item.active {
+      background: rgba(18,196,227,.12);
+      color: #12C4E3; font-weight: 600;
+    }
+    .sidebar-c .nav-item .icon { font-size: 1rem; width: 20px; text-align: center; }
+    .sidebar-c .spacer { flex: 1; }
+    .sidebar-c .footer {
+      padding: .75rem 1rem;
+      border-top: 1px solid rgba(255,255,255,.08);
+      font-size: .75rem; color: rgba(255,255,255,.3);
+      display: flex; align-items: center; gap: .5rem;
+    }
+    .sidebar-c .footer .avatar {
+      width: 26px; height: 26px; border-radius: 50%;
+      background: #12C4E3; color: #fff;
+      font-size: .7rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* option label strip */
+    .option-label {
+      display: flex; align-items: center; gap: 1rem;
+      margin-bottom: .75rem;
+    }
+    .option-tag {
+      background: #12C4E3;
+      color: #fff;
+      font-size: .75rem;
+      font-weight: 700;
+      padding: .25rem .75rem;
+      border-radius: 100px;
+      letter-spacing: .04em;
+    }
+    .option-desc { color: #aaa; font-size: .8125rem; }
+  </style>
+</head>
+<body>
+
+  <!-- OPTION A -->
+  <div>
+    <div class="option-label">
+      <span class="option-tag">A</span>
+      <span class="option-desc">Icon rail — 64px, icons only, very minimal</span>
+    </div>
+    <div class="mockup">
+      <div class="sidebar-a">
+        <div class="logo-icon">✦</div>
+        <div class="nav-icon active">📓</div>
+        <div class="nav-icon">⚙️</div>
+        <div class="spacer"></div>
+        <div class="nav-icon">👤</div>
+      </div>
+      <div class="content">
+        <div class="content-inner">
+          <div class="new-entry-btn">+ Create New Entry</div>
+          <div class="stats-row">
+            <div class="stat"><div class="stat-num">12</div><div class="stat-label">Day streak</div></div>
+            <div class="stat"><div class="stat-num">31</div><div class="stat-label">Longest</div></div>
+            <div class="stat"><div class="stat-num">47</div><div class="stat-label">Total entries</div></div>
+            <div class="stat"><div class="stat-num">38</div><div class="stat-label">Days active</div></div>
+          </div>
+          <div class="entry-list">
+            <div class="entry">
+              <div class="entry-cal"><div class="entry-cal-dow">THU</div><div class="entry-cal-num">1</div></div>
+              <div><div class="entry-title">Morning pages + new project ideas</div><div class="entry-sub">9:14 AM · #ideas #writing</div></div>
+            </div>
+            <div class="entry">
+              <div class="entry-cal"><div class="entry-cal-dow">WED</div><div class="entry-cal-num">30</div></div>
+              <div><div class="entry-title">Finished the brand refresh deck</div><div class="entry-sub">11:32 AM · 📷 3 · #design</div></div>
+            </div>
+            <div class="entry">
+              <div class="entry-cal"><div class="entry-cal-dow">TUE</div><div class="entry-cal-num">29</div></div>
+              <div><div class="entry-title">Reflections on the client call</div><div class="entry-sub">3:05 PM · #client #notes</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OPTION B -->
+  <div>
+    <div class="option-label">
+      <span class="option-tag">B</span>
+      <span class="option-desc">Standard nav — 220px, icons + labels, light background</span>
+    </div>
+    <div class="mockup">
+      <div class="sidebar-b">
+        <div class="logo-wrap">
+          <div class="logo-text"><span class="dot">✦</span> Creator Companion</div>
+        </div>
+        <div class="nav-item active"><span class="icon">📓</span> Journal</div>
+        <div class="nav-item"><span class="icon">⚙️</span> Account</div>
+        <div class="spacer"></div>
+        <div class="footer">
+          <div class="avatar">C</div>
+          chrisauman
+        </div>
+      </div>
+      <div class="content">
+        <div class="content-inner">
+          <div class="new-entry-btn">+ Create New Entry</div>
+          <div class="stats-row">
+            <div class="stat"><div class="stat-num">12</div><div class="stat-label">Day streak</div></div>
+            <div class="stat"><div class="stat-num">31</div><div class="stat-label">Longest</div></div>
+            <div class="stat"><div class="stat-num">47</div><div class="stat-label">Total entries</div></div>
+            <div class="stat"><div class="stat-num">38</div><div class="stat-label">Days active</div></div>
+          </div>
+          <div class="entry-list">
+            <div class="entry">
+              <div class="entry-cal"><div class="entry-cal-dow">THU</div><div class="entry-cal-num">1</div></div>
+              <div><div class="entry-title">Morning pages + new project ideas</div><div class="entry-sub">9:14 AM · #ideas #writing</div></div>
+            </div>
+            <div class="entry">
+              <div class="entry-cal"><div class="entry-cal-dow">WED</div><div class="entry-cal-num">30</div></div>
+              <div><div class="entry-title">Finished the brand refresh deck</div><div class="entry-sub">11:32 AM · 📷 3 · #design</div></div>
+            </div>
+            <div class="entry">
+              <div class="entry-cal"><div class="entry-cal-dow">TUE</div><div class="entry-cal-num">29</div></div>
+              <div><div class="entry-title">Reflections on the client call</div><div class="entry-sub">3:05 PM · #client #notes</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OPTION C -->
+  <div>
+    <div class="option-label">
+      <span class="option-tag">C</span>
+      <span class="option-desc">Wide with streak — 260px, dark sidebar, streak always visible</span>
+    </div>
+    <div class="mockup">
+      <div class="sidebar-c">
+        <div class="logo-wrap">
+          <div class="logo-text"><span class="dot">✦</span> Creator Companion</div>
+        </div>
+        <div class="streak-block">
+          <div class="streak-num">12</div>
+          <div class="streak-label">Day streak 🔥</div>
+          <div class="streak-sub">Longest: 31 days · 47 total entries</div>
+        </div>
+        <div class="nav-item active"><span class="icon">📓</span> Journal</div>
+        <div class="nav-item"><span class="icon">⚙️</span> Account</div>
+        <div class="spacer"></div>
+        <div class="footer">
+          <div class="avatar">C</div>
+          chrisauman
+        </div>
+      </div>
+      <div class="content">
+        <div class="content-inner">
+          <div class="new-entry-btn">+ Create New Entry</div>
+          <div class="entry-list" style="margin-top:.25rem">
+            <div class="entry">
+              <div class="entry-cal"><div class="entry-cal-dow">THU</div><div class="entry-cal-num">1</div></div>
+              <div><div class="entry-title">Morning pages + new project ideas</div><div class="entry-sub">9:14 AM · #ideas #writing</div></div>
+            </div>
+            <div class="entry">
+              <div class="entry-cal"><div class="entry-cal-dow">WED</div><div class="entry-cal-num">30</div></div>
+              <div><div class="entry-title">Finished the brand refresh deck</div><div class="entry-sub">11:32 AM · 📷 3 · #design</div></div>
+            </div>
+            <div class="entry">
+              <div class="entry-cal"><div class="entry-cal-dow">TUE</div><div class="entry-cal-num">29</div></div>
+              <div><div class="entry-title">Reflections on the client call</div><div class="entry-sub">3:05 PM · #client #notes</div></div>
+            </div>
+            <div class="entry">
+              <div class="entry-cal"><div class="entry-cal-dow">MON</div><div class="entry-cal-num">28</div></div>
+              <div><div class="entry-title">Sketched out the new logo concepts</div><div class="entry-sub">10:48 AM · 📷 6 · #design #branding</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

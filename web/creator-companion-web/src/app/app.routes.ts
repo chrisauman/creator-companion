@@ -85,6 +85,11 @@ export const routes: Routes = [
     canActivate: [authGuard],
     loadComponent: () => import('./features/account/account.component').then(m => m.AccountComponent)
   },
+  {
+    path: 'support',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/support/support.component').then(m => m.SupportComponent)
+  },
 
   {
     path: 'admin',
@@ -115,6 +120,11 @@ export const routes: Routes = [
     path: 'admin/emails',
     canActivate: [adminGuard],
     loadComponent: () => import('./features/admin/admin-emails.component').then(m => m.AdminEmailsComponent)
+  },
+  {
+    path: 'admin/faq',
+    canActivate: [adminGuard],
+    loadComponent: () => import('./features/admin/admin-faq.component').then(m => m.AdminFaqComponent)
   },
 
   {

@@ -6,7 +6,7 @@ import { TokenService } from './token.service';
 import {
   AuthResponse, User, Journal, Entry, EntryListItem,
   Draft, StreakStats, Capabilities, MediaItem, Tag, Pause, MotivationEntry,
-  ReminderConfigResponse, UpdateReminderConfigRequest, ActionItem
+  ReminderConfigResponse, UpdateReminderConfigRequest, ActionItem, Faq
 } from '../models/models';
 
 @Injectable({ providedIn: 'root' })
@@ -372,5 +372,31 @@ export class ApiService {
 
   adminSaveEmailTemplate(key: string, subject: string, htmlContent: string): Observable<any> {
     return this.http.put<any>(`${this.base}/admin/email-templates/${key}`, { subject, htmlContent });
+  }
+
+  // ── FAQs (public, authenticated) ────────────────────────────────────────
+  getFaqs(): Observable<Faq[]> {
+    return this.http.get<Faq[]>(`${this.base}/faq`);
+  }
+
+  // ── Admin: FAQs ──────────────────────────────────────────────────────────
+  adminGetFaqs(): Observable<Faq[]> {
+    return this.http.get<Faq[]>(`${this.base}/admin/faq`);
+  }
+
+  adminCreateFaq(question: string, answer: string, isPublished: boolean): Observable<Faq> {
+    return this.http.post<Faq>(`${this.base}/admin/faq`, { question, answer, isPublished });
+  }
+
+  adminUpdateFaq(id: string, question: string, answer: string, isPublished: boolean): Observable<Faq> {
+    return this.http.put<Faq>(`${this.base}/admin/faq/${id}`, { question, answer, isPublished });
+  }
+
+  adminDeleteFaq(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/admin/faq/${id}`);
+  }
+
+  adminReorderFaqs(ids: string[]): Observable<void> {
+    return this.http.post<void>(`${this.base}/admin/faq/reorder`, { ids });
   }
 }

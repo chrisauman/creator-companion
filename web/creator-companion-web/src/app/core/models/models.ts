@@ -160,6 +160,16 @@ export interface ActionItem {
   createdAt: string;
 }
 
+export interface Faq {
+  id: string;
+  question: string;
+  answer: string;
+  sortOrder: number;
+  isPublished: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Capabilities {
   maxWordsPerEntry: number;
   maxImagesPerEntry: number;
