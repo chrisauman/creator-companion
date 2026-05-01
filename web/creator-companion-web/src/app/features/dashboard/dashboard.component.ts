@@ -296,7 +296,7 @@ import { ActionItemsCardComponent } from './action-items-card.component';
       gap: .25rem;
       text-align: center;
     }
-    .stat-value { font-size: 1.75rem; font-weight: 700; line-height: 1; }
+    .stat-value { font-size: 1.75rem; font-weight: 700; line-height: 1; font-family: var(--font-display); }
     .streak-value { color: var(--color-accent-dark); }
     .stat-label { font-size: .8125rem; color: var(--color-text); }
 
@@ -418,6 +418,7 @@ import { ActionItemsCardComponent } from './action-items-card.component';
 
     .date-divider {
       font-size: 1.0625rem; font-weight: 700;
+      font-family: var(--font-display);
       color: var(--color-text);
       padding: .25rem 0;
       margin: 2rem 0 .75rem;
@@ -452,6 +453,7 @@ import { ActionItemsCardComponent } from './action-items-card.component';
     }
     .entry-cal__num {
       font-size: 1.5rem; font-weight: 700; line-height: 1;
+      font-family: var(--font-display);
       color: var(--color-text);
     }
 

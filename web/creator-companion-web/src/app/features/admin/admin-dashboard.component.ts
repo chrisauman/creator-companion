@@ -84,7 +84,7 @@ import { ApiService } from '../../core/services/api.service';
     .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem; }
     .stat-card { padding: 1.25rem; text-align: center; }
     .stat-card--accent { border-color: var(--color-accent); }
-    .stat-card__value { display: block; font-size: 2rem; font-weight: 700; color: var(--color-text); }
+    .stat-card__value { display: block; font-size: 2rem; font-weight: 700; color: var(--color-text); font-family: var(--font-display); }
     .stat-card__label { display: block; font-size: .75rem; color: var(--color-text-muted); margin-top: .25rem; text-transform: uppercase; letter-spacing: .05em; }
   `]
 })
