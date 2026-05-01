@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
@@ -30,7 +30,7 @@ import { EntryListItem, Capabilities } from '../../core/models/models';
           <a routerLink="/dashboard" class="btn btn--secondary" style="margin-top:1rem">Back to journal</a>
         </div>
 
-        <div *ngIf="entries().length === 0 && !loading() && !loadError()" class="empty-state">
+        <div *ngIf="activeEntries().length === 0 && !loading() && !loadError()" class="empty-state">
           <p>Trash is empty.</p>
           <a routerLink="/dashboard" class="btn btn--secondary" style="margin-top:1rem">Back to journal</a>
         </div>
@@ -39,13 +39,13 @@ import { EntryListItem, Capabilities } from '../../core/models/models';
           <p class="text-muted">Loading…</p>
         </div>
 
-        <div class="entry-list" *ngIf="entries().length > 0">
-          <div class="trash-entry card" *ngFor="let entry of entries()">
+        <div class="entry-list" *ngIf="activeEntries().length > 0">
+          <div class="trash-entry card" *ngFor="let entry of activeEntries()">
             <div class="trash-entry__meta">
               <span class="trash-entry__date">{{ formatDate(entry.entryDate) }}</span>
-              <span class="trash-entry__deleted">Deleted · expires in {{ hoursLeft(entry) }}</span>
+              <span class="trash-entry__deleted">Expires in {{ hoursLeft(entry) }}</span>
             </div>
-            <p class="trash-entry__preview">{{ entry.contentPreview }}</p>
+            <p class="trash-entry__preview">{{ stripHtml(entry.contentPreview) }}</p>
             <div class="trash-entry__actions">
               <button
                 *ngIf="caps()?.canRecoverDeleted"
@@ -129,6 +129,16 @@ export class TrashComponent implements OnInit {
   recovering = signal('');
   deleteTarget = signal<EntryListItem | null>(null);
 
+  /** Only show entries that haven't yet passed the 48-hour expiry window. */
+  activeEntries = computed(() =>
+    this.entries().filter(e => {
+      if (!e.deletedAt) return true;
+      const expiresAt = new Date(e.deletedAt);
+      expiresAt.setHours(expiresAt.getHours() + 48);
+      return expiresAt.getTime() > Date.now();
+    })
+  );
+
   ngOnInit(): void {
     this.auth.loadCapabilities().subscribe(c => this.caps.set(c));
     this.loadDeleted();
@@ -180,6 +190,12 @@ export class TrashComponent implements OnInit {
     return new Date(d + 'T00:00:00').toLocaleDateString('en-US', {
       weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
     });
+  }
+
+  stripHtml(html: string): string {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    return tmp.textContent ?? tmp.innerText ?? '';
   }
 
   hoursLeft(entry: EntryListItem): string {
