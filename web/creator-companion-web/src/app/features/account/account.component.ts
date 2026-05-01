@@ -33,6 +33,9 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log an entry to keep your streak a
       <!-- Mobile bottom nav -->
       <app-mobile-nav active="account" />
 
+      <!-- Column wrapper: keeps main + sign-out in the same flex column -->
+      <div class="content-col">
+
       <main class="container main-content stack stack--lg" *ngIf="user()">
 
         <!-- Plan -->
@@ -391,6 +394,7 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log an entry to keep your streak a
         </div>
       </div>
 
+      </div><!-- /content-col -->
     </div>
   `,
   styles: [`
@@ -411,6 +415,12 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log an entry to keep your streak a
     .topbar__brand { display: flex; align-items: center; gap: .5rem; text-decoration: none; }
     .topbar__brand-icon { height: 24px; width: auto; display: block; }
     .topbar__brand-name { font-family: 'Fraunces', Georgia, serif; font-size: .9375rem; font-weight: 700; color: #fff; }
+
+    /* Column that holds main + sign-out as siblings, stays in page flex row */
+    .content-col {
+      flex: 1; min-width: 0;
+      display: flex; flex-direction: column;
+    }
 
     .main-content {
       flex: 1; min-width: 0;
