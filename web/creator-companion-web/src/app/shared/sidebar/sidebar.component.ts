@@ -89,8 +89,9 @@ import { StreakStats } from '../../core/models/models';
     }
     .sidebar__logo-icon { height: 28px; width: auto; }
     .sidebar__logo-text {
-      font-size: .9375rem; font-weight: 800; color: #fff;
-      letter-spacing: -.01em; line-height: 1;
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: 1rem; font-weight: 700; color: #fff;
+      letter-spacing: 0; line-height: 1;
     }
     .sidebar__streak-block {
       margin: 0 .875rem 1.25rem;
