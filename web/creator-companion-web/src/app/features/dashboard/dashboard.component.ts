@@ -296,7 +296,7 @@ import { ActionItemsCardComponent } from './action-items-card.component';
       gap: .25rem;
       text-align: center;
     }
-    .stat-value { font-size: 1.75rem; font-weight: 700; line-height: 1; font-family: var(--font-display); }
+    .stat-value { font-size: 1.75rem; font-weight: 900; line-height: 1; font-family: var(--font-display); }
     .streak-value { color: var(--color-accent-dark); }
     .stat-label { font-size: .8125rem; color: var(--color-text); }
 
@@ -417,7 +417,7 @@ import { ActionItemsCardComponent } from './action-items-card.component';
     .section-title { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; }
 
     .date-divider {
-      font-size: 1.0625rem; font-weight: 700;
+      font-size: 1.0625rem; font-weight: 900;
       font-family: var(--font-display);
       color: var(--color-text);
       padding: .25rem 0;
@@ -452,7 +452,7 @@ import { ActionItemsCardComponent } from './action-items-card.component';
       line-height: 1;
     }
     .entry-cal__num {
-      font-size: 1.5rem; font-weight: 700; line-height: 1;
+      font-size: 1.5rem; font-weight: 900; line-height: 1;
       font-family: var(--font-display);
       color: var(--color-text);
     }

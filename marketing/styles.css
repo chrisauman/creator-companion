@@ -25,7 +25,7 @@
   --shadow-lg: 0 8px 40px rgba(0,0,0,.12);
 
   --font:         'Inter', system-ui, -apple-system, sans-serif;
-  --font-display: 'Fraunces', Georgia, serif;
+  --font-display: 'Inter', system-ui, -apple-system, sans-serif;
   --max-w: 1080px;
 }
 
@@ -33,7 +33,7 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { font-size: 16px; -webkit-font-smoothing: antialiased; scroll-behavior: smooth; }
 body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; }
-h1, h2, h3 { font-family: var(--font-display); }
+h1, h2, h3 { font-family: var(--font-display); font-weight: 900; }
 img { display: block; max-width: 100%; }
 a { color: var(--accent-dark); text-decoration: none; }
 a:hover { text-decoration: underline; }
