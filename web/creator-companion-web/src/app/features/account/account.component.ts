@@ -327,12 +327,6 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log an entry to keep your streak a
           </div>
         </section>
 
-        <!-- Sign out -->
-        <section class="card">
-          <h2 style="margin-bottom:1rem">Session</h2>
-          <button class="btn btn--secondary" (click)="logout()">Sign out</button>
-        </section>
-
         <!-- Delete account -->
         <section class="card card--danger">
           <h2 style="margin-bottom:.375rem">Delete account</h2>
@@ -380,6 +374,12 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log an entry to keep your streak a
         </section>
 
       </main>
+
+      <!-- Sign out — outside *ngIf so it's always visible -->
+      <div class="signout-bar">
+        <button class="btn btn--secondary" (click)="logout()">Sign out</button>
+      </div>
+
     </div>
   `,
   styles: [`
@@ -404,10 +404,22 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log an entry to keep your streak a
     .main-content {
       flex: 1; min-width: 0;
       padding-top: 1.5rem;
-      padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+      padding-bottom: 1rem;
     }
     @media (min-width: 768px) {
-      .main-content { padding-bottom: 4rem; }
+      .main-content { padding-bottom: 2rem; }
+    }
+
+    /* ── Sign out bar (always visible, outside *ngIf) ────────────── */
+    .signout-bar {
+      padding: 0 1.125rem calc(80px + env(safe-area-inset-bottom, 0px));
+    }
+    @media (min-width: 768px) {
+      .signout-bar {
+        padding: 0 0 3rem;
+        max-width: 680px;
+        margin: 0 auto;
+      }
     }
     .section-head {
       display:flex; align-items:center; justify-content:space-between;

@@ -63,6 +63,14 @@ import { StreakStats } from '../../core/models/models';
         [class.sidebar__footer--active]="active === 'account'">
         <div class="sidebar__avatar">{{ userInitial() }}</div>
         <span class="sidebar__username">Account</span>
+        <button class="sidebar__signout" (click)="logout($event)" title="Sign out">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+        </button>
       </a>
 
     </aside>
@@ -172,6 +180,15 @@ import { StreakStats } from '../../core/models/models';
       transition: color .15s;
     }
     .sidebar__footer:hover .sidebar__username { color: rgba(255,255,255,.8); }
+    .sidebar__signout {
+      margin-left: auto; flex-shrink: 0;
+      background: none; border: none; cursor: pointer;
+      color: rgba(255,255,255,.25); padding: .25rem;
+      border-radius: 4px;
+      display: flex; align-items: center; justify-content: center;
+      transition: color .15s, background .15s;
+      &:hover { color: rgba(255,255,255,.7); background: rgba(255,255,255,.08); }
+    }
   `]
 })
 export class SidebarComponent implements OnInit {
@@ -179,12 +196,19 @@ export class SidebarComponent implements OnInit {
 
   private api    = inject(ApiService);
   private tokens = inject(TokenService);
+  private auth   = inject(AuthService);
 
   isAdmin          = this.tokens.isAdmin.bind(this.tokens);
   streak           = signal<StreakStats | null>(null);
   hasFavoriteSparks = signal(false);
   username         = computed(() => this.tokens.getCachedUser()?.username ?? '');
   userInitial      = computed(() => (this.tokens.getCachedUser()?.username?.[0] ?? '?').toUpperCase());
+
+  logout(event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.auth.logout();
+  }
 
   ngOnInit(): void {
     this.api.getStreak().subscribe({
