@@ -332,6 +332,33 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log an entry to keep your streak a
           </div>
         </section>
 
+        <!-- Help & Support -->
+        <section class="card support-card">
+          <div class="support-card__inner">
+            <div class="support-card__text">
+              <p class="support-card__title">Help &amp; Support</p>
+              <p class="support-card__sub">Browse FAQs or get in touch with our team.</p>
+            </div>
+            <a routerLink="/support" class="btn btn--ghost btn--sm">Get Support →</a>
+          </div>
+        </section>
+
+        <!-- Sign out -->
+        <div class="signout-inline">
+          <div class="signout-card">
+            <div class="signout-card__left">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16 17 21 12 16 7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
+              <span>Sign out of Creator Companion</span>
+            </div>
+            <button class="btn btn--secondary btn--sm" (click)="logout()">Sign out</button>
+          </div>
+        </div>
+
         <!-- Delete account -->
         <section class="card card--danger">
           <h2 style="margin-bottom:.375rem">Delete account</h2>
@@ -378,34 +405,7 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log an entry to keep your streak a
           }
         </section>
 
-        <!-- Help & Support -->
-        <section class="card support-card">
-          <div class="support-card__inner">
-            <div class="support-card__text">
-              <p class="support-card__title">Help &amp; Support</p>
-              <p class="support-card__sub">Browse FAQs or get in touch with our team.</p>
-            </div>
-            <a routerLink="/support" class="btn btn--ghost btn--sm">Get Support →</a>
-          </div>
-        </section>
-
       </main>
-
-      <!-- Sign out — outside *ngIf so it's always visible -->
-      <div class="signout-bar">
-        <div class="signout-card">
-          <div class="signout-card__left">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-              <polyline points="16 17 21 12 16 7"/>
-              <line x1="21" y1="12" x2="9" y2="12"/>
-            </svg>
-            <span>Sign out of Creator Companion</span>
-          </div>
-          <button class="btn btn--secondary btn--sm" (click)="logout()">Sign out</button>
-        </div>
-      </div>
 
       </div><!-- /content-col -->
     </div>
@@ -444,13 +444,8 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log an entry to keep your streak a
       .main-content { padding-bottom: 2rem; }
     }
 
-    /* ── Sign out bar (always visible, outside *ngIf) ────────────── */
-    .signout-bar {
-      padding: 0 1.125rem calc(88px + env(safe-area-inset-bottom, 0px));
-    }
-    @media (min-width: 768px) {
-      .signout-bar { padding: 0 0 3rem; }
-    }
+    /* ── Sign out (inline in card stack) ─────────────────────────── */
+    .signout-inline { /* no extra wrapper padding needed — stack handles gaps */ }
     .signout-card {
       display: flex; align-items: center; justify-content: space-between;
       gap: 1rem;
@@ -624,7 +619,7 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log an entry to keep your streak a
     .toggle-switch input:disabled + .toggle-track { opacity:.5; cursor:not-allowed; }
 
     /* ── Make all body text black ────────────────────────────────── */
-    .main-content, .signout-bar {
+    .main-content {
       ::ng-deep .text-muted, .text-muted { color: var(--color-text); }
     }
     .pause-usage__label { color: var(--color-text); }
