@@ -252,15 +252,17 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log an entry to keep your streak a
             <div class="tag-row" *ngFor="let tag of tags()">
               <!-- View mode -->
               <ng-container *ngIf="editingTagId() !== tag.id">
-                <span class="tag-row__chip">#{{ tag.name }}</span>
-                <span class="tag-row__count">{{ tag.usageCount }} {{ tag.usageCount === 1 ? 'entry' : 'entries' }}</span>
+                <div class="tag-row__info">
+                  <span class="tag-row__chip">#{{ tag.name }}</span>
+                  <span class="tag-row__count">{{ tag.usageCount }} {{ tag.usageCount === 1 ? 'entry' : 'entries' }}</span>
+                </div>
                 <div class="tag-row__actions">
-                  <button class="btn btn--ghost btn--sm" (click)="startRename(tag)">Rename</button>
-                  <button class="btn btn--danger btn--sm" (click)="confirmDeleteTag(tag)">Delete</button>
+                  <button class="tag-action-btn tag-action-btn--edit" (click)="startRename(tag)">Edit</button>
+                  <button class="tag-action-btn tag-action-btn--delete" (click)="confirmDeleteTag(tag)">Delete</button>
                 </div>
               </ng-container>
 
-              <!-- Edit / rename mode -->
+              <!-- Edit mode -->
               <ng-container *ngIf="editingTagId() === tag.id">
                 <input
                   class="tag-rename-input"
@@ -272,8 +274,8 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log an entry to keep your streak a
                   #renameInput
                 />
                 <div class="tag-row__actions">
-                  <button class="btn btn--primary btn--sm" (click)="submitRename(tag)" [disabled]="!renameValue.trim()">Save</button>
-                  <button class="btn btn--ghost btn--sm" (click)="cancelRename()">Cancel</button>
+                  <button class="tag-action-btn tag-action-btn--save" (click)="submitRename(tag)" [disabled]="!renameValue.trim()">Save</button>
+                  <button class="tag-action-btn" (click)="cancelRename()">Cancel</button>
                 </div>
               </ng-container>
             </div>
@@ -632,21 +634,52 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log an entry to keep your streak a
     }
     .tag-list { display:flex; flex-direction:column; gap:0; }
     .tag-row {
-      display:flex; align-items:center; gap:.75rem; padding:.625rem 0;
-      border-bottom:1px solid var(--color-border-light);
-      &:last-child { border-bottom:none; }
+      display: flex; align-items: center; justify-content: space-between;
+      gap: .75rem; padding: .625rem 0;
+      border-bottom: 1px solid var(--color-border-light);
+      &:last-child { border-bottom: none; }
+    }
+    .tag-row__info {
+      display: flex; align-items: baseline; gap: .5rem;
+      flex: 1; min-width: 0;
     }
     .tag-row__chip {
-      flex:1; font-size:.9375rem; font-weight:500; color:var(--color-accent-dark);
+      font-size: .9375rem; font-weight: 600; color: var(--color-accent-dark);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .tag-row__count {
-      min-width:80px; font-size:.8125rem; color:var(--color-text-3);
+      font-size: .8125rem; color: var(--color-text-3); white-space: nowrap; flex-shrink: 0;
     }
-    .tag-row__actions { display:flex; gap:.5rem; flex-shrink:0; }
+    .tag-row__actions { display: flex; gap: .375rem; flex-shrink: 0; }
+
+    /* Compact text-button actions */
+    .tag-action-btn {
+      background: none; border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      font-size: .8125rem; font-weight: 500; font-family: var(--font-sans);
+      padding: .25rem .6rem; cursor: pointer;
+      color: var(--color-text-2);
+      transition: background .12s, color .12s, border-color .12s;
+      &:hover { background: var(--color-surface-2); color: var(--color-text); }
+      &:disabled { opacity: .4; cursor: default; }
+    }
+    .tag-action-btn--edit {
+      color: var(--color-accent-dark); border-color: var(--color-accent);
+      &:hover { background: var(--color-accent-light); }
+    }
+    .tag-action-btn--delete {
+      color: #dc2626; border-color: #fca5a5;
+      &:hover { background: #fee2e2; border-color: #dc2626; }
+    }
+    .tag-action-btn--save {
+      color: #fff; background: var(--color-accent); border-color: var(--color-accent);
+      &:hover { background: var(--color-accent-dark); border-color: var(--color-accent-dark); }
+    }
+
     .tag-rename-input {
-      flex:1; border:1.5px solid var(--color-accent); border-radius:var(--radius-md);
-      padding:.375rem .625rem; font-size:.9375rem; font-family:var(--font-sans);
-      outline:none; background:var(--color-surface); color:var(--color-text);
+      flex: 1; border: 1.5px solid var(--color-accent); border-radius: var(--radius-md);
+      padding: .375rem .625rem; font-size: .9375rem; font-family: var(--font-sans);
+      outline: none; background: var(--color-surface); color: var(--color-text);
     }
 
     /* Danger zone */
