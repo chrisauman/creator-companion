@@ -437,9 +437,9 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
     }
 
     /* ── TipTap ──────────────────────────────────────────────────── */
-    .tiptap-wrapper { min-height: 180px; cursor: text; margin-bottom: 1rem; }
+    .tiptap-wrapper { min-height: 80px; cursor: text; margin-bottom: .5rem; }
     ::ng-deep .tiptap-wrapper .tiptap {
-      min-height: 180px; outline: none;
+      min-height: 80px; outline: none;
       font-family: var(--font-serif); font-size: 1.125rem;
       line-height: 1.8; color: var(--color-text);
       p.is-editor-empty:first-child::before {
