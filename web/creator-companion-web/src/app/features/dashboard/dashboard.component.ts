@@ -418,7 +418,7 @@ import { MobileNavComponent } from '../../shared/mobile-nav/mobile-nav.component
     /* ── Entry list ──────────────────────────────────────────────── */
     .date-divider {
       font-size: 1.0625rem; font-weight: 900; font-family: var(--font-display);
-      color: var(--color-text); padding: .25rem 0; margin: 2rem 0 .75rem;
+      color: var(--color-text); padding: .25rem 0; margin: 1.25rem 0 .625rem;
     }
     .entry-row {
       cursor: pointer; margin-bottom: .625rem;
