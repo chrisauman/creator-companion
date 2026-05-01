@@ -9,9 +9,9 @@
   --text-2:       #6b6860;
   --text-3:       #a09d98;
 
-  --accent:       #f472b6;
-  --accent-dark:  #e91e8c;
-  --accent-light: #fde8f4;
+  --accent:       #12C4E3;
+  --accent-dark:  #0e7490;
+  --accent-light: #e0f7fc;
 
   --danger:       #c0392b;
   --success:      #27ae60;
@@ -24,7 +24,8 @@
   --shadow-md: 0 4px 16px rgba(0,0,0,.09);
   --shadow-lg: 0 8px 40px rgba(0,0,0,.12);
 
-  --font: 'Inter', system-ui, -apple-system, sans-serif;
+  --font:         'Inter', system-ui, -apple-system, sans-serif;
+  --font-display: 'Fraunces', Georgia, serif;
   --max-w: 1080px;
 }
 
@@ -32,6 +33,7 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { font-size: 16px; -webkit-font-smoothing: antialiased; scroll-behavior: smooth; }
 body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; }
+h1, h2, h3 { font-family: var(--font-display); }
 img { display: block; max-width: 100%; }
 a { color: var(--accent-dark); text-decoration: none; }
 a:hover { text-decoration: underline; }
@@ -51,11 +53,10 @@ a:hover { text-decoration: underline; }
   height: 100%;
 }
 .nav__logo {
-  font-weight: 700; font-size: 1rem; color: var(--accent-dark);
-  display: flex; align-items: center; gap: .4rem;
+  display: flex; align-items: center;
   text-decoration: none;
 }
-.nav__logo span { color: var(--accent-dark); font-size: 1.1rem; }
+.nav__logo img { height: 28px; width: auto; display: block; }
 .nav__links { display: flex; align-items: center; gap: 1.5rem; }
 .nav__links a { font-size: .9375rem; color: var(--text-2); font-weight: 500; }
 .nav__links a:hover { color: var(--text); text-decoration: none; }
@@ -74,9 +75,9 @@ a:hover { text-decoration: underline; }
 .btn:active { transform: translateY(0); }
 .btn--primary {
   background: var(--accent-dark); color: #fff;
-  box-shadow: 0 2px 8px rgba(90,157,187,.35);
+  box-shadow: 0 2px 8px rgba(14,116,144,.35);
 }
-.btn--primary:hover { background: #4a8dab; }
+.btn--primary:hover { background: #0a6277; }
 .btn--secondary {
   background: var(--accent-light); color: var(--accent-dark);
   border: 1.5px solid var(--accent);
@@ -179,7 +180,7 @@ a:hover { text-decoration: underline; }
 }
 .plan-card--featured {
   border-color: var(--accent-dark);
-  box-shadow: 0 4px 24px rgba(90,157,187,.18);
+  box-shadow: 0 4px 24px rgba(14,116,144,.18);
 }
 .plan-card__badge {
   display: inline-block; font-size: .75rem; font-weight: 700;
@@ -278,7 +279,7 @@ details[open] .faq-q::after { content: '−'; }
   display: flex; align-items: center; justify-content: space-between;
   gap: 1rem; flex-wrap: wrap;
 }
-.footer__logo { font-weight: 700; color: var(--accent-dark); font-size: .9375rem; }
+.footer__logo img { height: 22px; width: auto; display: block; }
 .footer__links { display: flex; gap: 1.5rem; }
 .footer__links a { font-size: .875rem; color: var(--text-3); }
 .footer__copy { font-size: .8125rem; color: var(--text-3); }
