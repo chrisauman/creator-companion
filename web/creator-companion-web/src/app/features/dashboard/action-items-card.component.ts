@@ -17,7 +17,6 @@ import { ActionItem } from '../../core/models/models';
       <!-- ── Header ─────────────────────────────────────────────── -->
       <div class="ai-header" (click)="toggleExpanded()">
         <div class="ai-header__left">
-          <span class="ai-label">Daily Reminders / Next Actions</span>
           @if (!expanded()) {
             <p class="ai-summary">
               @if (allCaughtUp()) {
