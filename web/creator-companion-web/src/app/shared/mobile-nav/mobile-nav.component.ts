@@ -118,13 +118,20 @@ export class MobileNavComponent implements OnInit {
   private api    = inject(ApiService);
   private tokens = inject(TokenService);
 
-  hasFavorites = signal(false);
+  private static readonly CACHE_KEY = 'cc_has_favorites';
+
+  // Read from sessionStorage immediately so the icon never flickers on mount
+  hasFavorites = signal(sessionStorage.getItem(MobileNavComponent.CACHE_KEY) === '1');
 
   ngOnInit(): void {
     const user = this.tokens.getCachedUser();
     if (user?.tier === 'Paid') {
       this.api.getFavoriteSparks().subscribe({
-        next: sparks => this.hasFavorites.set(sparks.length > 0),
+        next: sparks => {
+          const has = sparks.length > 0;
+          sessionStorage.setItem(MobileNavComponent.CACHE_KEY, has ? '1' : '0');
+          this.hasFavorites.set(has);
+        },
         error: () => {}
       });
     }

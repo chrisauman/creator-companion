@@ -438,7 +438,7 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log an entry to keep your streak a
     .main-content {
       flex: 1; min-width: 0;
       padding-top: 1.5rem;
-      padding-bottom: 1rem;
+      padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
     }
     @media (min-width: 768px) {
       .main-content { padding-bottom: 2rem; }
