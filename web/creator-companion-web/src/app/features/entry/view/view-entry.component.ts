@@ -164,7 +164,7 @@ import { MobileNavComponent } from '../../../shared/mobile-nav/mobile-nav.compon
       background: var(--color-surface);
     }
     @media (min-width: 768px) {
-      .main-content { padding: 2rem 3rem 4rem; background: #f7f7f5; }
+      .main-content { padding: 2rem 3rem 4rem; background: var(--color-surface); }
     }
 
     /* ── Desktop action bar ──────────────────────────────────────── */
@@ -174,7 +174,7 @@ import { MobileNavComponent } from '../../../shared/mobile-nav/mobile-nav.compon
     @media (min-width: 768px) {
       .desktop-bar {
         display: flex; align-items: center; justify-content: space-between;
-        max-width: 680px; margin: 0 auto 1.25rem;
+        max-width: 720px; margin: 0 auto 1.25rem;
       }
     }
     .desktop-bar__actions { display: flex; align-items: center; gap: .5rem; }
@@ -199,13 +199,9 @@ import { MobileNavComponent } from '../../../shared/mobile-nav/mobile-nav.compon
     }
     @media (min-width: 768px) {
       .entry-card {
-        max-width: 680px;
+        max-width: 720px;
         margin: 0 auto;
-        background: var(--color-surface);
-        border-radius: var(--radius-lg);
-        border: 1px solid var(--color-border);
-        box-shadow: var(--shadow-sm);
-        padding: 2rem 1.75rem 3rem;
+        padding: 0 0 3rem;
       }
     }
 
