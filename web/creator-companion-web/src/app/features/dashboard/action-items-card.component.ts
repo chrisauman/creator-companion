@@ -494,8 +494,8 @@ import { ActionItem } from '../../core/models/models';
       &:hover { background: #fee2e2; border-color: #dc2626; }
     }
 
-    /* ── Touch devices: swap hover controls for ··· menu ────────── */
-    @media (pointer: coarse) {
+    /* ── Narrow viewports + touch: swap hover controls for ··· menu  */
+    @media (max-width: 639px), (pointer: coarse) {
       .ai-item-actions { display: none !important; }
       .ai-menu-btn { display: flex; }
       .ai-drag-handle { opacity: 1; }
