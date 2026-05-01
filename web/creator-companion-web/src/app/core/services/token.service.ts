@@ -9,7 +9,8 @@ export class TokenService {
   private _accessToken  = signal<string | null>(null);
   private _expiresAt    = signal<Date | null>(null);
 
-  private static readonly RT_KEY = 'cc_rt';
+  private static readonly RT_KEY   = 'cc_rt';
+  private static readonly USER_KEY  = 'cc_user';
 
   setTokens(accessToken: string, refreshToken: string, expiresAt: string): void {
     this._accessToken.set(accessToken);
@@ -21,6 +22,18 @@ export class TokenService {
 
   getRefreshToken(): string | null {
     try { return localStorage.getItem(TokenService.RT_KEY); } catch { return null; }
+  }
+
+  /** Cache minimal user info so the guard can load optimistically. */
+  cacheUser(user: { id: string; username: string; email: string; tier: string }): void {
+    try { localStorage.setItem(TokenService.USER_KEY, JSON.stringify(user)); } catch {}
+  }
+
+  getCachedUser(): { id: string; username: string; email: string; tier: string } | null {
+    try {
+      const raw = localStorage.getItem(TokenService.USER_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
   }
 
   getAccessToken(): string | null {
@@ -36,7 +49,10 @@ export class TokenService {
   clear(): void {
     this._accessToken.set(null);
     this._expiresAt.set(null);
-    try { localStorage.removeItem(TokenService.RT_KEY); } catch {}
+    try {
+      localStorage.removeItem(TokenService.RT_KEY);
+      localStorage.removeItem(TokenService.USER_KEY);
+    } catch {}
   }
 
   hasTokens(): boolean {

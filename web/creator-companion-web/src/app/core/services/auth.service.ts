@@ -68,7 +68,13 @@ export class AuthService {
 
   loadUser(): Observable<User> {
     return this.api.getMe().pipe(
-      tap(user => this._user.set(user))
+      tap(user => {
+        this._user.set(user);
+        this.tokens.cacheUser({
+          id: user.id, username: user.username,
+          email: user.email, tier: user.tier
+        });
+      })
     );
   }
 
@@ -79,5 +85,14 @@ export class AuthService {
   private handleAuth(res: AuthResponse): void {
     this.tokens.setTokens(res.accessToken, res.refreshToken, res.expiresAt);
     this._user.set(res.user);
+    // Cache minimal user info for optimistic auth on next page load
+    if (res.user) {
+      this.tokens.cacheUser({
+        id: res.user.id,
+        username: res.user.username,
+        email: res.user.email,
+        tier: res.user.tier
+      });
+    }
   }
 }
