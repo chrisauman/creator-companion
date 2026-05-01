@@ -634,7 +634,7 @@ export class DashboardComponent implements OnInit {
 
     this.api.getStreak().subscribe({
       next: s => { this.streak.set(s); this.checkMilestoneCelebration(s.currentStreak); },
-      error: () => {}
+      error: () => this.streak.set({ currentStreak: 0, longestStreak: 0, totalEntries: 0, totalActiveDays: 0 })
     });
 
     this.api.getTodayMotivation().subscribe({
