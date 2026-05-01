@@ -377,7 +377,18 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log an entry to keep your streak a
 
       <!-- Sign out — outside *ngIf so it's always visible -->
       <div class="signout-bar">
-        <button class="btn btn--secondary" (click)="logout()">Sign out</button>
+        <div class="signout-card">
+          <div class="signout-card__left">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16 17 21 12 16 7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+            <span>Sign out of Creator Companion</span>
+          </div>
+          <button class="btn btn--secondary btn--sm" (click)="logout()">Sign out</button>
+        </div>
       </div>
 
     </div>
@@ -412,14 +423,23 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log an entry to keep your streak a
 
     /* ── Sign out bar (always visible, outside *ngIf) ────────────── */
     .signout-bar {
-      padding: 0 1.125rem calc(80px + env(safe-area-inset-bottom, 0px));
+      padding: 0 1.125rem calc(88px + env(safe-area-inset-bottom, 0px));
     }
     @media (min-width: 768px) {
-      .signout-bar {
-        padding: 0 0 3rem;
-        max-width: 680px;
-        margin: 0 auto;
-      }
+      .signout-bar { padding: 0 0 3rem; }
+    }
+    .signout-card {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 1rem;
+      padding: 1rem 1.25rem;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+    }
+    .signout-card__left {
+      display: flex; align-items: center; gap: .625rem;
+      color: var(--color-text); font-size: .9375rem; font-weight: 500;
+      svg { color: var(--color-text-3); flex-shrink: 0; }
     }
     .section-head {
       display:flex; align-items:center; justify-content:space-between;
@@ -441,7 +461,7 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log an entry to keep your streak a
       border-bottom:1px solid var(--color-border-light);
       &:last-child { border-bottom:none; }
     }
-    .cap-label { color:var(--color-text-2); }
+    .cap-label { color:var(--color-text); }
     .cap-row--full { flex-wrap: wrap; gap: .5rem; }
 
     .pause-usage {
@@ -471,7 +491,7 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log an entry to keep your streak a
 
     .password-form { display:flex; flex-direction:column; gap:.875rem; }
     .field-group { display:flex; flex-direction:column; gap:.3rem; }
-    .field-label { font-size:.8125rem; font-weight:500; color:var(--color-text-2); }
+    .field-label { font-size:.8125rem; font-weight:500; color:var(--color-text); }
     .pw-error { font-size:.875rem; color:var(--color-danger, #dc2626); margin:0; }
     .pw-success { font-size:.875rem; color:#166534; margin:0; }
 
@@ -486,7 +506,7 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log an entry to keep your streak a
       svg:first-child { color: var(--color-accent); flex-shrink: 0; }
     }
     .notif-link-title { font-size: .9375rem; font-weight: 600; margin: 0 0 .1rem; }
-    .notif-link-sub { font-size: .8125rem; color: var(--color-text-2); margin: 0; }
+    .notif-link-sub { font-size: .8125rem; color: var(--color-text); margin: 0; }
     .notif-link-chevron { margin-left: auto; color: var(--color-text-3); flex-shrink: 0; }
 
     /* Preferences */
@@ -570,6 +590,14 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log an entry to keep your streak a
     }
     .toggle-switch input:checked + .toggle-track .toggle-thumb { transform:translateX(18px); }
     .toggle-switch input:disabled + .toggle-track { opacity:.5; cursor:not-allowed; }
+
+    /* ── Make all body text black ────────────────────────────────── */
+    .main-content, .signout-bar {
+      ::ng-deep .text-muted, .text-muted { color: var(--color-text); }
+    }
+    .pause-usage__label { color: var(--color-text); }
+    .reminder-time-label { color: var(--color-text); }
+    .pref-label { color: var(--color-text); }
 
     /* Tags */
     .tag-count-badge {
