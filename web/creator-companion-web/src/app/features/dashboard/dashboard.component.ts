@@ -9,12 +9,12 @@ import { StreakStats, EntryListItem, MotivationEntry } from '../../core/models/m
 import { getMoodEmoji } from '../../core/constants/moods';
 import { MILESTONES, getMilestoneForDays, getMilestoneIndex, Milestone } from '../../core/constants/milestones';
 import { PushService } from '../../core/services/push.service';
-import { ActionItemsCardComponent } from './action-items-card.component';
+import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, ActionItemsCardComponent],
+  imports: [CommonModule, RouterLink, FormsModule, SidebarComponent],
   template: `
     <div class="dashboard">
 
@@ -32,55 +32,7 @@ import { ActionItemsCardComponent } from './action-items-card.component';
       }
 
       <!-- ── Desktop sidebar ─────────────────────────────────── -->
-      <aside class="sidebar">
-        <!-- Logo -->
-        <div class="sidebar__logo-wrap">
-          <img src="logo-icon.png" alt="" class="sidebar__logo-icon">
-          <span class="sidebar__logo-text">Creator Companion</span>
-        </div>
-
-        <!-- Streak block -->
-        <div class="sidebar__streak-block" *ngIf="streak()">
-          <div class="sidebar__streak-num">{{ streak()!.currentStreak }}</div>
-          <div class="sidebar__streak-label">Day streak 🔥</div>
-          @if (isPaid() && currentStreakMilestone()) {
-            <div class="sidebar__milestone">
-              {{ currentStreakMilestone()!.icon }} {{ currentStreakMilestone()!.title }}
-            </div>
-          }
-          <div class="sidebar__streak-sub">
-            Longest: {{ streak()!.longestStreak }} &nbsp;·&nbsp; {{ streak()!.totalEntries }} entries
-          </div>
-        </div>
-        <div class="sidebar__streak-block sidebar__streak-block--loading" *ngIf="!streak()">
-          <div class="sidebar__streak-num">—</div>
-          <div class="sidebar__streak-label">Day streak</div>
-        </div>
-
-        <!-- Nav -->
-        <nav class="sidebar__nav">
-          <a class="sidebar__nav-item sidebar__nav-item--active" routerLink="/dashboard">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-            Journal
-          </a>
-          <a class="sidebar__nav-item" routerLink="/account">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-            Account
-          </a>
-          <a *ngIf="isAdmin()" class="sidebar__nav-item" routerLink="/admin">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
-            Admin
-          </a>
-        </nav>
-
-        <div class="sidebar__spacer"></div>
-
-        <!-- Footer -->
-        <div class="sidebar__footer">
-          <div class="sidebar__avatar">{{ userInitial() }}</div>
-          <span class="sidebar__username">{{ username() }}</span>
-        </div>
-      </aside>
+      <app-sidebar active="dashboard" />
 
       <!-- ── Mobile top nav ──────────────────────────────────── -->
       <header class="topnav">
@@ -149,11 +101,6 @@ import { ActionItemsCardComponent } from './action-items-card.component';
               <p class="motivation-content">{{ motivation()!.fullContent }}</p>
             </div>
           </div>
-        }
-
-        <!-- Daily Reminders / Action Items card (paid users only) -->
-        @if (isPaid() && showActionItems()) {
-          <app-action-items-card />
         }
 
         <!-- Push notification nudge -->
@@ -278,119 +225,6 @@ import { ActionItemsCardComponent } from './action-items-card.component';
     }
     @media (min-width: 768px) {
       .dashboard { flex-direction: row; }
-    }
-
-    /* ── Desktop sidebar ─────────────────────────────────────────── */
-    .sidebar {
-      display: none;
-    }
-    @media (min-width: 768px) {
-      .sidebar {
-        display: flex;
-        flex-direction: column;
-        width: 260px;
-        min-width: 260px;
-        height: 100vh;
-        position: sticky;
-        top: 0;
-        background: #111318;
-        overflow-y: auto;
-        padding: 1.5rem 0 1rem;
-        flex-shrink: 0;
-      }
-    }
-
-    /* Logo */
-    .sidebar__logo-wrap {
-      display: flex; align-items: center; gap: .625rem;
-      padding: 0 1.25rem 1.25rem;
-      border-bottom: 1px solid rgba(255,255,255,.07);
-      margin-bottom: 1.25rem;
-    }
-    .sidebar__logo-icon { height: 28px; width: auto; }
-    .sidebar__logo-text {
-      font-size: .9375rem; font-weight: 800; color: #fff;
-      letter-spacing: -.01em; line-height: 1;
-    }
-
-    /* Streak block */
-    .sidebar__streak-block {
-      margin: 0 .875rem 1.25rem;
-      background: rgba(18,196,227,.1);
-      border: 1px solid rgba(18,196,227,.2);
-      border-radius: 10px;
-      padding: 1.125rem 1.25rem;
-    }
-    .sidebar__streak-block--loading { opacity: .4; }
-    .sidebar__streak-num {
-      font-size: 3rem; font-weight: 900; line-height: 1;
-      color: #12C4E3; font-family: var(--font-display);
-      letter-spacing: -.03em;
-    }
-    .sidebar__streak-label {
-      font-size: .8125rem; font-weight: 600;
-      color: rgba(255,255,255,.7); margin-top: .25rem;
-    }
-    .sidebar__milestone {
-      display: inline-flex; align-items: center; gap: .25rem;
-      margin-top: .5rem;
-      font-size: .6875rem; font-weight: 600;
-      background: rgba(18,196,227,.15); color: #12C4E3;
-      border: 1px solid rgba(18,196,227,.25);
-      border-radius: 100px; padding: .2rem .6rem;
-    }
-    .sidebar__streak-sub {
-      font-size: .75rem; color: rgba(255,255,255,.35);
-      margin-top: .625rem; line-height: 1.5;
-    }
-
-    /* Nav */
-    .sidebar__nav {
-      display: flex; flex-direction: column;
-      padding: 0 .625rem;
-      gap: .125rem;
-    }
-    .sidebar__nav-item {
-      display: flex; align-items: center; gap: .625rem;
-      padding: .5625rem .875rem;
-      font-size: .875rem; font-weight: 500;
-      color: rgba(255,255,255,.4);
-      border-radius: 7px;
-      text-decoration: none;
-      transition: background .15s, color .15s;
-      svg { flex-shrink: 0; opacity: .7; }
-      &:hover {
-        background: rgba(255,255,255,.06);
-        color: rgba(255,255,255,.8);
-        text-decoration: none;
-      }
-    }
-    .sidebar__nav-item--active {
-      background: rgba(18,196,227,.12);
-      color: #12C4E3; font-weight: 600;
-      svg { opacity: 1; }
-      &:hover { background: rgba(18,196,227,.18); color: #12C4E3; }
-    }
-
-    .sidebar__spacer { flex: 1; }
-
-    /* Footer */
-    .sidebar__footer {
-      display: flex; align-items: center; gap: .625rem;
-      padding: .875rem 1.25rem;
-      border-top: 1px solid rgba(255,255,255,.07);
-      margin-top: .5rem;
-    }
-    .sidebar__avatar {
-      width: 28px; height: 28px; border-radius: 50%;
-      background: #12C4E3; color: #fff;
-      font-size: .75rem; font-weight: 700;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-    }
-    .sidebar__username {
-      font-size: .8125rem; color: rgba(255,255,255,.4);
-      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
 
     /* ── Mobile top nav ──────────────────────────────────────────── */
@@ -646,8 +480,6 @@ export class DashboardComponent implements OnInit {
 
   isAdmin = this.tokens.isAdmin.bind(this.tokens);
 
-  username     = computed(() => this.tokens.getCachedUser()?.username ?? '');
-  userInitial  = computed(() => (this.tokens.getCachedUser()?.username?.[0] ?? '?').toUpperCase());
 
   readonly PAGE_SIZE = 60;
 
@@ -666,7 +498,6 @@ export class DashboardComponent implements OnInit {
   loadingMore = signal(false);
   motivation = signal<MotivationEntry | null>(null);
   motivationExpanded = signal(false);
-  showActionItems = signal(true);
   loading        = signal(true);
   error          = signal('');
   sessionExpired = signal(false);
@@ -732,11 +563,6 @@ export class DashboardComponent implements OnInit {
 
     this.api.getTodayMotivation().subscribe({
       next: m => this.motivation.set(m),
-      error: () => {}
-    });
-
-    this.api.getMe().subscribe({
-      next: u => this.showActionItems.set(u.showActionItems),
       error: () => {}
     });
 

@@ -1,5 +1,5 @@
 import {
-  Component, inject, signal, computed, OnInit
+  Component, inject, signal, computed, OnInit, Input
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -516,6 +516,8 @@ import { ActionItem } from '../../core/models/models';
   `]
 })
 export class ActionItemsCardComponent implements OnInit {
+  @Input() startExpanded = false;
+
   private api = inject(ApiService);
 
   items         = signal<ActionItem[]>([]);
@@ -536,6 +538,7 @@ export class ActionItemsCardComponent implements OnInit {
   );
 
   ngOnInit(): void {
+    if (this.startExpanded) this.expanded.set(true);
     this.api.getActionItems().subscribe({
       next: items => this.items.set(items),
       error: () => {}

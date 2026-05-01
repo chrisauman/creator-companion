@@ -61,6 +61,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/entries/tagged-entries.component').then(m => m.TaggedEntriesComponent)
   },
   {
+    path: 'todos',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/todos/todos.component').then(m => m.TodosComponent)
+  },
+  {
     path: 'trash',
     canActivate: [authGuard],
     loadComponent: () => import('./features/trash/trash.component').then(m => m.TrashComponent)
