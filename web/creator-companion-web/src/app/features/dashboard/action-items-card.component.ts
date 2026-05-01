@@ -61,8 +61,8 @@ import { ActionItem } from '../../core/models/models';
           </div>
         }
 
-        <!-- Add link (top, when list exists and form not open) -->
-        @if (!showAddForm() && (activeItems().length > 0 || completedItems().length > 0)) {
+        <!-- Add link (top, only when active items exist so it doesn't duplicate the caught-up/empty buttons) -->
+        @if (!showAddForm() && activeItems().length > 0) {
           <div class="ai-add-bar">
             @if (activeItems().length < 20) {
               <button class="ai-add-link" (click)="startAdd()">+ Add item</button>
