@@ -66,6 +66,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/todos/todos.component').then(m => m.TodosComponent)
   },
   {
+    path: 'notifications',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/notifications/notifications.component').then(m => m.NotificationsComponent)
+  },
+  {
     path: 'favorites',
     canActivate: [authGuard],
     loadComponent: () => import('./features/favorite-sparks/favorite-sparks.component').then(m => m.FavoriteSparksComponent)

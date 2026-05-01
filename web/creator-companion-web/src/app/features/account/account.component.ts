@@ -113,157 +113,23 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log an entry to keep your streak a
           }
         </section>
 
-        <!-- Notifications -->
-        <section class="card">
-          <div class="section-head">
-            <h2>Notifications</h2>
+        <!-- Notifications link -->
+        <section class="card notif-link-card" routerLink="/notifications">
+          <div class="notif-link-inner">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+            <div>
+              <p class="notif-link-title">Notifications</p>
+              <p class="notif-link-sub">Manage reminders and push alerts</p>
+            </div>
+            <svg class="notif-link-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
           </div>
-
-          <!-- Push permission row -->
-          @if (!pushSupported()) {
-            <p class="text-muted text-sm push-note">Push notifications are not supported in this browser.</p>
-          } @else if (!pushEnabled()) {
-            <div class="push-prompt">
-              <p class="text-sm">Enable browser notifications to receive reminders on this device.</p>
-              <button class="btn btn--secondary btn--sm" (click)="enablePush()" [disabled]="pushWorking()">
-                {{ pushWorking() ? 'Enabling…' : '🔔 Enable notifications' }}
-              </button>
-              <p class="text-sm text-muted" *ngIf="pushDenied()">
-                Notifications are blocked. Please allow them in your browser settings and try again.
-              </p>
-            </div>
-          } @else {
-            <div class="push-active">
-              <span class="push-dot"></span>
-              <span class="text-sm">Notifications enabled on this device</span>
-              <button class="btn btn--ghost btn--sm" (click)="disablePush()" [disabled]="pushWorking()">Disable</button>
-            </div>
-          }
-
-          <div class="reminders-divider"></div>
-
-          <!-- ── FREE TIER ─────────────────────────────────────────────── -->
-          @if (user()?.tier === 'Free') {
-            <div class="reminder-free-row">
-              <div class="reminder-free-info">
-                <p class="reminder-time-label">Daily at 12:00 PM</p>
-                <p class="text-sm text-muted">"{{ defaultReminderMessage }}"</p>
-              </div>
-              @if (defaultReminder()) {
-                <label class="toggle-switch">
-                  <input type="checkbox" [checked]="defaultReminder()!.isEnabled"
-                         [disabled]="reminderWorking()" (change)="toggleReminder(defaultReminder()!)" />
-                  <span class="toggle-track"><span class="toggle-thumb"></span></span>
-                </label>
-              }
-            </div>
-            <p class="upgrade-note text-sm text-muted">
-              Upgrade to Paid to set custom times and messages, or add up to 5 additional reminders.
-            </p>
-          }
-
-          <!-- ── PAID TIER ──────────────────────────────────────────────── -->
-          @if (user()?.tier === 'Paid') {
-
-            <!-- Default reminder card -->
-            @if (defaultReminder(); as dr) {
-              <div class="reminder-card reminder-card--default">
-                <div class="reminder-card__header">
-                  <span class="default-badge">Default reminder</span>
-                  @if (customReminders().length > 0 && !dr.isEnabled) {
-                    <span class="text-sm text-muted">Off — your custom reminders are active</span>
-                  }
-                </div>
-                <div class="reminder-card__fields">
-                  <div class="field-group">
-                    <label class="field-label">Time</label>
-                    <input type="time" class="time-input"
-                           [ngModel]="drafts[dr.id]?.time ?? dr.time"
-                           (ngModelChange)="draftChange(dr.id, 'time', $event)" />
-                  </div>
-                  <div class="field-group reminder-msg-group">
-                    <label class="field-label">Message <span class="optional">(optional)</span></label>
-                    <input type="text" class="new-tag-input"
-                           [placeholder]="defaultReminderMessage"
-                           maxlength="200"
-                           [ngModel]="drafts[dr.id]?.message ?? (dr.message ?? '')"
-                           (ngModelChange)="draftChange(dr.id, 'message', $event)" />
-                  </div>
-                </div>
-                <div class="reminder-card__actions">
-                  <label class="toggle-switch">
-                    <input type="checkbox" [checked]="dr.isEnabled"
-                           [disabled]="reminderWorking()" (change)="toggleReminder(dr)" />
-                    <span class="toggle-track"><span class="toggle-thumb"></span></span>
-                  </label>
-                  <button class="btn btn--primary btn--sm"
-                          [disabled]="reminderWorking() || !hasDraftChanges(dr)"
-                          (click)="saveReminder(dr)">
-                    Save
-                  </button>
-                </div>
-              </div>
-            }
-
-            <!-- Custom reminders -->
-            @if (customReminders().length > 0) {
-              <div class="reminders-section-label">Custom reminders</div>
-              <div class="reminders-list">
-                @for (r of customReminders(); track r.id) {
-                  <div class="reminder-card">
-                    <div class="reminder-card__fields">
-                      <div class="field-group">
-                        <label class="field-label">Time</label>
-                        <input type="time" class="time-input"
-                               [ngModel]="drafts[r.id]?.time ?? r.time"
-                               (ngModelChange)="draftChange(r.id, 'time', $event)" />
-                      </div>
-                      <div class="field-group reminder-msg-group">
-                        <label class="field-label">Message <span class="optional">(optional)</span></label>
-                        <input type="text" class="new-tag-input"
-                               [placeholder]="defaultReminderMessage"
-                               maxlength="200"
-                               [ngModel]="drafts[r.id]?.message ?? (r.message ?? '')"
-                               (ngModelChange)="draftChange(r.id, 'message', $event)" />
-                      </div>
-                    </div>
-                    <div class="reminder-card__actions">
-                      <label class="toggle-switch">
-                        <input type="checkbox" [checked]="r.isEnabled"
-                               [disabled]="reminderWorking()" (change)="toggleReminder(r)" />
-                        <span class="toggle-track"><span class="toggle-thumb"></span></span>
-                      </label>
-                      <button class="btn btn--primary btn--sm"
-                              [disabled]="reminderWorking() || !hasDraftChanges(r)"
-                              (click)="saveReminder(r)">
-                        Save
-                      </button>
-                      <button class="btn btn--ghost btn--sm"
-                              [disabled]="reminderWorking()" (click)="deleteReminder(r)">
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                }
-              </div>
-            }
-
-            @if (customReminders().length < 5) {
-              <button class="btn btn--secondary btn--sm" style="margin-top:.875rem"
-                      [disabled]="reminderWorking()" (click)="addReminder()">
-                + Add custom reminder
-              </button>
-              @if (customReminders().length === 0) {
-                <p class="text-sm text-muted" style="margin-top:.375rem">
-                  Adding a custom reminder will turn off the default noon reminder.
-                </p>
-              }
-            }
-          }
-
-          @if (reminderError()) {
-            <p class="alert alert--error" style="margin-top:.75rem">{{ reminderError() }}</p>
-          }
         </section>
 
         <!-- Preferences (paid only) -->
@@ -593,6 +459,20 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log an entry to keep your streak a
     .field-label { font-size:.8125rem; font-weight:500; color:var(--color-text-2); }
     .pw-error { font-size:.875rem; color:var(--color-danger, #dc2626); margin:0; }
     .pw-success { font-size:.875rem; color:#166534; margin:0; }
+
+    /* Notifications link card */
+    .notif-link-card {
+      cursor: pointer;
+      transition: border-color .15s, box-shadow .15s;
+      &:hover { border-color: var(--color-accent); box-shadow: var(--shadow-md); }
+    }
+    .notif-link-inner {
+      display: flex; align-items: center; gap: .875rem;
+      svg:first-child { color: var(--color-accent); flex-shrink: 0; }
+    }
+    .notif-link-title { font-size: .9375rem; font-weight: 600; margin: 0 0 .1rem; }
+    .notif-link-sub { font-size: .8125rem; color: var(--color-text-2); margin: 0; }
+    .notif-link-chevron { margin-left: auto; color: var(--color-text-3); flex-shrink: 0; }
 
     /* Preferences */
     .pref-row {
