@@ -118,8 +118,9 @@ import { ActionItem } from '../../core/models/models';
                   </div>
                 } @else {
                   <span class="ai-text" (dblclick)="startEdit(item)">{{ item.text }}</span>
+
+                  <!-- Desktop: hover-reveal controls -->
                   <div class="ai-item-actions">
-                    <!-- Up/Down arrows (mobile reorder) -->
                     <button class="ai-arrow" title="Move up"
                       [disabled]="$index === 0"
                       (click)="moveUp($index)">▲</button>
@@ -130,6 +131,38 @@ import { ActionItem } from '../../core/models/models';
                       (click)="startEdit(item)" title="Edit">✎</button>
                     <button class="ai-action-btn ai-action-btn--delete"
                       (click)="deleteItem(item)" title="Delete">✕</button>
+                  </div>
+
+                  <!-- Mobile: single ··· button -->
+                  <button class="ai-menu-btn"
+                    [class.ai-menu-btn--open]="openMenuId() === item.id"
+                    (click)="toggleMenu(item.id)"
+                    title="Actions">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                      <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
+                    </svg>
+                  </button>
+                }
+
+                <!-- Mobile inline action row (below item text) -->
+                @if (openMenuId() === item.id && editingId() !== item.id) {
+                  <div class="ai-inline-menu">
+                    <button class="ai-inline-btn ai-inline-btn--edit"
+                      (click)="startEdit(item); closeMenu()">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                      </svg>
+                      Edit
+                    </button>
+                    <button class="ai-inline-btn ai-inline-btn--delete"
+                      (click)="deleteItem(item); closeMenu()">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                        <path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+                      </svg>
+                      Delete
+                    </button>
                   </div>
                 }
 
@@ -302,6 +335,7 @@ import { ActionItem } from '../../core/models/models';
     .ai-item {
       display: flex;
       align-items: center;
+      flex-wrap: wrap;
       gap: .5rem;
       padding: .2rem 0;
       border-radius: var(--radius-sm);
@@ -418,9 +452,52 @@ import { ActionItem } from '../../core/models/models';
       &[disabled] { opacity: .25; cursor: default; }
     }
 
-    /* ── Always show controls on touch devices ───────────────────── */
+    /* ── Mobile ··· menu button ─────────────────────────────────── */
+    .ai-menu-btn {
+      display: none;          /* hidden on desktop */
+      flex-shrink: 0;
+      background: none; border: none;
+      padding: .2rem .3rem;
+      border-radius: var(--radius-sm);
+      color: var(--color-text-3);
+      cursor: pointer;
+      align-items: center; justify-content: center;
+      transition: color .15s, background .15s;
+      &:hover, &.ai-menu-btn--open {
+        color: var(--color-accent);
+        background: var(--color-surface-2);
+      }
+    }
+
+    /* ── Mobile inline action row ────────────────────────────────── */
+    .ai-inline-menu {
+      display: flex;
+      width: 100%;
+      gap: .5rem;
+      padding: .25rem 0 .375rem 1.75rem; /* indent past checkbox */
+    }
+    .ai-inline-btn {
+      display: flex; align-items: center; gap: .35rem;
+      background: none; border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      font-size: .8125rem; font-family: var(--font-sans);
+      padding: .3rem .7rem;
+      cursor: pointer;
+      transition: background .12s, color .12s, border-color .12s;
+    }
+    .ai-inline-btn--edit {
+      color: var(--color-text-2);
+      &:hover { background: var(--color-surface-2); color: var(--color-text); border-color: var(--color-text-3); }
+    }
+    .ai-inline-btn--delete {
+      color: #dc2626; border-color: #fca5a5;
+      &:hover { background: #fee2e2; border-color: #dc2626; }
+    }
+
+    /* ── Touch devices: swap hover controls for ··· menu ────────── */
     @media (pointer: coarse) {
-      .ai-item-actions { opacity: 1; }
+      .ai-item-actions { display: none !important; }
+      .ai-menu-btn { display: flex; }
       .ai-drag-handle { opacity: 1; }
       .ai-item--done .ai-action-btn--delete { opacity: 1; }
     }
@@ -528,6 +605,7 @@ export class ActionItemsCardComponent implements OnInit {
   completedExpanded = signal(false);
   showAddForm   = signal(false);
   editingId     = signal<number | null>(null);
+  openMenuId    = signal<number | null>(null);
   saving        = signal(false);
   error         = signal('');
 
@@ -582,6 +660,15 @@ export class ActionItemsCardComponent implements OnInit {
         this.saving.set(false);
       }
     });
+  }
+
+  // ── Mobile ··· menu ────────────────────────────────────────────
+  toggleMenu(id: number): void {
+    this.openMenuId.set(this.openMenuId() === id ? null : id);
+  }
+
+  closeMenu(): void {
+    this.openMenuId.set(null);
   }
 
   // ── Edit ───────────────────────────────────────────────────────
