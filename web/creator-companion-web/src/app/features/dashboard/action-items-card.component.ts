@@ -265,7 +265,7 @@ import { ActionItem } from '../../core/models/models';
       padding: 0 1.25rem 1.25rem;
     }
     .ai-card--expanded .ai-body { display: block; }
-    .ai-card--expanded .ai-header { padding-bottom: .25rem; }
+    .ai-card--expanded .ai-header { padding-top: .5rem; padding-bottom: .25rem; }
 
     /* ── Empty / caught-up states ────────────────────────────────── */
     .ai-empty {
