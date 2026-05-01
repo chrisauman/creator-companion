@@ -60,6 +60,9 @@ a:hover { text-decoration: underline; color: var(--accent-dark); }
 .nav__links { display: flex; align-items: center; gap: 1.5rem; }
 .nav__links a { font-size: .9375rem; color: var(--text-2); font-weight: 500; }
 .nav__links a:hover { color: var(--text); text-decoration: none; }
+/* Don't let the generic link colour bleed into buttons */
+.nav__links .btn { color: #fff; }
+.nav__links .btn:hover { color: #fff; }
 .nav__cta { margin-left: .5rem; }
 
 /* ── Buttons ─────────────────────────────────────────────────────────────── */
