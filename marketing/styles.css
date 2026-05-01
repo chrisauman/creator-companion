@@ -72,9 +72,15 @@ a:hover { text-decoration: underline; }
   max-width: var(--max-w); margin: 0 auto; padding: 0 2rem;
   height: 100%; display: flex; align-items: center; justify-content: space-between;
 }
-.nav__logo { display: flex; align-items: center; text-decoration: none; }
-.nav__logo img { height: 26px; width: auto; filter: brightness(0) invert(1); transition: filter .3s; }
-.nav--scrolled .nav__logo img { filter: none; }
+.nav__logo { display: flex; align-items: center; gap: .625rem; text-decoration: none; }
+
+/* On dark hero: show the circular icon (looks great on dark), hide the white-bg full logo */
+.nav__logo-icon { height: 30px; width: auto; display: block; opacity: 1; transition: opacity .3s; }
+.nav__logo-full { height: 26px; width: auto; display: none; }
+
+/* On scrolled white nav: hide icon, show full logo (white bg matches perfectly) */
+.nav--scrolled .nav__logo-icon { display: none; }
+.nav--scrolled .nav__logo-full { display: block; }
 
 .nav__links { display: flex; align-items: center; gap: 0.25rem; }
 .nav__links a {
@@ -835,6 +841,9 @@ body.page-inner .nav__links a:hover { color: var(--text); background: var(--off)
 body.page-inner .nav__links .btn { background: var(--ink); color: #fff !important; }
 body.page-inner .nav__links .btn:hover { background: var(--ink-3) !important; color: #fff !important; }
 body.page-inner .nav__hamburger span { background: var(--text); }
+/* Inner pages always have white nav — always show full logo */
+body.page-inner .nav__logo-icon { display: none; }
+body.page-inner .nav__logo-full { display: block; }
 
 /* Page hero */
 .page-hero {
