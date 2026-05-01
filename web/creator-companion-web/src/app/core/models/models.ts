@@ -17,6 +17,7 @@ export interface MotivationEntry {
   takeaway: string;
   fullContent: string;
   category: string;
+  isFavorited: boolean;
   createdAt: string;
   updatedAt: string;
 }

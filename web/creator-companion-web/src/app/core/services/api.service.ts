@@ -209,6 +209,14 @@ export class ApiService {
     return this.http.patch<{ showMotivation: boolean }>(`${this.base}/motivation/preference`, { show });
   }
 
+  toggleSparkFavorite(id: string): Observable<{ isFavorited: boolean }> {
+    return this.http.post<{ isFavorited: boolean }>(`${this.base}/motivation/${id}/favorite`, {});
+  }
+
+  getFavoriteSparks(): Observable<MotivationEntry[]> {
+    return this.http.get<MotivationEntry[]>(`${this.base}/motivation/favorites`);
+  }
+
   // ── Admin Motivation ─────────────────────────────────────────────────────
   adminGetMotivation(): Observable<MotivationEntry[]> {
     return this.http.get<MotivationEntry[]>(`${this.base}/admin/motivation`);

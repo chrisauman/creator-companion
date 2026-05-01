@@ -5,6 +5,7 @@ import { ApiService } from '../../core/services/api.service';
 import { TokenService } from '../../core/services/token.service';
 import { AuthService } from '../../core/services/auth.service';
 import { StreakStats } from '../../core/models/models';
+import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-sidebar',
@@ -41,6 +42,10 @@ import { StreakStats } from '../../core/models/models';
         <a class="sidebar__nav-item" [class.sidebar__nav-item--active]="active === 'todos'" routerLink="/todos">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
           To Do List
+        </a>
+        <a *ngIf="hasFavoriteSparks()" class="sidebar__nav-item" [class.sidebar__nav-item--active]="active === 'favorites'" routerLink="/favorites">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          Favorite Sparks
         </a>
         <a class="sidebar__nav-item" [class.sidebar__nav-item--active]="active === 'account'" routerLink="/account">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
@@ -159,21 +164,28 @@ import { StreakStats } from '../../core/models/models';
   `]
 })
 export class SidebarComponent implements OnInit {
-  @Input() active: 'dashboard' | 'todos' | 'account' | 'admin' = 'dashboard';
+  @Input() active: 'dashboard' | 'todos' | 'favorites' | 'account' | 'admin' = 'dashboard';
 
   private api    = inject(ApiService);
   private tokens = inject(TokenService);
 
-  isAdmin     = this.tokens.isAdmin.bind(this.tokens);
-  streak      = signal<StreakStats | null>(null);
-  username    = computed(() => this.tokens.getCachedUser()?.username ?? '');
-  userInitial = computed(() => (this.tokens.getCachedUser()?.username?.[0] ?? '?').toUpperCase());
+  isAdmin          = this.tokens.isAdmin.bind(this.tokens);
+  streak           = signal<StreakStats | null>(null);
+  hasFavoriteSparks = signal(false);
+  username         = computed(() => this.tokens.getCachedUser()?.username ?? '');
+  userInitial      = computed(() => (this.tokens.getCachedUser()?.username?.[0] ?? '?').toUpperCase());
 
   ngOnInit(): void {
     this.api.getStreak().subscribe({
       next: s => this.streak.set(s),
       error: () => this.streak.set({ currentStreak: 0, longestStreak: 0, totalEntries: 0,
         totalMediaCount: 0, totalActiveDays: 0, isPaused: false, pauseDaysUsedThisMonth: 0 })
+    });
+
+    // Show the Favorite Sparks link only if the user has saved at least one
+    this.api.getFavoriteSparks().subscribe({
+      next: sparks => this.hasFavoriteSparks.set(sparks.length > 0),
+      error: () => {}  // silently hide the link on error (e.g. free-tier 403)
     });
   }
 }

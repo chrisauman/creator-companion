@@ -21,7 +21,7 @@ public class AdminMotivationController(AppDbContext db) : ControllerBase
             .ThenBy(e => e.CreatedAt)
             .Select(e => new MotivationEntryResponse(
                 e.Id, e.Title, e.Takeaway, e.FullContent,
-                e.Category.ToString(), e.CreatedAt, e.UpdatedAt))
+                e.Category.ToString(), e.CreatedAt, e.UpdatedAt, false))
             .ToListAsync();
 
         return Ok(entries);
@@ -47,7 +47,7 @@ public class AdminMotivationController(AppDbContext db) : ControllerBase
 
         return Ok(new MotivationEntryResponse(
             entry.Id, entry.Title, entry.Takeaway, entry.FullContent,
-            entry.Category.ToString(), entry.CreatedAt, entry.UpdatedAt));
+            entry.Category.ToString(), entry.CreatedAt, entry.UpdatedAt, false));
     }
 
     [HttpPut("{id:guid}")]
@@ -70,7 +70,7 @@ public class AdminMotivationController(AppDbContext db) : ControllerBase
 
         return Ok(new MotivationEntryResponse(
             entry.Id, entry.Title, entry.Takeaway, entry.FullContent,
-            entry.Category.ToString(), entry.CreatedAt, entry.UpdatedAt));
+            entry.Category.ToString(), entry.CreatedAt, entry.UpdatedAt, false));
     }
 
     [HttpDelete("{id:guid}")]

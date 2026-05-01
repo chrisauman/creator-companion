@@ -9,7 +9,8 @@ public record MotivationEntryResponse(
     string FullContent,
     string Category,
     DateTime CreatedAt,
-    DateTime UpdatedAt
+    DateTime UpdatedAt,
+    bool   IsFavorited
 );
 
 public record CreateMotivationRequest(

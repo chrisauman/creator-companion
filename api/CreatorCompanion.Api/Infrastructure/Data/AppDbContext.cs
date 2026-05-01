@@ -22,6 +22,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();
     public DbSet<MotivationEntry> MotivationEntries => Set<MotivationEntry>();
     public DbSet<UserMotivationShown> UserMotivationShown => Set<UserMotivationShown>();
+    public DbSet<UserFavoritedMotivation> UserFavoritedMotivations => Set<UserFavoritedMotivation>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<EmailVerificationToken> EmailVerificationTokens => Set<EmailVerificationToken>();
     public DbSet<EmailTemplate> EmailTemplates => Set<EmailTemplate>();
@@ -44,6 +45,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.ApplyConfiguration(new PushSubscriptionConfiguration());
         modelBuilder.ApplyConfiguration(new MotivationEntryConfiguration());
         modelBuilder.ApplyConfiguration(new UserMotivationShownConfiguration());
+        modelBuilder.ApplyConfiguration(new UserFavoritedMotivationConfiguration());
         modelBuilder.ApplyConfiguration(new EmailTemplateConfiguration());
         modelBuilder.ApplyConfiguration(new ActionItemConfiguration());
     }

@@ -87,15 +87,30 @@ import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
                 <span class="motivation-label">Daily Spark</span>
                 <p class="motivation-takeaway">{{ motivation()!.takeaway }}</p>
               </div>
-              <button class="motivation-toggle" [attr.aria-expanded]="motivationExpanded()">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                  fill="none" stroke="currentColor" stroke-width="2.5"
-                  stroke-linecap="round" stroke-linejoin="round"
-                  [style.transform]="motivationExpanded() ? 'rotate(180deg)' : 'rotate(0deg)'"
-                  style="transition:transform .25s ease">
-                  <polyline points="6 9 12 15 18 9"/>
-                </svg>
-              </button>
+              <div class="motivation-actions" (click)="$event.stopPropagation()">
+                @if (isPaid()) {
+                  <button class="motivation-heart"
+                    [class.motivation-heart--active]="motivation()!.isFavorited"
+                    [attr.aria-label]="motivation()!.isFavorited ? 'Remove from favorites' : 'Add to favorites'"
+                    (click)="toggleSparkFavorite()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                      [attr.fill]="motivation()!.isFavorited ? 'currentColor' : 'none'"
+                      stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                    </svg>
+                  </button>
+                }
+                <button class="motivation-toggle" [attr.aria-expanded]="motivationExpanded()">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                    fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round"
+                    [style.transform]="motivationExpanded() ? 'rotate(180deg)' : 'rotate(0deg)'"
+                    style="transition:transform .25s ease">
+                    <polyline points="6 9 12 15 18 9"/>
+                  </svg>
+                </button>
+              </div>
             </div>
             <div class="motivation-body">
               <p class="motivation-content">{{ motivation()!.fullContent }}</p>
@@ -333,8 +348,18 @@ import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
       display: block; margin-bottom: .3rem;
     }
     .motivation-takeaway { font-size: .9375rem; color: var(--color-text); margin: 0; line-height: 1.7; }
+    .motivation-actions {
+      display: flex; align-items: center; gap: .25rem; flex-shrink: 0; margin-top: .1rem;
+    }
+    .motivation-heart {
+      background: none; border: none; cursor: pointer;
+      color: var(--color-text-3); padding: .1rem;
+      display: flex; align-items: center;
+      transition: color .15s, transform .1s;
+      &:hover { color: #e11d48; transform: scale(1.15); }
+    }
+    .motivation-heart--active { color: #e11d48; }
     .motivation-toggle {
-      flex-shrink: 0; margin-top: .1rem;
       background: none; border: none; cursor: pointer;
       color: var(--color-text-3); padding: .1rem;
       display: flex; align-items: center;
@@ -672,6 +697,17 @@ export class DashboardComponent implements OnInit {
     const ok = await this.push.subscribe();
     this.pushNudgeWorking.set(false);
     if (ok) this.showPushNudge.set(false);
+  }
+
+  toggleSparkFavorite(): void {
+    const m = this.motivation();
+    if (!m) return;
+    // Optimistic update
+    this.motivation.set({ ...m, isFavorited: !m.isFavorited });
+    this.api.toggleSparkFavorite(m.id).subscribe({
+      next: res => this.motivation.update(cur => cur ? { ...cur, isFavorited: res.isFavorited } : cur),
+      error: () => this.motivation.set(m) // revert on error
+    });
   }
 
   categoryLabel(cat: string): string {

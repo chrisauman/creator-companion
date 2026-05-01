@@ -47,7 +47,11 @@ public class MotivationController(AppDbContext db) : ControllerBase
             .FirstOrDefaultAsync(s => s.UserId == UserId && s.ShownDate == today);
 
         if (todayRecord is not null)
-            return Ok(MapEntry(todayRecord.Entry));
+        {
+            var isFav = await db.UserFavoritedMotivations
+                .AnyAsync(f => f.UserId == UserId && f.MotivationEntryId == todayRecord.Entry.Id);
+            return Ok(MapEntry(todayRecord.Entry, isFav));
+        }
 
         // Find unseen entries for this user
         var seenIds = await db.UserMotivationShown
@@ -81,7 +85,10 @@ public class MotivationController(AppDbContext db) : ControllerBase
         });
         await db.SaveChangesAsync();
 
-        return Ok(MapEntry(candidate));
+        var isFavorited = await db.UserFavoritedMotivations
+            .AnyAsync(f => f.UserId == UserId && f.MotivationEntryId == candidate.Id);
+
+        return Ok(MapEntry(candidate, isFavorited));
     }
 
     /// <summary>Toggle daily motivation cards on/off for the current user.</summary>
@@ -98,6 +105,64 @@ public class MotivationController(AppDbContext db) : ControllerBase
         return Ok(new { showMotivation = user.ShowMotivation });
     }
 
-    private static MotivationEntryResponse MapEntry(MotivationEntry e) =>
-        new(e.Id, e.Title, e.Takeaway, e.FullContent, e.Category.ToString(), e.CreatedAt, e.UpdatedAt);
+    /// <summary>
+    /// Toggle the heart/favorite on a motivation entry. Paid users only.
+    /// Returns the new favorited state.
+    /// </summary>
+    [HttpPost("{id:guid}/favorite")]
+    public async Task<IActionResult> ToggleFavorite(Guid id)
+    {
+        var user = await db.Users.FindAsync(UserId);
+        if (user is null) return NotFound();
+        if (user.Tier != AccountTier.Paid) return Forbid();
+
+        var entryExists = await db.MotivationEntries.AnyAsync(e => e.Id == id);
+        if (!entryExists) return NotFound();
+
+        var existing = await db.UserFavoritedMotivations
+            .FirstOrDefaultAsync(f => f.UserId == UserId && f.MotivationEntryId == id);
+
+        bool isFavorited;
+        if (existing is not null)
+        {
+            db.UserFavoritedMotivations.Remove(existing);
+            isFavorited = false;
+        }
+        else
+        {
+            db.UserFavoritedMotivations.Add(new UserFavoritedMotivation
+            {
+                UserId            = UserId,
+                MotivationEntryId = id
+            });
+            isFavorited = true;
+        }
+
+        await db.SaveChangesAsync();
+        return Ok(new { isFavorited });
+    }
+
+    /// <summary>
+    /// Returns all motivation entries the current paid user has favorited,
+    /// ordered newest-favorited first.
+    /// </summary>
+    [HttpGet("favorites")]
+    public async Task<IActionResult> GetFavorites()
+    {
+        var user = await db.Users.FindAsync(UserId);
+        if (user is null) return NotFound();
+        if (user.Tier != AccountTier.Paid) return Forbid();
+
+        var favorites = await db.UserFavoritedMotivations
+            .Where(f => f.UserId == UserId)
+            .Include(f => f.Entry)
+            .OrderByDescending(f => f.CreatedAt)
+            .Select(f => MapEntry(f.Entry, true))
+            .ToListAsync();
+
+        return Ok(favorites);
+    }
+
+    private static MotivationEntryResponse MapEntry(MotivationEntry e, bool isFavorited) =>
+        new(e.Id, e.Title, e.Takeaway, e.FullContent, e.Category.ToString(), e.CreatedAt, e.UpdatedAt, isFavorited);
 }

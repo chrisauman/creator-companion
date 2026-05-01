@@ -66,6 +66,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/todos/todos.component').then(m => m.TodosComponent)
   },
   {
+    path: 'favorites',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/favorite-sparks/favorite-sparks.component').then(m => m.FavoriteSparksComponent)
+  },
+  {
     path: 'trash',
     canActivate: [authGuard],
     loadComponent: () => import('./features/trash/trash.component').then(m => m.TrashComponent)

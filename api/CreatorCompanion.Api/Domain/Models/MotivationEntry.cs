@@ -21,4 +21,5 @@ public class MotivationEntry
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     public ICollection<UserMotivationShown> ShownRecords { get; set; } = new List<UserMotivationShown>();
+    public ICollection<UserFavoritedMotivation> FavoriteRecords { get; set; } = new List<UserFavoritedMotivation>();
 }
