@@ -12,33 +12,35 @@ import { ActionItem } from '../../core/models/models';
   standalone: true,
   imports: [CommonModule, FormsModule, DragDropModule],
   template: `
-    <div class="ai-card" [class.ai-card--expanded]="expanded()">
+    <div class="ai-card" [class.ai-card--expanded]="expanded()" [class.ai-card--always-open]="!collapsible">
 
-      <!-- ── Header ─────────────────────────────────────────────── -->
-      <div class="ai-header" (click)="toggleExpanded()">
-        <div class="ai-header__left">
-          @if (!expanded()) {
-            <p class="ai-summary">
-              @if (allCaughtUp()) {
-                All caught up!
-              } @else if (activeItems().length === 0) {
-                Add your first reminder
-              } @else {
-                {{ activeItems()[0].text }}
-              }
-            </p>
-          }
+      <!-- ── Header (only shown when collapsible) ──────────────── -->
+      @if (collapsible) {
+        <div class="ai-header" (click)="toggleExpanded()">
+          <div class="ai-header__left">
+            @if (!expanded()) {
+              <p class="ai-summary">
+                @if (allCaughtUp()) {
+                  All caught up!
+                } @else if (activeItems().length === 0) {
+                  Add your first reminder
+                } @else {
+                  {{ activeItems()[0].text }}
+                }
+              </p>
+            }
+          </div>
+          <button class="ai-toggle" [attr.aria-expanded]="expanded()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round"
+              [style.transform]="expanded() ? 'rotate(180deg)' : 'rotate(0deg)'"
+              style="transition:transform .25s ease">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </button>
         </div>
-        <button class="ai-toggle" [attr.aria-expanded]="expanded()">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-            fill="none" stroke="currentColor" stroke-width="2.5"
-            stroke-linecap="round" stroke-linejoin="round"
-            [style.transform]="expanded() ? 'rotate(180deg)' : 'rotate(0deg)'"
-            style="transition:transform .25s ease">
-            <polyline points="6 9 12 15 18 9"/>
-          </svg>
-        </button>
-      </div>
+      }
 
       <!-- ── Expanded Body ───────────────────────────────────────── -->
       <div class="ai-body">
@@ -304,6 +306,12 @@ import { ActionItem } from '../../core/models/models';
     .ai-card--expanded .ai-header { padding: 0; height: 0; overflow: visible; }
     .ai-card--expanded .ai-toggle { position: absolute; top: .625rem; right: .875rem; }
 
+    /* Always-open mode (no collapse) */
+    .ai-card--always-open {
+      .ai-body { display: block; padding-top: 1rem; }
+      &:hover { border-color: var(--color-border); box-shadow: none; }
+    }
+
     /* ── Empty / caught-up states ────────────────────────────────── */
     .ai-empty {
       padding: .5rem .25rem 0;
@@ -334,10 +342,10 @@ import { ActionItem } from '../../core/models/models';
     }
     .ai-item {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       flex-wrap: wrap;
       gap: .5rem;
-      padding: .2rem 0;
+      padding: .3rem 0;
       border-radius: var(--radius-sm);
       position: relative;
       &:hover { background: var(--color-surface-2); }
@@ -352,6 +360,7 @@ import { ActionItem } from '../../core/models/models';
       opacity: 0;
       flex-shrink: 0;
       padding: .1rem;
+      margin-top: .15rem;
       display: flex; align-items: center;
       transition: opacity .15s;
       &:hover { color: var(--color-text-2); }
@@ -379,6 +388,7 @@ import { ActionItem } from '../../core/models/models';
       flex-shrink: 0;
       background: none; border: none;
       padding: 0; cursor: pointer;
+      margin-top: .15rem;
       color: var(--color-text-3);
       display: flex; align-items: center;
       transition: color .15s;
@@ -597,6 +607,7 @@ import { ActionItem } from '../../core/models/models';
 })
 export class ActionItemsCardComponent implements OnInit {
   @Input() startExpanded = false;
+  @Input() collapsible   = true;
 
   private api = inject(ApiService);
 
@@ -619,7 +630,7 @@ export class ActionItemsCardComponent implements OnInit {
   );
 
   ngOnInit(): void {
-    if (this.startExpanded) this.expanded.set(true);
+    if (this.startExpanded || !this.collapsible) this.expanded.set(true);
     this.api.getActionItems().subscribe({
       next: items => this.items.set(items),
       error: () => {}

@@ -29,7 +29,7 @@ import { ActionItemsCardComponent } from '../dashboard/action-items-card.compone
           <h1 class="page-title">To Do List</h1>
           <p class="page-sub">Your daily reminders and next actions.</p>
         </div>
-        <app-action-items-card [startExpanded]="true" />
+        <app-action-items-card [startExpanded]="true" [collapsible]="false" />
       </main>
     </div>
   `,
