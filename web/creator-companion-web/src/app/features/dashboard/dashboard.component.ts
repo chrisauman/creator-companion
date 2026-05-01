@@ -592,8 +592,9 @@ export class DashboardComponent implements OnInit {
   motivation = signal<MotivationEntry | null>(null);
   motivationExpanded = signal(false);
   showActionItems = signal(true);
-  loading = signal(true);
-  error   = signal('');
+  loading        = signal(true);
+  error          = signal('');
+  sessionExpired = signal(false);
 
   // Search & sort
   searchQuery = signal('');
@@ -642,6 +643,11 @@ export class DashboardComponent implements OnInit {
       if (this.loading()) {
         this.loading.set(false);
       }
+      // If we still have no valid access token after 20 s, the session
+      // restoration definitively failed — send the user to login.
+      if (!this.tokens.getAccessToken()) {
+        window.location.replace('/login');
+      }
     }, 20000);
 
     this.api.getStreak().subscribe({
@@ -669,8 +675,13 @@ export class DashboardComponent implements OnInit {
       },
       error: () => {
         clearTimeout(safetyTimer);
-        this.error.set('Could not load entries.');
-        this.loading.set(false);
+        if (!this.tokens.getAccessToken()) {
+          // No valid token after all retries — session has expired
+          window.location.replace('/login');
+        } else {
+          this.error.set('Could not load entries. Pull down to refresh.');
+          this.loading.set(false);
+        }
       }
     });
   }
