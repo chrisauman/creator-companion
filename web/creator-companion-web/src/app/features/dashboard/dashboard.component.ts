@@ -11,11 +11,12 @@ import { MILESTONES, getMilestoneForDays, getMilestoneIndex, Milestone } from '.
 import { PushService } from '../../core/services/push.service';
 import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
 import { MobileNavComponent } from '../../shared/mobile-nav/mobile-nav.component';
+import { MoodIconComponent } from '../../shared/mood-icon/mood-icon.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, SidebarComponent, MobileNavComponent],
+  imports: [CommonModule, RouterLink, FormsModule, SidebarComponent, MobileNavComponent, MoodIconComponent],
   template: `
     <div class="dashboard">
 
@@ -181,42 +182,21 @@ import { MobileNavComponent } from '../../shared/mobile-nav/mobile-nav.component
             <ng-container *ngFor="let group of groupedEntries(); trackBy: trackByGroup; let first = first">
               <div class="date-divider" [class.date-divider--first]="first">{{ group.label }}</div>
               <div
-                class="entry-row card"
+                class="entry-row"
                 *ngFor="let entry of group.entries; trackBy: trackByEntry"
                 [routerLink]="['/entry', entry.id]"
               >
                 <div class="entry-cal">
                   <span class="entry-cal__dow">{{ getDayAbbr(entry.entryDate) }}</span>
                   <span class="entry-cal__num">{{ getDayNum(entry.entryDate) }}</span>
+                  <span class="entry-cal__time">{{ formatTime(entry.createdAt) }}</span>
                 </div>
                 <div class="entry-row__body">
-                  <p class="entry-row__title">{{ entry.title || '(Untitled)' }}</p>
-                  <div class="entry-row__sub">
-                    <span>{{ formatTime(entry.createdAt) }}</span>
-                    <ng-container *ngIf="entry.mediaCount > 0">
-                      <span class="sep">·</span>
-                      <span>📷 {{ entry.mediaCount }}</span>
-                    </ng-container>
-                    <ng-container *ngIf="entry.mood">
-                      <span class="sep">·</span>
-                      <span>{{ getMoodEmoji(entry.mood) }} Feeling {{ entry.mood }}</span>
-                    </ng-container>
+                  <p class="entry-row__title">{{ entryHeadline(entry) }}</p>
+                  <div class="entry-row__mood" *ngIf="entry.mood">
+                    <app-mood-icon [mood]="entry.mood" [size]="14"></app-mood-icon>
+                    <span>{{ entry.mood }}</span>
                   </div>
-                  <div class="entry-row__tags">
-                    <ng-container *ngIf="entry.tags && entry.tags.length > 0">
-                      <button class="entry-tag-chip" type="button"
-                        *ngFor="let tag of entry.tags"
-                        (click)="navigateToTag($event, tag)">#{{ tag }}</button>
-                    </ng-container>
-                    <button class="entry-tag-add" type="button"
-                      (click)="navigateToEditTags($event, entry.id)"
-                      [title]="entry.tags && entry.tags.length ? 'Edit tags' : 'Add tags'"
-                    >{{ entry.tags && entry.tags.length ? '···' : '+ tag' }}</button>
-                  </div>
-                </div>
-                <div class="entry-row__thumb" *ngIf="entry.firstImageUrl">
-                  <img [src]="fullImageUrl(entry.firstImageUrl)" [alt]="entry.title"
-                       (error)="onImgError($event)" />
                 </div>
               </div>
             </ng-container>
@@ -417,63 +397,87 @@ import { MobileNavComponent } from '../../shared/mobile-nav/mobile-nav.component
 
     /* ── Entry list ──────────────────────────────────────────────── */
     .date-divider {
-      font-size: 1.0625rem; font-weight: 900; font-family: var(--font-display);
-      color: var(--color-text); padding: .25rem 0; margin: 1.25rem 0 .625rem;
+      font-size: .6875rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .14em;
+      color: var(--color-text-3);
+      padding: 0 0 .5rem;
+      margin: 1.75rem 0 .875rem;
+      border-bottom: 1px solid var(--color-border);
     }
+    .date-divider--first { margin-top: 1rem; }
+
     .entry-row {
-      cursor: pointer; margin-bottom: .625rem;
-      transition: box-shadow .15s, border-color .15s;
-      padding: 1rem 1.25rem;
-      display: flex; align-items: center; gap: 1rem;
-      &:hover { border-color: var(--color-accent); box-shadow: var(--shadow-md); }
+      display: grid;
+      grid-template-columns: 56px 1fr;
+      gap: 1.125rem;
+      padding: 1.125rem 1.25rem;
+      margin-bottom: .5rem;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      cursor: pointer;
+      transition: border-color .15s, box-shadow .15s, transform .15s;
     }
+    .entry-row:hover {
+      border-color: var(--color-text-3);
+      box-shadow: 0 6px 20px -10px rgba(0,0,0,.08);
+    }
+
     .entry-cal {
-      flex-shrink: 0; width: 52px; height: 58px;
-      background: var(--color-surface-2); border: 1px solid var(--color-border);
-      border-radius: var(--radius-md);
-      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+      display: flex; flex-direction: column; align-items: center;
+      text-align: center;
+      padding-top: 2px;
     }
     .entry-cal__dow {
-      font-size: .5625rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: .07em; color: var(--color-accent); line-height: 1;
+      font-size: .5625rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .14em;
+      color: var(--color-accent);
+      line-height: 1;
     }
-    .entry-cal__num { font-size: 1.5rem; font-weight: 900; line-height: 1; font-family: var(--font-display); color: var(--color-text); }
-    .entry-row__body { flex: 1; min-width: 0; }
+    .entry-cal__num {
+      font-family: var(--font-display);
+      font-size: 1.625rem;
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: -.02em;
+      color: var(--color-text);
+      margin-top: 4px;
+    }
+    .entry-cal__time {
+      font-size: .625rem;
+      color: var(--color-text-3);
+      margin-top: 5px;
+      letter-spacing: .02em;
+    }
+
+    .entry-row__body { min-width: 0; padding-top: 2px; }
     .entry-row__title {
-      font-size: .9375rem; font-weight: 600; line-height: 1.35;
-      color: var(--color-text); margin: 0 0 .25rem;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      font-family: var(--font-display);
+      font-size: 1.125rem;
+      font-weight: 600;
+      line-height: 1.35;
+      color: var(--color-text);
+      margin: 0 0 .5rem;
+      letter-spacing: -.005em;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      word-break: break-word;
     }
-    .entry-row__sub {
-      display: flex; align-items: center; gap: .3rem;
-      font-size: .75rem; color: var(--color-text-2);
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    .entry-row__mood {
+      display: inline-flex;
+      align-items: center;
+      gap: .375rem;
+      font-size: .75rem;
+      color: var(--color-text-2);
     }
-    .sep { color: var(--color-border); }
-    .entry-row__tags { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem; margin-top: .375rem; }
-    .entry-tag-chip {
-      display: inline-block; padding: .1rem .45rem;
-      border-radius: 100px; font-size: .7rem; font-weight: 400;
-      background: transparent; color: var(--color-text-3);
-      border: 1px solid var(--color-border); cursor: pointer;
-      font-family: var(--font-sans); line-height: 1.4;
-      transition: color .12s, border-color .12s;
-      &:hover { color: var(--color-accent); border-color: var(--color-accent); }
-    }
-    .entry-tag-add {
-      display: inline-block; padding: .1rem .4rem;
-      border-radius: 100px; font-size: .7rem; font-weight: 500;
-      background: transparent; color: var(--color-text-3);
-      border: 1px dashed var(--color-border); cursor: pointer;
-      font-family: var(--font-sans); line-height: 1.4;
-      transition: border-color .12s, color .12s;
-      &:hover { border-color: var(--color-accent); color: var(--color-accent); }
-    }
-    .entry-row__thumb {
-      flex-shrink: 0; width: 72px; height: 72px;
-      border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--color-border);
-      img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    }
+    .entry-row__mood app-mood-icon { color: var(--color-text-3); }
+
     .load-more-wrap { display: flex; justify-content: center; padding: 1.5rem 0 .5rem; }
     .empty-state { text-align: center; padding: 4rem 1rem; color: var(--color-text-2); }
 
@@ -734,6 +738,26 @@ export class DashboardComponent implements OnInit {
     return new Date(iso).toLocaleTimeString('en-US', {
       hour: 'numeric', minute: '2-digit', hour12: true
     });
+  }
+
+  /**
+   * Returns the entry's display headline for the dashboard list.
+   * Prefers the title; falls back to the first ~80 characters of the
+   * content preview (HTML stripped) so untitled entries still read
+   * naturally. Returns "(Untitled)" only when there's truly nothing.
+   */
+  entryHeadline(entry: EntryListItem): string {
+    const title = entry.title?.trim();
+    if (title) return title;
+
+    const raw = entry.contentPreview ?? '';
+    if (raw) {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = raw;
+      const text = (tmp.textContent ?? tmp.innerText ?? '').trim();
+      if (text) return text.length > 80 ? text.slice(0, 80).trimEnd() + '…' : text;
+    }
+    return '(Untitled)';
   }
 
   navigateToTag(event: Event, tag: string): void {
