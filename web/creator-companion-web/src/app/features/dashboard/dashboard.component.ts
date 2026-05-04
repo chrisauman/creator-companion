@@ -60,10 +60,18 @@ import { ActivatedRoute } from '@angular/router';
       <!-- ── Main content ────────────────────────────────────── -->
       <main class="main-content">
 
-        <!-- (Greeting + date moved into the sidebar; "+ New Entry" is now
-             the cyan button below the streak block in the sidebar. The
-             content area starts directly with the stats strip so we get
-             more vertical room for the entry list and right column.) -->
+        <!-- Mobile greeting (sidebar is hidden on mobile so we surface
+             the greeting + date + compose pill here instead). -->
+        <div class="mobile-header">
+          <div class="mobile-header__greeting">
+            <h1 class="mobile-header__hello">{{ greetingMessage() }}</h1>
+            <div class="mobile-header__date">{{ todayLabel() }}</div>
+          </div>
+          <button class="mobile-header__compose" type="button" (click)="composeBlank()" title="New Entry">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
+        </div>
 
         <!-- ── Desktop stats strip ──────────────────────────── -->
         <div class="stats-strip" *ngIf="streak()">
@@ -128,12 +136,6 @@ import { ActivatedRoute } from '@angular/router';
             <div class="stat__label">Loading…</div>
           </div>
         </div>
-
-        <!-- ── Mobile new entry CTA (kept until mobile redesign) ── -->
-        <button class="new-entry-bar new-entry-bar--mobile btn btn--primary btn--full" type="button"
-                (click)="composeBlank()">
-          + Create New Entry
-        </button>
 
         <!-- Mobile-only stat cards -->
         <div class="stats-grid stats-grid--mobile" *ngIf="streak()">
@@ -212,6 +214,24 @@ import { ActivatedRoute } from '@angular/router';
                     (click)="enablePushFromNudge()">
               {{ pushNudgeWorking() ? 'Enabling…' : 'Enable' }}
             </button>
+          </div>
+        }
+
+        <!-- Mobile-only Today panel — stacked above the entry list since
+             the right column is hidden on phones. Shown only when in 'today'
+             mode; reading/editing/composing on mobile still navigate. -->
+        @if (rightColumnMode() === 'today') {
+          <div class="today-panel--mobile-wrap">
+            <app-today-panel
+              [motivation]="motivation()"
+              [canFavorite]="isPaid()"
+              (composeFromSpark)="composeFromSpark()"
+              (composeFromPrompt)="composeFromPrompt($event)"
+              (composeFromMood)="composeFromMood($event)"
+              (composeBlank)="composeBlank()"
+              (favoriteSpark)="toggleSparkFavorite()"
+              (expandSpark)="expandSpark()"
+            ></app-today-panel>
           </div>
         }
 
@@ -421,7 +441,7 @@ import { ActivatedRoute } from '@angular/router';
       flex: 1;
       min-width: 0;
       /* extra bottom padding = nav bar height + safe-area + breathing room */
-      padding: 1.25rem 1rem calc(80px + env(safe-area-inset-bottom, 0px));
+      padding: 1rem 1.125rem calc(88px + env(safe-area-inset-bottom, 0px));
       background: var(--color-bg);
     }
     @media (min-width: 768px) {
@@ -612,15 +632,12 @@ import { ActivatedRoute } from '@angular/router';
       .new-entry-bar--mobile { display: none; }
     }
 
-    /* ── Mobile-only stat grid ───────────────────────────────────── */
+    /* ── Mobile-only stat grid (modernized) ──────────────────────── */
     .stats-grid--mobile {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: .75rem;
+      gap: .625rem;
       margin-bottom: 1.5rem;
-    }
-    @media (min-width: 480px) {
-      .stats-grid--mobile { grid-template-columns: repeat(4, 1fr); }
     }
     @media (min-width: 768px) {
       .stats-grid--mobile { display: none; }
@@ -628,14 +645,27 @@ import { ActivatedRoute } from '@angular/router';
     .stat-card {
       background: var(--color-surface);
       border: 1px solid var(--color-border);
-      border-radius: var(--radius-md);
-      padding: 1rem;
-      display: flex; flex-direction: column; align-items: center;
-      gap: .25rem; text-align: center;
+      border-radius: 14px;
+      padding: 1rem 1.125rem;
+      display: flex; flex-direction: column;
+      gap: .375rem;
     }
-    .stat-value { font-size: 1.75rem; font-weight: 900; line-height: 1; font-family: var(--font-display); }
+    .stat-value {
+      font-family: var(--font-sans);
+      font-size: 1.625rem;
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: -.02em;
+      color: var(--color-text);
+    }
     .streak-value { color: var(--color-accent); }
-    .stat-label { font-size: .8125rem; color: var(--color-text-2); }
+    .stat-label {
+      font-size: .625rem;
+      color: var(--color-text-2);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+    }
     .skeleton { opacity: .5; }
 
     /* ── Push nudge ──────────────────────────────────────────────── */
@@ -686,10 +716,66 @@ import { ActivatedRoute } from '@angular/router';
       }
     }
 
-    /* On desktop, hide the standalone mobile motivation card — its content
-       lives inside the Today panel as the Spark hero. */
+    /* The old motivation card is fully replaced by the Today panel's
+       Spark hero — hide it everywhere now. */
+    .motivation-card--mobile { display: none !important; }
+
+    /* ── Mobile header (greeting + compose pill) ─────────────────── */
+    .mobile-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding-bottom: 1rem;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid var(--color-border);
+    }
     @media (min-width: 768px) {
-      .motivation-card--mobile { display: none; }
+      .mobile-header { display: none; }
+    }
+    .mobile-header__hello {
+      font-family: var(--font-sans);
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: -.02em;
+      color: var(--color-text);
+      margin: 0 0 2px;
+    }
+    .mobile-header__date {
+      font-size: .75rem;
+      color: var(--color-text-2);
+    }
+    .mobile-header__compose {
+      width: 40px; height: 40px;
+      flex-shrink: 0;
+      background: var(--color-accent);
+      color: #0c0e13;
+      border: none;
+      border-radius: 50%;
+      display: grid; place-items: center;
+      cursor: pointer;
+      transition: background .15s, transform .15s;
+    }
+    .mobile-header__compose:hover {
+      background: #0bd2f0;
+      transform: translateY(-1px);
+    }
+
+    /* ── Mobile-only Today panel wrapper (above entry list on phones) ── */
+    .today-panel--mobile-wrap {
+      margin-bottom: 1.5rem;
+    }
+    @media (min-width: 768px) {
+      .today-panel--mobile-wrap { display: none; }
+    }
+    .today-panel--mobile-wrap app-today-panel {
+      display: block;
+    }
+    /* Tighter padding for the Today panel when shown inline on mobile. */
+    .today-panel--mobile-wrap ::ng-deep .today {
+      padding: 0 !important;
+      max-width: none !important;
+      margin: 0 !important;
     }
 
     /* ── Embedded sections (Notifications / Todos / Favorites) ── */

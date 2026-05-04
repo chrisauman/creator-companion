@@ -144,8 +144,8 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
       .sidebar {
         display: flex;
         flex-direction: column;
-        width: 260px;
-        min-width: 260px;
+        width: 220px;
+        min-width: 220px;
         height: 100vh;
         position: sticky;
         top: 0;
@@ -159,6 +159,13 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
       .sidebar--collapsed {
         width: 64px;
         min-width: 64px;
+      }
+    }
+    /* Wider desktops get a roomier sidebar. */
+    @media (min-width: 1200px) {
+      .sidebar {
+        width: 260px;
+        min-width: 260px;
       }
     }
 
