@@ -288,18 +288,24 @@ import { ActivatedRoute } from '@angular/router';
                 [class.entry-row--active]="selectedEntryId() === entry.id"
                 (click)="handleEntryClick(entry)"
               >
-                <div class="entry-cal">
-                  <span class="entry-cal__dow">{{ getDayAbbr(entry.entryDate) }}</span>
-                  <span class="entry-cal__num">{{ getDayNum(entry.entryDate) }}</span>
-                  <span class="entry-cal__time">{{ formatTime(entry.createdAt) }}</span>
-                </div>
                 <div class="entry-row__body">
-                  <p class="entry-row__title">{{ entryHeadline(entry) }}</p>
-                  <div class="entry-row__mood" *ngIf="entry.mood">
-                    <app-mood-icon [mood]="entry.mood" [size]="14"></app-mood-icon>
-                    <span>{{ entry.mood }}</span>
+                  <div class="entry-row__meta">
+                    <span class="entry-row__date">{{ entryShortDate(entry) }}</span>
+                    <span class="entry-row__mood" *ngIf="entry.mood">
+                      <app-mood-icon [mood]="entry.mood" [size]="13"></app-mood-icon>
+                      {{ entry.mood }}
+                    </span>
                   </div>
+                  <p class="entry-row__title">{{ entryHeadline(entry) }}</p>
                 </div>
+                @if (entry.firstImageUrl) {
+                  <div class="entry-row__photo">
+                    <img [src]="fullImageUrl(entry.firstImageUrl)"
+                         [alt]="entry.title || ''"
+                         loading="lazy"
+                         (error)="onImgError($event)" />
+                  </div>
+                }
               </div>
             </ng-container>
           </ng-container>
@@ -940,15 +946,14 @@ import { ActivatedRoute } from '@angular/router';
     }
     .date-divider--first { margin-top: 1rem; }
 
+    /* ── Entry row (Variant B — meta · title · photo) ──────────── */
     .entry-row {
-      display: grid;
-      grid-template-columns: 56px 1fr;
-      gap: 1.125rem;
-      padding: 1.125rem 1.25rem;
-      margin-bottom: .5rem;
+      display: block;
+      margin-bottom: .75rem;
       background: var(--color-surface);
       border: 1px solid var(--color-border);
-      border-radius: var(--radius-lg);
+      border-radius: 16px;
+      overflow: hidden;
       cursor: pointer;
       transition: border-color .15s, box-shadow .15s, transform .15s;
     }
@@ -958,56 +963,29 @@ import { ActivatedRoute } from '@angular/router';
     }
     .entry-row--active {
       border-color: var(--color-accent);
-      background: rgba(18,196,227,.05);
+      background: rgba(18,196,227,.04);
       box-shadow: -3px 0 0 0 var(--color-accent), 0 6px 20px -10px rgba(18,196,227,.2);
     }
     .entry-row--active:hover {
       border-color: var(--color-accent);
     }
 
-    .entry-cal {
-      display: flex; flex-direction: column; align-items: center;
-      text-align: center;
-      padding-top: 2px;
+    .entry-row__body {
+      padding: 1rem 1.25rem .875rem;
     }
-    .entry-cal__dow {
-      font-size: .5625rem;
+    .entry-row__meta {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      flex-wrap: wrap;
+      margin-bottom: .5rem;
+    }
+    .entry-row__date {
+      font-size: .6875rem;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: .14em;
-      color: var(--color-accent);
-      line-height: 1;
-    }
-    .entry-cal__num {
-      font-family: var(--font-display);
-      font-size: 1.625rem;
-      font-weight: 700;
-      line-height: 1;
-      letter-spacing: -.02em;
-      color: var(--color-text);
-      margin-top: 4px;
-    }
-    .entry-cal__time {
-      font-size: .625rem;
-      color: var(--color-text-3);
-      margin-top: 5px;
-      letter-spacing: .02em;
-    }
-
-    .entry-row__body { min-width: 0; padding-top: 2px; }
-    .entry-row__title {
-      font-family: var(--font-display);
-      font-size: 1.125rem;
-      font-weight: 600;
-      line-height: 1.35;
-      color: var(--color-text);
-      margin: 0 0 .5rem;
-      letter-spacing: -.005em;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-      word-break: break-word;
+      letter-spacing: .12em;
+      color: var(--color-accent-dark);
     }
     .entry-row__mood {
       display: inline-flex;
@@ -1017,6 +995,42 @@ import { ActivatedRoute } from '@angular/router';
       color: var(--color-text-2);
     }
     .entry-row__mood app-mood-icon { color: var(--color-text-3); }
+    .entry-row__title {
+      font-family: var(--font-sans);
+      font-size: 1.25rem;
+      font-weight: 700;
+      line-height: 1.3;
+      color: var(--color-text);
+      margin: 0;
+      letter-spacing: -.01em;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      word-break: break-word;
+    }
+    /* Slightly larger title on wider viewports for visual hierarchy. */
+    @media (min-width: 768px) {
+      .entry-row__title {
+        font-size: 1.3125rem;
+      }
+    }
+
+    /* Photo: full-width, capped max-height. Vertical photos show their
+       full natural orientation up to the cap; bottom is clipped only
+       for very tall photos so the entry row stays a reasonable size. */
+    .entry-row__photo {
+      width: 100%;
+      max-height: 480px;
+      overflow: hidden;
+      background: var(--color-bg);
+      display: block;
+    }
+    .entry-row__photo img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
 
     .load-more-wrap { display: flex; justify-content: center; padding: 1.5rem 0 .5rem; }
     .empty-state { text-align: center; padding: 4rem 1rem; color: var(--color-text-2); }
@@ -1536,6 +1550,19 @@ export class DashboardComponent implements OnInit {
       },
       error: () => this.loading.set(false)
     });
+  }
+
+  /**
+   * "Sun · 9:14 AM" — short date eyebrow shown above the title on each
+   * entry row. Day-of-week comes from entryDate (the day the entry is
+   * for); time comes from createdAt (when it was actually written).
+   */
+  entryShortDate(entry: EntryListItem): string {
+    const day = new Date(entry.entryDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' });
+    const time = new Date(entry.createdAt).toLocaleTimeString('en-US', {
+      hour: 'numeric', minute: '2-digit', hour12: true
+    });
+    return `${day} · ${time}`;
   }
 
   /**
