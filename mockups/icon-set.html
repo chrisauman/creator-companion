@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Icon set — Moods + Tiers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --ink: #0c0e13;
+    --paper: #faf8f4;
+    --paper-2: #ffffff;
+    --line: #ebe7df;
+    --line-2: #e1ddd3;
+    --text: #1a1d24;
+    --text-2: #5d6470;
+    --text-3: #9099a5;
+    --cyan: #12C4E3;
+    --cyan-dark: #0d9bb5;
+    --cyan-soft: #e6f9fc;
+    --warm: #f4ede0;
+    --gold: #e0a83a;
+    --gold-soft: #faf2dc;
+  }
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: #e7e4dd;
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    padding: 3rem 1.5rem 6rem;
+  }
+  .header { max-width: 1100px; margin: 0 auto 2.5rem; }
+  .header h1 {
+    font-family: 'Fraunces', serif;
+    font-size: 1.875rem;
+    font-weight: 700;
+    margin-bottom: .5rem;
+  }
+  .header p { color: var(--text-2); line-height: 1.6; max-width: 780px; }
+
+  .section {
+    max-width: 1100px;
+    margin: 0 auto 2rem;
+    background: var(--paper);
+    border: 1px solid rgba(0,0,0,.06);
+    border-radius: 18px;
+    padding: 2rem 2.25rem 2.5rem;
+    box-shadow: 0 12px 30px -15px rgba(0,0,0,.15);
+  }
+  .section h2 {
+    font-family: 'Fraunces', serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: .375rem;
+  }
+  .section p {
+    color: var(--text-2);
+    font-size: .875rem;
+    line-height: 1.55;
+    margin-bottom: 1.75rem;
+  }
+
+  /* ── Mood grid ───────────────────────────────────────────── */
+  .mood-row-label {
+    font-size: .6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .14em;
+    color: var(--text-3);
+    margin: 1.5rem 0 .75rem;
+  }
+  .mood-row-label:first-of-type { margin-top: 0; }
+  .mood-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 1rem;
+  }
+  .mood-cell {
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 1.125rem .75rem 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .mood-cell:hover {
+    border-color: var(--cyan);
+    background: var(--cyan-soft);
+    color: var(--cyan-dark);
+    transform: translateY(-2px);
+  }
+  .mood-cell svg {
+    width: 32px; height: 32px;
+    color: var(--text);
+    margin-bottom: .625rem;
+  }
+  .mood-cell:hover svg { color: var(--cyan-dark); }
+  .mood-cell__label {
+    font-size: .8125rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .mood-cell:hover .mood-cell__label { color: var(--cyan-dark); }
+
+  /* Mood at small size — what shows on entry rows */
+  .small-demo {
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-top: 2rem;
+  }
+  .small-demo h3 {
+    font-family: 'Fraunces', serif;
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+  }
+  .small-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    font-size: .8125rem;
+    color: var(--text-2);
+  }
+  .small-row__item {
+    display: inline-flex;
+    align-items: center;
+    gap: .375rem;
+  }
+  .small-row__item svg {
+    width: 14px; height: 14px;
+    color: var(--text-3);
+  }
+
+  /* ── Tier icons ──────────────────────────────────────────── */
+  .tier-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 1rem;
+  }
+  .tier-cell {
+    background: linear-gradient(180deg, #faf2dc 0%, #f6e8c0 100%);
+    border: 1px solid rgba(224,168,58,.25);
+    border-radius: 14px;
+    padding: 1.125rem .75rem 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .tier-cell svg {
+    width: 36px; height: 36px;
+    color: #8b6912;
+    margin-bottom: .625rem;
+  }
+  .tier-cell__title {
+    font-family: 'Fraunces', serif;
+    font-size: .9375rem;
+    font-weight: 700;
+    color: #6e5610;
+    margin-bottom: 2px;
+  }
+  .tier-cell__days {
+    font-size: .625rem;
+    color: rgba(110,86,16,.7);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+  }
+
+  /* Tier badge demo (in the stats card context) */
+  .badge-demo {
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+  }
+  .badge-demo h3 {
+    font-family: 'Fraunces', serif;
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+  }
+  .badge-demo-row {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .badge-stat {
+    flex: 1;
+    min-width: 200px;
+    padding: 1rem 1.25rem;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+  }
+  .badge-stat__num {
+    font-family: 'Fraunces', serif;
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -.02em;
+  }
+  .badge-stat__num .unit {
+    font-size: .75rem;
+    color: var(--text-3);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 500;
+    margin-left: 4px;
+  }
+  .badge-stat__label {
+    margin-top: .375rem;
+    font-size: .625rem;
+    color: var(--text-2);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+  }
+  .badge-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: .375rem;
+    background: var(--gold-soft);
+    border: 1px solid rgba(224,168,58,.3);
+    color: #8b6912;
+    border-radius: 8px;
+    padding: 4px 10px;
+    margin-top: .625rem;
+    width: 100%;
+    font-size: .6875rem;
+    font-weight: 700;
+    letter-spacing: .03em;
+  }
+  .badge-pill svg {
+    width: 12px; height: 12px;
+    flex-shrink: 0;
+  }
+  .progress-track {
+    margin-top: .5rem;
+    height: 4px;
+    background: var(--line-2);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--cyan-dark), var(--cyan));
+    border-radius: 2px;
+  }
+  .progress-label {
+    font-size: .625rem;
+    color: var(--text-3);
+    font-weight: 500;
+    margin-top: 6px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .progress-label strong { color: var(--cyan-dark); font-weight: 700; }
+
+  /* Notes box */
+  .notes {
+    max-width: 1100px;
+    margin: 1rem auto 0;
+    padding: 1.25rem 1.5rem;
+    background: rgba(255,255,255,.7);
+    border: 1px solid rgba(0,0,0,.06);
+    border-radius: 12px;
+    font-size: .875rem;
+    color: var(--text-2);
+    line-height: 1.65;
+  }
+  .notes strong { color: var(--text); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Icon set — Moods + Tiers</h1>
+  <p>Custom SVG line icons for both the 12 moods and the 12 tier badges. Designed at 24×24, drawn with consistent stroke weight, all use <code>currentColor</code> so they inherit theme colors. Hover any mood to preview the active state.</p>
+</div>
+
+<!-- ─────────────────────────────────────────────────────────────── -->
+<!-- MOODS                                                            -->
+<!-- ─────────────────────────────────────────────────────────────── -->
+<div class="section">
+  <h2>12 mood icons</h2>
+  <p>Six per row matching the planned Today panel layout. Click-targets sized for fingers. Hover state shows what the picker feels like.</p>
+
+  <div class="mood-row-label">Active / forward-moving</div>
+  <div class="mood-grid">
+
+    <!-- 1. Inspired — face with sparkle above -->
+    <div class="mood-cell">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="14" r="7.5"/>
+        <circle cx="9.5" cy="13" r="0.6" fill="currentColor" stroke="none"/>
+        <circle cx="14.5" cy="13" r="0.6" fill="currentColor" stroke="none"/>
+        <path d="M9.5 16 q2.5 2 5 0"/>
+        <path d="M12 1.5 L12.6 3.4 L14.5 4 L12.6 4.6 L12 6.5 L11.4 4.6 L9.5 4 L11.4 3.4 Z" fill="currentColor" stroke="none"/>
+      </svg>
+      <div class="mood-cell__label">Inspired</div>
+    </div>
+
+    <!-- 2. Focused — narrow intense eyes + flat mouth -->
+    <div class="mood-cell">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="9"/>
+        <line x1="7" y1="11" x2="10" y2="11"/>
+        <line x1="14" y1="11" x2="17" y2="11"/>
+        <line x1="9.5" y1="15" x2="14.5" y2="15"/>
+      </svg>
+      <div class="mood-cell__label">Focused</div>
+    </div>
+
+    <!-- 3. Energized — wide eyes + big smile + side rays -->
+    <div class="mood-cell">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="8"/>
+        <circle cx="9.5" cy="11" r="0.95" fill="currentColor" stroke="none"/>
+        <circle cx="14.5" cy="11" r="0.95" fill="currentColor" stroke="none"/>
+        <path d="M8 14 q4 4 8 0"/>
+        <line x1="2" y1="8" x2="3.5" y2="9"/>
+        <line x1="22" y1="8" x2="20.5" y2="9"/>
+        <line x1="2" y1="16" x2="3.5" y2="15"/>
+        <line x1="22" y1="16" x2="20.5" y2="15"/>
+      </svg>
+      <div class="mood-cell__label">Energized</div>
+    </div>
+
+    <!-- 4. Accomplished — closed smiling eyes (curves up) + confident smile -->
+    <div class="mood-cell">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="9"/>
+        <path d="M7.5 11 q1.5 -1.5 3 0"/>
+        <path d="M13.5 11 q1.5 -1.5 3 0"/>
+        <path d="M8.5 14.5 q3.5 3 7 0"/>
+      </svg>
+      <div class="mood-cell__label">Accomplished</div>
+    </div>
+
+    <!-- 5. Proud — eyes looking up + small smile + raised brows -->
+    <div class="mood-cell">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="9"/>
+        <path d="M7 8.5 q1.5 -1 3 0"/>
+        <path d="M14 8.5 q1.5 -1 3 0"/>
+        <circle cx="9.5" cy="11" r="0.6" fill="currentColor" stroke="none"/>
+        <circle cx="14.5" cy="11" r="0.6" fill="currentColor" stroke="none"/>
+        <path d="M9.5 15 q2.5 1.5 5 0"/>
+      </svg>
+      <div class="mood-cell__label">Proud</div>
+    </div>
+
+    <!-- 6. Grateful — peaceful closed eyes (curves down) + soft smile -->
+    <div class="mood-cell">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="9"/>
+        <path d="M7.5 11 q1.5 1.5 3 0"/>
+        <path d="M13.5 11 q1.5 1.5 3 0"/>
+        <path d="M9.5 15 q2.5 1.5 5 0"/>
+      </svg>
+      <div class="mood-cell__label">Grateful</div>
+    </div>
+  </div>
+
+  <div class="mood-row-label">Reflective / challenging</div>
+  <div class="mood-grid">
+
+    <!-- 7. Hopeful — eyes looking up + small smile + dotted upward sparkle -->
+    <div class="mood-cell">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="14" r="7.5"/>
+        <circle cx="9.5" cy="12.5" r="0.6" fill="currentColor" stroke="none"/>
+        <circle cx="14.5" cy="12.5" r="0.6" fill="currentColor" stroke="none"/>
+        <line x1="9.5" y1="11.5" x2="9.5" y2="9.5"/>
+        <line x1="14.5" y1="11.5" x2="14.5" y2="9.5"/>
+        <path d="M9.5 16 q2.5 1.5 5 0"/>
+        <circle cx="12" cy="3" r="0.5" fill="currentColor" stroke="none"/>
+        <circle cx="12" cy="5" r="0.4" fill="currentColor" stroke="none"/>
+      </svg>
+      <div class="mood-cell__label">Hopeful</div>
+    </div>
+
+    <!-- 8. Challenged — determined raised brows + flat mouth -->
+    <div class="mood-cell">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="9"/>
+        <line x1="7" y1="9" x2="10.5" y2="8.5"/>
+        <line x1="13.5" y1="8.5" x2="17" y2="9"/>
+        <circle cx="9.5" cy="11.5" r="0.6" fill="currentColor" stroke="none"/>
+        <circle cx="14.5" cy="11.5" r="0.6" fill="currentColor" stroke="none"/>
+        <line x1="9.5" y1="15.5" x2="14.5" y2="15.5"/>
+      </svg>
+      <div class="mood-cell__label">Challenged</div>
+    </div>
+
+    <!-- 9. Vulnerable — soft sad eyes + slight frown + tear -->
+    <div class="mood-cell">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="9"/>
+        <circle cx="9.5" cy="11" r="0.7" fill="currentColor" stroke="none"/>
+        <circle cx="14.5" cy="11" r="0.7" fill="currentColor" stroke="none"/>
+        <path d="M9.5 16 q2.5 -1.5 5 0"/>
+        <path d="M9.2 12.5 c -0.4 1.5 -0.4 2.6 0.3 3.2 c 0.7 -0.6 0.7 -1.7 0.3 -3.2 z" fill="currentColor" stroke="none"/>
+      </svg>
+      <div class="mood-cell__label">Vulnerable</div>
+    </div>
+
+    <!-- 10. Frustrated — angry slanted brows + dot eyes + wavy mouth -->
+    <div class="mood-cell">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="9"/>
+        <line x1="7" y1="8" x2="10.5" y2="9.5"/>
+        <line x1="13.5" y1="9.5" x2="17" y2="8"/>
+        <circle cx="9.5" cy="12" r="0.55" fill="currentColor" stroke="none"/>
+        <circle cx="14.5" cy="12" r="0.55" fill="currentColor" stroke="none"/>
+        <path d="M8.5 16 q1 -1 2 0 q1 1 2 0 q1 -1 2 0 q0.5 0.5 1 0"/>
+      </svg>
+      <div class="mood-cell__label">Frustrated</div>
+    </div>
+
+    <!-- 11. Disappointed — sad eyes + clear frown -->
+    <div class="mood-cell">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="9"/>
+        <circle cx="9.5" cy="11" r="0.6" fill="currentColor" stroke="none"/>
+        <circle cx="14.5" cy="11" r="0.6" fill="currentColor" stroke="none"/>
+        <path d="M9 16.5 q3 -2.5 6 0"/>
+      </svg>
+      <div class="mood-cell__label">Disappointed</div>
+    </div>
+
+    <!-- 12. Stuck — flat-line eyes + flat-line mouth (blank/empty) -->
+    <div class="mood-cell">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="9"/>
+        <line x1="7.5" y1="11" x2="10.5" y2="11"/>
+        <line x1="13.5" y1="11" x2="16.5" y2="11"/>
+        <line x1="9" y1="15.5" x2="15" y2="15.5"/>
+      </svg>
+      <div class="mood-cell__label">Stuck</div>
+    </div>
+  </div>
+
+  <!-- Small size demo -->
+  <div class="small-demo">
+    <h3>What they look like at 14px on entry rows</h3>
+    <div class="small-row">
+      <span class="small-row__item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="7" y1="11" x2="10" y2="11"/><line x1="14" y1="11" x2="17" y2="11"/><line x1="9.5" y1="15" x2="14.5" y2="15"/></svg>
+        Focused
+      </span>
+      <span class="small-row__item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="14" r="7.5"/><circle cx="9.5" cy="13" r="0.7" fill="currentColor" stroke="none"/><circle cx="14.5" cy="13" r="0.7" fill="currentColor" stroke="none"/><path d="M9.5 16 q2.5 2 5 0"/><path d="M12 1.5 L12.6 3.4 L14.5 4 L12.6 4.6 L12 6.5 L11.4 4.6 L9.5 4 L11.4 3.4 Z" fill="currentColor" stroke="none"/></svg>
+        Inspired
+      </span>
+      <span class="small-row__item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M7.5 11 q1.5 1.5 3 0"/><path d="M13.5 11 q1.5 1.5 3 0"/><path d="M9.5 15 q2.5 1.5 5 0"/></svg>
+        Grateful
+      </span>
+      <span class="small-row__item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="7.5" y1="11" x2="10.5" y2="11"/><line x1="13.5" y1="11" x2="16.5" y2="11"/><line x1="9" y1="15.5" x2="15" y2="15.5"/></svg>
+        Stuck
+      </span>
+      <span class="small-row__item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="9.5" cy="11" r="0.7" fill="currentColor" stroke="none"/><circle cx="14.5" cy="11" r="0.7" fill="currentColor" stroke="none"/><path d="M9 16.5 q3 -2.5 6 0"/></svg>
+        Disappointed
+      </span>
+      <span class="small-row__item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="7" y1="9" x2="10.5" y2="8.5"/><line x1="13.5" y1="8.5" x2="17" y2="9"/><circle cx="9.5" cy="11.5" r="0.7" fill="currentColor" stroke="none"/><circle cx="14.5" cy="11.5" r="0.7" fill="currentColor" stroke="none"/><line x1="9.5" y1="15.5" x2="14.5" y2="15.5"/></svg>
+        Challenged
+      </span>
+    </div>
+  </div>
+
+</div>
+
+<!-- ─────────────────────────────────────────────────────────────── -->
+<!-- TIER BADGES                                                      -->
+<!-- ─────────────────────────────────────────────────────────────── -->
+<div class="section">
+  <h2>12 tier badges</h2>
+  <p>Replacing the emoji on the existing milestone titles. Designed as a journey from first spark → master crown. Used in the stats progress badge and the celebration modal at large size.</p>
+
+  <div class="tier-grid">
+
+    <!-- 1. Novice — single spark -->
+    <div class="tier-cell">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 4 L13 11 L20 12 L13 13 L12 20 L11 13 L4 12 L11 11 Z"/>
+      </svg>
+      <div class="tier-cell__title">Novice</div>
+      <div class="tier-cell__days">7 days</div>
+    </div>
+
+    <!-- 2. Seeker — compass -->
+    <div class="tier-cell">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="9"/>
+        <path d="M16 8 L13 13 L8 16 L11 11 Z" fill="currentColor"/>
+      </svg>
+      <div class="tier-cell__title">Seeker</div>
+      <div class="tier-cell__days">30 days</div>
+    </div>
+
+    <!-- 3. Apprentice — open book -->
+    <div class="tier-cell">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 5 a16 16 0 0 1 9 2 a16 16 0 0 1 9 -2 V19 a16 16 0 0 0 -9 2 a16 16 0 0 0 -9 -2 Z"/>
+        <line x1="12" y1="7" x2="12" y2="21"/>
+      </svg>
+      <div class="tier-cell__title">Apprentice</div>
+      <div class="tier-cell__days">90 days</div>
+    </div>
+
+    <!-- 4. Practitioner — pen nib -->
+    <div class="tier-cell">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 3 L19 3 L17 13 L12 22 L7 13 Z"/>
+        <line x1="9" y1="3" x2="9" y2="13"/>
+        <line x1="15" y1="3" x2="15" y2="13"/>
+        <circle cx="12" cy="14" r="1.5" fill="currentColor"/>
+      </svg>
+      <div class="tier-cell__title">Practitioner</div>
+      <div class="tier-cell__days">120 days</div>
+    </div>
+
+    <!-- 5. Journeyman — boot/path arrow -->
+    <div class="tier-cell">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 3 L19 3"/>
+        <path d="M5 8 L19 8"/>
+        <path d="M5 13 L19 13"/>
+        <path d="M5 18 L19 18"/>
+        <path d="M14 6 L17 8 L14 10"/>
+        <path d="M10 11 L7 13 L10 15"/>
+      </svg>
+      <div class="tier-cell__title">Journeyman</div>
+      <div class="tier-cell__days">150 days</div>
+    </div>
+
+    <!-- 6. Maker — hammer/tool -->
+    <div class="tier-cell">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="6" width="14" height="6" rx="1.5"/>
+        <path d="M17 9 H21"/>
+        <line x1="10" y1="12" x2="10" y2="21"/>
+        <line x1="7" y1="21" x2="13" y2="21"/>
+      </svg>
+      <div class="tier-cell__title">Maker</div>
+      <div class="tier-cell__days">180 days</div>
+    </div>
+
+    <!-- 7. Craftsperson — refined chisel -->
+    <div class="tier-cell">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 3 L21 10 L18 13 L11 6 Z"/>
+        <path d="M11 6 L4 19"/>
+        <path d="M3 21 L4 19 L6 20"/>
+        <path d="M14 3 L17 6"/>
+      </svg>
+      <div class="tier-cell__title">Craftsperson</div>
+      <div class="tier-cell__days">210 days</div>
+    </div>
+
+    <!-- 8. Devotee — flame -->
+    <div class="tier-cell">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2 C8 7 6 11 6 15 a6 6 0 0 0 12 0 c0 -2 -1 -4 -2 -5 c-1 2 -2 3 -3 3 c1 -3 0 -7 -1 -11 z"/>
+      </svg>
+      <div class="tier-cell__title">Devotee</div>
+      <div class="tier-cell__days">240 days</div>
+    </div>
+
+    <!-- 9. Luminary — lantern -->
+    <div class="tier-cell">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 2 H15 V4 H9 Z"/>
+        <path d="M7 4 H17 L17 18 a3 3 0 0 1 -3 3 H10 a3 3 0 0 1 -3 -3 Z"/>
+        <line x1="10" y1="9" x2="10" y2="16"/>
+        <line x1="14" y1="9" x2="14" y2="16"/>
+        <circle cx="12" cy="12" r="2" fill="currentColor"/>
+      </svg>
+      <div class="tier-cell__title">Luminary</div>
+      <div class="tier-cell__days">270 days</div>
+    </div>
+
+    <!-- 10. Sage — eye -->
+    <div class="tier-cell">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M2 12 C5 7 8 5 12 5 C16 5 19 7 22 12 C19 17 16 19 12 19 C8 19 5 17 2 12 Z"/>
+        <circle cx="12" cy="12" r="3.5"/>
+        <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+      </svg>
+      <div class="tier-cell__title">Sage</div>
+      <div class="tier-cell__days">300 days</div>
+    </div>
+
+    <!-- 11. Visionary — telescope/star -->
+    <div class="tier-cell">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 18 L8 13 L14 19 L9 24 Z" transform="translate(0,-3)"/>
+        <path d="M11 11 L20 2"/>
+        <path d="M16 2 L20 2 L20 6"/>
+        <circle cx="6" cy="6" r="1" fill="currentColor"/>
+        <circle cx="18" cy="14" r=".75" fill="currentColor"/>
+      </svg>
+      <div class="tier-cell__title">Visionary</div>
+      <div class="tier-cell__days">330 days</div>
+    </div>
+
+    <!-- 12. Master — crown -->
+    <div class="tier-cell">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 9 L6 16 H18 L21 9 L17 12 L12 5 L7 12 Z"/>
+        <line x1="6" y1="20" x2="18" y2="20"/>
+        <circle cx="12" cy="5" r=".75" fill="currentColor"/>
+        <circle cx="3" cy="9" r=".75" fill="currentColor"/>
+        <circle cx="21" cy="9" r=".75" fill="currentColor"/>
+      </svg>
+      <div class="tier-cell__title">Master</div>
+      <div class="tier-cell__days">365 days</div>
+    </div>
+
+  </div>
+
+  <!-- Badge demo in stats context -->
+  <div class="badge-demo">
+    <h3>How the badge looks under "Current streak" in the stats strip</h3>
+    <div class="badge-demo-row">
+
+      <!-- Day 14 — Novice tier, progress to Seeker -->
+      <div class="badge-stat">
+        <div class="badge-stat__num">14<span class="unit">days</span></div>
+        <div class="badge-stat__label">Current streak</div>
+        <div class="badge-pill">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 L13 11 L20 12 L13 13 L12 20 L11 13 L4 12 L11 11 Z"/></svg>
+          Novice
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" style="width: 30%"></div>
+        </div>
+        <div class="progress-label">
+          <span><strong>16 days</strong> to Seeker</span>
+          <span>14 / 30</span>
+        </div>
+      </div>
+
+      <!-- Day 95 — Apprentice, progress to Practitioner -->
+      <div class="badge-stat">
+        <div class="badge-stat__num">95<span class="unit">days</span></div>
+        <div class="badge-stat__label">Current streak</div>
+        <div class="badge-pill">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5 a16 16 0 0 1 9 2 a16 16 0 0 1 9 -2 V19 a16 16 0 0 0 -9 2 a16 16 0 0 0 -9 -2 Z"/><line x1="12" y1="7" x2="12" y2="21"/></svg>
+          Apprentice
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" style="width: 17%"></div>
+        </div>
+        <div class="progress-label">
+          <span><strong>25 days</strong> to Practitioner</span>
+          <span>95 / 120</span>
+        </div>
+      </div>
+
+      <!-- Day 365+ — Master, no progress bar -->
+      <div class="badge-stat">
+        <div class="badge-stat__num">412<span class="unit">days</span></div>
+        <div class="badge-stat__label">Current streak</div>
+        <div class="badge-pill" style="background: linear-gradient(135deg, #faf2dc, #f0d77a); border-color: rgba(224,168,58,.5)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9 L6 16 H18 L21 9 L17 12 L12 5 L7 12 Z"/><line x1="6" y1="20" x2="18" y2="20"/><circle cx="12" cy="5" r=".75" fill="currentColor"/><circle cx="3" cy="9" r=".75" fill="currentColor"/><circle cx="21" cy="9" r=".75" fill="currentColor"/></svg>
+          Master
+        </div>
+        <div class="progress-label" style="margin-top: 6px; justify-content: center; color: #8b6912; font-weight: 600">
+          The highest tier — keep going.
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="notes">
+  <strong>What I'd love your feedback on:</strong> any icons that don't read clearly at first glance, anything that looks too similar to another icon, anything you want redrawn. Specifically check the small 14px row near the bottom — those are the sizes you'll most often see on entry rows. If a few icons read poorly at that size, we should redraw them. Once you approve (or send tweaks), I'll commit these to code and continue Phase A.
+</div>
+
+</body>
+</html>

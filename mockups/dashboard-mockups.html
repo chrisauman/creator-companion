@@ -1,0 +1,1342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Dashboard Mockups — Creator Companion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink: #0c0e13;
+    --ink-2: #1a1d24;
+    --paper: #faf8f4;          /* warm off-white content bg */
+    --paper-2: #ffffff;
+    --line: #ebe7df;
+    --line-2: #e1ddd3;
+    --text: #1a1d24;
+    --text-2: #5d6470;
+    --text-3: #9099a5;
+    --cyan: #12C4E3;
+    --cyan-dark: #0d9bb5;
+    --cyan-soft: #e6f9fc;
+    --warm: #f4ede0;
+    --r-sm: 8px;
+    --r-md: 14px;
+    --r-lg: 20px;
+    --r-xl: 28px;
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #e7e4dd;
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    padding: 2rem 1rem 6rem;
+  }
+
+  .lab-header {
+    max-width: 1320px;
+    margin: 0 auto 2rem;
+    padding: 0 1rem;
+  }
+  .lab-header h1 {
+    font-family: 'Fraunces', serif;
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: .5rem;
+  }
+  .lab-header p { color: var(--text-2); max-width: 720px; line-height: 1.6; }
+
+  .mockup-label {
+    max-width: 1320px;
+    margin: 3rem auto 1rem;
+    padding: 0 1rem;
+  }
+  .mockup-label h2 {
+    font-family: 'Fraunces', serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: .25rem;
+  }
+  .mockup-label p { color: var(--text-2); font-size: .9375rem; line-height: 1.55; max-width: 760px; }
+
+  /* ── App frame ─────────────────────────────────────────────── */
+  .app {
+    max-width: 1320px;
+    height: 820px;
+    margin: 0 auto;
+    background: var(--paper);
+    border-radius: 18px;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    box-shadow: 0 30px 80px -30px rgba(0,0,0,.25), 0 8px 20px -10px rgba(0,0,0,.1);
+    border: 1px solid rgba(0,0,0,.06);
+  }
+
+  /* Sidebar (existing — kept) */
+  .side {
+    background: var(--ink);
+    color: #fff;
+    padding: 1.5rem 1rem;
+    display: flex;
+    flex-direction: column;
+  }
+  .side__logo {
+    font-family: 'Fraunces', serif;
+    font-size: 1.0625rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 2rem;
+    padding: 0 .5rem;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+  }
+  .side__logo-icon {
+    width: 26px; height: 26px;
+    background: var(--cyan); border-radius: 50%;
+    display: grid; place-items: center;
+    color: var(--ink); font-weight: 800; font-size: .75rem;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .side__nav { display: flex; flex-direction: column; gap: 2px; }
+  .side__link {
+    display: flex; align-items: center; gap: .75rem;
+    padding: .625rem .75rem;
+    color: rgba(255,255,255,.55);
+    border-radius: 8px;
+    font-size: .875rem; font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+  }
+  .side__link.active { background: rgba(255,255,255,.06); color: #fff; }
+  .side__link svg { opacity: .7; }
+  .side__link.active svg { opacity: 1; color: var(--cyan); }
+  .side__user {
+    margin-top: auto;
+    display: flex; align-items: center; gap: .625rem;
+    padding: .75rem; background: rgba(255,255,255,.04);
+    border-radius: 10px;
+  }
+  .side__avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, #ff9a76, #c25fb5);
+    display: grid; place-items: center; color: #fff;
+    font-weight: 700; font-size: .8125rem;
+  }
+  .side__user-info { font-size: .8125rem; }
+  .side__user-name { font-weight: 600; }
+  .side__user-tier { color: rgba(255,255,255,.4); font-size: .6875rem; }
+
+  /* ── MOCKUP 1: EDITORIAL ─────────────────────────────────── */
+  .main {
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem 2.5rem;
+    border-bottom: 1px solid var(--line);
+    position: sticky; top: 0;
+    background: rgba(250,248,244,.92);
+    backdrop-filter: saturate(180%) blur(10px);
+    z-index: 10;
+  }
+  .topbar__left h1 {
+    font-family: 'Fraunces', serif;
+    font-size: 1.5rem; font-weight: 700;
+    margin-bottom: 2px;
+  }
+  .topbar__greet { font-size: .8125rem; color: var(--text-2); }
+  .topbar__actions { display: flex; gap: .5rem; align-items: center; }
+
+  .icon-btn {
+    width: 38px; height: 38px;
+    border: 1px solid var(--line-2);
+    background: var(--paper-2);
+    border-radius: 50%;
+    display: grid; place-items: center;
+    cursor: pointer;
+    color: var(--text-2);
+    transition: all .15s;
+  }
+  .icon-btn:hover { color: var(--text); border-color: var(--text-3); }
+
+  .compose-btn {
+    background: var(--ink);
+    color: #fff;
+    border: none;
+    padding: .625rem 1.125rem;
+    border-radius: 999px;
+    font-family: inherit;
+    font-size: .875rem; font-weight: 600;
+    display: inline-flex; align-items: center; gap: .5rem;
+    cursor: pointer;
+    transition: transform .15s, background .15s;
+  }
+  .compose-btn:hover { background: var(--cyan); color: var(--ink); }
+
+  /* Stats strip */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    padding: 1.75rem 2.5rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .stat {
+    padding: 0 1.5rem;
+    border-right: 1px solid var(--line);
+  }
+  .stat:last-child { border-right: none; }
+  .stat:first-child { padding-left: 0; }
+  .stat__num {
+    font-family: 'Fraunces', serif;
+    font-size: 2.25rem;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -.02em;
+  }
+  .stat__num .unit {
+    font-size: .9375rem;
+    color: var(--text-3);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 500;
+    margin-left: 4px;
+  }
+  .stat__label {
+    margin-top: .375rem;
+    font-size: .75rem;
+    color: var(--text-2);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+  }
+  .stat__streak-row {
+    display: flex; gap: 3px;
+    margin-top: .5rem;
+  }
+  .streak-dot {
+    width: 18px; height: 4px;
+    background: var(--line-2);
+    border-radius: 2px;
+  }
+  .streak-dot.on { background: var(--cyan); }
+
+  /* Body */
+  .body-wrap {
+    padding: 2rem 2.5rem 4rem;
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 2.5rem;
+    align-items: start;
+  }
+
+  .entries-col h3 {
+    font-family: 'Fraunces', serif;
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: var(--text-2);
+  }
+
+  .search-row {
+    display: flex; gap: .5rem;
+    margin-bottom: 1.5rem;
+  }
+  .search-input {
+    flex: 1;
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: .625rem 1rem .625rem 2.5rem;
+    font-family: inherit;
+    font-size: .875rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239099a5' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: 14px center;
+  }
+  .filter-pill {
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: .625rem 1rem;
+    font-family: inherit;
+    font-size: .8125rem;
+    font-weight: 500;
+    color: var(--text-2);
+    display: inline-flex; align-items: center; gap: .375rem;
+    cursor: pointer;
+  }
+
+  /* Month divider */
+  .month-divider {
+    display: flex; align-items: center; gap: .75rem;
+    margin: 2rem 0 1.25rem;
+  }
+  .month-divider:first-child { margin-top: 0; }
+  .month-divider__label {
+    font-size: .6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .14em;
+    color: var(--text-3);
+  }
+  .month-divider__line {
+    flex: 1;
+    height: 1px;
+    background: var(--line);
+  }
+
+  /* Entry card */
+  .entry {
+    display: grid;
+    grid-template-columns: 64px 1fr auto;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    margin-bottom: .875rem;
+    cursor: pointer;
+    transition: border-color .15s, transform .15s, box-shadow .15s;
+  }
+  .entry:hover {
+    border-color: var(--text-3);
+    box-shadow: 0 6px 20px -10px rgba(0,0,0,.08);
+  }
+  .entry__date {
+    text-align: center;
+    padding: .375rem 0;
+  }
+  .entry__date-day {
+    font-size: .625rem;
+    font-weight: 700;
+    color: var(--cyan-dark);
+    text-transform: uppercase;
+    letter-spacing: .12em;
+  }
+  .entry__date-num {
+    font-family: 'Fraunces', serif;
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1;
+    margin-top: .125rem;
+  }
+  .entry__date-time {
+    font-size: .6875rem;
+    color: var(--text-3);
+    margin-top: .375rem;
+  }
+  .entry__body { min-width: 0; }
+  .entry__title {
+    font-family: 'Fraunces', serif;
+    font-size: 1.375rem;
+    font-weight: 600;
+    line-height: 1.25;
+    margin-bottom: .5rem;
+    letter-spacing: -.01em;
+  }
+  .entry__peek {
+    color: var(--text-2);
+    font-size: .9375rem;
+    line-height: 1.6;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-bottom: .75rem;
+  }
+  .entry__meta {
+    display: flex; align-items: center; gap: 1rem;
+    font-size: .75rem;
+    color: var(--text-3);
+  }
+  .entry__meta-item {
+    display: inline-flex; align-items: center; gap: .375rem;
+  }
+  .entry__tags {
+    display: flex; gap: .375rem;
+    margin-left: auto;
+  }
+  .tag {
+    font-size: .6875rem;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: var(--cyan-soft);
+    color: var(--cyan-dark);
+    font-weight: 600;
+  }
+  .tag.muted { background: var(--warm); color: #8a7a52; }
+
+  .entry__media {
+    width: 84px; height: 84px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #ffd6a5, #ff8fab);
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .entry__media.var2 { background: linear-gradient(135deg, #b8e0d2, #95b8d1); }
+  .entry__media.var3 { background: linear-gradient(135deg, #f4d6cc, #c49a9a); }
+  .entry__media-count {
+    position: absolute;
+    bottom: 6px; right: 6px;
+    background: rgba(0,0,0,.6);
+    color: #fff;
+    font-size: .6875rem;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 999px;
+  }
+
+  /* Right rail */
+  .rail { display: flex; flex-direction: column; gap: 1.5rem; position: sticky; top: 100px; }
+
+  .spark-card {
+    background: linear-gradient(180deg, var(--ink) 0%, var(--ink-2) 100%);
+    color: #fff;
+    border-radius: var(--r-xl);
+    padding: 1.75rem 1.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .spark-card::before {
+    content: '';
+    position: absolute;
+    top: -40%; right: -30%;
+    width: 240px; height: 240px;
+    background: radial-gradient(circle, var(--cyan) 0%, transparent 65%);
+    opacity: .25;
+    pointer-events: none;
+  }
+  .spark-card__eyebrow {
+    display: inline-flex; align-items: center; gap: .375rem;
+    font-size: .6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .14em;
+    color: var(--cyan);
+    margin-bottom: 1rem;
+    position: relative;
+  }
+  .spark-card__eyebrow::before {
+    content: ''; width: 6px; height: 6px;
+    background: var(--cyan); border-radius: 50%;
+    box-shadow: 0 0 10px var(--cyan);
+  }
+  .spark-card__quote {
+    font-family: 'Fraunces', serif;
+    font-size: 1.0625rem;
+    line-height: 1.45;
+    font-weight: 500;
+    color: rgba(255,255,255,.92);
+    position: relative;
+    margin-bottom: 1rem;
+  }
+  .spark-card__author {
+    font-size: .8125rem;
+    color: rgba(255,255,255,.55);
+    margin-bottom: 1.25rem;
+    position: relative;
+  }
+  .spark-card__actions {
+    display: flex; gap: .5rem;
+    position: relative;
+  }
+  .spark-icon-btn {
+    width: 34px; height: 34px;
+    border: 1px solid rgba(255,255,255,.15);
+    background: rgba(255,255,255,.05);
+    border-radius: 50%;
+    display: grid; place-items: center;
+    color: rgba(255,255,255,.7);
+    cursor: pointer;
+  }
+  .spark-icon-btn.fav { color: #ff6b8a; border-color: rgba(255,107,138,.3); background: rgba(255,107,138,.08); }
+
+  .mood-card {
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: var(--r-xl);
+    padding: 1.5rem;
+  }
+  .mood-card h4 {
+    font-family: 'Fraunces', serif;
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: .25rem;
+  }
+  .mood-card p {
+    font-size: .8125rem;
+    color: var(--text-2);
+    margin-bottom: 1.25rem;
+  }
+  .mood-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: .5rem;
+  }
+  .mood {
+    aspect-ratio: 1;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    display: grid; place-items: center;
+    cursor: pointer;
+    color: var(--text-2);
+    background: var(--paper);
+    transition: all .15s;
+  }
+  .mood:hover { border-color: var(--cyan); color: var(--cyan-dark); background: var(--cyan-soft); transform: translateY(-2px); }
+  .mood.selected { border-color: var(--ink); background: var(--ink); color: #fff; }
+  .mood-label {
+    font-size: .6875rem;
+    text-align: center;
+    margin-top: .5rem;
+    color: var(--text-3);
+  }
+  .mood-wrap { display: flex; flex-direction: column; align-items: center; }
+
+  /* ── MOCKUP 2: DUAL PANE ────────────────────────────────────── */
+  .app--dual { grid-template-columns: 240px 1fr; }
+  .dual-main {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    height: 820px;
+    overflow: hidden;
+  }
+  .dual-list {
+    border-right: 1px solid var(--line);
+    overflow-y: auto;
+    background: var(--paper);
+  }
+  .dual-list__header {
+    padding: 1.5rem 1.5rem 1rem;
+    background: var(--paper);
+    position: sticky; top: 0;
+    z-index: 5;
+    border-bottom: 1px solid var(--line);
+  }
+  .dual-list__header h1 {
+    font-family: 'Fraunces', serif;
+    font-size: 1.375rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+  }
+  .dual-stats {
+    display: flex; gap: 1.25rem;
+    margin-bottom: 1.25rem;
+    padding: .875rem 1rem;
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+  }
+  .dual-stat {
+    flex: 1;
+    text-align: center;
+  }
+  .dual-stat__num {
+    font-family: 'Fraunces', serif;
+    font-size: 1.375rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .dual-stat__lab {
+    font-size: .625rem;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    margin-top: 4px;
+    font-weight: 600;
+  }
+  .dual-search {
+    width: 100%;
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: .5rem 1rem .5rem 2.25rem;
+    font-family: inherit;
+    font-size: .8125rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239099a5' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: 12px center;
+  }
+  .dual-list__items { padding: .5rem; }
+  .dual-list__month {
+    font-size: .625rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .14em;
+    color: var(--text-3);
+    padding: 1rem 1rem .5rem;
+  }
+  .dual-entry {
+    display: grid;
+    grid-template-columns: 44px 1fr;
+    gap: .875rem;
+    padding: .875rem 1rem;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .dual-entry:hover { background: rgba(0,0,0,.03); }
+  .dual-entry.active { background: var(--ink); color: #fff; }
+  .dual-entry.active .dual-entry__title { color: #fff; }
+  .dual-entry.active .dual-entry__peek { color: rgba(255,255,255,.6); }
+  .dual-entry.active .dual-entry__date-num { color: var(--cyan); }
+  .dual-entry.active .dual-entry__date-day { color: rgba(255,255,255,.5); }
+  .dual-entry__date {
+    text-align: center;
+    padding-top: 2px;
+  }
+  .dual-entry__date-day {
+    font-size: .5625rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    color: var(--text-3);
+  }
+  .dual-entry__date-num {
+    font-family: 'Fraunces', serif;
+    font-size: 1.375rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--ink);
+    margin-top: 2px;
+  }
+  .dual-entry__body { min-width: 0; }
+  .dual-entry__title {
+    font-family: 'Fraunces', serif;
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.3;
+    margin-bottom: 4px;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .dual-entry__peek {
+    font-size: .8125rem;
+    color: var(--text-2);
+    line-height: 1.45;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .dual-preview {
+    background: var(--paper-2);
+    overflow-y: auto;
+  }
+  .dual-preview__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 2rem;
+    border-bottom: 1px solid var(--line);
+    background: var(--paper-2);
+    position: sticky; top: 0; z-index: 5;
+  }
+  .dual-preview__breadcrumb {
+    font-size: .8125rem;
+    color: var(--text-3);
+  }
+  .dual-preview__breadcrumb strong { color: var(--text); font-weight: 600; }
+
+  .dual-preview__body { padding: 2.5rem 3rem; max-width: 760px; }
+  .dual-preview__date {
+    font-size: .75rem;
+    text-transform: uppercase;
+    letter-spacing: .14em;
+    color: var(--cyan-dark);
+    font-weight: 700;
+    margin-bottom: 1rem;
+  }
+  .dual-preview__title {
+    font-family: 'Fraunces', serif;
+    font-size: 2.25rem;
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -.015em;
+    margin-bottom: 1.25rem;
+  }
+  .dual-preview__meta {
+    display: flex; gap: 1.5rem; align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--line);
+    font-size: .8125rem;
+    color: var(--text-2);
+  }
+  .dual-preview__meta-item { display: inline-flex; align-items: center; gap: .5rem; }
+  .dual-preview__hero {
+    height: 260px;
+    border-radius: var(--r-lg);
+    background: linear-gradient(135deg, #ffd6a5 0%, #ff8fab 100%);
+    margin-bottom: 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .dual-preview__hero::after {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(circle at 30% 40%, rgba(255,255,255,.4), transparent 50%),
+      radial-gradient(circle at 70% 70%, rgba(0,0,0,.15), transparent 60%);
+  }
+  .dual-preview__text {
+    font-size: 1.0625rem;
+    line-height: 1.7;
+    color: var(--text);
+  }
+  .dual-preview__text p { margin-bottom: 1.25rem; }
+  .dual-preview__text p:first-letter {
+    font-family: 'Fraunces', serif;
+    font-size: 3rem;
+    float: left;
+    line-height: .9;
+    margin: 6px 8px 0 0;
+    font-weight: 700;
+    color: var(--cyan-dark);
+  }
+
+  /* ── Mood icon set (line) ─────────────────────────────────── */
+  .mood svg { width: 26px; height: 26px; stroke-width: 1.6; }
+
+  /* divider helper */
+  .section-divider {
+    max-width: 1320px;
+    margin: 4rem auto 0;
+    padding: 0 1rem;
+    border-top: 1px dashed rgba(0,0,0,.1);
+  }
+
+  .legend {
+    max-width: 1320px;
+    margin: 1.5rem auto 0;
+    padding: 1.25rem 1.5rem;
+    background: rgba(255,255,255,.7);
+    border: 1px solid rgba(0,0,0,.06);
+    border-radius: 14px;
+    font-size: .875rem;
+    color: var(--text-2);
+    line-height: 1.65;
+  }
+  .legend strong { color: var(--text); font-weight: 700; }
+  .legend ul { margin-top: .5rem; padding-left: 1.25rem; }
+  .legend li { margin-bottom: .25rem; }
+
+  /* ── Mood comparison strip ───────────────────────────────── */
+  .mood-compare {
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 2rem;
+    background: var(--paper);
+    border-radius: 18px;
+    border: 1px solid rgba(0,0,0,.06);
+    box-shadow: 0 20px 50px -25px rgba(0,0,0,.2);
+  }
+  .mood-compare h3 {
+    font-family: 'Fraunces', serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+  }
+  .mood-row {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 1rem;
+  }
+  .mood-row .mood-wrap .mood {
+    width: 64px; height: 64px;
+  }
+  .mood-row .mood svg { width: 30px; height: 30px; }
+</style>
+</head>
+<body>
+
+<div class="lab-header">
+  <h1>Dashboard mockups — desktop</h1>
+  <p>Two directions to consider. Both keep the existing dark sidebar untouched. The content area becomes warm/light so uploaded photos and your writing remain the visual stars — black is used for accent only (CTA, sidebar, Spark card, selected states).</p>
+</div>
+
+<!-- ─────────────────────────────────────────────────────────────── -->
+<!-- MOCKUP 1: EDITORIAL                                              -->
+<!-- ─────────────────────────────────────────────────────────────── -->
+
+<div class="mockup-label">
+  <h2>Mockup 1 — Editorial</h2>
+  <p>Single column of generous entry cards. Stats live in a quiet strip across the top so they're always visible without dominating. Daily Spark moves to a calm right rail with a quick mood check-in below it. Compose lives as a pill button in the top-right, plus a floating action button for fast access.</p>
+</div>
+
+<div class="app">
+
+  <!-- Sidebar -->
+  <aside class="side">
+    <div class="side__logo">
+      <span class="side__logo-icon">C</span>
+      Creator Companion
+    </div>
+    <nav class="side__nav">
+      <a class="side__link active">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Journal
+      </a>
+      <a class="side__link">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        Notifications
+      </a>
+      <a class="side__link">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        To Do
+      </a>
+      <a class="side__link">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        Sparks
+      </a>
+      <a class="side__link">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        Account
+      </a>
+    </nav>
+    <div class="side__user">
+      <div class="side__avatar">CA</div>
+      <div class="side__user-info">
+        <div class="side__user-name">chris</div>
+        <div class="side__user-tier">Paid</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+
+    <!-- Topbar -->
+    <div class="topbar">
+      <div class="topbar__left">
+        <h1>Good morning, Chris</h1>
+        <div class="topbar__greet">Sunday · May 3, 2026</div>
+      </div>
+      <div class="topbar__actions">
+        <button class="icon-btn" title="Search">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        </button>
+        <button class="compose-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          New Entry
+        </button>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats">
+      <div class="stat">
+        <div class="stat__num">14<span class="unit">days</span></div>
+        <div class="stat__label">Current streak</div>
+        <div class="stat__streak-row">
+          <span class="streak-dot on"></span><span class="streak-dot on"></span>
+          <span class="streak-dot on"></span><span class="streak-dot on"></span>
+          <span class="streak-dot on"></span><span class="streak-dot on"></span>
+          <span class="streak-dot on"></span>
+        </div>
+      </div>
+      <div class="stat">
+        <div class="stat__num">42<span class="unit">days</span></div>
+        <div class="stat__label">Longest streak</div>
+      </div>
+      <div class="stat">
+        <div class="stat__num">128</div>
+        <div class="stat__label">Total entries</div>
+      </div>
+      <div class="stat">
+        <div class="stat__num">96<span class="unit">days</span></div>
+        <div class="stat__label">Days active</div>
+      </div>
+    </div>
+
+    <!-- Body: list + rail -->
+    <div class="body-wrap">
+
+      <div class="entries-col">
+
+        <div class="search-row">
+          <input class="search-input" placeholder="Search your entries…">
+          <button class="filter-pill">
+            Newest first
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+        </div>
+
+        <div class="month-divider">
+          <span class="month-divider__label">May 2026</span>
+          <span class="month-divider__line"></span>
+        </div>
+
+        <article class="entry">
+          <div class="entry__date">
+            <div class="entry__date-day">Sun</div>
+            <div class="entry__date-num">3</div>
+            <div class="entry__date-time">9:14 AM</div>
+          </div>
+          <div class="entry__body">
+            <h2 class="entry__title">A quiet morning at the studio</h2>
+            <p class="entry__peek">Got there before sunrise. The light through the east window was the kind of gold you only catch maybe ten times a year. I sat with coffee and didn't open the laptop for almost an hour…</p>
+            <div class="entry__meta">
+              <span class="entry__meta-item">📷 3</span>
+              <span class="entry__meta-item">487 words</span>
+              <span class="entry__meta-item">·</span>
+              <span class="entry__meta-item">Calm</span>
+              <div class="entry__tags">
+                <span class="tag">studio</span>
+                <span class="tag muted">morning pages</span>
+              </div>
+            </div>
+          </div>
+          <div class="entry__media">
+            <span class="entry__media-count">+2</span>
+          </div>
+        </article>
+
+        <article class="entry">
+          <div class="entry__date">
+            <div class="entry__date-day">Sat</div>
+            <div class="entry__date-num">2</div>
+            <div class="entry__date-time">10:42 PM</div>
+          </div>
+          <div class="entry__body">
+            <h2 class="entry__title">Notes from the garden show</h2>
+            <p class="entry__peek">Three things I want to remember from today: the woman who painted only her grandmother's hands, the smell of beeswax in the back room, and that quiet moment between the two musicians…</p>
+            <div class="entry__meta">
+              <span class="entry__meta-item">📷 5</span>
+              <span class="entry__meta-item">312 words</span>
+              <span class="entry__meta-item">·</span>
+              <span class="entry__meta-item">Inspired</span>
+              <div class="entry__tags">
+                <span class="tag">art</span>
+                <span class="tag muted">people</span>
+              </div>
+            </div>
+          </div>
+          <div class="entry__media var2">
+            <span class="entry__media-count">+4</span>
+          </div>
+        </article>
+
+        <article class="entry">
+          <div class="entry__date">
+            <div class="entry__date-day">Fri</div>
+            <div class="entry__date-num">1</div>
+            <div class="entry__date-time">7:08 AM</div>
+          </div>
+          <div class="entry__body">
+            <h2 class="entry__title">First of the month resolutions</h2>
+            <p class="entry__peek">Trying something new — instead of grand goals I'm picking three small daily habits. Walk before email. One real meal at the table. Write something every night before bed, even if it's just a sentence…</p>
+            <div class="entry__meta">
+              <span class="entry__meta-item">203 words</span>
+              <span class="entry__meta-item">·</span>
+              <span class="entry__meta-item">Hopeful</span>
+              <div class="entry__tags">
+                <span class="tag">goals</span>
+              </div>
+            </div>
+          </div>
+          <div class="entry__media var3"></div>
+        </article>
+
+        <div class="month-divider">
+          <span class="month-divider__label">April 2026</span>
+          <span class="month-divider__line"></span>
+        </div>
+
+        <article class="entry">
+          <div class="entry__date">
+            <div class="entry__date-day">Wed</div>
+            <div class="entry__date-num">29</div>
+            <div class="entry__date-time">11:52 PM</div>
+          </div>
+          <div class="entry__body">
+            <h2 class="entry__title">Late-night thoughts on the road home</h2>
+            <p class="entry__peek">Something about the highway at midnight always makes me write the things I won't say out loud. Maybe it's the way the headlights make a small room…</p>
+            <div class="entry__meta">
+              <span class="entry__meta-item">541 words</span>
+              <span class="entry__meta-item">·</span>
+              <span class="entry__meta-item">Reflective</span>
+            </div>
+          </div>
+        </article>
+
+      </div>
+
+      <!-- Right rail -->
+      <aside class="rail">
+
+        <div class="spark-card">
+          <span class="spark-card__eyebrow">Today's Spark</span>
+          <p class="spark-card__quote">"The most regretful people on earth are those who felt the call to creative work, who felt their own creative power restive and uprising, and gave it neither power nor time."</p>
+          <p class="spark-card__author">— Mary Oliver</p>
+          <div class="spark-card__actions">
+            <button class="spark-icon-btn fav" title="Favorite">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            </button>
+            <button class="spark-icon-btn" title="Share">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+            </button>
+            <button class="spark-icon-btn" title="Use in entry">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="mood-card">
+          <h4>How are you today?</h4>
+          <p>A quick check-in. Tap to add to today's entry.</p>
+          <div class="mood-grid">
+            <div class="mood-wrap">
+              <div class="mood selected">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+              </div>
+              <div class="mood-label">Happy</div>
+            </div>
+            <div class="mood-wrap">
+              <div class="mood">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="8" y1="14" x2="16" y2="14"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+              </div>
+              <div class="mood-label">Calm</div>
+            </div>
+            <div class="mood-wrap">
+              <div class="mood">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M16 16s-1.5-2-4-2-4 2-4 2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+              </div>
+              <div class="mood-label">Sad</div>
+            </div>
+            <div class="mood-wrap">
+              <div class="mood">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 15c1-1 3-1 4-1s3 0 4 1"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+              </div>
+              <div class="mood-label">Anxious</div>
+            </div>
+            <div class="mood-wrap">
+              <div class="mood">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 13s1.5 3 4 3 4-3 4-3"/><path d="M7 8l3 2-3 2"/><path d="M17 8l-3 2 3 2"/></svg>
+              </div>
+              <div class="mood-label">Excited</div>
+            </div>
+            <div class="mood-wrap">
+              <div class="mood">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="8" y1="15" x2="16" y2="15"/><path d="M7 9l4 1"/><path d="M17 9l-4 1"/></svg>
+              </div>
+              <div class="mood-label">Tired</div>
+            </div>
+            <div class="mood-wrap">
+              <div class="mood">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 17l4-4 4 4"/><line x1="8" y1="9" x2="10" y2="11"/><line x1="16" y1="9" x2="14" y2="11"/></svg>
+              </div>
+              <div class="mood-label">Angry</div>
+            </div>
+            <div class="mood-wrap">
+              <div class="mood">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M8 9.5l1.5-1.5L11 9.5"/><path d="M13 9.5l1.5-1.5L16 9.5"/></svg>
+              </div>
+              <div class="mood-label">Grateful</div>
+            </div>
+          </div>
+        </div>
+
+      </aside>
+    </div>
+  </div>
+</div>
+
+<div class="legend">
+  <strong>What's different about Mockup 1:</strong>
+  <ul>
+    <li><strong>Stats strip across the top</strong> — always visible on desktop, four numbers in a quiet horizontal row with mini streak dots, no chunky cards.</li>
+    <li><strong>Personal greeting</strong> — "Good morning, Chris" + date sets a calm tone instead of jumping straight to a button.</li>
+    <li><strong>Compose moves to a discreet pill</strong> — "+ New Entry" in the top-right, dark by default, turns cyan on hover. No more giant full-width button.</li>
+    <li><strong>Entry rows redesigned</strong> — large serif title leads, a 2-line content peek follows (far more evocative than just metadata), then a soft meta line. Calendar widget shrinks to a quiet date column.</li>
+    <li><strong>Daily Spark elevated</strong> — moves to a sticky right rail in a dark feature card with a glowing cyan dot, three quick actions (favorite, share, use-in-entry).</li>
+    <li><strong>Mood check-in is new</strong> — eight clean line-icon moods in a 4×2 grid below Spark. One-tap to log how you're feeling. Simple, monochrome, modern.</li>
+    <li><strong>Subtle month dividers</strong> — small caps + hairline, not heavy headers.</li>
+  </ul>
+</div>
+
+<div class="section-divider"></div>
+
+<!-- ─────────────────────────────────────────────────────────────── -->
+<!-- MOCKUP 2: DUAL PANE                                              -->
+<!-- ─────────────────────────────────────────────────────────────── -->
+
+<div class="mockup-label">
+  <h2>Mockup 2 — Dual Pane (reading mode)</h2>
+  <p>Email/Notes-app pattern. Middle column is a scannable entry list with stats up top; right column is a generous reading view of the selected entry. Great for desktop because users can browse and read without losing context. The compose CTA stays in the top-right of the preview pane.</p>
+</div>
+
+<div class="app app--dual">
+  <!-- Same sidebar -->
+  <aside class="side">
+    <div class="side__logo">
+      <span class="side__logo-icon">C</span>
+      Creator Companion
+    </div>
+    <nav class="side__nav">
+      <a class="side__link active">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Journal
+      </a>
+      <a class="side__link">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        Notifications
+      </a>
+      <a class="side__link">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        To Do
+      </a>
+      <a class="side__link">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        Sparks
+      </a>
+      <a class="side__link">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        Account
+      </a>
+    </nav>
+    <div class="side__user">
+      <div class="side__avatar">CA</div>
+      <div class="side__user-info">
+        <div class="side__user-name">chris</div>
+        <div class="side__user-tier">Paid</div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="dual-main">
+
+    <!-- Left list -->
+    <div class="dual-list">
+      <div class="dual-list__header">
+        <h1>Journal</h1>
+        <div class="dual-stats">
+          <div class="dual-stat">
+            <div class="dual-stat__num">14</div>
+            <div class="dual-stat__lab">Streak</div>
+          </div>
+          <div class="dual-stat">
+            <div class="dual-stat__num">42</div>
+            <div class="dual-stat__lab">Longest</div>
+          </div>
+          <div class="dual-stat">
+            <div class="dual-stat__num">128</div>
+            <div class="dual-stat__lab">Total</div>
+          </div>
+        </div>
+        <input class="dual-search" placeholder="Search entries…">
+      </div>
+
+      <div class="dual-list__items">
+        <div class="dual-list__month">May 2026</div>
+
+        <div class="dual-entry active">
+          <div class="dual-entry__date">
+            <div class="dual-entry__date-day">Sun</div>
+            <div class="dual-entry__date-num">3</div>
+          </div>
+          <div class="dual-entry__body">
+            <div class="dual-entry__title">A quiet morning at the studio</div>
+            <div class="dual-entry__peek">Got there before sunrise. The light through the east window was the kind of gold you only catch maybe ten times a year…</div>
+          </div>
+        </div>
+
+        <div class="dual-entry">
+          <div class="dual-entry__date">
+            <div class="dual-entry__date-day">Sat</div>
+            <div class="dual-entry__date-num">2</div>
+          </div>
+          <div class="dual-entry__body">
+            <div class="dual-entry__title">Notes from the garden show</div>
+            <div class="dual-entry__peek">Three things I want to remember from today: the woman who painted only her grandmother's hands…</div>
+          </div>
+        </div>
+
+        <div class="dual-entry">
+          <div class="dual-entry__date">
+            <div class="dual-entry__date-day">Fri</div>
+            <div class="dual-entry__date-num">1</div>
+          </div>
+          <div class="dual-entry__body">
+            <div class="dual-entry__title">First of the month resolutions</div>
+            <div class="dual-entry__peek">Trying something new — instead of grand goals I'm picking three small daily habits…</div>
+          </div>
+        </div>
+
+        <div class="dual-list__month">April 2026</div>
+
+        <div class="dual-entry">
+          <div class="dual-entry__date">
+            <div class="dual-entry__date-day">Wed</div>
+            <div class="dual-entry__date-num">29</div>
+          </div>
+          <div class="dual-entry__body">
+            <div class="dual-entry__title">Late-night thoughts on the road home</div>
+            <div class="dual-entry__peek">Something about the highway at midnight always makes me write the things I won't say out loud…</div>
+          </div>
+        </div>
+
+        <div class="dual-entry">
+          <div class="dual-entry__date">
+            <div class="dual-entry__date-day">Tue</div>
+            <div class="dual-entry__date-num">28</div>
+          </div>
+          <div class="dual-entry__body">
+            <div class="dual-entry__title">Three songs that broke me open</div>
+            <div class="dual-entry__peek">Driving home with the window down. A playlist a friend made me last summer when I needed it most…</div>
+          </div>
+        </div>
+
+        <div class="dual-entry">
+          <div class="dual-entry__date">
+            <div class="dual-entry__date-day">Mon</div>
+            <div class="dual-entry__date-num">27</div>
+          </div>
+          <div class="dual-entry__body">
+            <div class="dual-entry__title">A short note about Mondays</div>
+            <div class="dual-entry__peek">I've decided I'm done apologizing for them. There's something about the slow morning that I've started to love…</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right preview -->
+    <div class="dual-preview">
+      <div class="dual-preview__header">
+        <div class="dual-preview__breadcrumb">May 2026 · <strong>Sunday, May 3</strong></div>
+        <button class="compose-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          New Entry
+        </button>
+      </div>
+      <div class="dual-preview__body">
+        <div class="dual-preview__date">Sunday · 9:14 AM</div>
+        <h1 class="dual-preview__title">A quiet morning at the studio</h1>
+        <div class="dual-preview__meta">
+          <span class="dual-preview__meta-item">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            3 photos
+          </span>
+          <span class="dual-preview__meta-item">487 words</span>
+          <span class="dual-preview__meta-item">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="8" y1="14" x2="16" y2="14"/></svg>
+            Calm
+          </span>
+          <span class="dual-preview__meta-item">
+            <span class="tag">studio</span>
+            <span class="tag muted">morning pages</span>
+          </span>
+        </div>
+        <div class="dual-preview__hero"></div>
+        <div class="dual-preview__text">
+          <p>Got there before sunrise. The light through the east window was the kind of gold you only catch maybe ten times a year — that strange honey color that makes the wood floor look like it's lit from underneath. I sat with coffee and didn't open the laptop for almost an hour, which is unusual for me.</p>
+          <p>The studio felt different at that hour. Less mine, somehow. Like I was visiting a place that belonged to whoever was here yesterday and would be here tomorrow. I started writing in the notebook instead of typing — slower, but my hand stayed ahead of my thinking, which never happens with the laptop.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="legend">
+  <strong>What's different about Mockup 2:</strong>
+  <ul>
+    <li><strong>Two-pane reading layout</strong> — list on the left, full entry preview on the right. Like Mail, Notes, Linear. Lets you browse and re-read without leaving the page.</li>
+    <li><strong>Compact stats</strong> — three numbers in a small floating card at the top of the list, doesn't take much vertical room.</li>
+    <li><strong>Selected-entry state</strong> — black row with cyan date stands out clearly without being heavy.</li>
+    <li><strong>Beautiful reading view</strong> — large serif title, drop cap on the first paragraph, hero image, generous line-height. Makes journals feel like the published essays they kind of are.</li>
+    <li><strong>Where Spark + mood go in this layout</strong> — could live as a slim top strip above the preview, or in a collapsible third column. (Same content as Mockup 1, just relocated.)</li>
+  </ul>
+</div>
+
+<div class="section-divider"></div>
+
+<!-- ─────────────────────────────────────────────────────────────── -->
+<!-- MOOD ICONS — DEDICATED COMPARISON                                -->
+<!-- ─────────────────────────────────────────────────────────────── -->
+
+<div class="mockup-label">
+  <h2>Modern mood icons — a closer look</h2>
+  <p>One-color, line-style icons replacing emoji. Default state is hairline outline; selected state fills with the dark ink. Hover shows cyan. Same family/visual weight throughout — clean, modern, not cartoony.</p>
+</div>
+
+<div class="mood-compare">
+  <h3>How are you today?</h3>
+  <div class="mood-row">
+    <div class="mood-wrap">
+      <div class="mood">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+      </div>
+      <div class="mood-label">Happy</div>
+    </div>
+    <div class="mood-wrap">
+      <div class="mood">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="8" y1="14" x2="16" y2="14"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+      </div>
+      <div class="mood-label">Calm</div>
+    </div>
+    <div class="mood-wrap">
+      <div class="mood">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M16 16s-1.5-2-4-2-4 2-4 2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+      </div>
+      <div class="mood-label">Sad</div>
+    </div>
+    <div class="mood-wrap">
+      <div class="mood">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 15c1-1 3-1 4-1s3 0 4 1"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+      </div>
+      <div class="mood-label">Anxious</div>
+    </div>
+    <div class="mood-wrap">
+      <div class="mood selected">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 13s1.5 3 4 3 4-3 4-3"/><path d="M7 8l3 2-3 2"/><path d="M17 8l-3 2 3 2"/></svg>
+      </div>
+      <div class="mood-label">Excited</div>
+    </div>
+    <div class="mood-wrap">
+      <div class="mood">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="8" y1="15" x2="16" y2="15"/><path d="M7 9l4 1"/><path d="M17 9l-4 1"/></svg>
+      </div>
+      <div class="mood-label">Tired</div>
+    </div>
+    <div class="mood-wrap">
+      <div class="mood">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 17l4-4 4 4"/><line x1="8" y1="9" x2="10" y2="11"/><line x1="16" y1="9" x2="14" y2="11"/></svg>
+      </div>
+      <div class="mood-label">Angry</div>
+    </div>
+    <div class="mood-wrap">
+      <div class="mood">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M8 9.5l1.5-1.5L11 9.5"/><path d="M13 9.5l1.5-1.5L16 9.5"/></svg>
+      </div>
+      <div class="mood-label">Grateful</div>
+    </div>
+  </div>
+</div>
+
+<div class="legend">
+  <strong>Color philosophy:</strong>
+  <ul>
+    <li><strong>Sidebar stays dark</strong> (you love it — untouched).</li>
+    <li><strong>Content area is warm off-white</strong> (#faf8f4) so uploaded photos and writing dominate visually.</li>
+    <li><strong>Black is used as accent only</strong> — primary CTA, Spark feature card, selected entry. Never overwhelming.</li>
+    <li><strong>Cyan is reserved for highlights</strong> — streak dots, hover state, the spark glow. Never decorative.</li>
+    <li><strong>Serif (Fraunces) for titles, sans (Plus Jakarta) for everything else</strong> — gives entries a published, considered feel.</li>
+  </ul>
+</div>
+
+</body>
+</html>

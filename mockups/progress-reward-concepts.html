@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Progress reward concepts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --ink: #0c0e13;
+    --paper: #faf8f4;
+    --paper-2: #ffffff;
+    --line: #ebe7df;
+    --line-2: #e1ddd3;
+    --text: #1a1d24;
+    --text-2: #5d6470;
+    --text-3: #9099a5;
+    --cyan: #12C4E3;
+    --cyan-dark: #0d9bb5;
+    --cyan-soft: #e6f9fc;
+    --warm: #f4ede0;
+    --gold: #e0a83a;
+    --gold-soft: #faf2dc;
+  }
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: #e7e4dd;
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    padding: 3rem 1.5rem 6rem;
+  }
+  .header {
+    max-width: 1100px;
+    margin: 0 auto 2rem;
+  }
+  .header h1 {
+    font-family: 'Fraunces', serif;
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-bottom: .5rem;
+  }
+  .header p { color: var(--text-2); line-height: 1.6; max-width: 720px; }
+
+  .concept {
+    max-width: 1100px;
+    margin: 0 auto 1.5rem;
+    background: var(--paper);
+    border: 1px solid rgba(0,0,0,.06);
+    border-radius: 18px;
+    padding: 2rem;
+    box-shadow: 0 12px 30px -15px rgba(0,0,0,.15);
+  }
+  .concept h2 {
+    font-family: 'Fraunces', serif;
+    font-size: 1.125rem;
+    font-weight: 700;
+    margin-bottom: .375rem;
+  }
+  .concept p {
+    color: var(--text-2);
+    font-size: .875rem;
+    line-height: 1.55;
+    margin-bottom: 1.5rem;
+  }
+
+  /* ── Stats strip frame (replicating dashboard stats) ─────── */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 1.5rem 0;
+  }
+  .stat {
+    padding: 0 1.75rem;
+    border-right: 1px solid var(--line);
+  }
+  .stat:last-child { border-right: none; }
+  .stat__num {
+    font-family: 'Fraunces', serif;
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -.02em;
+  }
+  .stat__num .unit {
+    font-size: .8125rem;
+    color: var(--text-3);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 500;
+    margin-left: 4px;
+  }
+  .stat__label {
+    margin-top: .375rem;
+    font-size: .6875rem;
+    color: var(--text-2);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+  }
+
+  /* Concept A — milestone progress bar */
+  .reward-bar {
+    margin-top: .625rem;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+  }
+  .reward-bar__track {
+    flex: 1;
+    height: 4px;
+    background: var(--line-2);
+    border-radius: 2px;
+    overflow: hidden;
+    position: relative;
+  }
+  .reward-bar__fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--cyan-dark), var(--cyan));
+    border-radius: 2px;
+  }
+  .reward-bar__num {
+    font-size: .625rem;
+    color: var(--text-3);
+    font-weight: 700;
+    letter-spacing: .04em;
+    white-space: nowrap;
+  }
+  .reward-bar__label {
+    margin-top: .375rem;
+    font-size: .6875rem;
+    color: var(--text-3);
+    font-weight: 500;
+  }
+  .reward-bar__label strong { color: var(--cyan-dark); font-weight: 700; }
+
+  /* Concept B — milestone badge */
+  .badge-row {
+    margin-top: .625rem;
+    display: inline-flex;
+    align-items: center;
+    gap: .375rem;
+    background: var(--gold-soft);
+    border: 1px solid rgba(224,168,58,.3);
+    color: #8b6912;
+    border-radius: 999px;
+    padding: 3px 10px;
+    font-size: .6875rem;
+    font-weight: 700;
+    letter-spacing: .03em;
+  }
+  .badge-row svg { color: var(--gold); }
+  .badge-sub {
+    margin-top: .5rem;
+    font-size: .6875rem;
+    color: var(--text-3);
+    font-weight: 500;
+  }
+
+  /* Concept C — milestone ring */
+  .ring-stat {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  .ring-stat__ring {
+    position: relative;
+    width: 56px; height: 56px;
+    flex-shrink: 0;
+  }
+  .ring-stat__ring svg { transform: rotate(-90deg); }
+  .ring-stat__ring-inner {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    font-family: 'Fraunces', serif;
+    font-size: 1.125rem;
+    font-weight: 700;
+  }
+  .ring-stat__num {
+    font-family: 'Fraunces', serif;
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -.02em;
+  }
+  .ring-stat__num .unit {
+    font-size: .8125rem;
+    color: var(--text-3);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 500;
+    margin-left: 4px;
+  }
+  .ring-stat__label {
+    margin-top: .375rem;
+    font-size: .6875rem;
+    color: var(--text-2);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+  }
+  .ring-stat__hint {
+    font-size: .625rem;
+    color: var(--text-3);
+    font-weight: 500;
+    margin-top: 4px;
+  }
+
+  /* Concept D — milestone chip + line */
+  .reward-chip-row {
+    margin-top: .5rem;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    flex-wrap: wrap;
+  }
+  .reward-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: .25rem;
+    background: var(--cyan-soft);
+    border: 1px solid rgba(18,196,227,.25);
+    color: var(--cyan-dark);
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: .625rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+  .reward-chip svg { width: 10px; height: 10px; }
+  .reward-chip-sub {
+    font-size: .6875rem;
+    color: var(--text-3);
+    font-weight: 500;
+  }
+
+  /* Concept E — minimal text only */
+  .min-row {
+    margin-top: .5rem;
+    font-size: .6875rem;
+    color: var(--text-3);
+    font-weight: 500;
+  }
+  .min-row strong { color: var(--cyan-dark); font-weight: 700; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Progress reward — replacing the streak dots</h1>
+  <p>Five concepts for what could replace the small cyan streak dots under "Current streak". Each one rewards progress and creates a sense of momentum. Same stats strip otherwise. Pick a favorite (or a hybrid).</p>
+</div>
+
+<!-- ── A: Progress bar to next milestone ────────────────────── -->
+<div class="concept">
+  <h2>A. Milestone progress bar</h2>
+  <p>Quietly shows how close you are to your next milestone reward. The bar fills as you write each day. When a milestone is hit, the bar resets and the label updates to the next one.</p>
+  <div class="stats">
+    <div class="stat">
+      <div class="stat__num">14<span class="unit">days</span></div>
+      <div class="stat__label">Current streak</div>
+      <div class="reward-bar">
+        <div class="reward-bar__track">
+          <div class="reward-bar__fill" style="width: 67%"></div>
+        </div>
+        <span class="reward-bar__num">14 / 21</span>
+      </div>
+      <div class="reward-bar__label">Next reward in <strong>7 days</strong></div>
+    </div>
+    <div class="stat">
+      <div class="stat__num">42<span class="unit">days</span></div>
+      <div class="stat__label">Longest streak</div>
+    </div>
+    <div class="stat">
+      <div class="stat__num">128</div>
+      <div class="stat__label">Total entries</div>
+    </div>
+    <div class="stat">
+      <div class="stat__num">96<span class="unit">days</span></div>
+      <div class="stat__label">Days active</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── B: Milestone tier badge ──────────────────────────────── -->
+<div class="concept">
+  <h2>B. Tier badge</h2>
+  <p>A small earned-tier badge below the streak. Tiers could be tied to your existing milestone system — Spark (3+ days), Flame (7+), Blaze (14+), Wildfire (30+), etc. Reads as a status symbol, like a quiet little trophy.</p>
+  <div class="stats">
+    <div class="stat">
+      <div class="stat__num">14<span class="unit">days</span></div>
+      <div class="stat__label">Current streak</div>
+      <div class="badge-row">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2Z"/></svg>
+        Blaze tier
+      </div>
+      <div class="badge-sub">Wildfire at <strong style="color:#0d9bb5">30 days</strong></div>
+    </div>
+    <div class="stat">
+      <div class="stat__num">42<span class="unit">days</span></div>
+      <div class="stat__label">Longest streak</div>
+    </div>
+    <div class="stat">
+      <div class="stat__num">128</div>
+      <div class="stat__label">Total entries</div>
+    </div>
+    <div class="stat">
+      <div class="stat__num">96<span class="unit">days</span></div>
+      <div class="stat__label">Days active</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── C: Ring around the number ────────────────────────────── -->
+<div class="concept">
+  <h2>C. Ring around the number</h2>
+  <p>A circular progress arc fills around the streak number itself. Apple-Activity-style. Filled portion = progress to next milestone. Visual and immediate.</p>
+  <div class="stats">
+    <div class="stat">
+      <div class="ring-stat">
+        <div class="ring-stat__ring">
+          <svg width="56" height="56" viewBox="0 0 56 56">
+            <circle cx="28" cy="28" r="24" fill="none" stroke="#ebe7df" stroke-width="3"/>
+            <circle cx="28" cy="28" r="24" fill="none" stroke="#12C4E3" stroke-width="3"
+                    stroke-dasharray="150.8" stroke-dashoffset="49.8" stroke-linecap="round"/>
+          </svg>
+          <div class="ring-stat__ring-inner">14</div>
+        </div>
+        <div>
+          <div class="ring-stat__label" style="margin-top:0">Current streak</div>
+          <div class="ring-stat__hint">7 days to next milestone</div>
+        </div>
+      </div>
+    </div>
+    <div class="stat">
+      <div class="stat__num">42<span class="unit">days</span></div>
+      <div class="stat__label">Longest streak</div>
+    </div>
+    <div class="stat">
+      <div class="stat__num">128</div>
+      <div class="stat__label">Total entries</div>
+    </div>
+    <div class="stat">
+      <div class="stat__num">96<span class="unit">days</span></div>
+      <div class="stat__label">Days active</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── D: Subtle chip ─────────────────────────────────── -->
+<div class="concept">
+  <h2>D. Subtle chip</h2>
+  <p>Tiny status chip in cyan. Less visual weight than the gold tier badge — feels more like a calm achievement marker than a trophy.</p>
+  <div class="stats">
+    <div class="stat">
+      <div class="stat__num">14<span class="unit">days</span></div>
+      <div class="stat__label">Current streak</div>
+      <div class="reward-chip-row">
+        <span class="reward-chip">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2Z"/></svg>
+          2 weeks strong
+        </span>
+      </div>
+      <div class="badge-sub" style="margin-top:.4rem">Next: <strong style="color:#0d9bb5">21-day milestone</strong></div>
+    </div>
+    <div class="stat">
+      <div class="stat__num">42<span class="unit">days</span></div>
+      <div class="stat__label">Longest streak</div>
+    </div>
+    <div class="stat">
+      <div class="stat__num">128</div>
+      <div class="stat__label">Total entries</div>
+    </div>
+    <div class="stat">
+      <div class="stat__num">96<span class="unit">days</span></div>
+      <div class="stat__label">Days active</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── E: Minimal text only ─────────────────────────────────── -->
+<div class="concept">
+  <h2>E. Minimal — text only</h2>
+  <p>The quietest option. Just one line of text under the streak label. No visual elements competing.</p>
+  <div class="stats">
+    <div class="stat">
+      <div class="stat__num">14<span class="unit">days</span></div>
+      <div class="stat__label">Current streak</div>
+      <div class="min-row"><strong>7 days</strong> to your next milestone</div>
+    </div>
+    <div class="stat">
+      <div class="stat__num">42<span class="unit">days</span></div>
+      <div class="stat__label">Longest streak</div>
+    </div>
+    <div class="stat">
+      <div class="stat__num">128</div>
+      <div class="stat__label">Total entries</div>
+    </div>
+    <div class="stat">
+      <div class="stat__num">96<span class="unit">days</span></div>
+      <div class="stat__label">Days active</div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
