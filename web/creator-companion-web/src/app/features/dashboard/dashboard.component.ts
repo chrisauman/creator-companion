@@ -457,12 +457,20 @@ import { EditEntryComponent } from '../entry/edit/edit-entry.component';
     @media (min-width: 768px) {
       .stats-strip {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(2, 1fr);
         gap: 0;
         padding: 1.25rem 0 1.5rem;
         margin-bottom: .25rem;
         border-top: 1px solid var(--color-border);
         border-bottom: 1px solid var(--color-border);
+        row-gap: 1.25rem;
+      }
+    }
+    /* Wider screens get the original 4-across single-row strip. */
+    @media (min-width: 1100px) {
+      .stats-strip {
+        grid-template-columns: repeat(4, 1fr);
+        row-gap: 0;
       }
     }
     .stats-strip .stat {
@@ -470,8 +478,18 @@ import { EditEntryComponent } from '../entry/edit/edit-entry.component';
       border-right: 1px solid var(--color-border);
       min-width: 0;
     }
-    .stats-strip .stat:last-child { border-right: none; }
+    .stats-strip .stat:nth-child(2n) { border-right: none; }
+    @media (min-width: 1100px) {
+      .stats-strip .stat:nth-child(2n) { border-right: 1px solid var(--color-border); }
+      .stats-strip .stat:last-child { border-right: none; }
+    }
     .stats-strip .stat:first-child { padding-left: 0; }
+    @media (min-width: 1100px) {
+      .stats-strip .stat:nth-child(3) { padding-left: 1.5rem; }
+    }
+    @media (max-width: 1099px) and (min-width: 768px) {
+      .stats-strip .stat:nth-child(3) { padding-left: 0; }
+    }
 
     .stats-strip .stat__num {
       font-family: var(--font-display);

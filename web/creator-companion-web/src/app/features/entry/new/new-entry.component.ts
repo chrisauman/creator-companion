@@ -333,6 +333,7 @@ interface PendingImage {
       border: 1px solid var(--color-border);
       border-radius: var(--radius-md);
       padding: 2px;
+      flex-wrap: wrap;
     }
     .date-picker__btn {
       padding: .25rem .625rem;

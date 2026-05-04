@@ -653,7 +653,7 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
       &--warn { color: var(--color-streak); }
       &--over { color: var(--color-danger); font-weight: 600; }
     }
-    .editor-actions { display: flex; gap: .75rem; }
+    .editor-actions { display: flex; gap: .75rem; flex-wrap: wrap; }
 
     /* ── Delete overlay ──────────────────────────────────────────── */
     .overlay {

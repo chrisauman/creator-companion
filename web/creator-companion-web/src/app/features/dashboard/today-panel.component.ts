@@ -328,9 +328,10 @@ import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
       color: var(--color-text-3);
       margin-bottom: 1rem;
     }
+    /* Mood grid reflows from 6 → 4 → 3 cols as the right column narrows. */
     .mood-row {
       display: grid;
-      grid-template-columns: repeat(6, 1fr);
+      grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
       gap: .375rem;
     }
     .mood {

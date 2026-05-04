@@ -325,10 +325,10 @@ import { MoodIconComponent } from '../../shared/mood-icon/mood-icon.component';
       font-style: italic;
     }
 
-    /* Photo gallery */
+    /* Photo gallery — 2 cols when there's room, single col on narrow widths. */
     .reading__images {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
       gap: .75rem;
       margin: 1.5rem 0 2rem;
     }
