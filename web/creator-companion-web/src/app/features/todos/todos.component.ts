@@ -2,13 +2,12 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
-import { MobileNavComponent } from '../../shared/mobile-nav/mobile-nav.component';
 import { ActionItemsCardComponent } from '../dashboard/action-items-card.component';
 
 @Component({
   selector: 'app-todos',
   standalone: true,
-  imports: [CommonModule, RouterLink, SidebarComponent, MobileNavComponent, ActionItemsCardComponent],
+  imports: [CommonModule, RouterLink, SidebarComponent, ActionItemsCardComponent],
   template: `
     <div class="page">
       <app-sidebar active="todos" />
@@ -20,11 +19,7 @@ import { ActionItemsCardComponent } from '../dashboard/action-items-card.compone
           <span class="topbar__brand-name">Creator Companion</span>
         </a>
       </header>
-
-      <!-- Mobile bottom nav -->
-      <app-mobile-nav active="todos" />
-
-      <main class="main-content">
+<main class="main-content">
         <div class="page-header">
           <h1 class="page-title">To Do List</h1>
           <p class="page-sub">Your daily reminders and next actions.</p>

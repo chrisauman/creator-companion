@@ -4,12 +4,10 @@ import { RouterLink } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
 import { Faq } from '../../core/models/models';
 import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
-import { MobileNavComponent } from '../../shared/mobile-nav/mobile-nav.component';
-
 @Component({
   selector: 'app-support',
   standalone: true,
-  imports: [CommonModule, RouterLink, SidebarComponent, MobileNavComponent],
+  imports: [CommonModule, RouterLink, SidebarComponent],
   template: `
     <div class="page">
 
@@ -23,11 +21,7 @@ import { MobileNavComponent } from '../../shared/mobile-nav/mobile-nav.component
           <span class="topbar__brand-name">Creator Companion</span>
         </a>
       </header>
-
-      <!-- Mobile bottom nav -->
-      <app-mobile-nav active="dashboard" />
-
-      <main class="main-content">
+<main class="main-content">
         <div class="support-wrap">
 
           <div class="support-header">

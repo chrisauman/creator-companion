@@ -11,7 +11,6 @@ import { MILESTONES, getMilestoneForDays, getMilestoneIndex, getMilestoneProgres
 import { PushService } from '../../core/services/push.service';
 import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
 import { SidebarStateService } from '../../shared/sidebar/sidebar-state.service';
-import { MobileNavComponent } from '../../shared/mobile-nav/mobile-nav.component';
 import { MoodIconComponent } from '../../shared/mood-icon/mood-icon.component';
 import { TierIconComponent } from '../../shared/tier-icon/tier-icon.component';
 import { TodayPanelComponent } from './today-panel.component';
@@ -26,7 +25,7 @@ import { ActivatedRoute } from '@angular/router';
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, SidebarComponent, MobileNavComponent, MoodIconComponent, TierIconComponent, TodayPanelComponent, EntryReaderComponent, NewEntryComponent, EditEntryComponent, NotificationsComponent, FavoriteSparksComponent, ActionItemsCardComponent],
+  imports: [CommonModule, RouterLink, FormsModule, SidebarComponent, MoodIconComponent, TierIconComponent, TodayPanelComponent, EntryReaderComponent, NewEntryComponent, EditEntryComponent, NotificationsComponent, FavoriteSparksComponent, ActionItemsCardComponent],
   template: `
     <div class="dashboard">
 
@@ -47,13 +46,11 @@ import { ActivatedRoute } from '@angular/router';
       <app-sidebar active="dashboard" />
 
       <!-- ── Mobile bottom nav ───────────────────────────────── -->
-      <app-mobile-nav active="dashboard" />
-
       <!-- ── Main content ────────────────────────────────────── -->
       <main class="main-content">
 
-        <!-- Mobile header — hamburger drawer toggle on the left, greeting
-             + date in the middle, compose pill on the right. -->
+        <!-- Mobile header — hamburger | logo | "Create Entry" pill.
+             Greeting + date moved into the drawer to make room. -->
         <div class="mobile-header">
           <button class="mobile-header__hamburger" type="button"
                   (click)="sidebarState.openMobile()"
@@ -62,13 +59,14 @@ import { ActivatedRoute } from '@angular/router';
             <span></span>
             <span></span>
           </button>
-          <div class="mobile-header__greeting">
-            <h1 class="mobile-header__hello">{{ greetingMessage() }}</h1>
-            <div class="mobile-header__date">{{ todayLabel() }}</div>
-          </div>
-          <button class="mobile-header__compose" type="button" (click)="composeBlank()" title="New Entry">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          <a class="mobile-header__logo" routerLink="/dashboard">
+            <img src="logo-icon.png" alt="" class="mobile-header__logo-icon">
+            <span class="mobile-header__logo-name">Creator Companion</span>
+          </a>
+          <button class="mobile-header__compose" type="button" (click)="composeBlank()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            <span>Create Entry</span>
           </button>
         </div>
 
@@ -699,13 +697,13 @@ import { ActivatedRoute } from '@angular/router';
        Spark hero — hide it everywhere now. */
     .motivation-card--mobile { display: none !important; }
 
-    /* ── Mobile header (hamburger + greeting + compose pill) ─────── */
+    /* ── Mobile header (hamburger | logo | "Create Entry" pill) ──── */
     .mobile-header {
       display: flex;
       align-items: center;
-      gap: .75rem;
+      gap: .5rem;
       padding-bottom: 1rem;
-      margin-bottom: 1rem;
+      margin-bottom: 1.5rem;
       border-bottom: 1px solid var(--color-border);
     }
     @media (min-width: 768px) {
@@ -734,33 +732,50 @@ import { ActivatedRoute } from '@angular/router';
       background: var(--color-text);
       border-radius: 2px;
     }
-    .mobile-header__greeting {
+    .mobile-header__logo {
       flex: 1;
       min-width: 0;
-    }
-    .mobile-header__hello {
-      font-family: var(--font-sans);
-      font-size: 1.125rem;
-      font-weight: 800;
-      letter-spacing: -.02em;
+      display: inline-flex;
+      align-items: center;
+      gap: .375rem;
+      text-decoration: none;
       color: var(--color-text);
-      margin: 0 0 1px;
+      padding: 0 .25rem;
+      overflow: hidden;
+    }
+    .mobile-header__logo:hover { text-decoration: none; }
+    .mobile-header__logo-icon {
+      width: 26px; height: 26px;
+      flex-shrink: 0;
+      display: block;
+    }
+    .mobile-header__logo-name {
+      font-family: var(--font-sans);
+      font-size: .8125rem;
+      font-weight: 700;
+      letter-spacing: -.005em;
+      color: var(--color-text);
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    .mobile-header__date {
-      font-size: .6875rem;
-      color: var(--color-text-2);
+    /* Hide the brand text on very narrow phones to make room. */
+    @media (max-width: 360px) {
+      .mobile-header__logo-name { display: none; }
     }
     .mobile-header__compose {
-      width: 40px; height: 40px;
       flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: .375rem;
       background: var(--color-accent);
       color: #0c0e13;
       border: none;
-      border-radius: 50%;
-      display: grid; place-items: center;
+      border-radius: 999px;
+      padding: .5rem .875rem;
+      font-family: var(--font-sans);
+      font-size: .8125rem;
+      font-weight: 700;
       cursor: pointer;
       transition: background .15s, transform .15s;
     }

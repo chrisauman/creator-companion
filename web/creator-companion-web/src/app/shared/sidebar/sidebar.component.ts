@@ -71,16 +71,16 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
         </a>
         <a class="sidebar__nav-item"
            [class.sidebar__nav-item--active]="active === 'notifications'"
-           [routerLink]="['/dashboard']"
-           [queryParams]="{section: 'notifications'}"
+           [routerLink]="sectionLink('notifications')"
+           [queryParams]="sectionQueryParams('notifications')"
            [title]="collapsed() ? 'Notifications' : null">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
           <span class="sidebar__nav-label">Notifications</span>
         </a>
         <a class="sidebar__nav-item"
            [class.sidebar__nav-item--active]="active === 'todos'"
-           [routerLink]="['/dashboard']"
-           [queryParams]="{section: 'todos'}"
+           [routerLink]="sectionLink('todos')"
+           [queryParams]="sectionQueryParams('todos')"
            [title]="collapsed() ? 'To Do List' : null">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
           <span class="sidebar__nav-label">To Do List</span>
@@ -88,8 +88,8 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
         <a *ngIf="hasFavoriteSparks()"
            class="sidebar__nav-item"
            [class.sidebar__nav-item--active]="active === 'favorites'"
-           [routerLink]="['/dashboard']"
-           [queryParams]="{section: 'favorites'}"
+           [routerLink]="sectionLink('favorites')"
+           [queryParams]="sectionQueryParams('favorites')"
            [title]="collapsed() ? 'Favorite Sparks' : null">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
           <span class="sidebar__nav-label">Favorite Sparks</span>
@@ -468,6 +468,24 @@ export class SidebarComponent implements OnInit {
   /** Mobile-drawer state — read from the shared service. */
   mobileOpen = this.drawer.mobileOpen;
   closeMobile(): void { this.drawer.closeMobile(); }
+
+  /**
+   * Where to route for a "section" nav item (Notifications / Todos /
+   * Favorites). On desktop we navigate to /dashboard with a section
+   * queryParam — the dashboard's right column embeds the section
+   * inline. On mobile the right column is hidden, so we navigate to
+   * the standalone /notifications, /todos, /favorites page instead.
+   */
+  sectionLink(section: 'notifications' | 'todos' | 'favorites'): string[] {
+    const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
+    if (isDesktop) return ['/dashboard'];
+    return ['/' + section];
+  }
+
+  sectionQueryParams(section: 'notifications' | 'todos' | 'favorites'): Record<string, string> | null {
+    const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
+    return isDesktop ? { section } : null;
+  }
 
   isAdmin           = this.tokens.isAdmin.bind(this.tokens);
   streak            = signal<StreakStats | null>(null);

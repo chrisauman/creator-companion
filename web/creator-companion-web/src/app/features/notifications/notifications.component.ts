@@ -7,14 +7,12 @@ import { AuthService } from '../../core/services/auth.service';
 import { PushService } from '../../core/services/push.service';
 import { Reminder } from '../../core/models/models';
 import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
-import { MobileNavComponent } from '../../shared/mobile-nav/mobile-nav.component';
-
 const DEFAULT_REMINDER_MESSAGE = 'Remember to log an entry to keep your streak alive.';
 
 @Component({
   selector: 'app-notifications',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, SidebarComponent, MobileNavComponent],
+  imports: [CommonModule, FormsModule, RouterLink, SidebarComponent],
   template: `
     <div class="page" [class.page--embedded]="embedded">
 
@@ -27,7 +25,6 @@ const DEFAULT_REMINDER_MESSAGE = 'Remember to log an entry to keep your streak a
             <span class="topbar__brand-name">Creator Companion</span>
           </a>
         </header>
-        <app-mobile-nav active="notifications" />
       }
 
       <main class="main-content">

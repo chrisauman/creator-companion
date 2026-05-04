@@ -18,14 +18,12 @@ import { MoodIconComponent } from '../../../shared/mood-icon/mood-icon.component
 import { TagInputComponent } from '../../../shared/tag-input.component';
 import { FormatToolbarComponent } from '../../../shared/format-toolbar.component';
 import { SidebarComponent } from '../../../shared/sidebar/sidebar.component';
-import { MobileNavComponent } from '../../../shared/mobile-nav/mobile-nav.component';
-
 type SaveState = 'idle' | 'saving' | 'saved' | 'error';
 
 @Component({
   selector: 'app-edit-entry',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, TagInputComponent, FormatToolbarComponent, SidebarComponent, MobileNavComponent, MoodIconComponent],
+  imports: [CommonModule, FormsModule, RouterLink, TagInputComponent, FormatToolbarComponent, SidebarComponent, MoodIconComponent],
   template: `
     <div class="page" [class.page--embedded]="embedded">
 
@@ -33,10 +31,7 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
       @if (!embedded) {
         <app-sidebar active="dashboard" />
       }
-
-      <!-- Mobile bottom nav (hidden when embedded — reader-top covers nav) -->
-      @if (!embedded) {
-        <app-mobile-nav active="dashboard" />
+@if (!embedded) {
       }
 
       <!-- Main content -->

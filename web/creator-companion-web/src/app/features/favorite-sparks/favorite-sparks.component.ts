@@ -4,12 +4,10 @@ import { RouterLink } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
 import { MotivationEntry } from '../../core/models/models';
 import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
-import { MobileNavComponent } from '../../shared/mobile-nav/mobile-nav.component';
-
 @Component({
   selector: 'app-favorite-sparks',
   standalone: true,
-  imports: [CommonModule, RouterLink, SidebarComponent, MobileNavComponent],
+  imports: [CommonModule, RouterLink, SidebarComponent],
   template: `
     <div class="page" [class.page--embedded]="embedded">
 
@@ -22,7 +20,6 @@ import { MobileNavComponent } from '../../shared/mobile-nav/mobile-nav.component
             <span class="topbar__brand-name">Creator Companion</span>
           </a>
         </header>
-        <app-mobile-nav active="favorites" />
       }
 
       <!-- Main content -->

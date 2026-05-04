@@ -96,34 +96,40 @@ import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
       <!-- Quick-start cards (prompt, mood, blank) -->
       <div class="start-section">
 
-        <!-- Brief prompt card -->
-        <div class="prompt-card">
-          <div class="prompt-card__header">
-            <span class="prompt-card__tag">A small prompt</span>
-            <button class="prompt-card__shuffle" type="button"
-                    (click)="shufflePrompt()"
-                    title="Shuffle for a different prompt">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        <!-- Daily Prompt — same dark hero treatment as the Spark above -->
+        <div class="hero-card">
+          <button class="hero-card__shuffle" type="button"
+                  (click)="shufflePrompt()"
+                  title="Shuffle for a different prompt"
+                  aria-label="Shuffle for a different prompt">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="16 3 21 3 21 8"/>
+              <line x1="4" y1="20" x2="21" y2="3"/>
+              <polyline points="21 16 21 21 16 21"/>
+              <line x1="15" y1="15" x2="21" y2="21"/>
+              <line x1="4" y1="4" x2="9" y2="9"/>
+            </svg>
+          </button>
+          <span class="hero-card__eyebrow">Your Daily Prompt</span>
+          <p class="hero-card__quote">{{ currentPrompt() }}</p>
+          <div class="hero-card__actions">
+            <button class="spark-action spark-action--primary" type="button"
+                    (click)="composeFromPrompt.emit(currentPrompt())">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="16 3 21 3 21 8"/>
-                <line x1="4" y1="20" x2="21" y2="3"/>
-                <polyline points="21 16 21 21 16 21"/>
-                <line x1="15" y1="15" x2="21" y2="21"/>
-                <line x1="4" y1="4" x2="9" y2="9"/>
+                <path d="M12 20h9"/>
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/>
               </svg>
+              Start writing
             </button>
           </div>
-          <p class="prompt-card__question">{{ currentPrompt() }}</p>
-          <button class="prompt-card__cta" type="button"
-                  (click)="composeFromPrompt.emit(currentPrompt())">
-            Start writing →
-          </button>
         </div>
 
-        <!-- Mood-first start -->
-        <div class="mood-card">
-          <div class="mood-card__title">Begin with how you feel</div>
-          <div class="mood-card__sub">Tap a mood — it'll start a new entry pre-tagged.</div>
+        <!-- Mood-first start — same dark hero treatment, cyan icons -->
+        <div class="hero-card hero-card--mood">
+          <span class="hero-card__eyebrow">Begin with how you feel</span>
+          <p class="hero-card__sub">Tap a mood to start a new entry pre-tagged with how you're feeling.</p>
           <div class="mood-row">
             @for (key of moodKeys; track key) {
               <button class="mood" type="button"
@@ -157,6 +163,12 @@ import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
       max-width: 720px;
       margin: 0 auto;
     }
+    /* When rendered inline on mobile (in dashboard.component), drop padding
+       so the cards align to the page edges and use consistent gaps. */
+    :host-context(.today-panel--mobile-wrap) .today {
+      padding: 0;
+      max-width: none;
+    }
 
     /* ── Spark hero ───────────────────────────────────────────── */
     .spark-hero {
@@ -166,7 +178,7 @@ import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
       padding: 1.75rem 1.75rem 1.5rem;
       position: relative;
       overflow: hidden;
-      margin-bottom: 2.25rem;
+      margin-bottom: 1.5rem;
     }
     .spark-hero::before {
       content: '';
@@ -339,119 +351,114 @@ import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
       line-height: 1.5;
     }
 
-    /* Brief prompt card */
-    .prompt-card {
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: 18px;
-      padding: 1.375rem 1.5rem 1.25rem;
-      margin-bottom: 1rem;
+    /* ── Hero card (shared dark gradient — used by Daily Prompt and Mood) ── */
+    .hero-card {
+      background: linear-gradient(180deg, #0c0e13 0%, #1a1d24 100%);
+      color: #fff;
+      border-radius: 24px;
+      padding: 1.75rem 1.75rem 1.5rem;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 1.5rem;
     }
-    .prompt-card__header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: .875rem;
+    .hero-card::before {
+      content: '';
+      position: absolute;
+      top: -30%; right: -20%;
+      width: 320px; height: 320px;
+      background: radial-gradient(circle, #12C4E3 0%, transparent 65%);
+      opacity: .2;
+      pointer-events: none;
     }
-    .prompt-card__tag {
-      font-size: .625rem;
+    .hero-card__eyebrow {
+      display: block;
+      font-size: .6875rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: .14em;
-      color: var(--color-text-3);
+      color: #12C4E3;
+      margin-bottom: .875rem;
+      position: relative;
     }
-    .prompt-card__shuffle {
-      width: 28px; height: 28px;
-      border: 1px solid var(--color-border);
-      background: var(--color-surface);
-      border-radius: 50%;
-      display: grid; place-items: center;
-      cursor: pointer;
-      color: var(--color-text-2);
-      transition: all .25s;
-    }
-    .prompt-card__shuffle:hover {
-      color: var(--color-accent);
-      border-color: var(--color-accent);
-      transform: rotate(180deg);
-    }
-    .prompt-card__question {
+    .hero-card__quote {
       font-family: var(--font-sans);
-      font-size: 1.1875rem;
+      font-size: 1.25rem;
+      line-height: 1.45;
       font-weight: 500;
-      line-height: 1.4;
-      color: var(--color-text);
-      margin: 0 0 1rem;
+      color: rgba(255,255,255,.95);
+      position: relative;
+      margin: 0 0 1.25rem;
       letter-spacing: -.005em;
     }
-    .prompt-card__cta {
-      display: inline-flex;
-      align-items: center;
-      gap: .375rem;
+    .hero-card__sub {
       font-size: .8125rem;
-      font-weight: 600;
-      color: var(--color-accent);
+      color: rgba(255,255,255,.55);
+      position: relative;
+      margin: 0 0 1.25rem;
+      line-height: 1.5;
+    }
+    .hero-card__actions {
+      display: flex;
+      gap: .5rem;
+      align-items: center;
+      flex-wrap: wrap;
+      position: relative;
+    }
+    .hero-card__shuffle {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      width: 32px; height: 32px;
+      display: grid; place-items: center;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 50%;
+      color: rgba(255,255,255,.85);
       cursor: pointer;
-      background: none;
-      border: none;
-      padding: 0;
       font-family: inherit;
+      transition: background .15s, border-color .15s, transform .25s;
+      z-index: 1;
     }
-    .prompt-card__cta:hover { color: var(--color-text); }
+    .hero-card__shuffle:hover {
+      background: rgba(18,196,227,.18);
+      border-color: rgba(18,196,227,.4);
+      color: #fff;
+      transform: rotate(180deg);
+    }
 
-    /* Mood-first card */
-    .mood-card {
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: 18px;
-      padding: 1.375rem 1.5rem 1.5rem;
-      margin-bottom: 1rem;
-    }
-    .mood-card__title {
-      font-family: var(--font-sans);
-      font-size: 1.0625rem;
-      font-weight: 600;
-      margin-bottom: 2px;
-      color: var(--color-text);
-    }
-    .mood-card__sub {
-      font-size: .75rem;
-      color: var(--color-text-3);
-      margin-bottom: 1rem;
-    }
-    /* Mood grid reflows from 6 → 4 → 3 cols as the right column narrows. */
+    /* Mood grid inside the hero card — reflows from 6 → 4 → 3 cols */
     .mood-row {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
-      gap: .375rem;
+      gap: .5rem;
+      position: relative;
     }
     .mood {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: .375rem;
+      gap: .5rem;
       padding: .75rem .25rem .625rem;
-      border: 1px solid var(--color-border);
+      border: 1px solid rgba(255,255,255,.1);
       border-radius: 12px;
-      background: var(--color-bg);
-      color: var(--color-text-2);
+      background: rgba(255,255,255,.04);
+      color: #12C4E3;
       cursor: pointer;
       transition: all .15s;
       font-family: inherit;
     }
     .mood:hover {
-      border-color: var(--color-accent);
-      background: rgba(18,196,227,.06);
-      color: var(--color-accent);
+      border-color: rgba(18,196,227,.5);
+      background: rgba(18,196,227,.12);
       transform: translateY(-2px);
     }
     .mood-label {
       font-size: .625rem;
       font-weight: 500;
-      color: var(--color-text-3);
+      color: rgba(255,255,255,.55);
       text-align: center;
     }
-    .mood:hover .mood-label { color: var(--color-accent); }
+    .mood:hover .mood-label { color: rgba(255,255,255,.85); }
 
     /* Just begin */
     .blank-card {

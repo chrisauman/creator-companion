@@ -8,14 +8,12 @@ import { ExportService } from '../../core/services/export.service';
 import { PushService } from '../../core/services/push.service';
 import { User, Capabilities, Tag, StreakStats, Reminder } from '../../core/models/models';
 import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
-import { MobileNavComponent } from '../../shared/mobile-nav/mobile-nav.component';
-
 const DEFAULT_REMINDER_MESSAGE = "Remember to log an entry to keep your streak alive.";
 
 @Component({
   selector: 'app-account',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, SidebarComponent, MobileNavComponent],
+  imports: [CommonModule, RouterLink, FormsModule, SidebarComponent],
   template: `
     <div class="page">
 
@@ -29,11 +27,7 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log an entry to keep your streak a
           <span class="topbar__brand-name">Creator Companion</span>
         </a>
       </header>
-
-      <!-- Mobile bottom nav -->
-      <app-mobile-nav active="account" />
-
-      <!-- Column wrapper: keeps main + sign-out in the same flex column -->
+<!-- Column wrapper: keeps main + sign-out in the same flex column -->
       <div class="content-col">
 
       <main class="container main-content stack stack--lg" *ngIf="user()">
