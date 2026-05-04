@@ -15,11 +15,13 @@ import { MoodIconComponent } from '../../shared/mood-icon/mood-icon.component';
 import { TierIconComponent } from '../../shared/tier-icon/tier-icon.component';
 import { TodayPanelComponent } from './today-panel.component';
 import { EntryReaderComponent } from './entry-reader.component';
+import { NewEntryComponent } from '../entry/new/new-entry.component';
+import { EditEntryComponent } from '../entry/edit/edit-entry.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, SidebarComponent, MobileNavComponent, MoodIconComponent, TierIconComponent, TodayPanelComponent, EntryReaderComponent],
+  imports: [CommonModule, RouterLink, FormsModule, SidebarComponent, MobileNavComponent, MoodIconComponent, TierIconComponent, TodayPanelComponent, EntryReaderComponent, NewEntryComponent, EditEntryComponent],
   template: `
     <div class="dashboard">
 
@@ -295,29 +297,51 @@ import { EntryReaderComponent } from './entry-reader.component';
           </div>
         </section>
 
-        <!-- Right column: Today panel or inline entry reader (desktop only) -->
+        <!-- Right column: Today / Reading / Composing / Editing (desktop only) -->
         <aside class="work__right-col">
-          @if (rightColumnMode() === 'today') {
-            <app-today-panel
-              [motivation]="motivation()"
-              [canFavorite]="isPaid()"
-              (composeFromSpark)="composeFromSpark()"
-              (composeFromPrompt)="composeFromPrompt($event)"
-              (composeFromMood)="composeFromMood($event)"
-              (composeBlank)="composeBlank()"
-              (favoriteSpark)="toggleSparkFavorite()"
-              (expandSpark)="expandSpark()"
-            ></app-today-panel>
-          } @else {
-            <app-entry-reader
-              [entry]="selectedEntry()"
-              [loading]="selectedEntryLoading()"
-              [loadError]="selectedEntryError()"
-              [canFavorite]="isPaid()"
-              (returnToToday)="returnToToday()"
-              (edit)="editSelectedEntry()"
-              (toggleFavorite)="toggleSelectedFavorite()"
-            ></app-entry-reader>
+          @switch (rightColumnMode()) {
+            @case ('today') {
+              <app-today-panel
+                [motivation]="motivation()"
+                [canFavorite]="isPaid()"
+                (composeFromSpark)="composeFromSpark()"
+                (composeFromPrompt)="composeFromPrompt($event)"
+                (composeFromMood)="composeFromMood($event)"
+                (composeBlank)="composeBlank()"
+                (favoriteSpark)="toggleSparkFavorite()"
+                (expandSpark)="expandSpark()"
+              ></app-today-panel>
+            }
+            @case ('reading') {
+              <app-entry-reader
+                [entry]="selectedEntry()"
+                [loading]="selectedEntryLoading()"
+                [loadError]="selectedEntryError()"
+                [canFavorite]="isPaid()"
+                (returnToToday)="returnToToday()"
+                (edit)="editSelectedEntry()"
+                (toggleFavorite)="toggleSelectedFavorite()"
+              ></app-entry-reader>
+            }
+            @case ('composing') {
+              <app-new-entry
+                [embedded]="true"
+                [initialMood]="composeMood()"
+                [initialPrompt]="composePrompt()"
+                [initialSpark]="composeSpark()"
+                (saved)="onComposeSaved()"
+                (canceled)="returnToToday()"
+              ></app-new-entry>
+            }
+            @case ('editing') {
+              <app-edit-entry
+                [embedded]="true"
+                [entryIdInput]="selectedEntryId()"
+                (saved)="onEditSaved()"
+                (canceled)="returnToReading()"
+                (deleted)="onEditDeleted()"
+              ></app-edit-entry>
+            }
           }
         </aside>
 
@@ -890,12 +914,17 @@ export class DashboardComponent implements OnInit {
   error          = signal('');
   sessionExpired = signal(false);
 
-  // ── Right column state (desktop): Today vs Reading ──────────────
-  rightColumnMode      = signal<'today' | 'reading'>('today');
+  // ── Right column state (desktop): Today / Reading / Composing / Editing
+  rightColumnMode      = signal<'today' | 'reading' | 'composing' | 'editing'>('today');
   selectedEntryId      = signal<string | null>(null);
   selectedEntry        = signal<Entry | null>(null);
   selectedEntryLoading = signal<boolean>(false);
   selectedEntryError   = signal<boolean>(false);
+
+  // ── Compose context — passed to the embedded NewEntryComponent
+  composeMood   = signal<string | null>(null);
+  composePrompt = signal<string | null>(null);
+  composeSpark  = signal<string | null>(null);
 
   // Search & sort
   searchQuery = signal('');
@@ -1142,11 +1171,21 @@ export class DashboardComponent implements OnInit {
   returnToToday(): void {
     this.rightColumnMode.set('today');
     this.selectedEntryId.set(null);
+    this.composeMood.set(null);
+    this.composePrompt.set(null);
+    this.composeSpark.set(null);
   }
 
   editSelectedEntry(): void {
     const id = this.selectedEntryId();
-    if (id) this.router.navigate(['/entry', id, 'edit']);
+    if (!id) return;
+    const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
+    if (isDesktop) {
+      this.rightColumnMode.set('editing');
+    } else {
+      // Mobile: inline edit lands in Phase H. For now fall back to the page.
+      this.router.navigate(['/entry', id, 'edit']);
+    }
   }
 
   toggleSelectedFavorite(): void {
@@ -1165,22 +1204,98 @@ export class DashboardComponent implements OnInit {
   }
 
   // ── Today panel compose handlers ───────────────────────────────
-  // Each handler navigates to /entry/new and passes context as a
-  // query param. The new-entry component reads these and shows a
-  // prompt banner above the editor (and pre-selects mood when given).
+  // On desktop, switch the right column into composing mode and pass
+  // the prompt/spark/mood context as inputs. On mobile, fall back to
+  // the dedicated /entry/new page (mobile inline compose lands later).
   composeFromSpark(): void {
     const m = this.motivation();
-    this.router.navigate(['/entry/new'], {
-      queryParams: m?.takeaway ? { spark: m.takeaway } : {}
-    });
+    this.openCompose({ spark: m?.takeaway ?? null });
   }
   composeFromPrompt(prompt: string): void {
-    this.router.navigate(['/entry/new'], { queryParams: { prompt } });
+    this.openCompose({ prompt });
   }
   composeFromMood(mood: string): void {
-    this.router.navigate(['/entry/new'], { queryParams: { mood } });
+    this.openCompose({ mood });
   }
-  composeBlank(): void { this.router.navigate(['/entry/new']); }
+  composeBlank(): void {
+    this.openCompose({});
+  }
+
+  /**
+   * Opens compose mode. On desktop the right column transforms into the
+   * inline new-entry editor with the given context. On mobile we still
+   * navigate to /entry/new with query params until Phase H wires inline
+   * compose into the mobile layout.
+   */
+  private openCompose(ctx: { mood?: string; prompt?: string; spark?: string | null }): void {
+    const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
+    if (isDesktop) {
+      this.composeMood.set(ctx.mood ?? null);
+      this.composePrompt.set(ctx.prompt ?? null);
+      this.composeSpark.set(ctx.spark ?? null);
+      this.rightColumnMode.set('composing');
+    } else {
+      const queryParams: Record<string, string> = {};
+      if (ctx.mood)   queryParams['mood']   = ctx.mood;
+      if (ctx.prompt) queryParams['prompt'] = ctx.prompt;
+      if (ctx.spark)  queryParams['spark']  = ctx.spark;
+      this.router.navigate(['/entry/new'], { queryParams });
+    }
+  }
+
+  /**
+   * Called when the embedded NewEntryComponent emits `saved`. Returns to
+   * the Today view and refreshes the entry list so the new entry shows up.
+   */
+  onComposeSaved(): void {
+    this.composeMood.set(null);
+    this.composePrompt.set(null);
+    this.composeSpark.set(null);
+    this.rightColumnMode.set('today');
+    this.refreshEntries();
+  }
+
+  /** Called when the embedded EditEntryComponent emits `saved`. Reload the
+   *  selected entry to reflect the saved changes, then go back to reading. */
+  onEditSaved(): void {
+    const id = this.selectedEntryId();
+    if (id) {
+      this.api.getEntry(id).subscribe({
+        next: e => this.selectedEntry.set(e),
+        error: () => {}
+      });
+    }
+    this.rightColumnMode.set('reading');
+    this.refreshEntries();
+  }
+
+  /** Called when the embedded EditEntryComponent emits `deleted`. Drop back
+   *  to Today and refresh the entry list. */
+  onEditDeleted(): void {
+    this.selectedEntryId.set(null);
+    this.selectedEntry.set(null);
+    this.rightColumnMode.set('today');
+    this.refreshEntries();
+  }
+
+  /** Cancel from edit goes back to reading the same entry. */
+  returnToReading(): void {
+    this.rightColumnMode.set('reading');
+  }
+
+  /** Reload the visible entry list so newly saved entries appear immediately. */
+  private refreshEntries(): void {
+    this.entries.set([]);
+    this.loading.set(true);
+    this.api.getEntries(undefined, false, undefined, 0, this.PAGE_SIZE).subscribe({
+      next: list => {
+        this.entries.set(list);
+        this.hasMore.set(list.length === this.PAGE_SIZE);
+        this.loading.set(false);
+      },
+      error: () => this.loading.set(false)
+    });
+  }
 
   /**
    * Returns the entry's display headline for the dashboard list.

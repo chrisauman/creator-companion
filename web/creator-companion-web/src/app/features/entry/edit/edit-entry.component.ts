@@ -1,6 +1,6 @@
 import {
   Component, inject, signal, computed, OnInit, OnDestroy,
-  ViewChild, ElementRef, NgZone
+  ViewChild, ElementRef, NgZone, Input, Output, EventEmitter
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -27,36 +27,44 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink, TagInputComponent, FormatToolbarComponent, SidebarComponent, MobileNavComponent, MoodIconComponent],
   template: `
-    <div class="page">
+    <div class="page" [class.page--embedded]="embedded">
 
-      <!-- Desktop sidebar -->
-      <app-sidebar active="dashboard" />
+      <!-- Desktop sidebar (hidden when embedded — dashboard provides it) -->
+      @if (!embedded) {
+        <app-sidebar active="dashboard" />
+      }
 
-      <!-- Mobile top bar -->
-      <header class="topbar">
-        <a class="topbar__brand" routerLink="/dashboard">
-          <img src="logo-icon.png" alt="" class="topbar__brand-icon">
-          <span class="topbar__brand-name">Creator Companion</span>
-        </a>
-        <div class="topbar__actions">
-          <div class="save-indicator" [class]="'save-indicator--' + saveState()">
-            <span *ngIf="saveState() === 'saving'">Saving…</span>
-            <span *ngIf="saveState() === 'saved'">Saved ✓</span>
-            <span *ngIf="saveState() === 'error'">Save failed</span>
+      <!-- Mobile top bar (hidden when embedded) -->
+      @if (!embedded) {
+        <header class="topbar">
+          <a class="topbar__brand" routerLink="/dashboard">
+            <img src="logo-icon.png" alt="" class="topbar__brand-icon">
+            <span class="topbar__brand-name">Creator Companion</span>
+          </a>
+          <div class="topbar__actions">
+            <div class="save-indicator" [class]="'save-indicator--' + saveState()">
+              <span *ngIf="saveState() === 'saving'">Saving…</span>
+              <span *ngIf="saveState() === 'saved'">Saved ✓</span>
+              <span *ngIf="saveState() === 'error'">Save failed</span>
+            </div>
+            <button class="btn btn--ghost btn--sm" [routerLink]="['/entry', entryId]">← Back</button>
           </div>
-          <button class="btn btn--ghost btn--sm" [routerLink]="['/entry', entryId]">← Back</button>
-        </div>
-      </header>
+        </header>
 
-      <!-- Mobile bottom nav -->
-      <app-mobile-nav active="dashboard" />
+        <!-- Mobile bottom nav -->
+        <app-mobile-nav active="dashboard" />
+      }
 
       <!-- Main content -->
       <main class="main-content">
 
         <!-- Desktop action bar -->
         <div class="desktop-bar">
-          <button class="btn btn--ghost btn--sm" [routerLink]="['/entry', entryId]">← Back to entry</button>
+          @if (embedded) {
+            <button class="btn btn--ghost btn--sm" type="button" (click)="cancelEdit()">✕ Cancel</button>
+          } @else {
+            <button class="btn btn--ghost btn--sm" [routerLink]="['/entry', entryId]">← Back to entry</button>
+          }
           <div class="desktop-bar__right">
             <span class="editor-date">{{ entryDateLabel() }}</span>
             @if (selectedMood()) {
@@ -324,6 +332,24 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
   styles: [`
     /* ── Page shell ─────────────────────────────────────────────── */
     .page { display: flex; flex-direction: column; min-height: 100vh; }
+    /* Embedded mode: drop the full-viewport sizing so the component fits
+       cleanly inside the dashboard's right column, and let the dashboard
+       provide the sidebar/topbar chrome. */
+    .page--embedded {
+      min-height: 0;
+      flex-direction: column;
+    }
+    .page--embedded .main-content {
+      padding: .5rem 1.25rem 2.5rem !important;
+      background: transparent !important;
+    }
+    .page--embedded .desktop-bar {
+      padding: .25rem 0 .75rem;
+    }
+    .page--embedded .editor-form {
+      max-width: none;
+      padding: 0;
+    }
     @media (min-width: 768px) { .page { flex-direction: row; } }
 
     /* ── Mobile top bar ──────────────────────────────────────────── */
@@ -601,6 +627,25 @@ export class EditEntryComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   private autosave$ = new Subject<void>();
 
+  /** When true, the component is rendered inside the dashboard's right column
+   *  rather than as a standalone /entry/:id/edit page. Hides the page-level
+   *  back/topbar/sidebar chrome and emits events instead of routing. */
+  @Input() embedded = false;
+
+  /** Pre-set the entry id to edit (instead of reading from the route). The
+   *  dashboard provides this when the user clicks Edit on an inline reading
+   *  entry. */
+  @Input() entryIdInput: string | null = null;
+
+  /** Emitted on successful save. Dashboard switches back to reading view. */
+  @Output() saved = new EventEmitter<void>();
+
+  /** Emitted when the user cancels the edit (✕ button when embedded). */
+  @Output() canceled = new EventEmitter<void>();
+
+  /** Emitted when the entry is moved to trash. Dashboard returns to Today. */
+  @Output() deleted = new EventEmitter<void>();
+
   readonly MOODS   = MOODS;
   readonly getMoodEmoji = getMoodEmoji;
 
@@ -642,7 +687,10 @@ export class EditEntryComponent implements OnInit, OnDestroy {
   private readonly MAX_BYTES = 20 * 1024 * 1024;
 
   ngOnInit(): void {
-    this.entryId = this.route.snapshot.paramMap.get('id') ?? '';
+    // When embedded, the dashboard provides the entry id directly.
+    this.entryId = this.embedded
+      ? (this.entryIdInput ?? '')
+      : (this.route.snapshot.paramMap.get('id') ?? '');
 
     this.auth.loadCapabilities().subscribe(caps => {
       this.maxWords.set(caps.maxWordsPerEntry);
@@ -793,7 +841,11 @@ export class EditEntryComponent implements OnInit, OnDestroy {
         this.saving.set(false);
         this.editor?.setEditable(true);
         this.saveState.set('saved');
-        this.router.navigate(['/entry', this.entryId]);
+        if (this.embedded) {
+          this.saved.emit();
+        } else {
+          this.router.navigate(['/entry', this.entryId]);
+        }
       },
       error: err => {
         this.error.set(err?.error?.error ?? 'Could not save. Please try again.');
@@ -801,6 +853,11 @@ export class EditEntryComponent implements OnInit, OnDestroy {
         this.editor?.setEditable(true);
       }
     });
+  }
+
+  /** ✕ button when embedded — discard local edits and return to read view. */
+  cancelEdit(): void {
+    this.canceled.emit();
   }
 
   // ── Image management ─────────────────────────────────────────────────────
@@ -876,8 +933,16 @@ export class EditEntryComponent implements OnInit, OnDestroy {
 
   deleteEntry(): void {
     this.api.deleteEntry(this.entryId).subscribe({
-      next: () => this.router.navigate(['/dashboard']),
-      error: () => this.router.navigate(['/dashboard'])
+      next: () => this.afterDelete(),
+      error: () => this.afterDelete()
     });
+  }
+
+  private afterDelete(): void {
+    if (this.embedded) {
+      this.deleted.emit();
+    } else {
+      this.router.navigate(['/dashboard']);
+    }
   }
 }

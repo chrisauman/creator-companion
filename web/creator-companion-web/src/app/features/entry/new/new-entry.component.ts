@@ -1,6 +1,6 @@
 import {
   Component, inject, signal, computed, OnInit, OnDestroy,
-  ViewChild, ElementRef, NgZone, AfterViewInit
+  ViewChild, ElementRef, NgZone, AfterViewInit, Input, Output, EventEmitter
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -28,11 +28,15 @@ interface PendingImage {
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink, TagInputComponent, FormatToolbarComponent, MoodIconComponent],
   template: `
-    <div class="editor-page">
+    <div class="editor-page" [class.editor-page--embedded]="embedded">
 
       <!-- Minimal header -->
       <header class="editor-nav">
-        <button class="btn btn--ghost btn--sm" routerLink="/dashboard">← Back</button>
+        @if (embedded) {
+          <button class="btn btn--ghost btn--sm" type="button" (click)="cancelCompose()">✕ Cancel</button>
+        } @else {
+          <button class="btn btn--ghost btn--sm" routerLink="/dashboard">← Back</button>
+        }
 
         <!-- Paid: segmented date picker -->
         @if (canBackfill()) {
@@ -289,6 +293,27 @@ interface PendingImage {
   `,
   styles: [`
     .editor-page { min-height: 100vh; display: flex; flex-direction: column; background: var(--color-bg); }
+    /* Embedded mode: drop the full-viewport sizing so the component fits
+       cleanly inside the dashboard's right column. */
+    .editor-page--embedded {
+      min-height: 0;
+      background: transparent;
+    }
+    .editor-page--embedded .editor-nav {
+      position: relative;
+      top: auto;
+      background: transparent;
+      border-bottom: none;
+      padding: .5rem 1.25rem .25rem;
+    }
+    .editor-page--embedded .editor-main {
+      padding: .5rem 1rem 2rem;
+    }
+    .editor-page--embedded .editor-main .container {
+      padding: 1.25rem 1.5rem;
+      box-shadow: none;
+      border: 1px solid var(--color-border);
+    }
 
     .editor-nav {
       display: flex; align-items: center; justify-content: space-between;
@@ -567,6 +592,32 @@ export class NewEntryComponent implements OnInit, AfterViewInit, OnDestroy {
   private destroy$ = new Subject<void>();
   private autosave$ = new Subject<string>();
 
+  /** When true, the component is rendered inside the dashboard's right column
+   *  rather than as a standalone /entry/new page. Hides the page-level back
+   *  button, drops full-viewport styling, and emits events instead of routing. */
+  @Input() embedded = false;
+
+  /** Pre-fill mood (one of the 12 supported keys). Used when embedded — the
+   *  dashboard passes mood from the Today panel's mood-first start row.
+   *  Otherwise read from the ?mood= query param. */
+  @Input() initialMood: string | null = null;
+
+  /** Pre-fill the prompt-context banner with a brief prompt question (e.g. from
+   *  the Today panel's small-prompt card). Otherwise read from ?prompt=. */
+  @Input() initialPrompt: string | null = null;
+
+  /** Pre-fill the prompt-context banner with the Daily Spark text (e.g. from
+   *  the Today panel's Spark CTA). Otherwise read from ?spark=. */
+  @Input() initialSpark: string | null = null;
+
+  /** Emitted when the entry was saved successfully. The dashboard listens for
+   *  this to switch the right column back to Today and refresh the list. */
+  @Output() saved = new EventEmitter<void>();
+
+  /** Emitted when the user cancels compose (✕ button when embedded). The
+   *  dashboard returns to Today view. The autosaved draft is preserved. */
+  @Output() canceled = new EventEmitter<void>();
+
   readonly MOODS = MOODS;
   readonly getMoodEmoji = getMoodEmoji;
 
@@ -784,14 +835,15 @@ export class NewEntryComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /**
-   * Reads ?mood=, ?prompt=, ?spark= from the URL and seeds compose
-   * state accordingly. Called once on init from the dashboard's Today
-   * panel handoff. Unsupported moods are ignored.
+   * Seeds compose state from prompt/spark/mood context. When embedded
+   * inside the dashboard, the parent supplies context via @Input. When
+   * rendered as a /entry/new page, falls back to URL query params.
+   * Unsupported moods are ignored.
    */
   private applyPromptContext(): void {
     const params = this.route.snapshot.queryParamMap;
 
-    const mood = params.get('mood');
+    const mood = this.initialMood ?? params.get('mood');
     if (mood && isSupportedMood(mood)) {
       this.selectedMood.set(mood);
       this.promptBanner.set({
@@ -802,7 +854,7 @@ export class NewEntryComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    const prompt = params.get('prompt');
+    const prompt = this.initialPrompt ?? params.get('prompt');
     if (prompt) {
       this.promptBanner.set({
         kind: 'prompt',
@@ -812,7 +864,7 @@ export class NewEntryComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    const spark = params.get('spark');
+    const spark = this.initialSpark ?? params.get('spark');
     if (spark) {
       this.promptBanner.set({
         kind: 'spark',
@@ -824,6 +876,20 @@ export class NewEntryComponent implements OnInit, AfterViewInit, OnDestroy {
 
   dismissPromptBanner(): void {
     this.promptBanner.set(null);
+  }
+
+  /** ✕ button when embedded — let the parent dashboard switch back to Today. */
+  cancelCompose(): void {
+    this.canceled.emit();
+  }
+
+  /** After a successful save: emit when embedded, route otherwise. */
+  private finishAfterSave(): void {
+    if (this.embedded) {
+      this.saved.emit();
+    } else {
+      this.router.navigate(['/dashboard']);
+    }
   }
 
   private truncate(s: string, max: number): string {
@@ -882,7 +948,7 @@ export class NewEntryComponent implements OnInit, AfterViewInit, OnDestroy {
         ).pipe(
           catchError(() => {
             this.submitError.set('Entry saved, but some images could not be uploaded.');
-            setTimeout(() => this.router.navigate(['/dashboard']), 2000);
+            setTimeout(() => this.finishAfterSave(), 2000);
             return EMPTY;
           })
         );
@@ -893,7 +959,7 @@ export class NewEntryComponent implements OnInit, AfterViewInit, OnDestroy {
         this.api.discardDraft(this.journalId(), this.selectedDate()).subscribe({
           error: () => {} // best-effort, don't block navigation
         });
-        this.router.navigate(['/dashboard']);
+        this.finishAfterSave();
       },
       error: err => {
         this.submitError.set(err?.error?.error ?? 'Could not publish entry. Please try again.');
