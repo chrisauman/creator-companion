@@ -10,6 +10,7 @@ import { getMoodEmoji } from '../../core/constants/moods';
 import { MILESTONES, getMilestoneForDays, getMilestoneIndex, getMilestoneProgress, Milestone, MilestoneProgress } from '../../core/constants/milestones';
 import { PushService } from '../../core/services/push.service';
 import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
+import { SidebarStateService } from '../../shared/sidebar/sidebar-state.service';
 import { MobileNavComponent } from '../../shared/mobile-nav/mobile-nav.component';
 import { MoodIconComponent } from '../../shared/mood-icon/mood-icon.component';
 import { TierIconComponent } from '../../shared/tier-icon/tier-icon.component';
@@ -45,24 +46,22 @@ import { ActivatedRoute } from '@angular/router';
       <!-- ── Desktop sidebar ─────────────────────────────────── -->
       <app-sidebar active="dashboard" />
 
-      <!-- ── Mobile top bar ──────────────────────────────────── -->
-      <header class="topbar">
-        <a class="topbar__brand" routerLink="/dashboard">
-          <img src="logo-icon.png" alt="" class="topbar__brand-icon">
-          <span class="topbar__brand-name">Creator Companion</span>
-        </a>
-        <a *ngIf="isAdmin()" class="topbar__admin" routerLink="/admin">Admin</a>
-      </header>
-
       <!-- ── Mobile bottom nav ───────────────────────────────── -->
       <app-mobile-nav active="dashboard" />
 
       <!-- ── Main content ────────────────────────────────────── -->
       <main class="main-content">
 
-        <!-- Mobile greeting (sidebar is hidden on mobile so we surface
-             the greeting + date + compose pill here instead). -->
+        <!-- Mobile header — hamburger drawer toggle on the left, greeting
+             + date in the middle, compose pill on the right. -->
         <div class="mobile-header">
+          <button class="mobile-header__hamburger" type="button"
+                  (click)="sidebarState.openMobile()"
+                  title="Open menu" aria-label="Open menu">
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
           <div class="mobile-header__greeting">
             <h1 class="mobile-header__hello">{{ greetingMessage() }}</h1>
             <div class="mobile-header__date">{{ todayLabel() }}</div>
@@ -410,32 +409,6 @@ import { ActivatedRoute } from '@angular/router';
       .dashboard { flex-direction: row; }
     }
 
-    /* ── Mobile top bar ──────────────────────────────────────────── */
-    .topbar {
-      position: sticky; top: 0; z-index: 100;
-      background: #111318;
-      border-bottom: 1px solid rgba(255,255,255,.07);
-      height: 52px;
-      display: flex; align-items: center;
-      padding: 0 1.125rem;
-      justify-content: space-between;
-    }
-    @media (min-width: 768px) { .topbar { display: none; } }
-    .topbar__brand { display: flex; align-items: center; gap: .5rem; text-decoration: none; }
-    .topbar__brand-icon { height: 24px; width: auto; display: block; }
-    .topbar__brand-name {
-      font-family: var(--font-sans);
-      font-size: .9375rem; font-weight: 700; color: #fff;
-    }
-    .topbar__admin {
-      font-size: .8125rem; font-weight: 600;
-      color: rgba(255,255,255,.5); text-decoration: none;
-      padding: .25rem .625rem;
-      border: 1px solid rgba(255,255,255,.15);
-      border-radius: 6px;
-      &:hover { color: #fff; border-color: rgba(255,255,255,.3); }
-    }
-
     /* ── Main content ────────────────────────────────────────────── */
     .main-content {
       flex: 1;
@@ -720,12 +693,11 @@ import { ActivatedRoute } from '@angular/router';
        Spark hero — hide it everywhere now. */
     .motivation-card--mobile { display: none !important; }
 
-    /* ── Mobile header (greeting + compose pill) ─────────────────── */
+    /* ── Mobile header (hamburger + greeting + compose pill) ─────── */
     .mobile-header {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
+      gap: .75rem;
       padding-bottom: 1rem;
       margin-bottom: 1rem;
       border-bottom: 1px solid var(--color-border);
@@ -733,16 +705,46 @@ import { ActivatedRoute } from '@angular/router';
     @media (min-width: 768px) {
       .mobile-header { display: none; }
     }
+    .mobile-header__hamburger {
+      width: 40px; height: 40px;
+      flex-shrink: 0;
+      background: transparent;
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 4px;
+      padding: 0;
+      cursor: pointer;
+      transition: background .15s, border-color .15s;
+    }
+    .mobile-header__hamburger:hover {
+      background: var(--color-surface-2);
+      border-color: var(--color-text-3);
+    }
+    .mobile-header__hamburger span {
+      display: block;
+      width: 18px; height: 1.75px;
+      background: var(--color-text);
+      border-radius: 2px;
+    }
+    .mobile-header__greeting {
+      flex: 1;
+      min-width: 0;
+    }
     .mobile-header__hello {
       font-family: var(--font-sans);
-      font-size: 1.25rem;
+      font-size: 1.125rem;
       font-weight: 800;
       letter-spacing: -.02em;
       color: var(--color-text);
-      margin: 0 0 2px;
+      margin: 0 0 1px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .mobile-header__date {
-      font-size: .75rem;
+      font-size: .6875rem;
       color: var(--color-text-2);
     }
     .mobile-header__compose {
@@ -1052,6 +1054,7 @@ export class DashboardComponent implements OnInit {
   private push   = inject(PushService);
   private router = inject(Router);
   private route  = inject(ActivatedRoute);
+  sidebarState   = inject(SidebarStateService);
 
   isAdmin = this.tokens.isAdmin.bind(this.tokens);
 

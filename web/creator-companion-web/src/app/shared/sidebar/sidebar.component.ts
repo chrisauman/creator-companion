@@ -1,10 +1,12 @@
 import { Component, Input, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink, NavigationEnd } from '@angular/router';
+import { filter } from 'rxjs/operators';
 import { ApiService } from '../../core/services/api.service';
 import { TokenService } from '../../core/services/token.service';
 import { AuthService } from '../../core/services/auth.service';
 import { StreakStats } from '../../core/models/models';
+import { SidebarStateService } from './sidebar-state.service';
 
 const COLLAPSE_KEY = 'cc_sidebar_collapsed';
 
@@ -13,7 +15,13 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
   standalone: true,
   imports: [CommonModule, RouterLink],
   template: `
-    <aside class="sidebar" [class.sidebar--collapsed]="collapsed()">
+    <!-- Backdrop: visible only when the mobile drawer is open. Click to close. -->
+    @if (mobileOpen()) {
+      <div class="sidebar-backdrop" (click)="closeMobile()"></div>
+    }
+    <aside class="sidebar"
+           [class.sidebar--collapsed]="collapsed()"
+           [class.sidebar--mobile-open]="mobileOpen()">
 
       <!-- Logo + collapse toggle -->
       <div class="sidebar__top">
@@ -139,7 +147,49 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
     </aside>
   `,
   styles: [`
-    .sidebar { display: none; }
+    /* ── Mobile drawer (< 768px) ─────────────────────────────────── */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      width: 280px;
+      max-width: 85vw;
+      height: 100vh;
+      background: #111318;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 1.25rem 0 1rem;
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 200;
+      transform: translateX(-100%);
+      transition: transform .25s ease, width .25s ease, min-width .25s ease;
+      box-shadow: 0 0 30px rgba(0,0,0,.4);
+    }
+    .sidebar--mobile-open { transform: translateX(0); }
+
+    .sidebar-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.4);
+      z-index: 199;
+      animation: fadeIn .15s ease forwards;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    /* Don't show drawer-mode collapse chevron on mobile — irrelevant. */
+    @media (max-width: 767px) {
+      .sidebar__collapse { display: none; }
+      .sidebar--collapsed {
+        /* ignore desktop collapsed state on mobile */
+        width: 280px;
+        min-width: 280px;
+      }
+    }
+
+    /* ── Desktop layout (>= 768px) ───────────────────────────────── */
     @media (min-width: 768px) {
       .sidebar {
         display: flex;
@@ -155,11 +205,15 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
         padding: 1.25rem 0 1rem;
         flex-shrink: 0;
         transition: width .25s ease, min-width .25s ease;
+        transform: none;
+        box-shadow: none;
+        z-index: auto;
       }
       .sidebar--collapsed {
         width: 64px;
         min-width: 64px;
       }
+      .sidebar-backdrop { display: none; }
     }
     /* Wider desktops get a roomier sidebar. */
     @media (min-width: 1200px) {
@@ -405,9 +459,15 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
 export class SidebarComponent implements OnInit {
   @Input() active: 'dashboard' | 'notifications' | 'todos' | 'favorites' | 'account' | 'admin' = 'dashboard';
 
-  private api    = inject(ApiService);
-  private tokens = inject(TokenService);
-  private auth   = inject(AuthService);
+  private api      = inject(ApiService);
+  private tokens   = inject(TokenService);
+  private auth     = inject(AuthService);
+  private router   = inject(Router);
+  private drawer   = inject(SidebarStateService);
+
+  /** Mobile-drawer state — read from the shared service. */
+  mobileOpen = this.drawer.mobileOpen;
+  closeMobile(): void { this.drawer.closeMobile(); }
 
   isAdmin           = this.tokens.isAdmin.bind(this.tokens);
   streak            = signal<StreakStats | null>(null);
@@ -495,5 +555,11 @@ export class SidebarComponent implements OnInit {
       next: sparks => this.hasFavoriteSparks.set(sparks.length > 0),
       error: () => {}  // silently hide the link on error (e.g. free-tier 403)
     });
+
+    // Close the mobile drawer whenever the user navigates somewhere — they
+    // tapped a nav item, so the drawer's job is done.
+    this.router.events
+      .pipe(filter(e => e instanceof NavigationEnd))
+      .subscribe(() => this.drawer.closeMobile());
   }
 }
