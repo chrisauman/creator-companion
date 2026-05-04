@@ -34,24 +34,8 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
         <app-sidebar active="dashboard" />
       }
 
-      <!-- Mobile top bar (hidden when embedded) -->
+      <!-- Mobile bottom nav (hidden when embedded — reader-top covers nav) -->
       @if (!embedded) {
-        <header class="topbar">
-          <a class="topbar__brand" routerLink="/dashboard">
-            <img src="logo-icon.png" alt="" class="topbar__brand-icon">
-            <span class="topbar__brand-name">Creator Companion</span>
-          </a>
-          <div class="topbar__actions">
-            <div class="save-indicator" [class]="'save-indicator--' + saveState()">
-              <span *ngIf="saveState() === 'saving'">Saving…</span>
-              <span *ngIf="saveState() === 'saved'">Saved ✓</span>
-              <span *ngIf="saveState() === 'error'">Save failed</span>
-            </div>
-            <button class="btn btn--ghost btn--sm" [routerLink]="['/entry', entryId]">← Back</button>
-          </div>
-        </header>
-
-        <!-- Mobile bottom nav -->
         <app-mobile-nav active="dashboard" />
       }
 
@@ -366,12 +350,15 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
     /* ── Main content ────────────────────────────────────────────── */
     .main-content {
       flex: 1; min-width: 0;
-      padding: 0 0 calc(72px + env(safe-area-inset-bottom, 0px));
+      padding: 0 0 calc(80px + env(safe-area-inset-bottom, 0px));
       background: var(--color-surface);
+      display: flex; flex-direction: column;
     }
     @media (min-width: 768px) {
-      .main-content { padding: 2rem 3rem 4rem; background: var(--color-surface); }
+      .main-content { padding: 0 0 4rem; background: var(--color-surface); }
     }
+    /* Editor body wrapper gets the actual content padding so the sticky
+       reader-top can hug the viewport edges. */
 
     /* ── Desktop action bar ──────────────────────────────────────── */
     .desktop-bar {
@@ -393,10 +380,10 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
 
     /* ── Editor form ─────────────────────────────────────────────── */
     .editor-form {
-      padding: 1.25rem 1.125rem 1rem;
+      padding: 1.25rem 1.125rem 2rem;
     }
     @media (min-width: 768px) {
-      .editor-form { max-width: 720px; margin: 0 auto; padding: 0; }
+      .editor-form { max-width: 760px; margin: 0 auto; padding: 2rem 1.5rem; }
     }
 
     /* ── Mobile meta row (date + mood + favorite) ────────────────── */

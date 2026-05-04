@@ -383,13 +383,24 @@ interface PendingImage {
       &--error  { color: var(--color-danger); }
     }
 
-    .editor-main { flex: 1; padding: 1.25rem 0 3rem; }
+    .editor-main {
+      flex: 1;
+      padding: 1.25rem 1.125rem calc(80px + env(safe-area-inset-bottom, 0px));
+    }
+    @media (min-width: 768px) {
+      .editor-main { padding: 1.5rem 0 4rem; }
+    }
     .editor-main .container {
       background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-lg);
-      box-shadow: var(--shadow-sm);
-      padding: 2rem 1.75rem;
+      max-width: 760px;
+      margin: 0 auto;
+    }
+    @media (min-width: 768px) {
+      .editor-main .container {
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        padding: 2rem 1.75rem;
+      }
     }
 
     /* ── Reader-style top bar ──────────────────────────────────── */

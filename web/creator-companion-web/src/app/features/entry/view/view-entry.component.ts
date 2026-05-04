@@ -22,50 +22,46 @@ import { MoodIconComponent } from '../../../shared/mood-icon/mood-icon.component
       <!-- Desktop sidebar -->
       <app-sidebar active="dashboard" />
 
-      <!-- Mobile top bar -->
-      <header class="topbar">
-        <a class="topbar__brand" routerLink="/dashboard">
-          <img src="logo-icon.png" alt="" class="topbar__brand-icon">
-          <span class="topbar__brand-name">Creator Companion</span>
-        </a>
-        <div class="topbar__actions">
-          @if (entry()) {
-            <button class="icon-btn" [class.icon-btn--active]="isFavorited()"
-              [title]="isFavorited() ? 'Remove from favorites' : 'Add to favorites'"
-              (click)="toggleFavorite()" [disabled]="favoriteLoading()">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-                [attr.fill]="isFavorited() ? 'currentColor' : 'none'"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-              </svg>
-            </button>
-            <a class="btn btn--ghost btn--sm" [routerLink]="['/entry', entryId, 'edit']">Edit</a>
-          }
-        </div>
-      </header>
-
       <!-- Mobile bottom nav -->
       <app-mobile-nav active="dashboard" />
 
       <!-- Main content -->
       <main class="main-content">
 
-        <!-- Desktop-only action bar above the entry -->
-        <div class="desktop-bar">
-          <button class="btn btn--ghost btn--sm" routerLink="/dashboard">← Back to Journal</button>
+        <!-- Reader-style top bar — works on both mobile and desktop. -->
+        <div class="reader-top">
+          <a class="cancel-pill" routerLink="/dashboard">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            Back
+          </a>
           @if (entry()) {
-            <div class="desktop-bar__actions">
-              <button class="icon-btn" [class.icon-btn--active]="isFavorited()"
+            <div class="reader-top__breadcrumb">
+              {{ monthYearLabel() }} · <strong>{{ weekdayDayLabel() }}</strong>
+            </div>
+            <div class="reader-top__actions">
+              <button class="reader-icon-btn"
+                [class.reader-icon-btn--fav-active]="isFavorited()"
                 [title]="isFavorited() ? 'Remove from favorites' : 'Add to favorites'"
                 (click)="toggleFavorite()" [disabled]="favoriteLoading()">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                <svg width="14" height="14" viewBox="0 0 24 24"
                   [attr.fill]="isFavorited() ? 'currentColor' : 'none'"
-                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
                 </svg>
               </button>
-              <a class="btn btn--ghost btn--sm" [routerLink]="['/entry', entryId, 'edit']">Edit</a>
+              <a class="edit-btn" [routerLink]="['/entry', entryId, 'edit']">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 20h9"/>
+                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/>
+                </svg>
+                Edit
+              </a>
             </div>
+          } @else {
+            <div class="reader-top__breadcrumb"></div>
+            <div class="reader-top__actions"></div>
           }
         </div>
 
@@ -142,44 +138,117 @@ import { MoodIconComponent } from '../../../shared/mood-icon/mood-icon.component
     .page { display: flex; flex-direction: column; min-height: 100vh; }
     @media (min-width: 768px) { .page { flex-direction: row; } }
 
-    /* ── Mobile top bar ──────────────────────────────────────────── */
-    .topbar {
-      position: sticky; top: 0; z-index: 100;
-      background: #111318;
-      border-bottom: 1px solid rgba(255,255,255,.07);
-      height: 52px;
-      display: flex; align-items: center;
-      padding: 0 .75rem;
-      gap: .5rem;
-    }
-    @media (min-width: 768px) { .topbar { display: none; } }
-    .topbar__brand { display: flex; align-items: center; gap: .5rem; text-decoration: none; flex-shrink: 0; }
-    .topbar__brand-icon { height: 22px; width: auto; display: block; }
-    .topbar__brand-name { font-family: var(--font-sans); font-size: .875rem; font-weight: 700; color: #fff; }
-    .topbar__actions { margin-left: auto; }
-    .topbar__actions { display: flex; align-items: center; gap: .25rem; flex-shrink: 0; }
-
     /* ── Main content ────────────────────────────────────────────── */
     .main-content {
       flex: 1; min-width: 0;
-      padding: 0 0 calc(72px + env(safe-area-inset-bottom, 0px));
+      padding: 0 0 calc(80px + env(safe-area-inset-bottom, 0px));
       background: var(--color-surface);
+      display: flex;
+      flex-direction: column;
     }
     @media (min-width: 768px) {
-      .main-content { padding: 2rem 3rem 4rem; background: var(--color-surface); }
+      .main-content { padding: 0 0 4rem; background: var(--color-surface); }
     }
 
-    /* ── Desktop action bar ──────────────────────────────────────── */
-    .desktop-bar {
-      display: none;
+    /* ── Reader-style top bar (works on both mobile and desktop) ── */
+    .reader-top {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      padding: .875rem 1.125rem;
+      border-bottom: 1px solid var(--color-border);
+      background: var(--color-surface);
+      position: sticky; top: 0;
+      z-index: 5;
     }
     @media (min-width: 768px) {
-      .desktop-bar {
-        display: flex; align-items: center; justify-content: space-between;
-        max-width: 720px; margin: 0 auto 1.25rem;
-      }
+      .reader-top { padding: 1rem 1.75rem; }
     }
-    .desktop-bar__actions { display: flex; align-items: center; gap: .5rem; }
+    .cancel-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: .375rem;
+      background: rgba(18,196,227,.1);
+      color: var(--color-accent-dark);
+      border: 1px solid rgba(18,196,227,.25);
+      padding: .375rem .75rem;
+      border-radius: 999px;
+      font-size: .75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      cursor: pointer;
+      font-family: inherit;
+      text-decoration: none;
+      transition: all .15s;
+      flex-shrink: 0;
+    }
+    .cancel-pill:hover {
+      background: var(--color-accent);
+      color: #0c0e13;
+      border-color: var(--color-accent);
+      text-decoration: none;
+    }
+    .reader-top__breadcrumb {
+      flex: 1;
+      text-align: center;
+      font-size: .75rem;
+      color: var(--color-text-3);
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    @media (min-width: 768px) {
+      .reader-top__breadcrumb { font-size: .8125rem; }
+    }
+    .reader-top__breadcrumb strong { color: var(--color-text); font-weight: 600; }
+    .reader-top__actions {
+      display: flex;
+      gap: .375rem;
+      flex-shrink: 0;
+    }
+    .reader-icon-btn {
+      width: 34px; height: 34px;
+      border: 1px solid var(--color-border);
+      background: var(--color-surface);
+      border-radius: 50%;
+      display: grid; place-items: center;
+      cursor: pointer;
+      color: var(--color-text-2);
+      transition: all .15s;
+    }
+    .reader-icon-btn:hover {
+      color: var(--color-text);
+      border-color: var(--color-text-3);
+    }
+    .reader-icon-btn--fav-active {
+      color: #e11d48;
+      border-color: rgba(225,29,72,.3);
+      background: rgba(225,29,72,.06);
+    }
+    .reader-icon-btn:disabled { opacity: .5; cursor: not-allowed; }
+    .edit-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: .375rem;
+      background: #0c0e13;
+      color: #fff;
+      border: none;
+      padding: .5rem 1rem;
+      border-radius: 999px;
+      font-family: inherit;
+      font-size: .8125rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all .15s;
+    }
+    .edit-btn:hover {
+      background: var(--color-accent);
+      color: #0c0e13;
+      text-decoration: none;
+    }
 
     /* ── States ──────────────────────────────────────────────────── */
     .loading-state {
@@ -203,20 +272,8 @@ import { MoodIconComponent } from '../../../shared/mood-icon/mood-icon.component
       .entry-card {
         max-width: 720px;
         margin: 0 auto;
-        padding: 0 0 3rem;
+        padding: 2rem 1.5rem 3rem;
       }
-    }
-
-    /* ── Icon button (star/favorite) ─────────────────────────────── */
-    .icon-btn {
-      display: flex; align-items: center; justify-content: center;
-      width: 32px; height: 32px; border-radius: 50%;
-      border: none; background: transparent; cursor: pointer;
-      color: var(--color-text-3); padding: 0;
-      transition: color .15s, transform .1s;
-      &:hover:not(:disabled) { color: var(--color-accent); transform: scale(1.1); }
-      &--active { color: var(--color-accent); }
-      &:disabled { opacity: .5; cursor: not-allowed; }
     }
 
     /* ── Entry typography ────────────────────────────────────────── */
@@ -335,6 +392,22 @@ export class ViewEntryComponent implements OnInit {
     if (!this.entry()) return '';
     return new Date(this.entry()!.entryDate + 'T00:00:00').toLocaleDateString('en-US', {
       weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
+    });
+  }
+
+  /** "May 2026" — for the reader-top breadcrumb. */
+  monthYearLabel(): string {
+    if (!this.entry()) return '';
+    return new Date(this.entry()!.entryDate + 'T00:00:00').toLocaleDateString('en-US', {
+      month: 'long', year: 'numeric'
+    });
+  }
+
+  /** "Sunday, May 3" — for the reader-top breadcrumb. */
+  weekdayDayLabel(): string {
+    if (!this.entry()) return '';
+    return new Date(this.entry()!.entryDate + 'T00:00:00').toLocaleDateString('en-US', {
+      weekday: 'long', month: 'long', day: 'numeric'
     });
   }
 
