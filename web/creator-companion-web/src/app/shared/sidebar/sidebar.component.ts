@@ -33,6 +33,12 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
         </button>
       </div>
 
+      <!-- Greeting + date (hidden when collapsed) -->
+      <div class="sidebar__greeting" *ngIf="!collapsed()">
+        <div class="sidebar__greeting-hello">{{ greetingMessage() }}</div>
+        <div class="sidebar__greeting-date">{{ todayLabel() }}</div>
+      </div>
+
       <!-- Streak block (hidden when collapsed) -->
       <div class="sidebar__streak-block" *ngIf="streak() && !collapsed()">
         <div class="sidebar__streak-num">{{ streak()!.currentStreak }}</div>
@@ -46,6 +52,19 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
         <div class="sidebar__streak-label">Day streak</div>
       </div>
 
+      <!-- New Entry button (cyan; full pill expanded, just + icon collapsed) -->
+      <a class="sidebar__compose"
+         [class.sidebar__compose--collapsed]="collapsed()"
+         [routerLink]="['/dashboard']"
+         [queryParams]="{compose: 1}"
+         [title]="collapsed() ? 'New Entry' : null">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2.4" stroke-linecap="round">
+          <path d="M12 5v14M5 12h14"/>
+        </svg>
+        <span class="sidebar__compose-label" *ngIf="!collapsed()">New Entry</span>
+      </a>
+
       <!-- Nav -->
       <nav class="sidebar__nav">
         <a class="sidebar__nav-item"
@@ -57,14 +76,16 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
         </a>
         <a class="sidebar__nav-item"
            [class.sidebar__nav-item--active]="active === 'notifications'"
-           routerLink="/notifications"
+           [routerLink]="['/dashboard']"
+           [queryParams]="{section: 'notifications'}"
            [title]="collapsed() ? 'Notifications' : null">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
           <span class="sidebar__nav-label">Notifications</span>
         </a>
         <a class="sidebar__nav-item"
            [class.sidebar__nav-item--active]="active === 'todos'"
-           routerLink="/todos"
+           [routerLink]="['/dashboard']"
+           [queryParams]="{section: 'todos'}"
            [title]="collapsed() ? 'To Do List' : null">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
           <span class="sidebar__nav-label">To Do List</span>
@@ -72,7 +93,8 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
         <a *ngIf="hasFavoriteSparks()"
            class="sidebar__nav-item"
            [class.sidebar__nav-item--active]="active === 'favorites'"
-           routerLink="/favorites"
+           [routerLink]="['/dashboard']"
+           [queryParams]="{section: 'favorites'}"
            [title]="collapsed() ? 'Favorite Sparks' : null">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
           <span class="sidebar__nav-label">Favorite Sparks</span>
@@ -202,27 +224,81 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
     }
     .sidebar__collapse svg { transition: transform .25s ease; }
 
+    /* ── Greeting + date (just below logo, hidden when collapsed) ── */
+    .sidebar__greeting {
+      padding: 0 1.25rem .875rem;
+      border-bottom: 1px solid rgba(255,255,255,.07);
+      margin-bottom: 1rem;
+      margin-top: -.5rem;
+    }
+    .sidebar__greeting-hello {
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: .9375rem;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -.005em;
+      line-height: 1.2;
+    }
+    .sidebar__greeting-date {
+      font-size: .6875rem;
+      color: rgba(255,255,255,.45);
+      margin-top: 2px;
+    }
+
     /* ── Streak block ───────────────────────────────────────────── */
     .sidebar__streak-block {
-      margin: 0 .875rem 1.25rem;
+      margin: 0 .875rem 1rem;
       background: rgba(18,196,227,.1);
       border: 1px solid rgba(18,196,227,.2);
       border-radius: 10px;
-      padding: 1.125rem 1.25rem;
+      padding: 1rem 1.125rem;
     }
     .sidebar__streak-block--loading { opacity: .4; }
     .sidebar__streak-num {
-      font-size: 3rem; font-weight: 900; line-height: 1;
+      font-size: 2.5rem; font-weight: 900; line-height: 1;
       color: #12C4E3; letter-spacing: -.03em;
+      font-family: 'Fraunces', Georgia, serif;
     }
     .sidebar__streak-label {
-      font-size: .8125rem; font-weight: 600;
+      font-size: .75rem; font-weight: 600;
       color: rgba(255,255,255,.7); margin-top: .25rem;
     }
     .sidebar__streak-sub {
-      font-size: .75rem; color: rgba(255,255,255,.35);
-      margin-top: .625rem; line-height: 1.5;
+      font-size: .6875rem; color: rgba(255,255,255,.35);
+      margin-top: .5rem; line-height: 1.5;
     }
+
+    /* ── New Entry button (cyan, expanded; circular + icon, collapsed) ── */
+    .sidebar__compose {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: .5rem;
+      margin: 0 .875rem 1rem;
+      padding: .625rem 1rem;
+      background: var(--color-accent);
+      color: #0c0e13;
+      border: none;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: .875rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background .15s, transform .15s;
+    }
+    .sidebar__compose:hover {
+      background: #0bd2f0;
+      text-decoration: none;
+      transform: translateY(-1px);
+    }
+    .sidebar__compose--collapsed {
+      width: 36px; height: 36px;
+      padding: 0;
+      margin: 0 auto 1rem;
+      border-radius: 50%;
+    }
+    .sidebar__compose-label { white-space: nowrap; }
 
     /* ── Nav ────────────────────────────────────────────────────── */
     .sidebar__nav {
@@ -388,6 +464,29 @@ export class SidebarComponent implements OnInit {
     const tier = this.tokens.getCachedUser()?.tier;
     return tier === 'Paid' ? 'Paid plan' : 'Free plan';
   });
+
+  /** Time-of-day greeting shown just below the logo (sidebar). */
+  greetingMessage = computed(() => {
+    const name = this.firstName();
+    const hour = new Date().getHours();
+    const period = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
+    return name ? `Good ${period}, ${name}` : `Good ${period}`;
+  });
+
+  /** Date subtitle below the greeting, e.g. "Sun · May 4". */
+  todayLabel = computed(() => {
+    const now = new Date();
+    return now.toLocaleDateString('en-US', {
+      weekday: 'short', month: 'short', day: 'numeric'
+    });
+  });
+
+  private firstName(): string {
+    const u = this.tokens.getCachedUser();
+    if (!u?.username) return '';
+    const base = u.username.includes('@') ? u.username.split('@')[0] : u.username;
+    return base.charAt(0).toUpperCase() + base.slice(1);
+  }
 
   toggleCollapsed(): void {
     const next = !this.collapsed();

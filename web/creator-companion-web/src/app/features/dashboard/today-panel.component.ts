@@ -25,12 +25,19 @@ import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
 
       <!-- Spark hero -->
       @if (motivation) {
-        <div class="spark-hero">
+        <div class="spark-hero" [class.spark-hero--expanded]="sparkExpanded()">
           <span class="spark-hero__eyebrow">Your Daily Spark</span>
           <p class="spark-hero__quote">{{ motivation.takeaway }}</p>
           @if (motivation.title) {
             <p class="spark-hero__author">— {{ motivation.title }}</p>
           }
+
+          <!-- Full content reveals when expanded. -->
+          <div class="spark-hero__full" *ngIf="sparkExpanded() && motivation.fullContent">
+            <div class="spark-hero__divider"></div>
+            <p class="spark-hero__body">{{ motivation.fullContent }}</p>
+          </div>
+
           <div class="spark-hero__actions">
             <button class="spark-action spark-action--primary" type="button"
                     (click)="composeFromSpark.emit()">
@@ -58,14 +65,24 @@ import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
 
             <button class="spark-action spark-action--icon"
                     type="button"
-                    title="Read the full Spark"
-                    (click)="expandSpark.emit()">
+                    [title]="sparkExpanded() ? 'Collapse' : 'Read more'"
+                    [attr.aria-expanded]="sparkExpanded()"
+                    (click)="toggleSparkExpanded()">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                   stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                   stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                   [style.transform]="sparkExpanded() ? 'rotate(180deg)' : 'rotate(0deg)'"
+                   style="transition: transform .2s">
                 <polyline points="6 9 12 15 18 9"/>
               </svg>
             </button>
           </div>
+
+          <!-- "Read more / Read less" footer link, optional -->
+          <button class="spark-hero__readmore" type="button"
+                  *ngIf="motivation.fullContent && motivation.fullContent !== motivation.takeaway"
+                  (click)="toggleSparkExpanded()">
+            {{ sparkExpanded() ? 'Show less' : 'Read more' }}
+          </button>
         </div>
       }
 
@@ -192,6 +209,38 @@ import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
       color: rgba(255,255,255,.55);
       margin: 0 0 1.25rem;
       position: relative;
+    }
+    .spark-hero__divider {
+      height: 1px;
+      background: rgba(255,255,255,.1);
+      margin: 0 0 1rem;
+      position: relative;
+    }
+    .spark-hero__body {
+      font-size: .9375rem;
+      line-height: 1.7;
+      color: rgba(255,255,255,.88);
+      position: relative;
+      margin: 0 0 1.25rem;
+      white-space: pre-wrap;
+    }
+    .spark-hero__readmore {
+      background: none;
+      border: none;
+      color: rgba(18,196,227,.95);
+      font-size: .75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      padding: .5rem 0 0;
+      cursor: pointer;
+      position: relative;
+      font-family: inherit;
+      display: inline-block;
+    }
+    .spark-hero__readmore:hover { color: var(--cyan); }
+    .spark-hero--expanded {
+      background: linear-gradient(180deg, #0c0e13 0%, #1a1d24 60%, #232831 100%);
     }
     .spark-hero__actions {
       display: flex;
@@ -412,6 +461,14 @@ export class TodayPanelComponent implements OnInit {
   @Output() expandSpark = new EventEmitter<void>();
 
   readonly moodKeys = SUPPORTED_MOOD_KEYS;
+
+  /** True when the user has clicked "Read more" to reveal motivation.fullContent. */
+  sparkExpanded = signal<boolean>(false);
+
+  toggleSparkExpanded(): void {
+    this.sparkExpanded.set(!this.sparkExpanded());
+    this.expandSpark.emit(); // keep parent informed if it cares
+  }
 
   /**
    * Library of brief prompts. Fetched from the backend on mount; falls

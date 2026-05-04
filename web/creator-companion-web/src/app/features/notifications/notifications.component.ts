@@ -1,6 +1,7 @@
-import { Component, inject, signal, computed, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, Output, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
 import { AuthService } from '../../core/services/auth.service';
 import { PushService } from '../../core/services/push.service';
@@ -13,25 +14,39 @@ const DEFAULT_REMINDER_MESSAGE = 'Remember to log an entry to keep your streak a
 @Component({
   selector: 'app-notifications',
   standalone: true,
-  imports: [CommonModule, FormsModule, SidebarComponent, MobileNavComponent],
+  imports: [CommonModule, FormsModule, RouterLink, SidebarComponent, MobileNavComponent],
   template: `
-    <div class="page">
+    <div class="page" [class.page--embedded]="embedded">
 
-      <app-sidebar active="notifications" />
-
-      <!-- Mobile top bar -->
-      <header class="topbar">
-        <a class="topbar__brand" routerLink="/dashboard">
-          <img src="logo-icon.png" alt="" class="topbar__brand-icon">
-          <span class="topbar__brand-name">Creator Companion</span>
-        </a>
-      </header>
-
-      <!-- Mobile bottom nav -->
-      <app-mobile-nav active="notifications" />
+      <!-- Page chrome — hidden when embedded inside the dashboard right column -->
+      @if (!embedded) {
+        <app-sidebar active="notifications" />
+        <header class="topbar">
+          <a class="topbar__brand" routerLink="/dashboard">
+            <img src="logo-icon.png" alt="" class="topbar__brand-icon">
+            <span class="topbar__brand-name">Creator Companion</span>
+          </a>
+        </header>
+        <app-mobile-nav active="notifications" />
+      }
 
       <main class="main-content">
-        <div class="page-header">
+
+        <!-- Reader-style top bar when embedded -->
+        @if (embedded) {
+          <div class="reader-top">
+            <button class="cancel-pill" type="button" (click)="returnToToday.emit()">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2Z"/>
+              </svg>
+              Today
+            </button>
+            <div class="reader-top__breadcrumb"><strong>Notifications</strong></div>
+            <div class="reader-top__actions"></div>
+          </div>
+        }
+
+        <div class="page-header" [class.page-header--embedded]="embedded">
           <h1 class="page-title">Notifications</h1>
           <p class="page-sub">Manage how and when you receive reminders.</p>
         </div>
@@ -200,6 +215,46 @@ const DEFAULT_REMINDER_MESSAGE = 'Remember to log an entry to keep your streak a
     /* ── Page shell ─────────────────────────────────────────────── */
     .page { display: flex; flex-direction: column; min-height: 100vh; }
     @media (min-width: 768px) { .page { flex-direction: row; } }
+    /* Embedded mode — the dashboard's right column hosts this component. */
+    .page--embedded { min-height: 0; flex-direction: column; }
+    .page--embedded .main-content {
+      padding: 0 !important;
+      background: transparent !important;
+    }
+    .page--embedded .page-header { padding: 1.5rem 2rem 0; margin-bottom: 1rem; }
+
+    /* ── Reader-style top bar (embedded only) ───────────────────── */
+    .reader-top {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      padding: 1rem 1.75rem;
+      border-bottom: 1px solid var(--color-border);
+      background: var(--color-surface);
+      position: sticky; top: 0;
+      z-index: 5;
+    }
+    .cancel-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: .375rem;
+      background: rgba(18,196,227,.1);
+      color: var(--color-accent-dark);
+      border: 1px solid rgba(18,196,227,.25);
+      padding: .375rem .75rem;
+      border-radius: 999px;
+      font-size: .75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all .15s;
+    }
+    .cancel-pill:hover { background: var(--color-accent); color: #0c0e13; border-color: var(--color-accent); }
+    .reader-top__breadcrumb { flex: 1; text-align: center; font-size: .8125rem; color: var(--color-text-3); }
+    .reader-top__breadcrumb strong { color: var(--color-text); font-weight: 600; }
+    .reader-top__actions { display: flex; gap: .5rem; flex-shrink: 0; min-width: 36px; }
 
     /* ── Mobile top bar ──────────────────────────────────────────── */
     .topbar {
@@ -227,11 +282,15 @@ const DEFAULT_REMINDER_MESSAGE = 'Remember to log an entry to keep your streak a
 
     /* ── Page header ─────────────────────────────────────────────── */
     .page-header { margin-bottom: 1.5rem; }
+    .page-header--embedded { margin-bottom: 1rem; }
     .page-title {
-      font-size: 1.5rem; font-weight: 800; color: var(--color-text);
-      font-family: var(--font-display); margin: 0 0 .25rem;
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: 1.5rem; font-weight: 700;
+      letter-spacing: -.01em;
+      color: var(--color-text);
+      margin: 0 0 .25rem;
     }
-    .page-sub { font-size: .9375rem; color: var(--color-text-2); margin: 0; }
+    .page-sub { font-size: .8125rem; color: var(--color-text-2); margin: 0; }
 
     /* ── Cards ───────────────────────────────────────────────────── */
     .card { margin-bottom: 1rem; }
@@ -321,6 +380,13 @@ export class NotificationsComponent implements OnInit {
   private api  = inject(ApiService);
   private auth = inject(AuthService);
   private push = inject(PushService);
+
+  /** When true, the component is rendered inside the dashboard's right
+   *  column rather than as the /notifications page. */
+  @Input() embedded = false;
+
+  /** Emitted when the user clicks the Today pill in the embedded top bar. */
+  @Output() returnToToday = new EventEmitter<void>();
 
   readonly defaultReminderMessage = DEFAULT_REMINDER_MESSAGE;
 

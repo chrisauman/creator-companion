@@ -17,11 +17,15 @@ import { TodayPanelComponent } from './today-panel.component';
 import { EntryReaderComponent } from './entry-reader.component';
 import { NewEntryComponent } from '../entry/new/new-entry.component';
 import { EditEntryComponent } from '../entry/edit/edit-entry.component';
+import { NotificationsComponent } from '../notifications/notifications.component';
+import { FavoriteSparksComponent } from '../favorite-sparks/favorite-sparks.component';
+import { ActionItemsCardComponent } from './action-items-card.component';
+import { ActivatedRoute } from '@angular/router';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, SidebarComponent, MobileNavComponent, MoodIconComponent, TierIconComponent, TodayPanelComponent, EntryReaderComponent, NewEntryComponent, EditEntryComponent],
+  imports: [CommonModule, RouterLink, FormsModule, SidebarComponent, MobileNavComponent, MoodIconComponent, TierIconComponent, TodayPanelComponent, EntryReaderComponent, NewEntryComponent, EditEntryComponent, NotificationsComponent, FavoriteSparksComponent, ActionItemsCardComponent],
   template: `
     <div class="dashboard">
 
@@ -56,20 +60,10 @@ import { EditEntryComponent } from '../entry/edit/edit-entry.component';
       <!-- ── Main content ────────────────────────────────────── -->
       <main class="main-content">
 
-        <!-- ── Desktop greeting + compose pill ──────────────── -->
-        <div class="greeting-row">
-          <div class="greeting">
-            <h1 class="greeting__hello">{{ greetingMessage() }}</h1>
-            <div class="greeting__date">{{ todayLabel() }}</div>
-          </div>
-          <button class="compose-pill" type="button" (click)="composeBlank()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="2.4" stroke-linecap="round">
-              <path d="M12 5v14M5 12h14"/>
-            </svg>
-            New Entry
-          </button>
-        </div>
+        <!-- (Greeting + date moved into the sidebar; "+ New Entry" is now
+             the cyan button below the streak block in the sidebar. The
+             content area starts directly with the stats strip so we get
+             more vertical room for the entry list and right column.) -->
 
         <!-- ── Desktop stats strip ──────────────────────────── -->
         <div class="stats-strip" *ngIf="streak()">
@@ -343,6 +337,39 @@ import { EditEntryComponent } from '../entry/edit/edit-entry.component';
                 (deleted)="onEditDeleted()"
               ></app-edit-entry>
             }
+            @case ('notifications') {
+              <app-notifications
+                [embedded]="true"
+                (returnToToday)="returnToToday()"
+              ></app-notifications>
+            }
+            @case ('favorites') {
+              <app-favorite-sparks
+                [embedded]="true"
+                (returnToToday)="returnToToday()"
+              ></app-favorite-sparks>
+            }
+            @case ('todos') {
+              <div class="embedded-section">
+                <div class="reader-top">
+                  <button class="cancel-pill" type="button" (click)="returnToToday()">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2Z"/>
+                    </svg>
+                    Today
+                  </button>
+                  <div class="reader-top__breadcrumb"><strong>To Do List</strong></div>
+                  <div class="reader-top__actions"></div>
+                </div>
+                <div class="embedded-section__body">
+                  <div class="page-header">
+                    <h1 class="page-title">To Do List</h1>
+                    <p class="page-sub">Your daily reminders and next actions.</p>
+                  </div>
+                  <app-action-items-card [startExpanded]="true" [collapsible]="false"></app-action-items-card>
+                </div>
+              </div>
+            }
           }
         </aside>
 
@@ -452,18 +479,18 @@ import { EditEntryComponent } from '../entry/edit/edit-entry.component';
       transform: translateY(-1px);
     }
 
-    /* ── Desktop stats strip ─────────────────────────────────────── */
+    /* ── Desktop stats strip (condensed) ─────────────────────────── */
     .stats-strip { display: none; }
     @media (min-width: 768px) {
       .stats-strip {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
         gap: 0;
-        padding: 1.25rem 0 1.5rem;
-        margin-bottom: .25rem;
-        border-top: 1px solid var(--color-border);
+        padding: .75rem 0 .875rem;
+        margin-top: -1rem;
+        margin-bottom: 0;
         border-bottom: 1px solid var(--color-border);
-        row-gap: 1.25rem;
+        row-gap: .875rem;
       }
     }
     /* Wider screens get the original 4-across single-row strip. */
@@ -474,7 +501,7 @@ import { EditEntryComponent } from '../entry/edit/edit-entry.component';
       }
     }
     .stats-strip .stat {
-      padding: 0 1.5rem;
+      padding: 0 1rem;
       border-right: 1px solid var(--color-border);
       min-width: 0;
     }
@@ -485,7 +512,7 @@ import { EditEntryComponent } from '../entry/edit/edit-entry.component';
     }
     .stats-strip .stat:first-child { padding-left: 0; }
     @media (min-width: 1100px) {
-      .stats-strip .stat:nth-child(3) { padding-left: 1.5rem; }
+      .stats-strip .stat:nth-child(3) { padding-left: 1rem; }
     }
     @media (max-width: 1099px) and (min-width: 768px) {
       .stats-strip .stat:nth-child(3) { padding-left: 0; }
@@ -493,22 +520,22 @@ import { EditEntryComponent } from '../entry/edit/edit-entry.component';
 
     .stats-strip .stat__num {
       font-family: var(--font-display);
-      font-size: 2rem;
+      font-size: 1.5rem;
       font-weight: 700;
       line-height: 1;
       letter-spacing: -.02em;
       color: var(--color-text);
     }
     .stats-strip .stat__unit {
-      font-size: .8125rem;
+      font-size: .6875rem;
       color: var(--color-text-3);
       font-family: var(--font-sans);
       font-weight: 500;
-      margin-left: 4px;
+      margin-left: 3px;
     }
     .stats-strip .stat__label {
-      margin-top: .375rem;
-      font-size: .6875rem;
+      margin-top: .25rem;
+      font-size: .625rem;
       color: var(--color-text-2);
       font-weight: 600;
       text-transform: uppercase;
@@ -518,19 +545,19 @@ import { EditEntryComponent } from '../entry/edit/edit-entry.component';
     .stats-strip--skeleton .stat__label { opacity: .6; }
 
     /* ── Hybrid progress reward ──────────────────────────────────── */
-    .reward { margin-top: .625rem; }
+    .reward { margin-top: .375rem; }
     .reward__badge {
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: .375rem;
       width: 100%;
-      padding: 4px 10px;
+      padding: 3px 8px;
       background: #faf2dc;
       border: 1px solid rgba(224,168,58,.3);
       color: #8b6912;
-      border-radius: 8px;
-      font-size: .6875rem;
+      border-radius: 6px;
+      font-size: .625rem;
       font-weight: 700;
       letter-spacing: .03em;
       box-sizing: border-box;
@@ -661,6 +688,73 @@ import { EditEntryComponent } from '../entry/edit/edit-entry.component';
        lives inside the Today panel as the Spark hero. */
     @media (min-width: 768px) {
       .motivation-card--mobile { display: none; }
+    }
+
+    /* ── Embedded sections (Notifications / Todos / Favorites) ── */
+    .embedded-section {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+    .embedded-section .reader-top {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      padding: 1rem 1.75rem;
+      border-bottom: 1px solid var(--color-border);
+      background: var(--color-surface);
+      position: sticky; top: 0;
+      z-index: 5;
+    }
+    .embedded-section .cancel-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: .375rem;
+      background: rgba(18,196,227,.1);
+      color: var(--color-accent-dark);
+      border: 1px solid rgba(18,196,227,.25);
+      padding: .375rem .75rem;
+      border-radius: 999px;
+      font-size: .75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all .15s;
+    }
+    .embedded-section .cancel-pill:hover {
+      background: var(--color-accent);
+      color: #0c0e13;
+      border-color: var(--color-accent);
+    }
+    .embedded-section .reader-top__breadcrumb {
+      flex: 1;
+      text-align: center;
+      font-size: .8125rem;
+      color: var(--color-text-3);
+    }
+    .embedded-section .reader-top__breadcrumb strong { color: var(--color-text); font-weight: 600; }
+    .embedded-section .reader-top__actions {
+      display: flex; gap: .5rem; flex-shrink: 0; min-width: 36px;
+    }
+    .embedded-section__body {
+      padding: 1.5rem 2rem 2.5rem;
+      flex: 1;
+      overflow-y: auto;
+    }
+    .embedded-section__body .page-header { margin-bottom: 1.25rem; }
+    .embedded-section__body .page-title {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -.01em;
+      margin: 0 0 .25rem;
+    }
+    .embedded-section__body .page-sub {
+      font-size: .8125rem;
+      color: var(--color-text-2);
+      margin: 0;
     }
 
     /* ── Daily Motivation ────────────────────────────────────────── */
@@ -869,6 +963,7 @@ export class DashboardComponent implements OnInit {
   private tokens = inject(TokenService);
   private push   = inject(PushService);
   private router = inject(Router);
+  private route  = inject(ActivatedRoute);
 
   isAdmin = this.tokens.isAdmin.bind(this.tokens);
 
@@ -933,8 +1028,9 @@ export class DashboardComponent implements OnInit {
   error          = signal('');
   sessionExpired = signal(false);
 
-  // ── Right column state (desktop): Today / Reading / Composing / Editing
-  rightColumnMode      = signal<'today' | 'reading' | 'composing' | 'editing'>('today');
+  // ── Right column state (desktop): Today / Reading / Composing / Editing /
+  //                                   Notifications / Todos / Favorites
+  rightColumnMode      = signal<'today' | 'reading' | 'composing' | 'editing' | 'notifications' | 'todos' | 'favorites'>('today');
   selectedEntryId      = signal<string | null>(null);
   selectedEntry        = signal<Entry | null>(null);
   selectedEntryLoading = signal<boolean>(false);
@@ -980,6 +1076,11 @@ export class DashboardComponent implements OnInit {
   ngOnInit(): void {
     this.auth.loadCapabilities().subscribe(caps => this.isPaid.set(caps.canFavorite));
     this.initPushNudge();
+    this.applySectionQueryParam();
+
+    // Re-apply section param on subsequent navigations (e.g. user clicks
+    // a sidebar nav item while already on /dashboard).
+    this.route.queryParamMap.subscribe(() => this.applySectionQueryParam());
 
     // Safety net: if any API call hangs past 20 s, exit the loading state
     // gracefully rather than spinning forever. This covers Railway cold starts
@@ -1193,6 +1294,36 @@ export class DashboardComponent implements OnInit {
     this.composeMood.set(null);
     this.composePrompt.set(null);
     this.composeSpark.set(null);
+    // Strip the ?section= query param if present so the URL reflects state.
+    if (this.route.snapshot.queryParamMap.has('section')) {
+      this.router.navigate(['/dashboard'], { queryParams: { section: null }, queryParamsHandling: 'merge' });
+    }
+  }
+
+  /**
+   * Reads ?section= from the URL and switches the right column to the
+   * matching embedded view. Sidebar nav items navigate to /dashboard
+   * with this param so users never leave the dashboard on desktop.
+   */
+  private applySectionQueryParam(): void {
+    const params = this.route.snapshot.queryParamMap;
+    const section = params.get('section');
+    const compose = params.get('compose');
+    const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
+    if (!isDesktop) return;
+
+    // ?compose=1 → open inline compose with no prompt context, then strip
+    // the param so the URL doesn't re-trigger compose on back/forward.
+    if (compose === '1') {
+      this.openCompose({});
+      this.router.navigate(['/dashboard'], { replaceUrl: true });
+      return;
+    }
+
+    if (section === 'notifications') this.rightColumnMode.set('notifications');
+    else if (section === 'todos')    this.rightColumnMode.set('todos');
+    else if (section === 'favorites') this.rightColumnMode.set('favorites');
+    else if (!section)               { /* no-op; keep current mode */ }
   }
 
   editSelectedEntry(): void {

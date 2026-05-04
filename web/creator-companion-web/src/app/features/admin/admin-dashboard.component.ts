@@ -79,15 +79,74 @@ import { ApiService } from '../../core/services/api.service';
   styles: [`
     .admin-page { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem; }
     .admin-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
-    .admin-header h1 { font-size: 1.5rem; margin: 0; }
-    .admin-nav { display: flex; gap: .25rem; margin-bottom: 2rem; border-bottom: 1px solid var(--color-border); padding-bottom: .75rem; }
-    .admin-nav__link { padding: .4rem .9rem; border-radius: 6px; text-decoration: none; color: var(--color-text-muted); font-size: .875rem; }
-    .admin-nav__link:hover, .admin-nav__link--active { background: var(--color-surface); color: var(--color-text); }
-    .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem; }
-    .stat-card { padding: 1.25rem; text-align: center; }
-    .stat-card--accent { border-color: var(--color-accent); }
-    .stat-card__value { display: block; font-size: 2rem; font-weight: 900; color: var(--color-text); font-family: var(--font-display); }
-    .stat-card__label { display: block; font-size: .75rem; color: var(--color-text-muted); margin-top: .25rem; text-transform: uppercase; letter-spacing: .05em; }
+    .admin-header h1 {
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: 1.75rem; font-weight: 700;
+      letter-spacing: -.01em; margin: 0;
+    }
+    .admin-header .btn--ghost {
+      background: transparent;
+      color: var(--color-text-2);
+      border: 1px solid var(--color-border);
+      border-radius: 999px;
+    }
+    .admin-header .btn--ghost:hover {
+      color: var(--color-text);
+      background: var(--color-surface-2);
+    }
+    .admin-nav {
+      display: flex; gap: .25rem; flex-wrap: wrap;
+      margin-bottom: 2rem; border-bottom: 1px solid var(--color-border);
+      padding-bottom: 1rem;
+    }
+    .admin-nav__link {
+      padding: .375rem .875rem; border-radius: var(--radius-sm);
+      font-size: .875rem; font-weight: 500; color: var(--color-text-2);
+      text-decoration: none; transition: background .15s, color .15s;
+    }
+    .admin-nav__link:hover { background: var(--color-surface-2); color: var(--color-text); }
+    .admin-nav__link--active {
+      background: var(--color-accent-light);
+      color: var(--color-accent-dark);
+      font-weight: 600;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 1rem;
+    }
+    .stat-card {
+      padding: 1.25rem;
+      text-align: center;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      transition: border-color .15s, transform .15s;
+    }
+    .stat-card:hover {
+      border-color: var(--color-text-3);
+      transform: translateY(-1px);
+    }
+    .stat-card--accent {
+      background: linear-gradient(135deg, rgba(18,196,227,.04), rgba(18,196,227,.08));
+      border-color: rgba(18,196,227,.25);
+    }
+    .stat-card__value {
+      display: block;
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: 2rem; font-weight: 700;
+      letter-spacing: -.02em;
+      color: var(--color-text);
+    }
+    .stat-card__label {
+      display: block; font-size: .6875rem;
+      color: var(--color-text-3);
+      margin-top: .375rem;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      font-weight: 600;
+    }
   `]
 })
 export class AdminDashboardComponent implements OnInit {
