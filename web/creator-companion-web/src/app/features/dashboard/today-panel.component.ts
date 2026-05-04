@@ -84,12 +84,8 @@ import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
         </div>
       }
 
-      <!-- Or, begin somewhere else -->
+      <!-- Quick-start cards (prompt, mood, blank) -->
       <div class="start-section">
-        <h3 class="start-section__label">Or, begin somewhere else</h3>
-        <p class="start-section__sub">
-          A few quick ways to start writing today. Each one opens a new entry.
-        </p>
 
         <!-- Brief prompt card -->
         <div class="prompt-card">
