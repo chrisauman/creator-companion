@@ -427,7 +427,7 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log an entry to keep your streak a
     @media (min-width: 768px) { .topbar { display: none; } }
     .topbar__brand { display: flex; align-items: center; gap: .5rem; text-decoration: none; }
     .topbar__brand-icon { height: 24px; width: auto; display: block; }
-    .topbar__brand-name { font-family: 'Fraunces', Georgia, serif; font-size: .9375rem; font-weight: 700; color: #fff; }
+    .topbar__brand-name { font-family: var(--font-sans); font-size: .9375rem; font-weight: 700; color: #fff; }
 
     /* Column that holds main + sign-out as siblings, stays in page flex row */
     .content-col {

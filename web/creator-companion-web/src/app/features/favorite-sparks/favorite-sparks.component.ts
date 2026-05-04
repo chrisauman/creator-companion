@@ -181,7 +181,7 @@ import { MobileNavComponent } from '../../shared/mobile-nav/mobile-nav.component
     @media (min-width: 768px) { .topbar { display: none; } }
     .topbar__brand { display: flex; align-items: center; gap: .5rem; text-decoration: none; }
     .topbar__brand-icon { height: 24px; width: auto; display: block; }
-    .topbar__brand-name { font-family: 'Fraunces', Georgia, serif; font-size: .9375rem; font-weight: 700; color: #fff; }
+    .topbar__brand-name { font-family: var(--font-sans); font-size: .9375rem; font-weight: 700; color: #fff; }
 
     /* ── Main content ────────────────────────────────────────────── */
     .main-content {
@@ -197,7 +197,7 @@ import { MobileNavComponent } from '../../shared/mobile-nav/mobile-nav.component
     .page-header { margin-bottom: 1.5rem; }
     .page-header--embedded { margin-bottom: 1rem; }
     .page-title {
-      font-family: 'Fraunces', Georgia, serif;
+      font-family: var(--font-sans);
       font-size: 1.5rem; font-weight: 700;
       letter-spacing: -.01em;
       color: var(--color-text);

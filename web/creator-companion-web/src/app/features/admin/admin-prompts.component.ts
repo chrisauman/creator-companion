@@ -214,7 +214,7 @@ import { DailyPrompt } from '../../core/models/models';
       display: flex; align-items: flex-start; gap: .75rem; flex-wrap: wrap;
     }
     .prompt-text {
-      font-family: 'Fraunces', Georgia, serif;
+      font-family: var(--font-sans);
       font-size: 1rem; line-height: 1.5;
       color: var(--color-text); flex: 1; font-weight: 500;
     }

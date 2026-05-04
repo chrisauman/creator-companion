@@ -360,7 +360,7 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
     @media (min-width: 768px) { .topbar { display: none; } }
     .topbar__brand { display: flex; align-items: center; gap: .5rem; text-decoration: none; flex-shrink: 0; }
     .topbar__brand-icon { height: 22px; width: auto; display: block; }
-    .topbar__brand-name { font-family: 'Fraunces', Georgia, serif; font-size: .875rem; font-weight: 700; color: #fff; }
+    .topbar__brand-name { font-family: var(--font-sans); font-size: .875rem; font-weight: 700; color: #fff; }
     .topbar__actions { margin-left: auto; display: flex; align-items: center; gap: .5rem; flex-shrink: 0; }
 
     /* ── Main content ────────────────────────────────────────────── */
@@ -451,7 +451,7 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
     /* ── Title input ─────────────────────────────────────────────── */
     .title-input {
       width: 100%; border: none; outline: none; background: transparent;
-      font-family: 'Fraunces', Georgia, serif;
+      font-family: var(--font-sans);
       font-size: 1.875rem; font-weight: 700; letter-spacing: -.015em;
       line-height: 1.2; color: var(--color-text); padding: 0; margin-bottom: 1rem;
       &::placeholder { color: var(--color-text-3); font-weight: 600; }

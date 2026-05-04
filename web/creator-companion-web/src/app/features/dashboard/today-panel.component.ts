@@ -198,7 +198,7 @@ import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
       50% { opacity: .4; }
     }
     .spark-hero__quote {
-      font-family: 'Fraunces', Georgia, serif;
+      font-family: var(--font-sans);
       font-size: 1.25rem;
       line-height: 1.45;
       font-weight: 500;
@@ -325,7 +325,7 @@ import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
     /* ── Or, begin somewhere else ────────────────────────────── */
     .start-section { display: block; }
     .start-section__label {
-      font-family: 'Fraunces', Georgia, serif;
+      font-family: var(--font-sans);
       font-size: 1.0625rem;
       font-weight: 600;
       letter-spacing: -.005em;
@@ -376,7 +376,7 @@ import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
       transform: rotate(180deg);
     }
     .prompt-card__question {
-      font-family: 'Fraunces', Georgia, serif;
+      font-family: var(--font-sans);
       font-size: 1.1875rem;
       font-weight: 500;
       line-height: 1.4;
@@ -408,7 +408,7 @@ import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
       margin-bottom: 1rem;
     }
     .mood-card__title {
-      font-family: 'Fraunces', Georgia, serif;
+      font-family: var(--font-sans);
       font-size: 1.0625rem;
       font-weight: 600;
       margin-bottom: 2px;

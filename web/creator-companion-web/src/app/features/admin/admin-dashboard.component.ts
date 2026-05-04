@@ -80,7 +80,7 @@ import { ApiService } from '../../core/services/api.service';
     .admin-page { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem; }
     .admin-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
     .admin-header h1 {
-      font-family: 'Fraunces', Georgia, serif;
+      font-family: var(--font-sans);
       font-size: 1.75rem; font-weight: 700;
       letter-spacing: -.01em; margin: 0;
     }
@@ -134,7 +134,7 @@ import { ApiService } from '../../core/services/api.service';
     }
     .stat-card__value {
       display: block;
-      font-family: 'Fraunces', Georgia, serif;
+      font-family: var(--font-sans);
       font-size: 2rem; font-weight: 700;
       letter-spacing: -.02em;
       color: var(--color-text);

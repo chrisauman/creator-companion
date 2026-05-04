@@ -93,7 +93,7 @@ import { MobileNavComponent } from '../../shared/mobile-nav/mobile-nav.component
     @media (min-width: 768px) { .topbar { display: none; } }
     .topbar__brand { display: flex; align-items: center; gap: .5rem; text-decoration: none; }
     .topbar__brand-icon { height: 22px; width: auto; }
-    .topbar__brand-name { font-family: 'Fraunces', Georgia, serif; font-size: .875rem; font-weight: 700; color: #fff; }
+    .topbar__brand-name { font-family: var(--font-sans); font-size: .875rem; font-weight: 700; color: #fff; }
 
     /* ── Main ────────────────────────────────────────────────────── */
     .main-content {

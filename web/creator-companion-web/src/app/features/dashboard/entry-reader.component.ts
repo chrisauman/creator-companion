@@ -268,7 +268,7 @@ import { MoodIconComponent } from '../../shared/mood-icon/mood-icon.component';
     .reading__mood app-mood-icon { color: var(--color-text-3); }
 
     .reading__title {
-      font-family: 'Fraunces', Georgia, serif;
+      font-family: var(--font-sans);
       font-size: 2.125rem;
       font-weight: 700;
       line-height: 1.15;
@@ -294,7 +294,7 @@ import { MoodIconComponent } from '../../shared/mood-icon/mood-icon.component';
     .reading__body :last-child { margin-bottom: 0; }
     .reading__body p { margin: 0 0 1.25rem; }
     .reading__body p:first-of-type::first-letter {
-      font-family: 'Fraunces', Georgia, serif;
+      font-family: var(--font-sans);
       font-size: 3rem;
       float: left;
       line-height: .9;
@@ -303,7 +303,7 @@ import { MoodIconComponent } from '../../shared/mood-icon/mood-icon.component';
       color: var(--color-accent);
     }
     .reading__body h2, .reading__body h3 {
-      font-family: 'Fraunces', Georgia, serif;
+      font-family: var(--font-sans);
       letter-spacing: -.01em;
       margin: 1.5rem 0 .75rem;
     }

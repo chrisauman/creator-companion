@@ -185,7 +185,7 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
     }
     .sidebar__logo-icon { height: 28px; width: auto; flex-shrink: 0; }
     .sidebar__logo-text {
-      font-family: 'Fraunces', Georgia, serif;
+      font-family: var(--font-sans);
       font-size: 1rem; font-weight: 700; color: #fff;
       letter-spacing: 0; line-height: 1;
       white-space: nowrap;
@@ -219,7 +219,7 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
       margin-top: -.5rem;
     }
     .sidebar__greeting-hello {
-      font-family: 'Fraunces', Georgia, serif;
+      font-family: var(--font-sans);
       font-size: .9375rem;
       font-weight: 700;
       color: #fff;

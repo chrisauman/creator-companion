@@ -494,7 +494,7 @@ interface PendingImage {
 
     .title-input {
       width: 100%; border: none; outline: none; background: transparent;
-      font-family: 'Fraunces', Georgia, serif;
+      font-family: var(--font-sans);
       font-size: 1.875rem; font-weight: 700; letter-spacing: -.015em;
       line-height: 1.2; color: var(--color-text); padding: 0; margin-bottom: 1rem;
       &::placeholder { color: var(--color-text-3); font-weight: 600; }

@@ -268,7 +268,7 @@ const DEFAULT_REMINDER_MESSAGE = 'Remember to log an entry to keep your streak a
     @media (min-width: 768px) { .topbar { display: none; } }
     .topbar__brand { display: flex; align-items: center; gap: .5rem; text-decoration: none; }
     .topbar__brand-icon { height: 24px; width: auto; display: block; }
-    .topbar__brand-name { font-family: 'Fraunces', Georgia, serif; font-size: .9375rem; font-weight: 700; color: #fff; }
+    .topbar__brand-name { font-family: var(--font-sans); font-size: .9375rem; font-weight: 700; color: #fff; }
 
     /* ── Main content ────────────────────────────────────────────── */
     .main-content {
@@ -281,99 +281,214 @@ const DEFAULT_REMINDER_MESSAGE = 'Remember to log an entry to keep your streak a
     }
 
     /* ── Page header ─────────────────────────────────────────────── */
-    .page-header { margin-bottom: 1.5rem; }
-    .page-header--embedded { margin-bottom: 1rem; }
+    .page-header { margin-bottom: 1.75rem; }
+    .page-header--embedded { margin-bottom: 1.25rem; }
     .page-title {
-      font-family: 'Fraunces', Georgia, serif;
-      font-size: 1.5rem; font-weight: 700;
-      letter-spacing: -.01em;
+      font-family: var(--font-sans);
+      font-size: 1.625rem; font-weight: 800;
+      letter-spacing: -.02em;
       color: var(--color-text);
       margin: 0 0 .25rem;
     }
-    .page-sub { font-size: .8125rem; color: var(--color-text-2); margin: 0; }
+    .page-sub { font-size: .9375rem; color: var(--color-text-2); margin: 0; line-height: 1.5; }
 
-    /* ── Cards ───────────────────────────────────────────────────── */
-    .card { margin-bottom: 1rem; }
+    /* ── Cards (modernized) ──────────────────────────────────────── */
+    .card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 16px;
+      padding: 1.5rem 1.625rem;
+      margin-bottom: 1rem;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .card:hover { border-color: var(--color-text-3); }
+
     .section-head {
       display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 1rem;
-      h2 { font-size: 1rem; font-weight: 700; margin: 0; }
+      margin-bottom: 1.25rem;
+      gap: 1rem;
+    }
+    .section-head h2 {
+      font-family: var(--font-sans);
+      font-size: 1.0625rem;
+      font-weight: 700;
+      letter-spacing: -.005em;
+      margin: 0;
+      color: var(--color-text);
     }
 
     /* ── Push section ────────────────────────────────────────────── */
-    .push-prompt { display: flex; flex-direction: column; gap: .5rem; }
-    .push-active { display: flex; align-items: center; gap: .625rem; }
+    .push-prompt { display: flex; flex-direction: column; gap: .75rem; align-items: flex-start; }
+    .push-prompt p { color: var(--color-text-2); line-height: 1.5; margin: 0; }
+    .push-active {
+      display: inline-flex;
+      align-items: center;
+      gap: .625rem;
+      background: rgba(34,197,94,.08);
+      border: 1px solid rgba(34,197,94,.25);
+      color: #166534;
+      border-radius: 999px;
+      padding: .5rem .875rem;
+      font-size: .8125rem;
+      font-weight: 600;
+    }
     .push-dot {
       width: 8px; height: 8px; border-radius: 50%;
       background: #22c55e; flex-shrink: 0;
+      box-shadow: 0 0 8px #22c55e;
     }
+    .push-active .btn { margin-left: auto; }
 
     /* ── Reminder cards ──────────────────────────────────────────── */
     .reminder-free-row {
       display: flex; align-items: center; justify-content: space-between;
-      gap: 1rem; margin-bottom: .625rem;
+      gap: 1rem; padding: 1rem 1.125rem;
+      background: var(--color-bg);
+      border: 1px solid var(--color-border);
+      border-radius: 14px;
+      margin-bottom: .75rem;
     }
     .reminder-free-info { flex: 1; }
-    .reminder-time-label { font-size: .9375rem; font-weight: 600; margin: 0 0 .2rem; }
-    .upgrade-note { margin-top: .5rem; }
+    .reminder-time-label {
+      font-size: 1rem; font-weight: 700; margin: 0 0 .2rem;
+      color: var(--color-text);
+    }
+    .reminder-free-info .text-sm { color: var(--color-text-2); }
+    .upgrade-note {
+      display: block;
+      padding: .75rem 1rem;
+      background: rgba(18,196,227,.06);
+      border: 1px solid rgba(18,196,227,.2);
+      border-radius: 12px;
+      color: var(--color-accent-dark);
+      font-size: .8125rem;
+      line-height: 1.5;
+      margin-top: .25rem;
+    }
 
     .reminders-section-label {
-      font-size: .8125rem; font-weight: 600; color: var(--color-text-2);
-      text-transform: uppercase; letter-spacing: .04em;
-      margin-top: .875rem; margin-bottom: .375rem;
+      font-size: .6875rem; font-weight: 700; color: var(--color-text-3);
+      text-transform: uppercase; letter-spacing: .14em;
+      margin-top: 1rem; margin-bottom: .625rem;
     }
     .reminders-list { display: flex; flex-direction: column; gap: .75rem; }
     .reminder-card {
-      border: 1px solid var(--color-border); border-radius: var(--radius-md);
-      padding: .875rem 1rem; display: flex; flex-direction: column; gap: .75rem;
+      background: var(--color-bg);
+      border: 1px solid var(--color-border);
+      border-radius: 14px;
+      padding: 1.125rem 1.25rem;
+      display: flex; flex-direction: column; gap: 1rem;
+      transition: border-color .15s;
     }
+    .reminder-card:hover { border-color: var(--color-text-3); }
     .reminder-card--default {
-      border-color: var(--color-accent); background: var(--color-accent-light);
+      background: linear-gradient(135deg, rgba(18,196,227,.04), rgba(18,196,227,.08));
+      border-color: rgba(18,196,227,.3);
     }
+    .reminder-card--default:hover { border-color: rgba(18,196,227,.5); }
     .reminder-card__header { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
     .default-badge {
-      font-size: .75rem; font-weight: 600; padding: .2rem .6rem;
-      border-radius: 100px; background: var(--color-accent); color: #fff; flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: .25rem;
+      font-size: .625rem; font-weight: 700;
+      padding: .25rem .625rem;
+      border-radius: 999px;
+      background: var(--color-accent);
+      color: #0c0e13;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      flex-shrink: 0;
     }
     .reminder-card__fields {
-      display: grid; grid-template-columns: 120px 1fr; gap: .625rem; align-items: end;
+      display: grid; grid-template-columns: 120px 1fr; gap: .875rem; align-items: end;
     }
     @media (max-width: 500px) { .reminder-card__fields { grid-template-columns: 1fr; } }
-    .reminder-card__actions { display: flex; align-items: center; gap: .625rem; }
-    .field-group { display: flex; flex-direction: column; gap: .3rem; }
-    .field-label { font-size: .8125rem; font-weight: 500; color: var(--color-text-2); }
-    .optional { font-weight: 400; color: var(--color-text-3); }
-    .time-input {
-      width: 100%; padding: .4rem .6rem; font-size: .875rem;
-      border: 1.5px solid var(--color-border); border-radius: var(--radius-md);
-      background: var(--color-surface); color: var(--color-text);
-      font-family: var(--font-sans); box-sizing: border-box;
-      &:focus { outline: none; border-color: var(--color-accent); }
+    .reminder-card__actions {
+      display: flex; align-items: center; gap: .75rem;
+      padding-top: .75rem;
+      border-top: 1px solid var(--color-border);
     }
-    .text-input {
-      width: 100%; padding: .4rem .75rem; font-size: .875rem;
-      border: 1.5px solid var(--color-border); border-radius: var(--radius-md);
-      background: var(--color-surface); color: var(--color-text);
-      font-family: var(--font-sans); box-sizing: border-box;
-      &:focus { outline: none; border-color: var(--color-accent); }
-      &::placeholder { color: var(--color-text-3); }
+    .reminder-card--default .reminder-card__actions {
+      border-top-color: rgba(18,196,227,.2);
     }
+    .reminder-card__actions .btn { margin-left: auto; }
 
-    /* ── Toggle switch ───────────────────────────────────────────── */
-    .toggle-switch { position: relative; display: inline-flex; align-items: center; cursor: pointer; }
+    .field-group { display: flex; flex-direction: column; gap: .375rem; }
+    .reminder-msg-group { min-width: 0; }
+    .field-label {
+      font-size: .6875rem; font-weight: 700;
+      color: var(--color-text-3);
+      text-transform: uppercase;
+      letter-spacing: .1em;
+    }
+    .optional { font-weight: 500; color: var(--color-text-3); text-transform: none; letter-spacing: 0; }
+    .time-input,
+    .text-input {
+      width: 100%; padding: .5rem .875rem; font-size: .875rem;
+      border: 1px solid var(--color-border); border-radius: 999px;
+      background: var(--color-surface); color: var(--color-text);
+      font-family: var(--font-sans); box-sizing: border-box;
+      transition: border-color .15s, background .15s;
+    }
+    .time-input:focus,
+    .text-input:focus {
+      outline: none;
+      border-color: var(--color-accent);
+      background: var(--color-surface);
+    }
+    .text-input::placeholder { color: var(--color-text-3); }
+
+    /* ── Toggle switch (refined) ─────────────────────────────────── */
+    .toggle-switch {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
     .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
     .toggle-track {
-      width: 40px; height: 22px; background: var(--color-border);
-      border-radius: 100px; position: relative; transition: background .2s; flex-shrink: 0;
+      width: 42px; height: 24px;
+      background: var(--color-border);
+      border-radius: 999px;
+      position: relative;
+      transition: background .2s;
+      flex-shrink: 0;
     }
     .toggle-switch input:checked + .toggle-track { background: var(--color-accent); }
     .toggle-thumb {
       position: absolute; top: 3px; left: 3px;
-      width: 16px; height: 16px; border-radius: 50%;
-      background: #fff; transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,.2);
+      width: 18px; height: 18px; border-radius: 50%;
+      background: #fff;
+      transition: transform .2s;
+      box-shadow: 0 1px 4px rgba(0,0,0,.2);
     }
     .toggle-switch input:checked + .toggle-track .toggle-thumb { transform: translateX(18px); }
     .toggle-switch input:disabled + .toggle-track { opacity: .5; cursor: not-allowed; }
+
+    /* ── Add reminder button ─────────────────────────────────────── */
+    .add-reminder-btn {
+      width: 100%;
+      margin-top: .75rem;
+      padding: .75rem;
+      background: transparent;
+      border: 1px dashed var(--color-border);
+      border-radius: 14px;
+      color: var(--color-text-2);
+      font-family: var(--font-sans);
+      font-size: .875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: border-color .15s, color .15s, background .15s;
+    }
+    .add-reminder-btn:hover:not(:disabled) {
+      border-color: var(--color-accent);
+      border-style: solid;
+      color: var(--color-accent-dark);
+      background: rgba(18,196,227,.04);
+    }
+    .add-reminder-btn:disabled { opacity: .5; cursor: not-allowed; }
   `]
 })
 export class NotificationsComponent implements OnInit {

@@ -404,7 +404,7 @@ import { ActivatedRoute } from '@angular/router';
     .topbar__brand { display: flex; align-items: center; gap: .5rem; text-decoration: none; }
     .topbar__brand-icon { height: 24px; width: auto; display: block; }
     .topbar__brand-name {
-      font-family: 'Fraunces', Georgia, serif;
+      font-family: var(--font-sans);
       font-size: .9375rem; font-weight: 700; color: #fff;
     }
     .topbar__admin {
