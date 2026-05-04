@@ -58,36 +58,41 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
       <!-- Main content -->
       <main class="main-content">
 
-        <!-- Desktop action bar -->
-        <div class="desktop-bar">
-          @if (embedded) {
-            <button class="btn btn--ghost btn--sm" type="button" (click)="cancelEdit()">✕ Cancel</button>
-          } @else {
-            <button class="btn btn--ghost btn--sm" [routerLink]="['/entry', entryId]">← Back to entry</button>
-          }
-          <div class="desktop-bar__right">
-            <span class="editor-date">{{ entryDateLabel() }}</span>
-            @if (selectedMood()) {
-              <span class="editor-mood-badge"><app-mood-icon [mood]="selectedMood()" [size]="14"></app-mood-icon> {{ selectedMood() }}</span>
-            }
+        <!-- Reader-style top bar — matches the inline reader so the
+             reading → editing transition feels continuous. -->
+        <div class="reader-top">
+          <button class="cancel-pill" type="button" (click)="cancelEdit()">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2.4" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            Cancel
+          </button>
+          <div class="reader-top__breadcrumb">
+            {{ monthYearLabel() }} · <strong>{{ weekdayDayLabel() }}</strong>
+          </div>
+          <div class="reader-top__actions">
+            <div class="save-indicator-mini" [class]="'save-indicator--' + saveState()">
+              <span *ngIf="saveState() === 'saving'">Saving…</span>
+              <span *ngIf="saveState() === 'saved'">Saved</span>
+              <span *ngIf="saveState() === 'error'">Save failed</span>
+            </div>
             <button
-              class="favorite-btn"
-              [class.favorite-btn--active]="isFavorited()"
+              class="reader-icon-btn"
+              [class.reader-icon-btn--fav-active]="isFavorited()"
               [title]="isFavorited() ? 'Remove from favorites' : 'Add to favorites'"
               (click)="toggleFavorite()"
               [disabled]="favoriteLoading()"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+              <svg width="14" height="14" viewBox="0 0 24 24"
                 [attr.fill]="isFavorited() ? 'currentColor' : 'none'"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
               </svg>
             </button>
-            <div class="save-indicator" [class]="'save-indicator--' + saveState()">
-              <span *ngIf="saveState() === 'saving'">Saving…</span>
-              <span *ngIf="saveState() === 'saved'">Saved ✓</span>
-              <span *ngIf="saveState() === 'error'">Save failed</span>
-            </div>
+            <button class="save-btn" type="button"
+                    (click)="saveNow()"
+                    [disabled]="saving() || !title.trim() || wordCount() < 10 || wordCount() > maxWords()">
+              {{ saving() ? 'Saving…' : 'Save' }}
+            </button>
           </div>
         </div>
 
@@ -102,27 +107,18 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
         }
 
         @if (!loading()) {
-          <div class="editor-form">
+          <div class="editor-form reading-style">
 
-            <!-- Mobile: date + mood + favorite -->
-            <div class="mobile-meta">
-              <span class="editor-date">{{ entryDateLabel() }}</span>
+            <!-- Date eyebrow + mood inline (matches reader's date row).
+                 Tap "Change date" to backfill if paid. -->
+            <div class="reading__date-row">
+              <span class="reading__date">{{ readerDateLabel() }}</span>
               @if (selectedMood()) {
-                <span class="editor-mood-badge"><app-mood-icon [mood]="selectedMood()" [size]="14"></app-mood-icon> {{ selectedMood() }}</span>
+                <span class="reading__mood">
+                  <app-mood-icon [mood]="selectedMood()" [size]="14"></app-mood-icon>
+                  {{ selectedMood() }}
+                </span>
               }
-              <button
-                class="favorite-btn"
-                [class.favorite-btn--active]="isFavorited()"
-                [title]="isFavorited() ? 'Remove from favorites' : 'Add to favorites'"
-                (click)="toggleFavorite()"
-                [disabled]="favoriteLoading()"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
-                  [attr.fill]="isFavorited() ? 'currentColor' : 'none'"
-                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-                </svg>
-              </button>
             </div>
 
             <!-- Title -->
@@ -288,24 +284,23 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
               }
             </div>
 
+            <!-- Footer: word count on the left, subtle trash link on the right.
+                 Save moved up to the reader-style top bar. -->
             <div class="editor-footer">
               <span class="word-count"
                 [class.word-count--warn]="wordCount() > maxWords() * 0.9"
                 [class.word-count--over]="wordCount() > maxWords()">
                 {{ wordCount() }} / {{ maxWords() }} words
               </span>
-              <div class="editor-actions">
-                <button class="btn btn--danger btn--sm" (click)="confirmDelete = true" [disabled]="saving()">
-                  Move to trash
-                </button>
-                <button
-                  class="btn btn--primary"
-                  (click)="saveNow()"
-                  [disabled]="saving() || !title.trim() || wordCount() < 10 || wordCount() > maxWords()"
-                >
-                  {{ saving() ? 'Saving…' : 'Save changes' }}
-                </button>
-              </div>
+              <button class="trash-link" type="button" (click)="confirmDelete = true" [disabled]="saving()">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="3 6 5 6 21 6"/>
+                  <path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/>
+                  <path d="M10 11v6"/><path d="M14 11v6"/>
+                </svg>
+                Move to trash
+              </button>
             </div>
 
             <div *ngIf="error()" class="alert alert--error" style="margin-top:1rem">{{ error() }}</div>
@@ -461,6 +456,142 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
       line-height: 1.2; color: var(--color-text); padding: 0; margin-bottom: 1rem;
       &::placeholder { color: var(--color-text-3); font-weight: 600; }
       &:disabled { opacity: .6; }
+    }
+
+    /* ── Reader-style top bar (matches the inline reader) ──────── */
+    .reader-top {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      padding: 1rem 1.75rem;
+      border-bottom: 1px solid var(--color-border);
+      background: var(--color-surface);
+      position: sticky; top: 0;
+      z-index: 5;
+    }
+    .cancel-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: .375rem;
+      background: rgba(18,196,227,.1);
+      color: var(--color-accent-dark);
+      border: 1px solid rgba(18,196,227,.25);
+      padding: .375rem .75rem;
+      border-radius: 999px;
+      font-size: .75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all .15s;
+    }
+    .cancel-pill:hover {
+      background: var(--color-accent);
+      color: #0c0e13;
+      border-color: var(--color-accent);
+    }
+    .reader-top__breadcrumb {
+      flex: 1;
+      text-align: center;
+      font-size: .8125rem;
+      color: var(--color-text-3);
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .reader-top__breadcrumb strong {
+      color: var(--color-text);
+      font-weight: 600;
+    }
+    .reader-top__actions {
+      display: flex;
+      gap: .5rem;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .save-indicator-mini {
+      font-size: .75rem;
+      font-weight: 500;
+      color: var(--color-text-3);
+      min-width: 0;
+      &.save-indicator--saving { color: var(--color-text-3); }
+      &.save-indicator--saved  { color: #16a34a; }
+      &.save-indicator--error  { color: var(--color-danger); }
+    }
+    .reader-icon-btn {
+      width: 36px; height: 36px;
+      border: 1px solid var(--color-border);
+      background: var(--color-surface);
+      border-radius: 50%;
+      display: grid; place-items: center;
+      cursor: pointer;
+      color: var(--color-text-2);
+      transition: all .15s;
+    }
+    .reader-icon-btn:hover {
+      color: var(--color-text);
+      border-color: var(--color-text-3);
+    }
+    .reader-icon-btn--fav-active {
+      color: #e11d48;
+      border-color: rgba(225,29,72,.3);
+      background: rgba(225,29,72,.06);
+    }
+    .save-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: .375rem;
+      background: #0c0e13;
+      color: #fff;
+      border: none;
+      padding: .5rem 1.125rem;
+      border-radius: 999px;
+      font-family: inherit;
+      font-size: .8125rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .save-btn:hover:not(:disabled) {
+      background: var(--color-accent);
+      color: #0c0e13;
+    }
+    .save-btn:disabled {
+      opacity: .5;
+      cursor: not-allowed;
+    }
+
+    /* ── Reader-style date row + mood (matches reader) ─────────── */
+    .reading__date-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
+    .reading__date {
+      font-size: .6875rem;
+      text-transform: uppercase;
+      letter-spacing: .14em;
+      color: var(--color-accent-dark);
+      font-weight: 700;
+    }
+    .reading__mood {
+      display: inline-flex;
+      align-items: center;
+      gap: .375rem;
+      font-size: .75rem;
+      color: var(--color-text-2);
+      font-weight: 500;
+    }
+    .reading__mood app-mood-icon { color: var(--color-text-3); }
+
+    .reading-style {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 2rem 2.5rem 4rem;
     }
 
     /* ── Editor primary actions — match new design language ─────── */
@@ -655,6 +786,28 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
     }
     .editor-actions { display: flex; gap: .75rem; flex-wrap: wrap; }
 
+    /* Subtle "move to trash" link in the footer (Save is now in the top bar) */
+    .trash-link {
+      display: inline-flex;
+      align-items: center;
+      gap: .375rem;
+      background: none;
+      border: none;
+      padding: .25rem .5rem;
+      font-family: inherit;
+      font-size: .8125rem;
+      font-weight: 500;
+      color: var(--color-text-3);
+      cursor: pointer;
+      border-radius: 6px;
+      transition: color .15s, background .15s;
+    }
+    .trash-link:hover:not(:disabled) {
+      color: var(--color-danger);
+      background: rgba(225,29,72,.06);
+    }
+    .trash-link:disabled { opacity: .4; cursor: not-allowed; }
+
     /* ── Delete overlay ──────────────────────────────────────────── */
     .overlay {
       position: fixed; inset: 0; background: rgba(0,0,0,.4);
@@ -848,6 +1001,32 @@ export class EditEntryComponent implements OnInit, OnDestroy {
     return new Date(this.entry()!.entryDate + 'T00:00:00').toLocaleDateString('en-US', {
       weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
     });
+  }
+
+  /** "May 2026" — for the top breadcrumb (matches reader). */
+  monthYearLabel(): string {
+    if (!this.entry()) return '';
+    return new Date(this.entry()!.entryDate + 'T00:00:00').toLocaleDateString('en-US', {
+      month: 'long', year: 'numeric'
+    });
+  }
+
+  /** "Sunday, May 3" — for the top breadcrumb (matches reader). */
+  weekdayDayLabel(): string {
+    if (!this.entry()) return '';
+    return new Date(this.entry()!.entryDate + 'T00:00:00').toLocaleDateString('en-US', {
+      weekday: 'long', month: 'long', day: 'numeric'
+    });
+  }
+
+  /** "SUNDAY · 8:54 PM" — date eyebrow above the title (matches reader). */
+  readerDateLabel(): string {
+    if (!this.entry()) return '';
+    const d = new Date(this.entry()!.entryDate + 'T00:00:00');
+    const created = new Date(this.entry()!.createdAt);
+    const weekday = d.toLocaleDateString('en-US', { weekday: 'long' });
+    const time = created.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    return `${weekday} · ${time}`;
   }
 
   fullImageUrl(relativeUrl: string): string {

@@ -30,20 +30,43 @@ interface PendingImage {
   template: `
     <div class="editor-page" [class.editor-page--embedded]="embedded">
 
-      <!-- Minimal header -->
-      <header class="editor-nav">
+      <!-- Reader-style top bar — matches the inline reader / inline edit
+           so the writing → reading → editing flow feels continuous. -->
+      <div class="reader-top">
         @if (embedded) {
-          <button class="btn btn--ghost btn--sm" type="button" (click)="cancelCompose()">✕ Cancel</button>
+          <button class="cancel-pill" type="button" (click)="cancelCompose()">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2.4" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            Cancel
+          </button>
         } @else {
-          <button class="btn btn--ghost btn--sm" routerLink="/dashboard">← Back</button>
+          <button class="cancel-pill" type="button" routerLink="/dashboard">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            Back
+          </button>
         }
-
-        <div class="save-indicator" [class]="'save-indicator--' + saveState()">
-          <span *ngIf="saveState() === 'saving'">Saving…</span>
-          <span *ngIf="saveState() === 'saved'">Draft saved</span>
-          <span *ngIf="saveState() === 'error'">Save failed</span>
+        <div class="reader-top__breadcrumb">
+          New entry · <strong>{{ selectedDateLabel() }}</strong>
         </div>
-      </header>
+        <div class="reader-top__actions">
+          <div class="save-indicator-mini" [class]="'save-indicator--' + saveState()">
+            <span *ngIf="saveState() === 'saving'">Saving…</span>
+            <span *ngIf="saveState() === 'saved'">Draft saved</span>
+            <span *ngIf="saveState() === 'error'">Save failed</span>
+          </div>
+          <button class="save-btn" type="button"
+                  (click)="submit()"
+                  [disabled]="submitting() || wordCount() < 10 || wordCount() > maxWords()">
+            @if (submitting()) {
+              @if (uploadProgress()) { {{ uploadProgress() }} }
+              @else { Saving… }
+            } @else {
+              Save
+            }
+          </button>
+        </div>
+      </div>
 
       <!-- Editor -->
       <main class="editor-main">
@@ -252,7 +275,8 @@ interface PendingImage {
             }
           </div>
 
-          <!-- Word count + actions -->
+          <!-- Word count — Save moved up to the reader-style top bar.
+               Drafts auto-save in the background. -->
           <div class="editor-footer">
             <div class="footer-meta">
               <span class="word-count"
@@ -265,7 +289,7 @@ interface PendingImage {
               }
             </div>
 
-            <div class="editor-actions">
+            <div class="editor-actions" hidden>
               <button class="btn btn--secondary btn--sm" routerLink="/dashboard" [disabled]="submitting()">
                 Save draft
               </button>
@@ -366,6 +390,88 @@ interface PendingImage {
       border-radius: var(--radius-lg);
       box-shadow: var(--shadow-sm);
       padding: 2rem 1.75rem;
+    }
+
+    /* ── Reader-style top bar ──────────────────────────────────── */
+    .reader-top {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      padding: 1rem 1.75rem;
+      border-bottom: 1px solid var(--color-border);
+      background: var(--color-surface);
+      position: sticky; top: 0;
+      z-index: 5;
+    }
+    .cancel-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: .375rem;
+      background: rgba(18,196,227,.1);
+      color: var(--color-accent-dark);
+      border: 1px solid rgba(18,196,227,.25);
+      padding: .375rem .75rem;
+      border-radius: 999px;
+      font-size: .75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all .15s;
+    }
+    .cancel-pill:hover {
+      background: var(--color-accent);
+      color: #0c0e13;
+      border-color: var(--color-accent);
+    }
+    .reader-top__breadcrumb {
+      flex: 1;
+      text-align: center;
+      font-size: .8125rem;
+      color: var(--color-text-3);
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .reader-top__breadcrumb strong { color: var(--color-text); font-weight: 600; }
+    .reader-top__actions {
+      display: flex;
+      gap: .5rem;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .save-indicator-mini {
+      font-size: .75rem;
+      font-weight: 500;
+      color: var(--color-text-3);
+      &.save-indicator--saving { color: var(--color-text-3); }
+      &.save-indicator--saved  { color: #16a34a; }
+      &.save-indicator--error  { color: var(--color-danger); }
+    }
+    .save-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: .375rem;
+      background: #0c0e13;
+      color: #fff;
+      border: none;
+      padding: .5rem 1.125rem;
+      border-radius: 999px;
+      font-family: inherit;
+      font-size: .8125rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .save-btn:hover:not(:disabled) {
+      background: var(--color-accent);
+      color: #0c0e13;
+    }
+    .save-btn:disabled {
+      opacity: .5;
+      cursor: not-allowed;
     }
 
     /* ── Entry date row (above title) ─────────────────────────── */
@@ -882,6 +988,15 @@ export class NewEntryComponent implements OnInit, AfterViewInit, OnDestroy {
   todayLabel(): string {
     return new Date().toLocaleDateString('en-US', {
       weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
+    });
+  }
+
+  /** "Sunday, May 4" — for the top breadcrumb (matches reader). */
+  selectedDateLabel(): string {
+    const iso = this.selectedDate();
+    if (!iso) return '';
+    return new Date(iso + 'T00:00:00').toLocaleDateString('en-US', {
+      weekday: 'long', month: 'long', day: 'numeric'
     });
   }
 
