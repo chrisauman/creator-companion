@@ -7,16 +7,17 @@ import { AuthService } from '../../core/services/auth.service';
 import { TokenService } from '../../core/services/token.service';
 import { StreakStats, EntryListItem, MotivationEntry } from '../../core/models/models';
 import { getMoodEmoji } from '../../core/constants/moods';
-import { MILESTONES, getMilestoneForDays, getMilestoneIndex, Milestone } from '../../core/constants/milestones';
+import { MILESTONES, getMilestoneForDays, getMilestoneIndex, getMilestoneProgress, Milestone, MilestoneProgress } from '../../core/constants/milestones';
 import { PushService } from '../../core/services/push.service';
 import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
 import { MobileNavComponent } from '../../shared/mobile-nav/mobile-nav.component';
 import { MoodIconComponent } from '../../shared/mood-icon/mood-icon.component';
+import { TierIconComponent } from '../../shared/tier-icon/tier-icon.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, SidebarComponent, MobileNavComponent, MoodIconComponent],
+  imports: [CommonModule, RouterLink, FormsModule, SidebarComponent, MobileNavComponent, MoodIconComponent, TierIconComponent],
   template: `
     <div class="dashboard">
 
@@ -51,8 +52,87 @@ import { MoodIconComponent } from '../../shared/mood-icon/mood-icon.component';
       <!-- ── Main content ────────────────────────────────────── -->
       <main class="main-content">
 
-        <!-- New entry CTA -->
-        <button class="new-entry-bar btn btn--primary btn--full" routerLink="/entry/new">
+        <!-- ── Desktop greeting + compose pill ──────────────── -->
+        <div class="greeting-row">
+          <div class="greeting">
+            <h1 class="greeting__hello">{{ greetingMessage() }}</h1>
+            <div class="greeting__date">{{ todayLabel() }}</div>
+          </div>
+          <button class="compose-pill" routerLink="/entry/new" type="button">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2.4" stroke-linecap="round">
+              <path d="M12 5v14M5 12h14"/>
+            </svg>
+            New Entry
+          </button>
+        </div>
+
+        <!-- ── Desktop stats strip ──────────────────────────── -->
+        <div class="stats-strip" *ngIf="streak()">
+          <div class="stat">
+            <div class="stat__num">
+              {{ streak()!.currentStreak }}<span class="stat__unit">{{ streak()!.currentStreak === 1 ? 'day' : 'days' }}</span>
+            </div>
+            <div class="stat__label">Current streak</div>
+
+            <ng-container *ngIf="progressToNext() as p">
+              <div class="reward" *ngIf="p.current">
+                <span class="reward__badge"
+                      [class.reward__badge--top]="p.isAtTopTier">
+                  <app-tier-icon [tier]="p.current.title" [size]="12"></app-tier-icon>
+                  {{ p.current.title }}
+                </span>
+
+                <ng-container *ngIf="!p.isAtTopTier && p.next">
+                  <div class="reward__track">
+                    <div class="reward__fill" [style.width.%]="p.percentToNext"></div>
+                  </div>
+                  <div class="reward__label">
+                    <span><strong>{{ p.daysToNext }}</strong> to {{ p.next.title }}</span>
+                  </div>
+                </ng-container>
+                <div class="reward__label reward__label--top" *ngIf="p.isAtTopTier">
+                  The highest tier — keep going.
+                </div>
+              </div>
+
+              <div class="reward reward--pre" *ngIf="!p.current && p.next">
+                <div class="reward__track">
+                  <div class="reward__fill" [style.width.%]="p.percentToNext"></div>
+                </div>
+                <div class="reward__label">
+                  <span><strong>{{ p.daysToNext }}</strong> to {{ p.next.title }}</span>
+                </div>
+              </div>
+            </ng-container>
+          </div>
+
+          <div class="stat">
+            <div class="stat__num">
+              {{ streak()!.longestStreak }}<span class="stat__unit">{{ streak()!.longestStreak === 1 ? 'day' : 'days' }}</span>
+            </div>
+            <div class="stat__label">Longest streak</div>
+          </div>
+          <div class="stat">
+            <div class="stat__num">{{ streak()!.totalEntries }}</div>
+            <div class="stat__label">Total entries</div>
+          </div>
+          <div class="stat">
+            <div class="stat__num">
+              {{ streak()!.totalActiveDays }}<span class="stat__unit">{{ streak()!.totalActiveDays === 1 ? 'day' : 'days' }}</span>
+            </div>
+            <div class="stat__label">Days active</div>
+          </div>
+        </div>
+        <div class="stats-strip stats-strip--skeleton" *ngIf="!streak() && !error()">
+          <div class="stat" *ngFor="let i of [1,2,3,4]">
+            <div class="stat__num">—</div>
+            <div class="stat__label">Loading…</div>
+          </div>
+        </div>
+
+        <!-- ── Mobile new entry CTA (kept until mobile redesign) ── -->
+        <button class="new-entry-bar new-entry-bar--mobile btn btn--primary btn--full" routerLink="/entry/new">
           + Create New Entry
         </button>
 
@@ -265,12 +345,165 @@ import { MoodIconComponent } from '../../shared/mood-icon/mood-icon.component';
       }
     }
 
+    /* ── Desktop greeting + compose pill ─────────────────────────── */
+    .greeting-row {
+      display: none;
+    }
+    @media (min-width: 768px) {
+      .greeting-row {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 1.5rem;
+        margin-bottom: 1.25rem;
+      }
+    }
+    .greeting__hello {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -.01em;
+      color: var(--color-text);
+      margin: 0 0 2px;
+    }
+    .greeting__date {
+      font-size: .8125rem;
+      color: var(--color-text-2);
+    }
+    .compose-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      padding: .625rem 1.125rem .625rem 1rem;
+      background: #0c0e13;
+      color: #fff;
+      border: none;
+      border-radius: 999px;
+      font-family: inherit;
+      font-size: .875rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background .15s, color .15s, transform .15s;
+      flex-shrink: 0;
+    }
+    .compose-pill:hover {
+      background: var(--color-accent);
+      color: #0c0e13;
+      transform: translateY(-1px);
+    }
+
+    /* ── Desktop stats strip ─────────────────────────────────────── */
+    .stats-strip { display: none; }
+    @media (min-width: 768px) {
+      .stats-strip {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0;
+        padding: 1.25rem 0 1.5rem;
+        margin-bottom: .25rem;
+        border-top: 1px solid var(--color-border);
+        border-bottom: 1px solid var(--color-border);
+      }
+    }
+    .stats-strip .stat {
+      padding: 0 1.5rem;
+      border-right: 1px solid var(--color-border);
+      min-width: 0;
+    }
+    .stats-strip .stat:last-child { border-right: none; }
+    .stats-strip .stat:first-child { padding-left: 0; }
+
+    .stats-strip .stat__num {
+      font-family: var(--font-display);
+      font-size: 2rem;
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: -.02em;
+      color: var(--color-text);
+    }
+    .stats-strip .stat__unit {
+      font-size: .8125rem;
+      color: var(--color-text-3);
+      font-family: var(--font-sans);
+      font-weight: 500;
+      margin-left: 4px;
+    }
+    .stats-strip .stat__label {
+      margin-top: .375rem;
+      font-size: .6875rem;
+      color: var(--color-text-2);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+    }
+    .stats-strip--skeleton .stat__num { opacity: .4; }
+    .stats-strip--skeleton .stat__label { opacity: .6; }
+
+    /* ── Hybrid progress reward ──────────────────────────────────── */
+    .reward { margin-top: .625rem; }
+    .reward__badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: .375rem;
+      width: 100%;
+      padding: 4px 10px;
+      background: #faf2dc;
+      border: 1px solid rgba(224,168,58,.3);
+      color: #8b6912;
+      border-radius: 8px;
+      font-size: .6875rem;
+      font-weight: 700;
+      letter-spacing: .03em;
+      box-sizing: border-box;
+    }
+    .reward__badge--top {
+      background: linear-gradient(135deg, #faf2dc 0%, #f0d77a 100%);
+      border-color: rgba(224,168,58,.55);
+      color: #6e5610;
+    }
+    .reward__track {
+      margin-top: .5rem;
+      height: 4px;
+      background: var(--color-border);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .reward__fill {
+      height: 100%;
+      background: linear-gradient(90deg, #0d9bb5, var(--color-accent));
+      border-radius: 2px;
+      transition: width .35s ease;
+    }
+    .reward__label {
+      font-size: .6875rem;
+      color: var(--color-text-3);
+      font-weight: 500;
+      margin-top: 6px;
+      text-align: left;
+    }
+    .reward__label strong {
+      color: #0d9bb5;
+      font-weight: 700;
+    }
+    .reward__label--top {
+      text-align: center;
+      color: #8b6912;
+      font-weight: 600;
+    }
+    .reward--pre .reward__label { margin-top: 6px; }
+
     /* ── New entry button ────────────────────────────────────────── */
     .new-entry-bar {
       margin-bottom: 1.5rem;
       padding: 1rem;
       font-size: 1rem;
       border-radius: var(--radius-lg);
+    }
+    /* Mobile-only fallback CTA — hidden on desktop where the pill takes over. */
+    @media (min-width: 768px) {
+      .new-entry-bar--mobile { display: none; }
     }
 
     /* ── Mobile-only stat grid ───────────────────────────────────── */
@@ -529,6 +762,45 @@ export class DashboardComponent implements OnInit {
 
   currentStreakMilestone = computed(() => getMilestoneForDays(this.streak()?.currentStreak ?? 0));
   longestStreakMilestone = computed(() => getMilestoneForDays(this.streak()?.longestStreak ?? 0));
+
+  /**
+   * Hybrid progress reward data: current tier, next tier, days into current
+   * tier, days remaining, percent progress. Drives the badge + progress bar
+   * shown under the streak number on desktop.
+   */
+  progressToNext = computed<MilestoneProgress>(() =>
+    getMilestoneProgress(this.streak()?.currentStreak ?? 0)
+  );
+
+  /**
+   * Time-of-day greeting using the user's first-name-or-username, e.g.
+   * "Good morning, Chris". Refreshed implicitly on every change-detection
+   * pass — close enough for a header greeting.
+   */
+  greetingMessage = computed(() => {
+    const name = this.displayName();
+    const hour = new Date().getHours();
+    const period = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
+    return name ? `Good ${period}, ${name}` : `Good ${period}`;
+  });
+
+  /** Display name for the greeting — first name if it looks like one, else username. */
+  private displayName(): string {
+    const u = this.tokens.getCachedUser();
+    if (!u?.username) return '';
+    // If the username looks like an email, strip the domain.
+    const base = u.username.includes('@') ? u.username.split('@')[0] : u.username;
+    // Capitalize first letter; leave the rest as-is.
+    return base.charAt(0).toUpperCase() + base.slice(1);
+  }
+
+  /** Date subtitle under the greeting, e.g. "Sunday · May 4, 2026". */
+  todayLabel = computed(() => {
+    const now = new Date();
+    const weekday = now.toLocaleDateString('en-US', { weekday: 'long' });
+    const monthDay = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    return `${weekday} · ${monthDay}`;
+  });
   entries    = signal<EntryListItem[]>([]);
   hasMore    = signal(false);
   loadingMore = signal(false);
