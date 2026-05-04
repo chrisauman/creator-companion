@@ -268,7 +268,7 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
       margin-top: .5rem; line-height: 1.5;
     }
 
-    /* ── New Entry button (cyan, expanded; circular + icon, collapsed) ── */
+    /* ── New Entry button (cyan pill expanded; circular + icon collapsed) ── */
     .sidebar__compose {
       display: inline-flex;
       align-items: center;
@@ -279,7 +279,7 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
       background: var(--color-accent);
       color: #0c0e13;
       border: none;
-      border-radius: 10px;
+      border-radius: 999px;
       font-family: inherit;
       font-size: .875rem;
       font-weight: 700;

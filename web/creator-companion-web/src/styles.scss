@@ -95,51 +95,64 @@ p  { line-height: 1.7; }
   gap: .5rem;
   font-family: var(--font-sans);
   font-size: .9375rem;
-  font-weight: 500;
+  font-weight: 600;
   line-height: 1;
-  padding: .75rem 1.25rem;
-  border-radius: var(--radius-md);
+  padding: .625rem 1.25rem;
+  border-radius: 999px;
   border: 1px solid transparent;
   cursor: pointer;
-  transition: background .15s, opacity .15s, box-shadow .15s;
+  transition: background .15s, color .15s, border-color .15s, opacity .15s, transform .15s;
   white-space: nowrap;
   text-decoration: none;
 
   &:disabled { opacity: .5; cursor: not-allowed; }
 
+  /* Primary — dark ink pill, hovers cyan. Matches the new design language. */
   &--primary {
-    background: var(--color-accent);
+    background: #0c0e13;
     color: #fff;
-    font-weight: 600;
-    &:hover:not(:disabled) { background: var(--color-accent-dark); color: #fff; }
+    &:hover:not(:disabled) {
+      background: var(--color-accent);
+      color: #0c0e13;
+      transform: translateY(-1px);
+    }
   }
 
+  /* Secondary — quiet outlined ghost pill */
   &--secondary {
-    background: var(--color-accent);
-    color: #fff;
-    font-weight: 600;
-    border-color: transparent;
-    &:hover:not(:disabled) { background: var(--color-accent-dark); color: #fff; }
+    background: transparent;
+    color: var(--color-text-2);
+    border-color: var(--color-border);
+    &:hover:not(:disabled) {
+      background: var(--color-surface-2);
+      color: var(--color-text);
+    }
   }
 
+  /* Ghost — truly transparent, used for back buttons / cancel-style */
   &--ghost {
-    background: var(--color-accent);
-    color: #fff;
-    font-weight: 600;
+    background: transparent;
+    color: var(--color-text-2);
     border-color: transparent;
-    &:hover:not(:disabled) { background: var(--color-accent-dark); color: #fff; }
+    &:hover:not(:disabled) {
+      background: var(--color-surface-2);
+      color: var(--color-text);
+    }
   }
 
+  /* Danger — quiet red outlined pill */
   &--danger {
-    background: var(--color-danger-light);
+    background: transparent;
     color: var(--color-danger);
-    border-color: transparent;
-    &:hover:not(:disabled) { background: #f5c6c2; }
+    border-color: var(--color-danger-light);
+    &:hover:not(:disabled) {
+      background: var(--color-danger-light);
+    }
   }
 
   &--full { width: 100%; }
-  &--sm { padding: .5rem .875rem; font-size: .875rem; }
-  &--lg { padding: .875rem 1.5rem; font-size: 1rem; }
+  &--sm { padding: .375rem .875rem; font-size: .8125rem; }
+  &--lg { padding: .75rem 1.5rem; font-size: 1rem; }
 }
 
 .form-group {
