@@ -292,16 +292,14 @@ const DEFAULT_REMINDER_MESSAGE = 'Remember to log an entry to keep your streak a
     }
     .page-sub { font-size: .9375rem; color: var(--color-text-2); margin: 0; line-height: 1.5; }
 
-    /* ── Cards (modernized) ──────────────────────────────────────── */
+    /* ── Cards (clean — single outer border, no nested borders inside) ─── */
     .card {
       background: var(--color-surface);
       border: 1px solid var(--color-border);
       border-radius: 16px;
       padding: 1.5rem 1.625rem;
       margin-bottom: 1rem;
-      transition: border-color .15s, box-shadow .15s;
     }
-    .card:hover { border-color: var(--color-text-3); }
 
     .section-head {
       display: flex; align-items: center; justify-content: space-between;
@@ -339,14 +337,10 @@ const DEFAULT_REMINDER_MESSAGE = 'Remember to log an entry to keep your streak a
     }
     .push-active .btn { margin-left: auto; }
 
-    /* ── Reminder cards ──────────────────────────────────────────── */
+    /* ── Reminder rows (flat — sit inside the parent card with subtle dividers) ── */
     .reminder-free-row {
       display: flex; align-items: center; justify-content: space-between;
-      gap: 1rem; padding: 1rem 1.125rem;
-      background: var(--color-bg);
-      border: 1px solid var(--color-border);
-      border-radius: 14px;
-      margin-bottom: .75rem;
+      gap: 1rem;
     }
     .reminder-free-info { flex: 1; }
     .reminder-time-label {
@@ -356,36 +350,36 @@ const DEFAULT_REMINDER_MESSAGE = 'Remember to log an entry to keep your streak a
     .reminder-free-info .text-sm { color: var(--color-text-2); }
     .upgrade-note {
       display: block;
-      padding: .75rem 1rem;
-      background: rgba(18,196,227,.06);
-      border: 1px solid rgba(18,196,227,.2);
-      border-radius: 12px;
-      color: var(--color-accent-dark);
+      color: var(--color-text-3);
       font-size: .8125rem;
       line-height: 1.5;
-      margin-top: .25rem;
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--color-border);
     }
 
     .reminders-section-label {
       font-size: .6875rem; font-weight: 700; color: var(--color-text-3);
       text-transform: uppercase; letter-spacing: .14em;
-      margin-top: 1rem; margin-bottom: .625rem;
+      margin-top: 1.5rem; margin-bottom: .75rem;
     }
-    .reminders-list { display: flex; flex-direction: column; gap: .75rem; }
+    .reminders-list { display: flex; flex-direction: column; gap: 0; }
     .reminder-card {
-      background: var(--color-bg);
-      border: 1px solid var(--color-border);
-      border-radius: 14px;
-      padding: 1.125rem 1.25rem;
+      background: transparent;
+      border: none;
+      padding: 1.125rem 0;
       display: flex; flex-direction: column; gap: 1rem;
-      transition: border-color .15s;
+      border-bottom: 1px solid var(--color-border);
     }
-    .reminder-card:hover { border-color: var(--color-text-3); }
+    .reminder-card:last-child { border-bottom: none; padding-bottom: 0; }
+    .reminders-list .reminder-card:first-child { padding-top: 0; }
     .reminder-card--default {
+      padding: 1.125rem 1.25rem;
       background: linear-gradient(135deg, rgba(18,196,227,.04), rgba(18,196,227,.08));
-      border-color: rgba(18,196,227,.3);
+      border: none;
+      border-radius: 14px;
+      margin-bottom: .5rem;
     }
-    .reminder-card--default:hover { border-color: rgba(18,196,227,.5); }
     .reminder-card__header { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
     .default-badge {
       display: inline-flex;
@@ -406,11 +400,6 @@ const DEFAULT_REMINDER_MESSAGE = 'Remember to log an entry to keep your streak a
     @media (max-width: 500px) { .reminder-card__fields { grid-template-columns: 1fr; } }
     .reminder-card__actions {
       display: flex; align-items: center; gap: .75rem;
-      padding-top: .75rem;
-      border-top: 1px solid var(--color-border);
-    }
-    .reminder-card--default .reminder-card__actions {
-      border-top-color: rgba(18,196,227,.2);
     }
     .reminder-card__actions .btn { margin-left: auto; }
 
@@ -467,26 +456,26 @@ const DEFAULT_REMINDER_MESSAGE = 'Remember to log an entry to keep your streak a
     .toggle-switch input:checked + .toggle-track .toggle-thumb { transform: translateX(18px); }
     .toggle-switch input:disabled + .toggle-track { opacity: .5; cursor: not-allowed; }
 
-    /* ── Add reminder button ─────────────────────────────────────── */
+    /* ── Add reminder link (subtle, no border) ───────────────────── */
     .add-reminder-btn {
-      width: 100%;
-      margin-top: .75rem;
-      padding: .75rem;
+      display: inline-flex;
+      align-items: center;
+      gap: .375rem;
+      margin-top: 1rem;
+      padding: .375rem 0;
       background: transparent;
-      border: 1px dashed var(--color-border);
-      border-radius: 14px;
-      color: var(--color-text-2);
+      border: none;
+      color: var(--color-accent-dark);
       font-family: var(--font-sans);
-      font-size: .875rem;
-      font-weight: 600;
+      font-size: .8125rem;
+      font-weight: 700;
       cursor: pointer;
-      transition: border-color .15s, color .15s, background .15s;
+      letter-spacing: .04em;
+      transition: color .15s, transform .15s;
     }
     .add-reminder-btn:hover:not(:disabled) {
-      border-color: var(--color-accent);
-      border-style: solid;
-      color: var(--color-accent-dark);
-      background: rgba(18,196,227,.04);
+      color: var(--color-accent);
+      transform: translateX(2px);
     }
     .add-reminder-btn:disabled { opacity: .5; cursor: not-allowed; }
   `]
