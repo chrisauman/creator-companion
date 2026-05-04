@@ -67,7 +67,7 @@ import { ActivatedRoute } from '@angular/router';
 
         <!-- ── Desktop stats strip ──────────────────────────── -->
         <div class="stats-strip" *ngIf="streak()">
-          <div class="stat">
+          <div class="stat stat--streak">
             <div class="stat__num">
               {{ streak()!.currentStreak }}<span class="stat__unit">{{ streak()!.currentStreak === 1 ? 'day' : 'days' }}</span>
             </div>
@@ -526,6 +526,8 @@ import { ActivatedRoute } from '@angular/router';
       letter-spacing: -.02em;
       color: var(--color-text);
     }
+    /* Streak gets the cyan accent — it's the most motivating stat. */
+    .stats-strip .stat--streak .stat__num { color: var(--color-accent); }
     .stats-strip .stat__unit {
       font-size: .6875rem;
       color: var(--color-text-3);

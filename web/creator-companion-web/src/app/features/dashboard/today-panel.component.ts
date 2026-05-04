@@ -23,19 +23,40 @@ import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
   template: `
     <div class="today">
 
-      <!-- Spark hero -->
+      <!-- Spark hero — whole box is clickable to expand/collapse when there's more content. -->
       @if (motivation) {
-        <div class="spark-hero" [class.spark-hero--expanded]="sparkExpanded()">
+        <div class="spark-hero"
+             [class.spark-hero--expanded]="sparkExpanded()"
+             [class.spark-hero--clickable]="hasMoreToShow()"
+             (click)="onBoxClick($event)">
+
+          <!-- Expand/collapse chevron — top-right corner. Only shown when
+               there's more to reveal than the takeaway. -->
+          @if (hasMoreToShow()) {
+            <button class="spark-hero__expand"
+                    type="button"
+                    [title]="sparkExpanded() ? 'Show less' : 'Read more'"
+                    [attr.aria-expanded]="sparkExpanded()"
+                    (click)="toggleSparkExpanded(); $event.stopPropagation()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                   [style.transform]="sparkExpanded() ? 'rotate(180deg)' : 'rotate(0deg)'">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </button>
+          }
+
           <span class="spark-hero__eyebrow">Your Daily Spark</span>
           <p class="spark-hero__quote">{{ motivation.takeaway }}</p>
 
           <!-- Full content reveals when expanded. -->
-          <div class="spark-hero__full" *ngIf="sparkExpanded() && motivation.fullContent && motivation.fullContent !== motivation.takeaway">
+          <div class="spark-hero__full" *ngIf="sparkExpanded() && hasMoreToShow()">
             <div class="spark-hero__divider"></div>
             <p class="spark-hero__body">{{ motivation.fullContent }}</p>
           </div>
 
-          <div class="spark-hero__actions">
+          <!-- Actions — clicks here should NOT toggle the box expansion. -->
+          <div class="spark-hero__actions" (click)="$event.stopPropagation()">
             <button class="spark-action spark-action--primary" type="button"
                     (click)="composeFromSpark.emit()">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -59,27 +80,7 @@ import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
                 </svg>
               </button>
             }
-
-            <button class="spark-action spark-action--icon"
-                    type="button"
-                    [title]="sparkExpanded() ? 'Collapse' : 'Read more'"
-                    [attr.aria-expanded]="sparkExpanded()"
-                    (click)="toggleSparkExpanded()">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                   stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
-                   [style.transform]="sparkExpanded() ? 'rotate(180deg)' : 'rotate(0deg)'"
-                   style="transition: transform .2s">
-                <polyline points="6 9 12 15 18 9"/>
-              </svg>
-            </button>
           </div>
-
-          <!-- "Read more / Read less" footer link, optional -->
-          <button class="spark-hero__readmore" type="button"
-                  *ngIf="motivation.fullContent && motivation.fullContent !== motivation.takeaway"
-                  (click)="toggleSparkExpanded()">
-            {{ sparkExpanded() ? 'Show less' : 'Read more' }}
-          </button>
         </div>
       }
 
@@ -221,24 +222,38 @@ import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
       margin: 0 0 1.25rem;
       white-space: pre-wrap;
     }
-    .spark-hero__readmore {
-      background: none;
-      border: none;
-      color: rgba(18,196,227,.95);
-      font-size: .75rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .12em;
-      padding: .5rem 0 0;
-      cursor: pointer;
-      position: relative;
-      font-family: inherit;
-      display: inline-block;
-    }
-    .spark-hero__readmore:hover { color: var(--cyan); }
     .spark-hero--expanded {
       background: linear-gradient(180deg, #0c0e13 0%, #1a1d24 60%, #232831 100%);
     }
+    /* When the hero has more content to reveal, the whole box is clickable. */
+    .spark-hero--clickable { cursor: pointer; }
+    .spark-hero--clickable:hover { background: linear-gradient(180deg, #14171f 0%, #1f232c 100%); }
+    .spark-hero--clickable.spark-hero--expanded:hover {
+      background: linear-gradient(180deg, #14171f 0%, #1f232c 60%, #2a2f3a 100%);
+    }
+
+    /* Top-right expand chevron */
+    .spark-hero__expand {
+      position: absolute;
+      top: .875rem;
+      right: .875rem;
+      width: 32px; height: 32px;
+      display: grid; place-items: center;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 50%;
+      color: rgba(255,255,255,.85);
+      cursor: pointer;
+      font-family: inherit;
+      transition: background .15s, border-color .15s, transform .15s;
+      z-index: 1;
+    }
+    .spark-hero__expand:hover {
+      background: rgba(18,196,227,.18);
+      border-color: rgba(18,196,227,.4);
+      color: #fff;
+    }
+    .spark-hero__expand svg { transition: transform .25s ease; }
     .spark-hero__actions {
       display: flex;
       gap: .5rem;
@@ -459,12 +474,28 @@ export class TodayPanelComponent implements OnInit {
 
   readonly moodKeys = SUPPORTED_MOOD_KEYS;
 
-  /** True when the user has clicked "Read more" to reveal motivation.fullContent. */
+  /** True when the user has clicked the spark hero to reveal motivation.fullContent. */
   sparkExpanded = signal<boolean>(false);
 
+  /** Returns true when fullContent exists and differs from the takeaway —
+   *  i.e. there's actually more to reveal. The chevron and click-to-expand
+   *  behavior only activates when this is true. */
+  hasMoreToShow(): boolean {
+    const m = this.motivation;
+    return !!(m && m.fullContent && m.fullContent.trim() !== m.takeaway.trim());
+  }
+
   toggleSparkExpanded(): void {
+    if (!this.hasMoreToShow()) return;
     this.sparkExpanded.set(!this.sparkExpanded());
-    this.expandSpark.emit(); // keep parent informed if it cares
+    this.expandSpark.emit();
+  }
+
+  /** Click anywhere on the box (except action buttons / corner chevron)
+   *  toggles expansion. Action buttons and the corner chevron stop
+   *  propagation so they don't double-fire. */
+  onBoxClick(_event: MouseEvent): void {
+    this.toggleSparkExpanded();
   }
 
   /**

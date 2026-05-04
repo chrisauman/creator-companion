@@ -39,19 +39,6 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
         <div class="sidebar__greeting-date">{{ todayLabel() }}</div>
       </div>
 
-      <!-- Streak block (hidden when collapsed) -->
-      <div class="sidebar__streak-block" *ngIf="streak() && !collapsed()">
-        <div class="sidebar__streak-num">{{ streak()!.currentStreak }}</div>
-        <div class="sidebar__streak-label">Day streak 🔥</div>
-        <div class="sidebar__streak-sub">
-          Longest: {{ streak()!.longestStreak }} &nbsp;·&nbsp; {{ streak()!.totalEntries }} entries
-        </div>
-      </div>
-      <div class="sidebar__streak-block sidebar__streak-block--loading" *ngIf="!streak() && !collapsed()">
-        <div class="sidebar__streak-num">—</div>
-        <div class="sidebar__streak-label">Day streak</div>
-      </div>
-
       <!-- New Entry button (cyan; full pill expanded, just + icon collapsed) -->
       <a class="sidebar__compose"
          [class.sidebar__compose--collapsed]="collapsed()"
@@ -243,29 +230,6 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
       font-size: .6875rem;
       color: rgba(255,255,255,.45);
       margin-top: 2px;
-    }
-
-    /* ── Streak block ───────────────────────────────────────────── */
-    .sidebar__streak-block {
-      margin: 0 .875rem 1rem;
-      background: rgba(18,196,227,.1);
-      border: 1px solid rgba(18,196,227,.2);
-      border-radius: 10px;
-      padding: 1rem 1.125rem;
-    }
-    .sidebar__streak-block--loading { opacity: .4; }
-    .sidebar__streak-num {
-      font-size: 2.5rem; font-weight: 900; line-height: 1;
-      color: #12C4E3; letter-spacing: -.03em;
-      font-family: 'Fraunces', Georgia, serif;
-    }
-    .sidebar__streak-label {
-      font-size: .75rem; font-weight: 600;
-      color: rgba(255,255,255,.7); margin-top: .25rem;
-    }
-    .sidebar__streak-sub {
-      font-size: .6875rem; color: rgba(255,255,255,.35);
-      margin-top: .5rem; line-height: 1.5;
     }
 
     /* ── New Entry button (cyan pill expanded; circular + icon collapsed) ── */
