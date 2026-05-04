@@ -62,7 +62,7 @@ import { EditEntryComponent } from '../entry/edit/edit-entry.component';
             <h1 class="greeting__hello">{{ greetingMessage() }}</h1>
             <div class="greeting__date">{{ todayLabel() }}</div>
           </div>
-          <button class="compose-pill" routerLink="/entry/new" type="button">
+          <button class="compose-pill" type="button" (click)="composeBlank()">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                  stroke-width="2.4" stroke-linecap="round">
               <path d="M12 5v14M5 12h14"/>
@@ -136,7 +136,8 @@ import { EditEntryComponent } from '../entry/edit/edit-entry.component';
         </div>
 
         <!-- ── Mobile new entry CTA (kept until mobile redesign) ── -->
-        <button class="new-entry-bar new-entry-bar--mobile btn btn--primary btn--full" routerLink="/entry/new">
+        <button class="new-entry-bar new-entry-bar--mobile btn btn--primary btn--full" type="button"
+                (click)="composeBlank()">
           + Create New Entry
         </button>
 
