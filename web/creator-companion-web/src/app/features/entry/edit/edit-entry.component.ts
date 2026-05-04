@@ -523,8 +523,8 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
     .tiptap-wrapper { min-height: 80px; cursor: text; margin-bottom: .5rem; }
     ::ng-deep .tiptap-wrapper .tiptap {
       min-height: 80px; outline: none;
-      font-family: var(--font-serif); font-size: 1.125rem;
-      line-height: 1.8; color: var(--color-text);
+      font-family: var(--font-sans); font-size: 1.0625rem;
+      line-height: 1.75; color: var(--color-text);
       p.is-editor-empty:first-child::before {
         content: attr(data-placeholder); color: var(--color-text-3);
         float: left; pointer-events: none; height: 0;

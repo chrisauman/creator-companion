@@ -437,9 +437,9 @@ interface PendingImage {
     ::ng-deep .tiptap-wrapper .tiptap {
       min-height: 300px;
       outline: none;
-      font-family: var(--font-serif);
-      font-size: 1.125rem;
-      line-height: 1.8;
+      font-family: var(--font-sans);
+      font-size: 1.0625rem;
+      line-height: 1.75;
       color: var(--color-text);
 
       /* Placeholder */
