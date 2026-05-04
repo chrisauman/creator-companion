@@ -5,7 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
 import { AuthService } from '../../core/services/auth.service';
 import { TokenService } from '../../core/services/token.service';
-import { StreakStats, EntryListItem, MotivationEntry } from '../../core/models/models';
+import { StreakStats, EntryListItem, MotivationEntry, Entry } from '../../core/models/models';
 import { getMoodEmoji } from '../../core/constants/moods';
 import { MILESTONES, getMilestoneForDays, getMilestoneIndex, getMilestoneProgress, Milestone, MilestoneProgress } from '../../core/constants/milestones';
 import { PushService } from '../../core/services/push.service';
@@ -13,11 +13,13 @@ import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
 import { MobileNavComponent } from '../../shared/mobile-nav/mobile-nav.component';
 import { MoodIconComponent } from '../../shared/mood-icon/mood-icon.component';
 import { TierIconComponent } from '../../shared/tier-icon/tier-icon.component';
+import { TodayPanelComponent } from './today-panel.component';
+import { EntryReaderComponent } from './entry-reader.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, SidebarComponent, MobileNavComponent, MoodIconComponent, TierIconComponent],
+  imports: [CommonModule, RouterLink, FormsModule, SidebarComponent, MobileNavComponent, MoodIconComponent, TierIconComponent, TodayPanelComponent, EntryReaderComponent],
   template: `
     <div class="dashboard">
 
@@ -162,9 +164,9 @@ import { TierIconComponent } from '../../shared/tier-icon/tier-icon.component';
           </div>
         </div>
 
-        <!-- Daily Motivation card -->
+        <!-- Daily Motivation card (mobile only — desktop shows it inside the Today panel as the Spark hero) -->
         @if (motivation()) {
-          <div class="motivation-card" [class.motivation-card--expanded]="motivationExpanded()">
+          <div class="motivation-card motivation-card--mobile" [class.motivation-card--expanded]="motivationExpanded()">
             <div class="motivation-header" (click)="motivationExpanded.set(!motivationExpanded())">
               <div class="motivation-header__left">
                 <span class="motivation-label">Daily Spark</span>
@@ -216,8 +218,11 @@ import { TierIconComponent } from '../../shared/tier-icon/tier-icon.component';
           </div>
         }
 
+        <!-- Two-column work area (single column on mobile — right column hides) -->
+        <div class="work">
+
         <!-- Entry list -->
-        <section class="entries-section">
+        <section class="entries-section work__list-col">
           <!-- Search + sort bar -->
           <div class="search-bar">
             <div class="search-input-wrap">
@@ -264,7 +269,8 @@ import { TierIconComponent } from '../../shared/tier-icon/tier-icon.component';
               <div
                 class="entry-row"
                 *ngFor="let entry of group.entries; trackBy: trackByEntry"
-                [routerLink]="['/entry', entry.id]"
+                [class.entry-row--active]="selectedEntryId() === entry.id"
+                (click)="handleEntryClick(entry)"
               >
                 <div class="entry-cal">
                   <span class="entry-cal__dow">{{ getDayAbbr(entry.entryDate) }}</span>
@@ -288,6 +294,34 @@ import { TierIconComponent } from '../../shared/tier-icon/tier-icon.component';
             </button>
           </div>
         </section>
+
+        <!-- Right column: Today panel or inline entry reader (desktop only) -->
+        <aside class="work__right-col">
+          @if (rightColumnMode() === 'today') {
+            <app-today-panel
+              [motivation]="motivation()"
+              [canFavorite]="isPaid()"
+              (composeFromSpark)="composeFromSpark()"
+              (composeFromPrompt)="composeFromPrompt($event)"
+              (composeFromMood)="composeFromMood($event)"
+              (composeBlank)="composeBlank()"
+              (favoriteSpark)="toggleSparkFavorite()"
+              (expandSpark)="expandSpark()"
+            ></app-today-panel>
+          } @else {
+            <app-entry-reader
+              [entry]="selectedEntry()"
+              [loading]="selectedEntryLoading()"
+              [loadError]="selectedEntryError()"
+              [canFavorite]="isPaid()"
+              (returnToToday)="returnToToday()"
+              (edit)="editSelectedEntry()"
+              (toggleFavorite)="toggleSelectedFavorite()"
+            ></app-entry-reader>
+          }
+        </aside>
+
+        </div><!-- /.work -->
 
       </main>
     </div>
@@ -548,6 +582,44 @@ import { TierIconComponent } from '../../shared/tier-icon/tier-icon.component';
     .push-nudge__icon { font-size: 1rem; flex-shrink: 0; }
     .push-nudge__btn { flex-shrink: 0; }
 
+    /* ── Two-column work area ────────────────────────────────────── */
+    .work {
+      display: block;
+    }
+    .work__right-col { display: none; }
+
+    @media (min-width: 768px) {
+      .work {
+        display: grid;
+        grid-template-columns: minmax(360px, 420px) 1fr;
+        gap: 0;
+        align-items: start;
+        margin-top: 1rem;
+      }
+      .work__list-col {
+        padding-right: 1.75rem;
+        border-right: 1px solid var(--color-border);
+        min-width: 0;
+      }
+      .work__right-col {
+        display: block;
+        position: sticky;
+        top: 1rem;
+        max-height: calc(100vh - 2rem);
+        overflow-y: auto;
+        padding-left: 0;
+        margin: -2.5rem -3rem -4rem 0;
+        background: var(--color-surface);
+        border-left: 1px solid var(--color-border);
+      }
+    }
+
+    /* On desktop, hide the standalone mobile motivation card — its content
+       lives inside the Today panel as the Spark hero. */
+    @media (min-width: 768px) {
+      .motivation-card--mobile { display: none; }
+    }
+
     /* ── Daily Motivation ────────────────────────────────────────── */
     .motivation-card {
       background: var(--color-surface);
@@ -656,6 +728,14 @@ import { TierIconComponent } from '../../shared/tier-icon/tier-icon.component';
     .entry-row:hover {
       border-color: var(--color-text-3);
       box-shadow: 0 6px 20px -10px rgba(0,0,0,.08);
+    }
+    .entry-row--active {
+      border-color: var(--color-accent);
+      background: rgba(18,196,227,.05);
+      box-shadow: -3px 0 0 0 var(--color-accent), 0 6px 20px -10px rgba(18,196,227,.2);
+    }
+    .entry-row--active:hover {
+      border-color: var(--color-accent);
     }
 
     .entry-cal {
@@ -809,6 +889,13 @@ export class DashboardComponent implements OnInit {
   loading        = signal(true);
   error          = signal('');
   sessionExpired = signal(false);
+
+  // ── Right column state (desktop): Today vs Reading ──────────────
+  rightColumnMode      = signal<'today' | 'reading'>('today');
+  selectedEntryId      = signal<string | null>(null);
+  selectedEntry        = signal<Entry | null>(null);
+  selectedEntryLoading = signal<boolean>(false);
+  selectedEntryError   = signal<boolean>(false);
 
   // Search & sort
   searchQuery = signal('');
@@ -1011,6 +1098,82 @@ export class DashboardComponent implements OnInit {
       hour: 'numeric', minute: '2-digit', hour12: true
     });
   }
+
+  // ── Right column / inline reader handlers ──────────────────────
+
+  /**
+   * Click on an entry row. On desktop (>= 768px) we keep the user on
+   * the dashboard and show the entry inline in the right column. On
+   * mobile we navigate to the dedicated /entry/:id page (the inline
+   * reading-pane experience is built for mobile in Phase H).
+   */
+  handleEntryClick(entry: EntryListItem): void {
+    const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
+    if (isDesktop) {
+      this.selectEntry(entry.id);
+    } else {
+      this.router.navigate(['/entry', entry.id]);
+    }
+  }
+
+  private selectEntry(id: string): void {
+    if (this.selectedEntryId() === id && this.selectedEntry()) {
+      // Already viewing this entry; just ensure the reader is showing.
+      this.rightColumnMode.set('reading');
+      return;
+    }
+    this.selectedEntryId.set(id);
+    this.selectedEntryLoading.set(true);
+    this.selectedEntryError.set(false);
+    this.rightColumnMode.set('reading');
+
+    this.api.getEntry(id).subscribe({
+      next: e => {
+        this.selectedEntry.set(e);
+        this.selectedEntryLoading.set(false);
+      },
+      error: () => {
+        this.selectedEntryError.set(true);
+        this.selectedEntryLoading.set(false);
+      }
+    });
+  }
+
+  returnToToday(): void {
+    this.rightColumnMode.set('today');
+    this.selectedEntryId.set(null);
+  }
+
+  editSelectedEntry(): void {
+    const id = this.selectedEntryId();
+    if (id) this.router.navigate(['/entry', id, 'edit']);
+  }
+
+  toggleSelectedFavorite(): void {
+    const e = this.selectedEntry();
+    if (!e) return;
+    const optimistic = !e.isFavorited;
+    this.selectedEntry.set({ ...e, isFavorited: optimistic });
+    this.api.toggleFavorite(e.id).subscribe({
+      next: res => this.selectedEntry.update(cur => cur ? { ...cur, isFavorited: res.isFavorited } : cur),
+      error: () => this.selectedEntry.set(e) // revert
+    });
+  }
+
+  expandSpark(): void {
+    this.motivationExpanded.set(!this.motivationExpanded());
+  }
+
+  // ── Today panel compose handlers ───────────────────────────────
+  // Phase E will swap these for an inline compose flow that pre-fills
+  // the prompt / mood / spark context. For now they all open the
+  // existing /entry/new route.
+  composeFromSpark(): void { this.router.navigate(['/entry/new']); }
+  composeFromPrompt(_prompt: string): void { this.router.navigate(['/entry/new']); }
+  composeFromMood(mood: string): void {
+    this.router.navigate(['/entry/new'], { queryParams: { mood } });
+  }
+  composeBlank(): void { this.router.navigate(['/entry/new']); }
 
   /**
    * Returns the entry's display headline for the dashboard list.
