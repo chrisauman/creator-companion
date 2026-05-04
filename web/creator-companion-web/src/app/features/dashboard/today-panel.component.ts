@@ -28,12 +28,9 @@ import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
         <div class="spark-hero" [class.spark-hero--expanded]="sparkExpanded()">
           <span class="spark-hero__eyebrow">Your Daily Spark</span>
           <p class="spark-hero__quote">{{ motivation.takeaway }}</p>
-          @if (motivation.title) {
-            <p class="spark-hero__author">— {{ motivation.title }}</p>
-          }
 
           <!-- Full content reveals when expanded. -->
-          <div class="spark-hero__full" *ngIf="sparkExpanded() && motivation.fullContent">
+          <div class="spark-hero__full" *ngIf="sparkExpanded() && motivation.fullContent && motivation.fullContent !== motivation.takeaway">
             <div class="spark-hero__divider"></div>
             <p class="spark-hero__body">{{ motivation.fullContent }}</p>
           </div>
@@ -201,7 +198,7 @@ import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
       font-weight: 500;
       color: rgba(255,255,255,.95);
       position: relative;
-      margin: 0 0 .875rem;
+      margin: 0 0 1.25rem;
       letter-spacing: -.005em;
     }
     .spark-hero__author {
