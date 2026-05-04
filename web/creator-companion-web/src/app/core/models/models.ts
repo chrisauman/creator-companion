@@ -170,6 +170,15 @@ export interface Faq {
   updatedAt: string;
 }
 
+export interface DailyPrompt {
+  id: string;
+  text: string;
+  sortOrder: number;
+  isPublished: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Capabilities {
   maxWordsPerEntry: number;
   maxImagesPerEntry: number;

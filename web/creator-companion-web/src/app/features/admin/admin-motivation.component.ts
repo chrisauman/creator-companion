@@ -66,6 +66,7 @@ const CATEGORY_LABELS: Record<string, string> = {
         <a routerLink="/admin/reminders" class="admin-nav__link">Notifications</a>
         <a routerLink="/admin/emails" class="admin-nav__link">Emails</a>
         <a routerLink="/admin/faq" class="admin-nav__link">FAQ</a>
+        <a routerLink="/admin/prompts" class="admin-nav__link">Daily Prompts</a>
       </nav>
 
       <!-- Add / Edit form -->

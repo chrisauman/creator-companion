@@ -1,6 +1,7 @@
-import { Component, EventEmitter, Input, Output, signal } from '@angular/core';
+import { Component, EventEmitter, Input, Output, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MotivationEntry } from '../../core/models/models';
+import { ApiService } from '../../core/services/api.service';
 import { MoodIconComponent, SUPPORTED_MOOD_KEYS } from '../../shared/mood-icon/mood-icon.component';
 import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
 
@@ -396,7 +397,9 @@ import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
     }
   `]
 })
-export class TodayPanelComponent {
+export class TodayPanelComponent implements OnInit {
+  private api = inject(ApiService);
+
   @Input() motivation: MotivationEntry | null = null;
   @Input() canFavorite: boolean = false;
 
@@ -409,10 +412,31 @@ export class TodayPanelComponent {
 
   readonly moodKeys = SUPPORTED_MOOD_KEYS;
 
-  /** Currently displayed prompt — initialized to the first prompt; user shuffles for a new one. */
-  currentPrompt = signal<string>(DASHBOARD_PROMPTS[Math.floor(Math.random() * DASHBOARD_PROMPTS.length)]);
+  /**
+   * Library of brief prompts. Fetched from the backend on mount; falls
+   * back to the hardcoded DASHBOARD_PROMPTS list if the API call fails
+   * or returns an empty result so the card is never empty.
+   */
+  private prompts = signal<string[]>(DASHBOARD_PROMPTS.slice());
+
+  /** Currently displayed prompt — initialized to a random one from the list. */
+  currentPrompt = signal<string>(this.prompts()[Math.floor(Math.random() * this.prompts().length)]);
+
+  ngOnInit(): void {
+    this.api.getDailyPrompts().subscribe({
+      next: prompts => {
+        if (prompts.length === 0) return; // keep hardcoded fallback
+        const texts = prompts.map(p => p.text).filter(t => !!t);
+        if (texts.length === 0) return;
+        this.prompts.set(texts);
+        // Re-pick a random initial prompt from the new list.
+        this.currentPrompt.set(texts[Math.floor(Math.random() * texts.length)]);
+      },
+      error: () => {} // silently keep hardcoded fallback
+    });
+  }
 
   shufflePrompt(): void {
-    this.currentPrompt.set(pickRandomPrompt(this.currentPrompt()));
+    this.currentPrompt.set(pickRandomPrompt(this.currentPrompt(), this.prompts()));
   }
 }

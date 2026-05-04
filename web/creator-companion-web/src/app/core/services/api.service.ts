@@ -6,7 +6,7 @@ import { TokenService } from './token.service';
 import {
   AuthResponse, User, Journal, Entry, EntryListItem,
   Draft, StreakStats, Capabilities, MediaItem, Tag, Pause, MotivationEntry,
-  ReminderConfigResponse, UpdateReminderConfigRequest, ActionItem, Faq
+  ReminderConfigResponse, UpdateReminderConfigRequest, ActionItem, Faq, DailyPrompt
 } from '../models/models';
 
 @Injectable({ providedIn: 'root' })
@@ -398,5 +398,31 @@ export class ApiService {
 
   adminReorderFaqs(ids: string[]): Observable<void> {
     return this.http.post<void>(`${this.base}/admin/faq/reorder`, { ids });
+  }
+
+  // ── Daily Prompts (published, authenticated) ────────────────────────────
+  getDailyPrompts(): Observable<DailyPrompt[]> {
+    return this.http.get<DailyPrompt[]>(`${this.base}/daily-prompts`);
+  }
+
+  // ── Admin: Daily Prompts ────────────────────────────────────────────────
+  adminGetDailyPrompts(): Observable<DailyPrompt[]> {
+    return this.http.get<DailyPrompt[]>(`${this.base}/admin/daily-prompts`);
+  }
+
+  adminCreateDailyPrompt(text: string, isPublished: boolean): Observable<DailyPrompt> {
+    return this.http.post<DailyPrompt>(`${this.base}/admin/daily-prompts`, { text, isPublished });
+  }
+
+  adminUpdateDailyPrompt(id: string, text: string, isPublished: boolean): Observable<DailyPrompt> {
+    return this.http.put<DailyPrompt>(`${this.base}/admin/daily-prompts/${id}`, { text, isPublished });
+  }
+
+  adminDeleteDailyPrompt(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/admin/daily-prompts/${id}`);
+  }
+
+  adminReorderDailyPrompts(ids: string[]): Observable<void> {
+    return this.http.post<void>(`${this.base}/admin/daily-prompts/reorder`, { ids });
   }
 }

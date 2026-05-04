@@ -243,6 +243,8 @@ try
         SerilogLog.Information("Database migrations applied.");
         await MotivationSeeder.SeedAsync(db);
         SerilogLog.Information("Motivation library seeded.");
+        await DailyPromptsSeeder.SeedAsync(db);
+        SerilogLog.Information("Daily prompts seeded.");
     }
 
     app.Run();

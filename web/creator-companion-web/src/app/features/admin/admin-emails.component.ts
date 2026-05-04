@@ -26,6 +26,7 @@ const TEMPLATES = [
         <a routerLink="/admin/reminders" class="admin-nav__link">Notifications</a>
         <span class="admin-nav__link admin-nav__link--active">Emails</span>
         <a routerLink="/admin/faq" class="admin-nav__link">FAQ</a>
+        <a routerLink="/admin/prompts" class="admin-nav__link">Daily Prompts</a>
       </nav>
 
       <div class="emails-layout">

@@ -28,6 +28,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<EmailTemplate> EmailTemplates => Set<EmailTemplate>();
     public DbSet<ActionItem> ActionItems => Set<ActionItem>();
     public DbSet<Faq> Faqs => Set<Faq>();
+    public DbSet<DailyPrompt> DailyPrompts => Set<DailyPrompt>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -50,5 +51,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.ApplyConfiguration(new EmailTemplateConfiguration());
         modelBuilder.ApplyConfiguration(new ActionItemConfiguration());
         modelBuilder.ApplyConfiguration(new FaqConfiguration());
+        modelBuilder.ApplyConfiguration(new DailyPromptConfiguration());
     }
 }

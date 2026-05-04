@@ -28,13 +28,21 @@ export const DASHBOARD_PROMPTS: readonly string[] = [
   'What\'s something new you tried recently?',
 ];
 
-/** Returns a random prompt different from the current one (when possible). */
-export function pickRandomPrompt(current: string | null): string {
-  if (DASHBOARD_PROMPTS.length === 1) return DASHBOARD_PROMPTS[0];
-  let next = DASHBOARD_PROMPTS[Math.floor(Math.random() * DASHBOARD_PROMPTS.length)];
+/**
+ * Returns a random prompt different from the current one (when
+ * possible). Defaults to the hardcoded fallback list, but the Today
+ * panel passes in the API-fetched library when available.
+ */
+export function pickRandomPrompt(
+  current: string | null,
+  list: readonly string[] = DASHBOARD_PROMPTS,
+): string {
+  if (list.length === 0) return current ?? '';
+  if (list.length === 1) return list[0];
+  let next = list[Math.floor(Math.random() * list.length)];
   let attempts = 0;
   while (next === current && attempts < 5) {
-    next = DASHBOARD_PROMPTS[Math.floor(Math.random() * DASHBOARD_PROMPTS.length)];
+    next = list[Math.floor(Math.random() * list.length)];
     attempts++;
   }
   return next;
