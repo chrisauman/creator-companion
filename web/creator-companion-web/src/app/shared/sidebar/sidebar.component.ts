@@ -141,6 +141,7 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
               <circle cx="12" cy="12" r="3"/>
               <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
             </svg>
+            <span class="sidebar__icon-btn-label">Settings</span>
           </a>
           <button class="sidebar__icon-btn"
                   type="button"
@@ -153,6 +154,7 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
               <polyline points="16 17 21 12 16 7"/>
               <line x1="21" y1="12" x2="9" y2="12"/>
             </svg>
+            <span class="sidebar__icon-btn-label">Sign out</span>
           </button>
         </div>
       </div>
@@ -500,11 +502,38 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
       display: flex; align-items: center; justify-content: center;
       text-decoration: none;
       transition: color .15s, background .15s;
+      font-family: inherit;
     }
     .sidebar__icon-btn:hover {
       color: rgba(255,255,255,.85);
       background: rgba(255,255,255,.06);
       text-decoration: none;
+    }
+    .sidebar__icon-btn-label { display: none; }
+
+    /* Mobile: show "Settings" / "Sign out" as full-width labelled rows
+       in the drawer footer instead of small icon-only buttons. */
+    @media (max-width: 767px) {
+      .sidebar__footer-actions {
+        flex-direction: column;
+        gap: 2px;
+        padding: .5rem 0 0;
+        border-top: 1px solid rgba(255,255,255,.07);
+        margin-top: .75rem;
+      }
+      .sidebar__icon-btn {
+        width: 100%;
+        height: auto;
+        justify-content: flex-start;
+        gap: .875rem;
+        padding: .75rem 1rem;
+        border-radius: 7px;
+        color: rgba(255,255,255,.85);
+        font-size: 1rem;
+        font-weight: 600;
+      }
+      .sidebar__icon-btn svg { width: 20px !important; height: 20px !important; opacity: .85; }
+      .sidebar__icon-btn-label { display: inline; }
     }
   `]
 })

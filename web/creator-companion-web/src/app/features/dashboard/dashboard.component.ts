@@ -952,39 +952,73 @@ import { ActivatedRoute } from '@angular/router';
     .motivation-card--expanded .motivation-body { max-height: 600px; padding: 0 1.25rem 1.25rem; }
     .motivation-content { font-size: .9375rem; line-height: 1.7; color: var(--color-text); margin: 0; white-space: pre-wrap; }
 
-    /* ── Search bar ──────────────────────────────────────────────── */
+    /* ── Search bar (modern pill style) ─────────────────────────── */
     .search-bar {
-      display: flex; align-items: center; gap: .625rem;
-      margin-top: 1.25rem; margin-bottom: .125rem;
+      display: flex; align-items: center; gap: .5rem;
+      margin-top: 1rem; margin-bottom: .5rem;
     }
     .search-input-wrap { flex: 1; position: relative; display: flex; align-items: center; }
     .search-icon {
-      position: absolute; left: .625rem;
+      position: absolute; left: 1rem;
       width: 1rem; height: 1rem; color: var(--color-text-3); pointer-events: none;
     }
     .search-input {
-      width: 100%; padding: .5rem .625rem .5rem 2rem;
+      width: 100%;
+      padding: .625rem 1rem .625rem 2.5rem;
       border: 1px solid var(--color-border);
-      border-radius: var(--radius-sm);
-      background: var(--color-surface); color: var(--color-text);
-      font-size: .875rem; font-family: var(--font-sans); box-sizing: border-box;
-      &:focus { outline: none; border-color: var(--color-accent); }
+      border-radius: 999px;
+      background: var(--color-surface);
+      color: var(--color-text);
+      font-size: .875rem;
+      font-family: var(--font-sans);
+      box-sizing: border-box;
+      transition: border-color .15s, background .15s, box-shadow .15s;
+    }
+    .search-input::placeholder { color: var(--color-text-3); }
+    .search-input:hover { border-color: var(--color-text-3); }
+    .search-input:focus {
+      outline: none;
+      border-color: var(--color-accent);
+      box-shadow: 0 0 0 3px rgba(18,196,227,.12);
     }
     .search-clear {
-      position: absolute; right: .5rem;
-      background: none; border: none; cursor: pointer;
-      color: var(--color-text-3); font-size: 1.1rem; line-height: 1;
-      padding: .1rem .25rem; border-radius: 4px;
-      &:hover { color: var(--color-text); background: var(--color-surface-2); }
+      position: absolute; right: .75rem;
+      background: var(--color-surface-2);
+      border: none;
+      cursor: pointer;
+      color: var(--color-text-2);
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      display: grid; place-items: center;
+      font-size: .875rem; line-height: 1;
+      padding: 0;
+      transition: background .15s, color .15s;
     }
+    .search-clear:hover { color: var(--color-text); background: var(--color-border); }
     .sort-select {
-      padding: .5rem .625rem;
-      border: 1px solid var(--color-border); border-radius: var(--radius-sm);
-      background: var(--color-surface); color: var(--color-text);
-      font-size: .8125rem; font-family: var(--font-sans); cursor: pointer; flex-shrink: 0;
-      &:focus { outline: none; border-color: var(--color-accent); }
+      padding: .625rem 2.25rem .625rem 1rem;
+      border: 1px solid var(--color-border);
+      border-radius: 999px;
+      background: var(--color-surface);
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239099a5' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 1rem center;
+      color: var(--color-text);
+      font-size: .8125rem;
+      font-weight: 500;
+      font-family: var(--font-sans);
+      cursor: pointer;
+      flex-shrink: 0;
+      appearance: none;
+      transition: border-color .15s;
     }
-    .search-results-count { font-size: .8125rem; color: var(--color-text-3); margin: 0 0 .75rem; }
+    .sort-select:hover { border-color: var(--color-text-3); }
+    .sort-select:focus {
+      outline: none;
+      border-color: var(--color-accent);
+      box-shadow: 0 0 0 3px rgba(18,196,227,.12);
+    }
+    .search-results-count { font-size: .75rem; color: var(--color-text-3); margin: 0 0 .75rem; }
 
     /* ── Entry list ──────────────────────────────────────────────── */
     .date-divider {
@@ -993,11 +1027,12 @@ import { ActivatedRoute } from '@angular/router';
       text-transform: uppercase;
       letter-spacing: .14em;
       color: var(--color-text-3);
-      padding: 0 0 .5rem;
-      margin: 1.75rem 0 .875rem;
+      padding: 0 0 .375rem;
+      /* Close to the entries below it, more breathing room above. */
+      margin: 1.75rem 0 .375rem;
       border-bottom: 1px solid var(--color-border);
     }
-    .date-divider--first { margin-top: 1rem; }
+    .date-divider--first { margin-top: .5rem; }
 
     /* ── Entry row (Variant B — meta · title · photo) ──────────── */
     .entry-row {
