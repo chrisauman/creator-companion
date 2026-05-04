@@ -38,24 +38,6 @@ interface PendingImage {
           <button class="btn btn--ghost btn--sm" routerLink="/dashboard">← Back</button>
         }
 
-        <!-- Paid: segmented date picker -->
-        @if (canBackfill()) {
-          <div class="date-picker" role="group" aria-label="Entry date">
-            @for (opt of dateOptions(); track opt.iso) {
-              <button
-                type="button"
-                class="date-picker__btn"
-                [class.date-picker__btn--active]="selectedDate() === opt.iso"
-                (click)="changeDate(opt.iso)"
-                [disabled]="submitting()">
-                {{ opt.label }}
-              </button>
-            }
-          </div>
-        } @else {
-          <span class="editor-date">{{ todayLabel() }}</span>
-        }
-
         <div class="save-indicator" [class]="'save-indicator--' + saveState()">
           <span *ngIf="saveState() === 'saving'">Saving…</span>
           <span *ngIf="saveState() === 'saved'">Draft saved</span>
@@ -66,6 +48,29 @@ interface PendingImage {
       <!-- Editor -->
       <main class="editor-main">
         <div class="container">
+
+          <!-- Entry date — paid users get a 3-option backfill picker; free
+               users see a static "today" label so they know what day this
+               entry is being recorded for. -->
+          <div class="date-row">
+            <span class="date-row__label">Entry date</span>
+            @if (canBackfill()) {
+              <div class="date-picker" role="group" aria-label="Entry date">
+                @for (opt of dateOptions(); track opt.iso) {
+                  <button
+                    type="button"
+                    class="date-picker__btn"
+                    [class.date-picker__btn--active]="selectedDate() === opt.iso"
+                    (click)="changeDate(opt.iso)"
+                    [disabled]="submitting()">
+                    {{ opt.label }}
+                  </button>
+                }
+              </div>
+            } @else {
+              <span class="editor-date">{{ todayLabel() }}</span>
+            }
+          </div>
 
           <!-- Prompt context banner — shown when launched from a prompt, the
                Spark, or a mood from the dashboard's Today panel. -->
@@ -360,6 +365,24 @@ interface PendingImage {
       border-radius: var(--radius-lg);
       box-shadow: var(--shadow-sm);
       padding: 2rem 1.75rem;
+    }
+
+    /* ── Entry date row (above title) ─────────────────────────── */
+    .date-row {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      flex-wrap: wrap;
+      padding-bottom: 1rem;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .date-row__label {
+      font-size: .6875rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .14em;
+      color: var(--color-text-3);
     }
 
     .title-input {
