@@ -1165,11 +1165,18 @@ export class DashboardComponent implements OnInit {
   }
 
   // ── Today panel compose handlers ───────────────────────────────
-  // Phase E will swap these for an inline compose flow that pre-fills
-  // the prompt / mood / spark context. For now they all open the
-  // existing /entry/new route.
-  composeFromSpark(): void { this.router.navigate(['/entry/new']); }
-  composeFromPrompt(_prompt: string): void { this.router.navigate(['/entry/new']); }
+  // Each handler navigates to /entry/new and passes context as a
+  // query param. The new-entry component reads these and shows a
+  // prompt banner above the editor (and pre-selects mood when given).
+  composeFromSpark(): void {
+    const m = this.motivation();
+    this.router.navigate(['/entry/new'], {
+      queryParams: m?.takeaway ? { spark: m.takeaway } : {}
+    });
+  }
+  composeFromPrompt(prompt: string): void {
+    this.router.navigate(['/entry/new'], { queryParams: { prompt } });
+  }
   composeFromMood(mood: string): void {
     this.router.navigate(['/entry/new'], { queryParams: { mood } });
   }

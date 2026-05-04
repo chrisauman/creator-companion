@@ -4,7 +4,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { Subject, debounceTime, takeUntil, forkJoin, of, switchMap, catchError, tap, EMPTY } from 'rxjs';
 import { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
@@ -14,6 +14,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { MOODS, getMoodEmoji } from '../../../core/constants/moods';
 import { TagInputComponent } from '../../../shared/tag-input.component';
 import { FormatToolbarComponent } from '../../../shared/format-toolbar.component';
+import { MoodIconComponent, isSupportedMood } from '../../../shared/mood-icon/mood-icon.component';
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'error';
 
@@ -25,7 +26,7 @@ interface PendingImage {
 @Component({
   selector: 'app-new-entry',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, TagInputComponent, FormatToolbarComponent],
+  imports: [CommonModule, FormsModule, RouterLink, TagInputComponent, FormatToolbarComponent, MoodIconComponent],
   template: `
     <div class="editor-page">
 
@@ -61,6 +62,38 @@ interface PendingImage {
       <!-- Editor -->
       <main class="editor-main">
         <div class="container">
+
+          <!-- Prompt context banner — shown when launched from a prompt, the
+               Spark, or a mood from the dashboard's Today panel. -->
+          @if (promptBanner()) {
+            <div class="prompt-banner">
+              <span class="prompt-banner__icon">
+                @if (promptBanner()!.kind === 'mood') {
+                  <app-mood-icon [mood]="promptBanner()!.text" [size]="16"></app-mood-icon>
+                } @else {
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    @if (promptBanner()!.kind === 'spark') {
+                      <path d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2Z" fill="currentColor"/>
+                    } @else {
+                      <path d="M12 20h9"/>
+                      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/>
+                    }
+                  </svg>
+                }
+              </span>
+              <div class="prompt-banner__text">
+                <strong>{{ promptBanner()!.label }}</strong> {{ promptBanner()!.text }}
+              </div>
+              <button class="prompt-banner__dismiss" type="button"
+                      (click)="dismissPromptBanner()"
+                      title="Dismiss">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <line x1="18" y1="6" x2="6" y2="18"/>
+                  <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+          }
 
           <input
             class="title-input"
@@ -167,9 +200,9 @@ interface PendingImage {
             @if (!canTrackMood()) {
               <div class="mood-locked-wrap">
                 <div class="mood-grid mood-grid--preview" aria-hidden="true">
-                  @for (mood of MOODS.slice(0, 8); track mood.key) {
+                  @for (mood of MOODS; track mood.key) {
                     <div class="mood-chip mood-chip--preview">
-                      <span class="mood-chip__emoji">{{ mood.emoji }}</span>
+                      <app-mood-icon [mood]="mood.key" [size]="22"></app-mood-icon>
                       <span class="mood-chip__label">{{ mood.key }}</span>
                     </div>
                   }
@@ -182,8 +215,15 @@ interface PendingImage {
             } @else {
               @if (selectedMood()) {
                 <div class="mood-selected-badge">
-                  <span>{{ getMoodEmoji(selectedMood()) }}</span>
+                  <app-mood-icon [mood]="selectedMood()" [size]="16"></app-mood-icon>
                   <span>Feeling {{ selectedMood() }}</span>
+                  <button type="button" class="mood-clear" title="Clear mood"
+                          (click)="selectedMood.set('')" [disabled]="submitting()">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                      <line x1="18" y1="6" x2="6" y2="18"/>
+                      <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                  </button>
                 </div>
               }
               <div class="mood-grid">
@@ -195,7 +235,7 @@ interface PendingImage {
                     (click)="selectedMood.set(mood.key)"
                     [disabled]="submitting()"
                   >
-                    <span class="mood-chip__emoji">{{ mood.emoji }}</span>
+                    <app-mood-icon [mood]="mood.key" [size]="22"></app-mood-icon>
                     <span class="mood-chip__label">{{ mood.key }}</span>
                   </button>
                 }
@@ -452,8 +492,10 @@ interface PendingImage {
       &:disabled { opacity: .5; cursor: not-allowed; }
       &--preview { cursor: default; }
     }
-    .mood-chip__emoji { font-size: 1.375rem; line-height: 1; }
-    .mood-chip__label { font-size: .6875rem; color: var(--color-text-2); text-align: center; line-height: 1.2; }
+    .mood-chip app-mood-icon { color: var(--color-text-2); }
+    .mood-chip:hover:not(:disabled) app-mood-icon,
+    .mood-chip--selected app-mood-icon { color: var(--color-accent); }
+    .mood-chip__label { font-size: .6875rem; color: var(--color-text-2); text-align: center; line-height: 1.2; font-weight: 500; }
     .mood-locked-wrap { position: relative; }
     .mood-grid--preview { opacity: .25; pointer-events: none; user-select: none; }
     .mood-lock-overlay {
@@ -463,6 +505,55 @@ interface PendingImage {
     }
     .mood-lock-icon { font-size: 1.375rem; }
     .mood-lock-text { font-size: .8125rem; color: var(--color-text-2); font-weight: 500; text-align: center; }
+
+    /* Mood-selected badge clear button */
+    .mood-selected-badge { display: inline-flex; align-items: center; gap: .375rem; }
+    .mood-selected-badge app-mood-icon { color: var(--color-accent); }
+    .mood-clear {
+      background: none; border: none; padding: .125rem;
+      color: var(--color-text-3); cursor: pointer;
+      display: flex; align-items: center; border-radius: 50%;
+    }
+    .mood-clear:hover { color: var(--color-text); background: rgba(0,0,0,.05); }
+
+    /* ── Prompt context banner ─────────────────────────────────── */
+    .prompt-banner {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      padding: .75rem 1rem;
+      margin: 0 0 1.25rem;
+      background: rgba(18,196,227,.08);
+      border: 1px solid rgba(18,196,227,.2);
+      border-radius: var(--radius-md);
+      font-size: .875rem;
+      color: var(--color-accent-dark, #0d9bb5);
+      line-height: 1.5;
+    }
+    .prompt-banner__icon {
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      color: var(--color-accent-dark, #0d9bb5);
+    }
+    .prompt-banner__text { flex: 1; min-width: 0; }
+    .prompt-banner__text strong {
+      font-weight: 700;
+      margin-right: .25rem;
+    }
+    .prompt-banner__dismiss {
+      flex-shrink: 0;
+      background: none;
+      border: none;
+      padding: .25rem;
+      border-radius: 4px;
+      color: var(--color-accent-dark, #0d9bb5);
+      cursor: pointer;
+      opacity: .65;
+      display: flex;
+      align-items: center;
+    }
+    .prompt-banner__dismiss:hover { opacity: 1; background: rgba(18,196,227,.12); }
   `]
 })
 export class NewEntryComponent implements OnInit, AfterViewInit, OnDestroy {
@@ -471,6 +562,7 @@ export class NewEntryComponent implements OnInit, AfterViewInit, OnDestroy {
   private api      = inject(ApiService);
   private auth     = inject(AuthService);
   private router   = inject(Router);
+  private route    = inject(ActivatedRoute);
   private zone     = inject(NgZone);
   private destroy$ = new Subject<void>();
   private autosave$ = new Subject<string>();
@@ -495,7 +587,14 @@ export class NewEntryComponent implements OnInit, AfterViewInit, OnDestroy {
   canFormatText  = signal(false);
   canBackfill    = signal(false);
   selectedDate   = signal(this.dateIso(0));
-  selectedMood   = signal('Accomplished');
+  selectedMood   = signal('');
+
+  /**
+   * Prompt context banner displayed when this page was launched from
+   * the dashboard's Today panel (Spark CTA, prompt card, or mood tile).
+   * Cleared once the user dismisses it.
+   */
+  promptBanner = signal<{ kind: 'prompt' | 'spark' | 'mood'; label: string; text: string } | null>(null);
   dragOver       = signal(false);
   pendingImages  = signal<PendingImage[]>([]);
   imageError     = signal('');
@@ -518,6 +617,11 @@ export class NewEntryComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly MAX_BYTES = 20 * 1024 * 1024;
 
   ngOnInit(): void {
+    // Read prompt-context query params handed off from the dashboard's
+    // Today panel (Spark CTA, prompt card, mood tile). Used to pre-fill
+    // mood and show a context banner.
+    this.applyPromptContext();
+
     this.auth.loadCapabilities().subscribe(caps => {
       this.maxWords.set(caps.maxWordsPerEntry);
       this.maxImages.set(caps.maxImagesPerEntry);
@@ -677,6 +781,54 @@ export class NewEntryComponent implements OnInit, AfterViewInit, OnDestroy {
     return new Date().toLocaleDateString('en-US', {
       weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
     });
+  }
+
+  /**
+   * Reads ?mood=, ?prompt=, ?spark= from the URL and seeds compose
+   * state accordingly. Called once on init from the dashboard's Today
+   * panel handoff. Unsupported moods are ignored.
+   */
+  private applyPromptContext(): void {
+    const params = this.route.snapshot.queryParamMap;
+
+    const mood = params.get('mood');
+    if (mood && isSupportedMood(mood)) {
+      this.selectedMood.set(mood);
+      this.promptBanner.set({
+        kind: 'mood',
+        label: 'Feeling',
+        text: mood
+      });
+      return;
+    }
+
+    const prompt = params.get('prompt');
+    if (prompt) {
+      this.promptBanner.set({
+        kind: 'prompt',
+        label: 'From your prompt:',
+        text: this.truncate(prompt, 120)
+      });
+      return;
+    }
+
+    const spark = params.get('spark');
+    if (spark) {
+      this.promptBanner.set({
+        kind: 'spark',
+        label: 'From today\'s Spark:',
+        text: this.truncate(spark, 120)
+      });
+    }
+  }
+
+  dismissPromptBanner(): void {
+    this.promptBanner.set(null);
+  }
+
+  private truncate(s: string, max: number): string {
+    if (!s) return '';
+    return s.length > max ? s.slice(0, max).trimEnd() + '…' : s;
   }
 
   changeDate(iso: string): void {

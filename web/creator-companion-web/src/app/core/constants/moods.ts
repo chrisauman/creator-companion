@@ -1,33 +1,42 @@
+/**
+ * The 12 moods supported across the app. Visual representation is now
+ * line-style face icons via MoodIconComponent — emoji are no longer
+ * the primary representation. The list intentionally pairs six active /
+ * forward-moving moods with six reflective / challenging ones, in
+ * picker display order.
+ *
+ * Existing entries in the database may still carry legacy mood values
+ * not in this list (e.g. "Curious", "Drained", "Confident"). Those
+ * are preserved on the entry but render without an icon and aren't
+ * selectable in the new picker.
+ */
 export interface MoodOption {
   key: string;
-  emoji: string;
 }
 
 export const MOODS: MoodOption[] = [
-  { key: 'Accomplished', emoji: '🏆' },
-  { key: 'Frustrated',   emoji: '😤' },
-  { key: 'Stuck',        emoji: '😓' },
-  { key: 'Inspired',     emoji: '✨' },
-  { key: 'Playful',      emoji: '😄' },
-  { key: 'Proud',        emoji: '🌟' },
-  { key: 'Energized',    emoji: '⚡' },
-  { key: 'Hopeful',      emoji: '🌱' },
-  { key: 'Satisfied',    emoji: '😌' },
-  { key: 'Grateful',     emoji: '🙏' },
-  { key: 'Focused',      emoji: '🎯' },
-  { key: 'Challenged',   emoji: '💪' },
-  { key: 'Doubtful',     emoji: '🤔' },
-  { key: 'Uncertain',    emoji: '😕' },
-  { key: 'Restless',     emoji: '😬' },
-  { key: 'Overwhelmed',  emoji: '😵' },
-  { key: 'Curious',      emoji: '🧐' },
-  { key: 'Impatient',    emoji: '⏳' },
-  { key: 'Vulnerable',   emoji: '🥺' },
-  { key: 'Drained',      emoji: '😪' },
-  { key: 'Confident',    emoji: '😎' },
-  { key: 'Disappointed', emoji: '😞' },
+  // Active / forward-moving
+  { key: 'Inspired' },
+  { key: 'Focused' },
+  { key: 'Energized' },
+  { key: 'Accomplished' },
+  { key: 'Proud' },
+  { key: 'Grateful' },
+  // Reflective / challenging
+  { key: 'Hopeful' },
+  { key: 'Challenged' },
+  { key: 'Vulnerable' },
+  { key: 'Frustrated' },
+  { key: 'Disappointed' },
+  { key: 'Stuck' },
 ];
 
-export function getMoodEmoji(key: string): string {
-  return MOODS.find(m => m.key === key)?.emoji ?? '';
+/**
+ * @deprecated Emoji are replaced by line icons rendered via
+ * MoodIconComponent. This function now always returns an empty string
+ * so legacy templates that still call it stay safe but contribute no
+ * extra glyphs. New code should use <app-mood-icon> instead.
+ */
+export function getMoodEmoji(_key: string): string {
+  return '';
 }

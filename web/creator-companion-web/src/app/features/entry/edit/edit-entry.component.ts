@@ -14,6 +14,7 @@ import { ApiService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { Entry, MediaItem } from '../../../core/models/models';
 import { MOODS, getMoodEmoji } from '../../../core/constants/moods';
+import { MoodIconComponent } from '../../../shared/mood-icon/mood-icon.component';
 import { TagInputComponent } from '../../../shared/tag-input.component';
 import { FormatToolbarComponent } from '../../../shared/format-toolbar.component';
 import { SidebarComponent } from '../../../shared/sidebar/sidebar.component';
@@ -24,7 +25,7 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
 @Component({
   selector: 'app-edit-entry',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, TagInputComponent, FormatToolbarComponent, SidebarComponent, MobileNavComponent],
+  imports: [CommonModule, FormsModule, RouterLink, TagInputComponent, FormatToolbarComponent, SidebarComponent, MobileNavComponent, MoodIconComponent],
   template: `
     <div class="page">
 
@@ -59,7 +60,7 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
           <div class="desktop-bar__right">
             <span class="editor-date">{{ entryDateLabel() }}</span>
             @if (selectedMood()) {
-              <span class="editor-mood-badge">{{ getMoodEmoji(selectedMood()) }} {{ selectedMood() }}</span>
+              <span class="editor-mood-badge"><app-mood-icon [mood]="selectedMood()" [size]="14"></app-mood-icon> {{ selectedMood() }}</span>
             }
             <button
               class="favorite-btn"
@@ -99,7 +100,7 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
             <div class="mobile-meta">
               <span class="editor-date">{{ entryDateLabel() }}</span>
               @if (selectedMood()) {
-                <span class="editor-mood-badge">{{ getMoodEmoji(selectedMood()) }} {{ selectedMood() }}</span>
+                <span class="editor-mood-badge"><app-mood-icon [mood]="selectedMood()" [size]="14"></app-mood-icon> {{ selectedMood() }}</span>
               }
               <button
                 class="favorite-btn"
@@ -236,9 +237,9 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
               @if (!canTrackMood()) {
                 <div class="mood-locked-wrap">
                   <div class="mood-grid mood-grid--preview" aria-hidden="true">
-                    @for (mood of MOODS.slice(0, 8); track mood.key) {
+                    @for (mood of MOODS; track mood.key) {
                       <div class="mood-chip mood-chip--preview">
-                        <span class="mood-chip__emoji">{{ mood.emoji }}</span>
+                        <app-mood-icon [mood]="mood.key" [size]="22"></app-mood-icon>
                         <span class="mood-chip__label">{{ mood.key }}</span>
                       </div>
                     }
@@ -251,8 +252,15 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
               } @else {
                 @if (selectedMood()) {
                   <div class="mood-selected-badge">
-                    <span>{{ getMoodEmoji(selectedMood()) }}</span>
+                    <app-mood-icon [mood]="selectedMood()" [size]="16"></app-mood-icon>
                     <span>Feeling {{ selectedMood() }}</span>
+                    <button type="button" class="mood-clear" title="Clear mood"
+                            (click)="selectedMood.set('')" [disabled]="saving()">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                      </svg>
+                    </button>
                   </div>
                 }
                 <div class="mood-grid">
@@ -264,7 +272,7 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
                       (click)="selectedMood.set(mood.key)"
                       [disabled]="saving()"
                     >
-                      <span class="mood-chip__emoji">{{ mood.emoji }}</span>
+                      <app-mood-icon [mood]="mood.key" [size]="22"></app-mood-icon>
                       <span class="mood-chip__label">{{ mood.key }}</span>
                     </button>
                   }
@@ -538,8 +546,18 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
       &:disabled { opacity: .5; cursor: not-allowed; }
       &--preview { cursor: default; }
     }
-    .mood-chip__emoji { font-size: 1.375rem; line-height: 1; }
-    .mood-chip__label { font-size: .6875rem; color: var(--color-text-2); text-align: center; line-height: 1.2; }
+    .mood-chip app-mood-icon { color: var(--color-text-2); }
+    .mood-chip:hover:not(:disabled) app-mood-icon,
+    .mood-chip--selected app-mood-icon { color: var(--color-accent); }
+    .mood-chip__label { font-size: .6875rem; color: var(--color-text-2); text-align: center; line-height: 1.2; font-weight: 500; }
+    .mood-selected-badge app-mood-icon { color: var(--color-accent); }
+    .mood-clear {
+      background: none; border: none; padding: .125rem;
+      color: var(--color-text-3); cursor: pointer;
+      display: inline-flex; align-items: center; border-radius: 50%;
+      margin-left: .125rem;
+    }
+    .mood-clear:hover { color: var(--color-text); background: rgba(0,0,0,.05); }
     .mood-locked-wrap { position: relative; }
     .mood-grid--preview { opacity: .25; pointer-events: none; user-select: none; }
     .mood-lock-overlay {

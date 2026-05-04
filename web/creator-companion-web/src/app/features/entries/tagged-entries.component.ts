@@ -4,11 +4,12 @@ import { RouterLink, ActivatedRoute, Router } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
 import { EntryListItem } from '../../core/models/models';
 import { getMoodEmoji } from '../../core/constants/moods';
+import { MoodIconComponent } from '../../shared/mood-icon/mood-icon.component';
 
 @Component({
   selector: 'app-tagged-entries',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, MoodIconComponent],
   template: `
     <div class="page">
       <header class="topnav">
@@ -66,7 +67,10 @@ import { getMoodEmoji } from '../../core/constants/moods';
                 </ng-container>
                 <ng-container *ngIf="entry.mood">
                   <span class="sep">·</span>
-                  <span>{{ getMoodEmoji(entry.mood) }}</span>
+                  <span class="entry-row__mood-inline">
+                    <app-mood-icon [mood]="entry.mood" [size]="13"></app-mood-icon>
+                    {{ entry.mood }}
+                  </span>
                 </ng-container>
               </div>
               <!-- Other tags on this entry -->

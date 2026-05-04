@@ -10,11 +10,12 @@ import { getMoodEmoji } from '../../../core/constants/moods';
 import { marked } from 'marked';
 import { SidebarComponent } from '../../../shared/sidebar/sidebar.component';
 import { MobileNavComponent } from '../../../shared/mobile-nav/mobile-nav.component';
+import { MoodIconComponent } from '../../../shared/mood-icon/mood-icon.component';
 
 @Component({
   selector: 'app-view-entry',
   standalone: true,
-  imports: [CommonModule, RouterLink, SidebarComponent, MobileNavComponent],
+  imports: [CommonModule, RouterLink, SidebarComponent, MobileNavComponent, MoodIconComponent],
   template: `
     <div class="page">
 
@@ -90,7 +91,8 @@ import { MobileNavComponent } from '../../../shared/mobile-nav/mobile-nav.compon
               <span class="entry-meta__date">{{ entryDateLabel() }}</span>
               @if (entry()!.mood) {
                 <span class="entry-meta__mood">
-                  {{ getMoodEmoji(entry()!.mood!) }} {{ entry()!.mood }}
+                  <app-mood-icon [mood]="entry()!.mood!" [size]="14"></app-mood-icon>
+                  {{ entry()!.mood }}
                 </span>
               }
             </div>
