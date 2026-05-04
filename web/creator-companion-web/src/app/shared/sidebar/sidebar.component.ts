@@ -23,12 +23,25 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
            [class.sidebar--collapsed]="collapsed()"
            [class.sidebar--mobile-open]="mobileOpen()">
 
-      <!-- Logo + collapse toggle -->
+      <!-- Logo + collapse toggle (desktop) / close button (mobile) -->
       <div class="sidebar__top">
         <a class="sidebar__logo-wrap" routerLink="/dashboard">
           <img src="logo-icon.png" alt="" class="sidebar__logo-icon">
           <span class="sidebar__logo-text">Creator Companion</span>
         </a>
+        <!-- Mobile: explicit close (X) button. Hidden on desktop. -->
+        <button class="sidebar__close-mobile"
+                type="button"
+                (click)="closeMobile()"
+                title="Close menu"
+                aria-label="Close menu">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+        <!-- Desktop: collapse chevron. Hidden on mobile. -->
         <button class="sidebar__collapse"
                 (click)="toggleCollapsed()"
                 [title]="collapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
@@ -271,6 +284,29 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
       background: rgba(255,255,255,.05);
     }
     .sidebar__collapse svg { transition: transform .25s ease; }
+
+    /* Mobile-only X close button — shown in the drawer top-right.
+       Hidden on desktop where the collapse chevron handles toggling. */
+    .sidebar__close-mobile { display: none; }
+    @media (max-width: 767px) {
+      .sidebar__close-mobile {
+        display: grid;
+        place-items: center;
+        width: 36px; height: 36px;
+        background: rgba(255,255,255,.06);
+        border: 1px solid rgba(255,255,255,.1);
+        border-radius: 50%;
+        color: rgba(255,255,255,.85);
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: background .15s, border-color .15s;
+      }
+      .sidebar__close-mobile:hover {
+        background: rgba(255,255,255,.12);
+        border-color: rgba(255,255,255,.25);
+      }
+      .sidebar__collapse { display: none !important; }
+    }
 
     /* ── Greeting + date (just below logo, hidden when collapsed) ── */
     .sidebar__greeting {
