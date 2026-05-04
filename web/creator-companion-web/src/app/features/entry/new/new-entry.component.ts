@@ -364,10 +364,37 @@ interface PendingImage {
 
     .title-input {
       width: 100%; border: none; outline: none; background: transparent;
-      font-family: var(--font-sans, system-ui); font-size: 1.5rem; font-weight: 700;
-      line-height: 1.3; color: var(--color-text); padding: 0; margin-bottom: .75rem;
-      &::placeholder { color: var(--color-text-3); font-weight: 400; }
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: 1.875rem; font-weight: 700; letter-spacing: -.015em;
+      line-height: 1.2; color: var(--color-text); padding: 0; margin-bottom: 1rem;
+      &::placeholder { color: var(--color-text-3); font-weight: 600; }
       &:disabled { opacity: .6; }
+    }
+
+    /* ── Editor primary actions — match new design language ─────── */
+    .editor-actions .btn--primary {
+      background: #0c0e13;
+      color: #fff;
+      border-radius: 999px;
+      padding: .625rem 1.5rem;
+      font-weight: 600;
+      transition: background .15s, color .15s, transform .15s;
+    }
+    .editor-actions .btn--primary:hover:not(:disabled) {
+      background: var(--color-accent);
+      color: #0c0e13;
+      transform: translateY(-1px);
+    }
+    .editor-actions .btn--secondary {
+      background: transparent;
+      color: var(--color-text-2);
+      border: 1px solid var(--color-border);
+      border-radius: 999px;
+      font-weight: 600;
+    }
+    .editor-actions .btn--secondary:hover:not(:disabled) {
+      background: var(--color-surface-2);
+      color: var(--color-text);
     }
 
     .format-lock {
