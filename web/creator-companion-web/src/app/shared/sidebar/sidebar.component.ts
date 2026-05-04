@@ -292,6 +292,11 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
       color: rgba(255,255,255,.45);
       margin-top: 2px;
     }
+    @media (max-width: 767px) {
+      .sidebar__greeting-hello { font-size: 1.125rem; }
+      .sidebar__greeting-date { font-size: .8125rem; margin-top: 4px; }
+      .sidebar__greeting { padding: 0 1.25rem 1.125rem; margin-bottom: 1.125rem; }
+    }
 
     /* ── New Entry button (cyan pill expanded; circular + icon collapsed) ── */
     .sidebar__compose {
@@ -333,13 +338,24 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
     .sidebar--collapsed .sidebar__nav { padding: 0 .375rem; }
 
     .sidebar__nav-item {
-      display: flex; align-items: center; gap: .625rem;
+      display: flex; align-items: center; gap: .75rem;
       padding: .5625rem .875rem;
       font-size: .875rem; font-weight: 500;
-      color: rgba(255,255,255,.4);
+      color: rgba(255,255,255,.55);
       border-radius: 7px;
       text-decoration: none;
       transition: background .15s, color .15s;
+    }
+    /* Bigger labels and tap targets on mobile drawer for readability. */
+    @media (max-width: 767px) {
+      .sidebar__nav-item {
+        font-size: 1rem;
+        font-weight: 600;
+        gap: .875rem;
+        padding: .75rem 1rem;
+        color: rgba(255,255,255,.85);
+      }
+      .sidebar__nav-item svg { width: 20px !important; height: 20px !important; opacity: .85 !important; }
     }
     .sidebar__nav-item svg { flex-shrink: 0; opacity: .7; }
     .sidebar__nav-item:hover {
@@ -491,9 +507,19 @@ export class SidebarComponent implements OnInit {
   streak            = signal<StreakStats | null>(null);
   hasFavoriteSparks = signal(false);
 
-  /** Persisted collapse state. Reads from localStorage on construction so the
-   *  sidebar never flickers from expanded → collapsed on mount. */
-  collapsed = signal<boolean>(this.readCollapsedFromStorage());
+  /** Raw user preference from localStorage (only meaningful on desktop). */
+  private collapsedPref = signal<boolean>(this.readCollapsedFromStorage());
+
+  /** Tracks the viewport width so the effective collapsed state is reactive
+   *  to crossing the mobile/desktop breakpoint at runtime. */
+  private viewportWidth = signal<number>(typeof window !== 'undefined' ? window.innerWidth : 1024);
+
+  /** Effective collapsed state. On mobile (< 768px) we always render the
+   *  drawer full-width, so the desktop "collapsed" preference is ignored. */
+  collapsed = computed<boolean>(() => {
+    if (this.viewportWidth() < 768) return false;
+    return this.collapsedPref();
+  });
 
   username      = computed(() => this.tokens.getCachedUser()?.username ?? '');
   userInitial   = computed(() => (this.tokens.getCachedUser()?.username?.[0] ?? '?').toUpperCase());
@@ -538,8 +564,8 @@ export class SidebarComponent implements OnInit {
   }
 
   toggleCollapsed(): void {
-    const next = !this.collapsed();
-    this.collapsed.set(next);
+    const next = !this.collapsedPref();
+    this.collapsedPref.set(next);
     try {
       localStorage.setItem(COLLAPSE_KEY, next ? '1' : '0');
     } catch {
@@ -579,5 +605,11 @@ export class SidebarComponent implements OnInit {
     this.router.events
       .pipe(filter(e => e instanceof NavigationEnd))
       .subscribe(() => this.drawer.closeMobile());
+
+    // Track viewport width so collapsed() recomputes when crossing the
+    // mobile/desktop breakpoint.
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', () => this.viewportWidth.set(window.innerWidth));
+    }
   }
 }

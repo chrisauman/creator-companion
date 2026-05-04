@@ -134,29 +134,49 @@ import { ActivatedRoute } from '@angular/router';
           </div>
         </div>
 
-        <!-- Mobile-only stat cards -->
-        <div class="stats-grid stats-grid--mobile" *ngIf="streak()">
-          <div class="stat-card">
-            <span class="stat-value streak-value">{{ streak()!.currentStreak }}</span>
-            <span class="stat-label">Day streak</span>
+        <!-- Mobile-only streak card (matches desktop layout w/ progress bar) -->
+        <div class="streak-mobile" *ngIf="streak()">
+          <div class="streak-mobile__main">
+            <div class="streak-mobile__num">
+              {{ streak()!.currentStreak }}<span class="streak-mobile__unit">{{ streak()!.currentStreak === 1 ? 'day' : 'days' }}</span>
+            </div>
+            <div class="streak-mobile__label">Current streak</div>
           </div>
-          <div class="stat-card">
-            <span class="stat-value">{{ streak()!.longestStreak }}</span>
-            <span class="stat-label">Longest streak</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-value">{{ streak()!.totalEntries }}</span>
-            <span class="stat-label">Total entries</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-value">{{ streak()!.totalActiveDays }}</span>
-            <span class="stat-label">Days active</span>
+
+          <ng-container *ngIf="progressToNext() as p">
+            <div class="streak-mobile__reward" *ngIf="p.current">
+              <span class="reward__badge"
+                    [class.reward__badge--top]="p.isAtTopTier">
+                <app-tier-icon [tier]="p.current.title" [size]="12"></app-tier-icon>
+                {{ p.current.title }}
+              </span>
+              <ng-container *ngIf="!p.isAtTopTier && p.next">
+                <div class="reward__track">
+                  <div class="reward__fill" [style.width.%]="p.percentToNext"></div>
+                </div>
+                <div class="reward__label">
+                  <span><strong>{{ p.daysToNext }}</strong> to {{ p.next.title }}</span>
+                </div>
+              </ng-container>
+            </div>
+            <div class="streak-mobile__reward" *ngIf="!p.current && p.next">
+              <div class="reward__track">
+                <div class="reward__fill" [style.width.%]="p.percentToNext"></div>
+              </div>
+              <div class="reward__label">
+                <span><strong>{{ p.daysToNext }}</strong> to {{ p.next.title }}</span>
+              </div>
+            </div>
+          </ng-container>
+
+          <div class="streak-mobile__longest" *ngIf="streak()!.longestStreak > 0">
+            Longest: <strong>{{ streak()!.longestStreak }}</strong> {{ streak()!.longestStreak === 1 ? 'day' : 'days' }}
           </div>
         </div>
-        <div class="stats-grid stats-grid--mobile" *ngIf="!streak() && !error()">
-          <div class="stat-card skeleton" *ngFor="let i of [1,2,3,4]">
-            <span class="stat-value">—</span>
-            <span class="stat-label">Loading…</span>
+        <div class="streak-mobile streak-mobile--skeleton" *ngIf="!streak() && !error()">
+          <div class="streak-mobile__main">
+            <div class="streak-mobile__num">—</div>
+            <div class="streak-mobile__label">Loading…</div>
           </div>
         </div>
 
@@ -609,40 +629,54 @@ import { ActivatedRoute } from '@angular/router';
       .new-entry-bar--mobile { display: none; }
     }
 
-    /* ── Mobile-only stat grid (modernized) ──────────────────────── */
-    .stats-grid--mobile {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: .625rem;
-      margin-bottom: 1.5rem;
-    }
-    @media (min-width: 768px) {
-      .stats-grid--mobile { display: none; }
-    }
-    .stat-card {
+    /* ── Mobile-only streak card (matches desktop layout) ──────── */
+    .streak-mobile {
       background: var(--color-surface);
       border: 1px solid var(--color-border);
-      border-radius: 14px;
-      padding: 1rem 1.125rem;
-      display: flex; flex-direction: column;
-      gap: .375rem;
+      border-radius: 16px;
+      padding: 1.25rem 1.25rem 1.125rem;
+      margin-bottom: 1rem;
     }
-    .stat-value {
+    @media (min-width: 768px) {
+      .streak-mobile { display: none; }
+    }
+    .streak-mobile__main {
+      display: flex;
+      align-items: baseline;
+      gap: .625rem;
+      margin-bottom: .5rem;
+    }
+    .streak-mobile__num {
       font-family: var(--font-sans);
-      font-size: 1.625rem;
-      font-weight: 700;
+      font-size: 2rem;
+      font-weight: 800;
       line-height: 1;
-      letter-spacing: -.02em;
-      color: var(--color-text);
+      letter-spacing: -.03em;
+      color: var(--color-accent);
     }
-    .streak-value { color: var(--color-accent); }
-    .stat-label {
+    .streak-mobile__unit {
+      font-size: .8125rem;
+      font-weight: 500;
+      color: var(--color-text-3);
+      margin-left: 4px;
+    }
+    .streak-mobile__label {
       font-size: .625rem;
       color: var(--color-text-2);
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: .1em;
     }
+    .streak-mobile__reward { margin-top: .5rem; }
+    .streak-mobile__longest {
+      margin-top: .75rem;
+      padding-top: .75rem;
+      border-top: 1px solid var(--color-border);
+      font-size: .75rem;
+      color: var(--color-text-2);
+    }
+    .streak-mobile__longest strong { color: var(--color-text); font-weight: 700; }
+    .streak-mobile--skeleton .streak-mobile__num { opacity: .4; }
     .skeleton { opacity: .5; }
 
     /* ── Push nudge ──────────────────────────────────────────────── */
@@ -697,14 +731,18 @@ import { ActivatedRoute } from '@angular/router';
        Spark hero — hide it everywhere now. */
     .motivation-card--mobile { display: none !important; }
 
-    /* ── Mobile header (hamburger | logo | "Create Entry" pill) ──── */
+    /* ── Mobile header (sticky on mobile) ─────────────────────────── */
     .mobile-header {
       display: flex;
       align-items: center;
       gap: .5rem;
-      padding-bottom: 1rem;
-      margin-bottom: 1.5rem;
+      padding: 1rem 1.125rem;
+      margin: -1rem -1.125rem 1rem;  /* counteract main-content padding so we span edge-to-edge */
+      background: var(--color-bg);
       border-bottom: 1px solid var(--color-border);
+      position: sticky;
+      top: 0;
+      z-index: 50;
     }
     @media (min-width: 768px) {
       .mobile-header { display: none; }
