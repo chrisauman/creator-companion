@@ -80,7 +80,16 @@ import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
                 </svg>
               </button>
             }
+
           </div>
+
+          <!-- "Read more" link in the bottom-right corner of the box. -->
+          @if (hasMoreToShow()) {
+            <button class="spark-hero__readmore" type="button"
+                    (click)="toggleSparkExpanded(); $event.stopPropagation()">
+              {{ sparkExpanded() ? 'Show less' : 'Read more' }} →
+            </button>
+          }
         </div>
       }
 
@@ -227,6 +236,31 @@ import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
     .spark-hero--clickable.spark-hero--expanded:hover {
       background: linear-gradient(180deg, #14171f 0%, #1f232c 60%, #2a2f3a 100%);
     }
+
+    /* Bottom-right "Read more / Show less" link */
+    .spark-hero__readmore {
+      position: absolute;
+      right: 1.25rem;
+      bottom: 1rem;
+      background: none;
+      border: none;
+      color: rgba(18,196,227,.95);
+      font-size: .75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      padding: .375rem 0;
+      cursor: pointer;
+      font-family: inherit;
+      transition: color .15s, transform .15s;
+      z-index: 1;
+    }
+    .spark-hero__readmore:hover {
+      color: var(--color-accent);
+      transform: translateX(2px);
+    }
+    /* Make room at the bottom of the box for the absolutely-positioned link. */
+    .spark-hero { padding-bottom: 2.75rem; }
 
     /* Top-right expand chevron */
     .spark-hero__expand {
