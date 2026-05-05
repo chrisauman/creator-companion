@@ -4,14 +4,15 @@ using CreatorCompanion.Api.Application.Validation;
 namespace CreatorCompanion.Api.Application.DTOs;
 
 public record RegisterRequest(
-    [Required, MinLength(3), MaxLength(50)] string Username,
+    [Required, MinLength(1), MaxLength(60)] string FirstName,
+    [Required, MinLength(1), MaxLength(60)] string LastName,
     [Required, EmailAddress, MaxLength(256)] string Email,
     [Required, MaxLength(128), StrongPassword] string Password,
     [Required, MaxLength(100)] string TimeZoneId
 );
 
 public record LoginRequest(
-    [Required] string EmailOrUsername,
+    [Required, EmailAddress] string Email,
     [Required] string Password
 );
 
@@ -37,7 +38,8 @@ public record ResetPasswordRequest(
 
 public record UserSummary(
     Guid Id,
-    string Username,
+    string FirstName,
+    string LastName,
     string Email,
     string Tier,
     string TimeZoneId,

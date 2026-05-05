@@ -33,7 +33,7 @@ import { ApiService } from '../../core/services/api.service';
           <!-- ── Edit card ─────────────────────────────────────── -->
           <div class="card user-card">
             <div class="card-header">
-              <h2>{{ user().username }}</h2>
+              <h2>{{ user().firstName }} {{ user().lastName }}</h2>
               <span class="badge" [class.badge--paid]="user().tier === 'Paid'">{{ user().tier }}</span>
             </div>
             <p class="text-muted text-sm" style="margin-bottom:1.25rem">{{ user().email }}</p>
@@ -43,9 +43,15 @@ import { ApiService } from '../../core/services/api.service';
                 <h3 class="section-title">Account</h3>
 
                 <div class="field">
-                  <label>Username</label>
-                  <input type="text" [(ngModel)]="form.username" name="username"
-                         required minlength="3" maxlength="50" />
+                  <label>First name</label>
+                  <input type="text" [(ngModel)]="form.firstName" name="firstName"
+                         required minlength="1" maxlength="60" />
+                </div>
+
+                <div class="field">
+                  <label>Last name</label>
+                  <input type="text" [(ngModel)]="form.lastName" name="lastName"
+                         required minlength="1" maxlength="60" />
                 </div>
 
                 <div class="field">
@@ -194,14 +200,14 @@ import { ApiService } from '../../core/services/api.service';
                 </button>
               } @else {
                 <p class="text-sm" style="margin-bottom:.5rem">
-                  This permanently deletes <strong>{{ user().username }}</strong> and all their data.
-                  Type their username to confirm:
+                  This permanently deletes <strong>{{ user().email }}</strong> and all their data.
+                  Type their email to confirm:
                 </p>
                 <div class="delete-confirm-row">
                   <input type="text" [(ngModel)]="deleteConfirmText" name="deleteConfirmText"
-                         placeholder="{{ user().username }}" class="input-sm" />
+                         placeholder="{{ user().email }}" class="input-sm" />
                   <button class="btn btn--danger btn--sm"
-                          [disabled]="deleteConfirmText !== user().username || deleting()"
+                          [disabled]="deleteConfirmText !== user().email || deleting()"
                           (click)="deleteUser()">
                     {{ deleting() ? 'Deleting…' : 'Permanently Delete' }}
                   </button>
@@ -360,10 +366,10 @@ export class AdminUserDetailComponent implements OnInit {
   private currentPage = 1;
 
   form: {
-    username: string; email: string; newPassword: string; tier: string;
+    firstName: string; lastName: string; email: string; newPassword: string; tier: string;
     timeZoneId: string; isAdmin: boolean; isActive: boolean;
     onboardingCompleted: boolean; trialEndsAt: string;
-  } = { username: '', email: '', newPassword: '', tier: 'Free', timeZoneId: '', isAdmin: false, isActive: true, onboardingCompleted: false, trialEndsAt: '' };
+  } = { firstName: '', lastName: '', email: '', newPassword: '', tier: 'Free', timeZoneId: '', isAdmin: false, isActive: true, onboardingCompleted: false, trialEndsAt: '' };
 
   private userId = '';
 
@@ -398,7 +404,8 @@ export class AdminUserDetailComponent implements OnInit {
 
   private populateForm(u: any) {
     this.form = {
-      username: u.username,
+      firstName: u.firstName ?? '',
+      lastName:  u.lastName ?? '',
       email: u.email,
       newPassword: '',
       tier: u.tier,
@@ -420,7 +427,8 @@ export class AdminUserDetailComponent implements OnInit {
     this.actionMsg.set('');
 
     const payload: any = {
-      username: this.form.username,
+      firstName: this.form.firstName,
+      lastName:  this.form.lastName,
       email: this.form.email,
       tier: this.form.tier,
       timeZoneId: this.form.timeZoneId,
@@ -493,7 +501,7 @@ export class AdminUserDetailComponent implements OnInit {
   }
 
   deleteUser() {
-    if (this.deleteConfirmText !== this.user().username) return;
+    if (this.deleteConfirmText !== this.user().email) return;
     this.deleting.set(true);
     this.deleteError.set('');
     this.api.adminDeleteUser(this.userId).subscribe({

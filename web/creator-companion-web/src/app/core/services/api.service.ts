@@ -18,14 +18,20 @@ export class ApiService {
   // ── Auth ────────────────────────────────────────────────────────────────
   // withCredentials: true is required so the browser sends the HttpOnly
   // refresh-token cookie on cross-origin requests to the Railway API.
-  register(username: string, email: string, password: string, timeZoneId: string): Observable<AuthResponse> {
+  register(firstName: string, lastName: string, email: string, password: string, timeZoneId: string): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.base}/auth/register`,
-      { username, email, password, timeZoneId }, { withCredentials: true });
+      { firstName, lastName, email, password, timeZoneId }, { withCredentials: true });
   }
 
-  login(emailOrUsername: string, password: string): Observable<AuthResponse> {
+  login(email: string, password: string): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.base}/auth/login`,
-      { emailOrUsername, password }, { withCredentials: true });
+      { email, password }, { withCredentials: true });
+  }
+
+  /** Update the current user's first + last name. */
+  updateName(firstName: string, lastName: string): Observable<{ firstName: string; lastName: string }> {
+    return this.http.patch<{ firstName: string; lastName: string }>(
+      `${this.base}/users/me/name`, { firstName, lastName });
   }
 
   refresh(): Observable<AuthResponse> {
@@ -263,7 +269,7 @@ export class ApiService {
   }
 
   adminUpdateUser(id: string, payload: {
-    username: string; email: string; newPassword?: string; tier: string;
+    firstName: string; lastName: string; email: string; newPassword?: string; tier: string;
     timeZoneId: string; isAdmin: boolean; isActive: boolean;
     onboardingCompleted: boolean; trialEndsAt?: string | null;
   }): Observable<any> {

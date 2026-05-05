@@ -938,14 +938,9 @@ export class DashboardComponent implements OnInit {
     return name ? `Good ${period}, ${name}` : `Good ${period}`;
   });
 
-  /** Display name for the greeting — first name if it looks like one, else username. */
+  /** First name used in the greeting ("Good morning, Chris"). */
   private displayName(): string {
-    const u = this.tokens.getCachedUser();
-    if (!u?.username) return '';
-    // If the username looks like an email, strip the domain.
-    const base = u.username.includes('@') ? u.username.split('@')[0] : u.username;
-    // Capitalize first letter; leave the rest as-is.
-    return base.charAt(0).toUpperCase() + base.slice(1);
+    return this.tokens.getCachedUser()?.firstName ?? '';
   }
 
   /** Date subtitle under the greeting, e.g. "Sunday · May 4, 2026". */

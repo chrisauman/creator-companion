@@ -25,14 +25,14 @@ export class AuthService {
   readonly capabilities = this._capabilities.asReadonly();
   readonly isLoggedIn   = computed(() => !!this._user());
 
-  register(username: string, email: string, password: string, timeZoneId: string): Observable<AuthResponse> {
-    return this.api.register(username, email, password, timeZoneId).pipe(
+  register(firstName: string, lastName: string, email: string, password: string, timeZoneId: string): Observable<AuthResponse> {
+    return this.api.register(firstName, lastName, email, password, timeZoneId).pipe(
       tap(res => this.handleAuth(res))
     );
   }
 
-  login(emailOrUsername: string, password: string): Observable<AuthResponse> {
-    return this.api.login(emailOrUsername, password).pipe(
+  login(email: string, password: string): Observable<AuthResponse> {
+    return this.api.login(email, password).pipe(
       tap(res => this.handleAuth(res))
     );
   }
@@ -120,8 +120,11 @@ export class AuthService {
       tap(user => {
         this._user.set(user);
         this.tokens.cacheUser({
-          id: user.id, username: user.username,
-          email: user.email, tier: user.tier,
+          id: user.id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          tier: user.tier,
           profileImageUrl: user.profileImageUrl ?? null
         });
       })
@@ -139,7 +142,8 @@ export class AuthService {
     if (res.user) {
       this.tokens.cacheUser({
         id: res.user.id,
-        username: res.user.username,
+        firstName: res.user.firstName,
+        lastName: res.user.lastName,
         email: res.user.email,
         tier: res.user.tier,
         profileImageUrl: res.user.profileImageUrl ?? null

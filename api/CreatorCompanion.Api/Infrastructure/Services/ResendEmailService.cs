@@ -10,7 +10,7 @@ public class ResendEmailService(IResend resend, IConfiguration config, AppDbCont
     private static readonly string DefaultWelcomeSubject = "Welcome to Creator Companion — let's get started";
 
     private static readonly string DefaultWelcomeContent = """
-        <h2 style="margin-bottom:.5rem">Welcome, {username}!</h2>
+        <h2 style="margin-bottom:.5rem">Welcome, {displayName}!</h2>
         <p style="color:#555">You've taken the first step. Creator Companion is your private space to show up, write, and build a creative practice that sticks.</p>
         <h3 style="margin-top:1.5rem;margin-bottom:.5rem">A few things to try first:</h3>
         <ul style="color:#555;line-height:2">
@@ -83,7 +83,7 @@ public class ResendEmailService(IResend resend, IConfiguration config, AppDbCont
         await resend.EmailSendAsync(message);
     }
 
-    public async Task SendPaymentReceiptAsync(string toEmail, string username)
+    public async Task SendPaymentReceiptAsync(string toEmail, string displayName)
     {
         var fromEmail = config["Resend:FromEmail"] ?? "noreply@creatorcompanion.app";
         var appName   = config["App:Name"] ?? "Creator Companion";
@@ -95,7 +95,7 @@ public class ResendEmailService(IResend resend, IConfiguration config, AppDbCont
             Subject = $"You're on the {appName} Paid plan!",
             HtmlBody = $"""
                 <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:2rem">
-                  <h2 style="margin-bottom:.5rem">Welcome to the full experience, {username}!</h2>
+                  <h2 style="margin-bottom:.5rem">Welcome to the full experience, {displayName}!</h2>
                   <p style="color:#555">Your subscription is active. All paid features are now unlocked:</p>
                   <ul style="color:#555;line-height:2">
                     <li>Up to 5 entries per day, 2,500 words each</li>
@@ -151,7 +151,7 @@ public class ResendEmailService(IResend resend, IConfiguration config, AppDbCont
         await resend.EmailSendAsync(message);
     }
 
-    public async Task SendWelcomeAsync(string toEmail, string username)
+    public async Task SendWelcomeAsync(string toEmail, string displayName)
     {
         var fromEmail = config["Resend:FromEmail"] ?? "noreply@creatorcompanion.app";
         var appName   = config["App:Name"] ?? "Creator Companion";
@@ -159,7 +159,7 @@ public class ResendEmailService(IResend resend, IConfiguration config, AppDbCont
         var template = await db.EmailTemplates.FirstOrDefaultAsync(t => t.Key == "welcome");
         var subject  = template?.Subject ?? DefaultWelcomeSubject;
         var content  = (template?.HtmlContent ?? DefaultWelcomeContent)
-                           .Replace("{username}", username);
+                           .Replace("{displayName}", displayName);
 
         var message = new EmailMessage
         {
@@ -187,7 +187,7 @@ public class ResendEmailService(IResend resend, IConfiguration config, AppDbCont
         await resend.EmailSendAsync(message);
     }
 
-    public async Task SendAccountDeletionConfirmationAsync(string toEmail, string username)
+    public async Task SendAccountDeletionConfirmationAsync(string toEmail, string displayName)
     {
         var fromEmail = config["Resend:FromEmail"] ?? "noreply@creatorcompanion.app";
         var appName   = config["App:Name"] ?? "Creator Companion";
@@ -200,7 +200,7 @@ public class ResendEmailService(IResend resend, IConfiguration config, AppDbCont
             HtmlBody = $"""
                 <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:2rem">
                   <h2 style="margin-bottom:.5rem">Account deleted</h2>
-                  <p style="color:#555">Hi {username}, your Creator Companion account and all associated data
+                  <p style="color:#555">Hi {displayName}, your Creator Companion account and all associated data
                      have been permanently deleted as requested.</p>
                   <p style="color:#555">The following data has been removed:</p>
                   <ul style="color:#555;line-height:2">

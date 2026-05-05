@@ -29,11 +29,25 @@ public class UsersController(AppDbContext db, IStorageService storage) : Control
         if (user is null) return NotFound();
 
         return Ok(new UserProfileResponse(
-            user.Id, user.Username, user.Email,
+            user.Id, user.FirstName, user.LastName, user.Email,
             user.Tier.ToString(), user.TimeZoneId,
             user.OnboardingCompleted, user.CreatedAt, user.TrialEndsAt,
             user.ShowMotivation, user.ShowActionItems,
             string.IsNullOrEmpty(user.ProfileImagePath) ? null : storage.GetUrl(user.ProfileImagePath)));
+    }
+
+    [HttpPatch("me/name")]
+    public async Task<IActionResult> UpdateName([FromBody] UpdateNameRequest request)
+    {
+        var user = await db.Users.FindAsync(UserId);
+        if (user is null) return NotFound();
+
+        user.FirstName = request.FirstName.Trim();
+        user.LastName  = request.LastName.Trim();
+        user.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync();
+
+        return Ok(new { firstName = user.FirstName, lastName = user.LastName });
     }
 
     [HttpPatch("me/timezone")]
@@ -193,7 +207,7 @@ public class UsersController(AppDbContext db, IStorageService storage) : Control
         }
 
         // Send confirmation email before deleting (we still have the address)
-        try { await email.SendAccountDeletionConfirmationAsync(user.Email, user.Username); }
+        try { await email.SendAccountDeletionConfirmationAsync(user.Email, user.FirstName); }
         catch (Exception ex) { Console.WriteLine($"[WARN] Could not send deletion email to {user.Email}: {ex.Message}"); }
 
         // Delete entries explicitly (cascade handles EntryTags + EntryMedia)

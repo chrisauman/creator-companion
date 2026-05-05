@@ -9,16 +9,28 @@ namespace CreatorCompanion.Tests;
 
 public class AuthServiceTests
 {
-    // No-op stubs — auth tests don't exercise email or audit side-effects
+    // No-op stubs — auth tests don't exercise email, audit, or storage side-effects.
     private sealed class NullEmailService : IEmailService
     {
         public Task SendPasswordResetAsync(string toEmail, string resetLink) => Task.CompletedTask;
         public Task SendVerificationEmailAsync(string toEmail, string verifyLink) => Task.CompletedTask;
+        public Task SendPaymentReceiptAsync(string toEmail, string displayName) => Task.CompletedTask;
+        public Task SendPasswordChangedAsync(string toEmail) => Task.CompletedTask;
+        public Task SendWelcomeAsync(string toEmail, string displayName) => Task.CompletedTask;
+        public Task SendAccountDeletionConfirmationAsync(string toEmail, string displayName) => Task.CompletedTask;
     }
 
     private sealed class NullAuditService : IAuditService
     {
         public Task LogAsync(string eventName, Guid? userId = null, string? detail = null) => Task.CompletedTask;
+    }
+
+    private sealed class NullStorageService : IStorageService
+    {
+        public Task<string> SaveAsync(Stream fileStream, string fileName, string contentType) =>
+            Task.FromResult($"stub/{Guid.NewGuid()}_{fileName}");
+        public Task DeleteAsync(string storagePath) => Task.CompletedTask;
+        public string GetUrl(string storagePath) => $"https://stub/{storagePath}";
     }
 
     private static AuthService Build(AppDbContext db)
@@ -33,8 +45,13 @@ public class AuthServiceTests
                 ["Jwt:RefreshExpiryDays"] = "30"
             })
             .Build();
-        return new AuthService(db, config, new NullEmailService(), new NullAuditService());
+        return new AuthService(db, config, new NullEmailService(), new NullAuditService(), new NullStorageService());
     }
+
+    private static RegisterRequest NewRegister(
+        string firstName, string email,
+        string password = "Password1!", string lastName = "Tester")
+        => new RegisterRequest(firstName, lastName, email, password, "UTC");
 
     [Fact]
     public async Task Register_NewUser_ReturnsTokensAndCreatesJournal()
@@ -42,12 +59,12 @@ public class AuthServiceTests
         var db  = DbFactory.Create();
         var svc = Build(db);
 
-        var result = await svc.RegisterAsync(
-            new RegisterRequest("alice", "alice@test.com", "Password1!", "UTC"));
+        var result = await svc.RegisterAsync(NewRegister("Alice", "alice@test.com"));
 
         result.AccessToken.Should().NotBeNullOrWhiteSpace();
         result.RefreshToken.Should().NotBeNullOrWhiteSpace();
-        result.User.Username.Should().Be("alice");
+        result.User.FirstName.Should().Be("Alice");
+        result.User.LastName.Should().Be("Tester");
         result.User.Tier.Should().Be("Free");
 
         // Default journal must be created
@@ -60,25 +77,9 @@ public class AuthServiceTests
         var db  = DbFactory.Create();
         var svc = Build(db);
 
-        await svc.RegisterAsync(new RegisterRequest("alice", "alice@test.com", "Password1!", "UTC"));
+        await svc.RegisterAsync(NewRegister("Alice", "alice@test.com"));
 
-        var act = async () =>
-            await svc.RegisterAsync(new RegisterRequest("alice2", "alice@test.com", "Password1!", "UTC"));
-
-        await act.Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage("*already exists*");
-    }
-
-    [Fact]
-    public async Task Register_DuplicateUsername_Throws()
-    {
-        var db  = DbFactory.Create();
-        var svc = Build(db);
-
-        await svc.RegisterAsync(new RegisterRequest("alice", "alice@test.com", "Password1!", "UTC"));
-
-        var act = async () =>
-            await svc.RegisterAsync(new RegisterRequest("alice", "other@test.com", "Password1!", "UTC"));
+        var act = async () => await svc.RegisterAsync(NewRegister("Alice2", "alice@test.com"));
 
         await act.Should().ThrowAsync<InvalidOperationException>()
             .WithMessage("*already exists*");
@@ -89,24 +90,25 @@ public class AuthServiceTests
     {
         var db  = DbFactory.Create();
         var svc = Build(db);
-        await svc.RegisterAsync(new RegisterRequest("bob", "bob@test.com", "Password1!", "UTC"));
+        await svc.RegisterAsync(NewRegister("Bob", "bob@test.com"));
 
         var result = await svc.LoginAsync(new LoginRequest("bob@test.com", "Password1!"));
 
         result.AccessToken.Should().NotBeNullOrWhiteSpace();
-        result.User.Username.Should().Be("bob");
+        result.User.FirstName.Should().Be("Bob");
+        result.User.Email.Should().Be("bob@test.com");
     }
 
     [Fact]
-    public async Task Login_ByUsername_Succeeds()
+    public async Task Login_EmailIsCaseInsensitive()
     {
         var db  = DbFactory.Create();
         var svc = Build(db);
-        await svc.RegisterAsync(new RegisterRequest("bob", "bob@test.com", "Password1!", "UTC"));
+        await svc.RegisterAsync(NewRegister("Bob", "Bob@Test.com"));
 
-        var result = await svc.LoginAsync(new LoginRequest("bob", "Password1!"));
+        var result = await svc.LoginAsync(new LoginRequest("BOB@test.COM", "Password1!"));
 
-        result.User.Username.Should().Be("bob");
+        result.User.FirstName.Should().Be("Bob");
     }
 
     [Fact]
@@ -114,7 +116,7 @@ public class AuthServiceTests
     {
         var db  = DbFactory.Create();
         var svc = Build(db);
-        await svc.RegisterAsync(new RegisterRequest("carol", "carol@test.com", "Password1!", "UTC"));
+        await svc.RegisterAsync(NewRegister("Carol", "carol@test.com"));
 
         var act = async () =>
             await svc.LoginAsync(new LoginRequest("carol@test.com", "WrongPassword!"));
@@ -124,7 +126,7 @@ public class AuthServiceTests
     }
 
     [Fact]
-    public async Task Login_UnknownUser_Throws()
+    public async Task Login_UnknownEmail_Throws()
     {
         var db  = DbFactory.Create();
         var svc = Build(db);
@@ -141,14 +143,13 @@ public class AuthServiceTests
         var db  = DbFactory.Create();
         var svc = Build(db);
 
-        var reg = await svc.RegisterAsync(
-            new RegisterRequest("dave", "dave@test.com", "Password1!", "UTC"));
+        var reg = await svc.RegisterAsync(NewRegister("Dave", "dave@test.com"));
 
         var refreshed = await svc.RefreshAsync(reg.RefreshToken);
 
         refreshed.AccessToken.Should().NotBe(reg.AccessToken);
         refreshed.RefreshToken.Should().NotBe(reg.RefreshToken);
-        refreshed.User.Username.Should().Be("dave");
+        refreshed.User.FirstName.Should().Be("Dave");
     }
 
     [Fact]
@@ -157,8 +158,7 @@ public class AuthServiceTests
         var db  = DbFactory.Create();
         var svc = Build(db);
 
-        var reg = await svc.RegisterAsync(
-            new RegisterRequest("eve", "eve@test.com", "Password1!", "UTC"));
+        var reg = await svc.RegisterAsync(NewRegister("Eve", "eve@test.com"));
 
         // Use the token once (this revokes it)
         await svc.RefreshAsync(reg.RefreshToken);
@@ -176,8 +176,7 @@ public class AuthServiceTests
         var db  = DbFactory.Create();
         var svc = Build(db);
 
-        var reg = await svc.RegisterAsync(
-            new RegisterRequest("frank", "frank@test.com", "Password1!", "UTC"));
+        var reg = await svc.RegisterAsync(NewRegister("Frank", "frank@test.com"));
 
         await svc.RevokeAsync(reg.RefreshToken);
 

@@ -57,7 +57,10 @@ public class AdminController(AppDbContext db) : ControllerBase
         if (!string.IsNullOrWhiteSpace(search))
         {
             var s = search.ToLower();
-            query = query.Where(u => u.Email.Contains(s) || u.Username.Contains(s));
+            query = query.Where(u =>
+                u.Email.Contains(s) ||
+                u.FirstName.ToLower().Contains(s) ||
+                u.LastName.ToLower().Contains(s));
         }
 
         var total = await query.CountAsync();
@@ -68,7 +71,8 @@ public class AdminController(AppDbContext db) : ControllerBase
             .Select(u => new
             {
                 u.Id,
-                u.Username,
+                u.FirstName,
+                u.LastName,
                 u.Email,
                 Tier = u.Tier.ToString(),
                 u.IsActive,
@@ -90,7 +94,8 @@ public class AdminController(AppDbContext db) : ControllerBase
             .Select(u => new
             {
                 u.Id,
-                u.Username,
+                u.FirstName,
+                u.LastName,
                 u.Email,
                 Tier = u.Tier.ToString(),
                 u.IsActive,
@@ -133,7 +138,7 @@ public class AdminController(AppDbContext db) : ControllerBase
 
         return Ok(new
         {
-            user.Id, user.Username, user.Email, user.Tier, user.IsActive, user.IsAdmin,
+            user.Id, user.FirstName, user.LastName, user.Email, user.Tier, user.IsActive, user.IsAdmin,
             user.OnboardingCompleted, user.TimeZoneId, user.CreatedAt, user.UpdatedAt,
             user.TrialEndsAt, user.EntryCount, user.JournalCount,
             ActivePause = activePause,
@@ -175,19 +180,15 @@ public class AdminController(AppDbContext db) : ControllerBase
         var user = await db.Users.FindAsync(id);
         if (user is null) return NotFound();
 
-        // Check uniqueness for username/email if they changed
-        if (!string.Equals(user.Username, request.Username, StringComparison.OrdinalIgnoreCase))
-        {
-            if (await db.Users.AnyAsync(u => u.Id != id && u.Username == request.Username))
-                return Conflict(new { error = "Username is already taken." });
-        }
+        // Check email uniqueness if it changed
         if (!string.Equals(user.Email, request.Email, StringComparison.OrdinalIgnoreCase))
         {
             if (await db.Users.AnyAsync(u => u.Id != id && u.Email == request.Email))
                 return Conflict(new { error = "Email is already in use." });
         }
 
-        user.Username            = request.Username;
+        user.FirstName           = request.FirstName.Trim();
+        user.LastName            = request.LastName.Trim();
         user.Email               = request.Email;
         user.Tier                = tier;
         user.TimeZoneId          = request.TimeZoneId;
@@ -204,7 +205,7 @@ public class AdminController(AppDbContext db) : ControllerBase
 
         return Ok(new
         {
-            user.Id, user.Username, user.Email,
+            user.Id, user.FirstName, user.LastName, user.Email,
             Tier = user.Tier.ToString(),
             user.TimeZoneId, user.IsAdmin, user.IsActive,
             user.OnboardingCompleted, user.TrialEndsAt, user.UpdatedAt

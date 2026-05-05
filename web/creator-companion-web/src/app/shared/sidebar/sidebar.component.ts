@@ -713,11 +713,20 @@ export class SidebarComponent implements OnInit {
     return this.collapsedPref();
   });
 
-  username      = computed(() => this.tokens.getCachedUser()?.username ?? '');
-  userInitial   = computed(() => (this.tokens.getCachedUser()?.username?.[0] ?? '?').toUpperCase());
+  /** "First Last" — falls back to first name only if last is missing
+   *  (grandfathered users whose username didn't have a clean split). */
+  displayName = computed(() => {
+    const u = this.tokens.getCachedUser();
+    if (!u) return '';
+    return [u.firstName, u.lastName].filter(s => s && s.trim()).join(' ');
+  });
 
-  /** Display name shown next to the avatar — just the username. */
-  displayName = computed(() => this.tokens.getCachedUser()?.username ?? '');
+  /** Capital first letter of the user's first name for the avatar
+   *  fallback when no profile picture is set. */
+  userInitial = computed(() => {
+    const first = this.tokens.getCachedUser()?.firstName ?? '';
+    return (first[0] ?? '?').toUpperCase();
+  });
 
   /** Profile picture URL — null until the user has uploaded one.
    *  When set, the avatar circle renders the image instead of the

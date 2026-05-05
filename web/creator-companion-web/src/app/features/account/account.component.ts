@@ -212,12 +212,44 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log an entry to keep your streak a
             </div>
           </div>
 
+          <!-- Editable name section. Saves through PATCH /users/me/name. -->
           <div class="profile-rows" style="margin-top:1.5rem">
-            <div class="profile-row">
-              <span class="cap-label">Username</span>
-              <span>{{ user()!.username }}</span>
+            <div class="name-edit-row">
+              <div class="form-group" style="flex:1">
+                <label class="cap-label" for="firstName">First name</label>
+                <input id="firstName"
+                       class="form-control"
+                       type="text"
+                       [(ngModel)]="firstNameInput"
+                       maxlength="60"
+                       [disabled]="nameSaving()" />
+              </div>
+              <div class="form-group" style="flex:1">
+                <label class="cap-label" for="lastName">Last name</label>
+                <input id="lastName"
+                       class="form-control"
+                       type="text"
+                       [(ngModel)]="lastNameInput"
+                       maxlength="60"
+                       [disabled]="nameSaving()" />
+              </div>
             </div>
-            <div class="profile-row">
+            <div class="name-edit-actions">
+              <button class="btn btn--secondary btn--sm"
+                      type="button"
+                      (click)="saveName()"
+                      [disabled]="nameSaving() || !nameDirty()">
+                {{ nameSaving() ? 'Saving…' : 'Save' }}
+              </button>
+              <span *ngIf="nameError()" class="text-sm" style="color:var(--color-danger)">
+                {{ nameError() }}
+              </span>
+              <span *ngIf="nameSavedMessage()" class="text-sm" style="color:var(--color-success)">
+                {{ nameSavedMessage() }}
+              </span>
+            </div>
+
+            <div class="profile-row" style="margin-top:1rem">
               <span class="cap-label">Email</span>
               <span>{{ user()!.email }}</span>
             </div>
@@ -551,6 +583,20 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log an entry to keep your streak a
       white-space: nowrap;
     }
     .profile-rows { display:flex; flex-direction:column; }
+
+    .name-edit-row {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .name-edit-row .form-group { min-width: 160px; }
+    .name-edit-actions {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      margin-top: .75rem;
+      flex-wrap: wrap;
+    }
     .export-actions { display:flex; gap:.75rem; flex-wrap:wrap; }
 
     /* Profile picture upload row */
@@ -785,6 +831,19 @@ export class AccountComponent implements OnInit {
   private push     = inject(PushService);
   private tokens   = inject(TokenService);
 
+  // First / Last name edit
+  firstNameInput   = '';
+  lastNameInput    = '';
+  nameSaving       = signal(false);
+  nameError        = signal('');
+  nameSavedMessage = signal('');
+  nameDirty = (): boolean => {
+    const u = this.user();
+    if (!u) return false;
+    return (this.firstNameInput.trim() !== (u.firstName ?? '').trim()) ||
+           (this.lastNameInput.trim()  !== (u.lastName  ?? '').trim());
+  };
+
   // Profile picture upload
   profileImageWorking = signal(false);
   profileImageError   = signal('');
@@ -796,7 +855,7 @@ export class AccountComponent implements OnInit {
   });
   profileImageInitial = computed(() => {
     const u = this.user();
-    return (u?.username?.[0] ?? '?').toUpperCase();
+    return (u?.firstName?.[0] ?? '?').toUpperCase();
   });
 
   readonly defaultReminderMessage = DEFAULT_REMINDER_MESSAGE;
@@ -864,10 +923,46 @@ export class AccountComponent implements OnInit {
       this.auth.setUser(u);
       this.showMotivation.set(u.showMotivation ?? true);
       this.showActionItems.set(u.showActionItems ?? true);
+      // Seed the name inputs from the freshly-fetched profile.
+      this.firstNameInput = u.firstName ?? '';
+      this.lastNameInput  = u.lastName  ?? '';
     });
+    // Optimistic seed so the input isn't empty before the GET resolves.
+    const cached = this.tokens.getCachedUser();
+    if (cached) {
+      this.firstNameInput = cached.firstName ?? '';
+      this.lastNameInput  = cached.lastName  ?? '';
+    }
     this.loadTags();
     this.loadReminders();
     this.initPushState();
+  }
+
+  saveName(): void {
+    const first = this.firstNameInput.trim();
+    const last  = this.lastNameInput.trim();
+    if (!first || !last) {
+      this.nameError.set('Both first and last name are required.');
+      return;
+    }
+    this.nameError.set('');
+    this.nameSavedMessage.set('');
+    this.nameSaving.set(true);
+    this.api.updateName(first, last).subscribe({
+      next: ({ firstName, lastName }) => {
+        // Update cached user (sidebar avatar / greeting react via signal)
+        this.tokens.updateCachedUser({ firstName, lastName });
+        const current = this.user();
+        if (current) this.auth.setUser({ ...current, firstName, lastName });
+        this.nameSaving.set(false);
+        this.nameSavedMessage.set('Saved');
+        setTimeout(() => this.nameSavedMessage.set(''), 2500);
+      },
+      error: err => {
+        this.nameError.set(err?.error?.error ?? 'Could not save. Try again.');
+        this.nameSaving.set(false);
+      }
+    });
   }
 
   upgrade(plan: 'monthly' | 'annual'): void {

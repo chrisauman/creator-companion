@@ -18,7 +18,8 @@ public record ChangePasswordRequest(
 
 public record UserProfileResponse(
     Guid Id,
-    string Username,
+    string FirstName,
+    string LastName,
     string Email,
     string Tier,
     string TimeZoneId,
@@ -28,6 +29,15 @@ public record UserProfileResponse(
     bool ShowMotivation,
     bool ShowActionItems,
     string? ProfileImageUrl
+);
+
+/// <summary>
+/// Update the current user's first + last name from the Account page.
+/// Both required, both at least one character.
+/// </summary>
+public record UpdateNameRequest(
+    [Required, MinLength(1), MaxLength(60)] string FirstName,
+    [Required, MinLength(1), MaxLength(60)] string LastName
 );
 
 // ── Action Items ────────────────────────────────────────────────────────────
@@ -54,7 +64,8 @@ public record ReorderActionItemsRequest(
 );
 
 public record AdminUpdateUserRequest(
-    [Required, MinLength(3), MaxLength(50)] string Username,
+    [Required, MinLength(1), MaxLength(60)] string FirstName,
+    [Required, MinLength(1), MaxLength(60)] string LastName,
     [Required, EmailAddress, MaxLength(256)] string Email,
     [MaxLength(100), StrongPassword] string? NewPassword,
     [Required] string Tier,

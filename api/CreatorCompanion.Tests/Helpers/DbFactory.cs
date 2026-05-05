@@ -23,7 +23,8 @@ public static class DbFactory
         var user = new User
         {
             Id = Guid.NewGuid(),
-            Username = "testuser",
+            FirstName = "Test",
+            LastName = "User",
             Email = "test@example.com",
             PasswordHash = BCrypt.Net.BCrypt.HashPassword("Password1!"),
             TimeZoneId = timezone,

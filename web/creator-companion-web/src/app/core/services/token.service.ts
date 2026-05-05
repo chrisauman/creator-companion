@@ -4,7 +4,8 @@ import { Injectable, signal } from '@angular/core';
  *  Mirrors the AuthDtos.UserSummary shape returned by login/register. */
 export interface CachedUser {
   id: string;
-  username: string;
+  firstName: string;
+  lastName: string;
   email: string;
   tier: string;
   profileImageUrl?: string | null;

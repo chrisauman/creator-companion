@@ -36,22 +36,33 @@ import { ApiService } from '../../../core/services/api.service';
         <div *ngIf="error()" class="alert alert--error">{{ error() }}</div>
 
         <form class="stack stack--md" (ngSubmit)="submit()" #f="ngForm">
-          <div class="form-group">
-            <label for="username">Username</label>
-            <input
-              id="username"
-              class="form-control"
-              type="text"
-              [(ngModel)]="username"
-              name="username"
-              placeholder="yourname"
-              autocomplete="username"
-              required minlength="3" maxlength="50"
-              #usernameField="ngModel"
-            />
-            <span class="error-msg" *ngIf="usernameField.touched && usernameField.errors?.['minlength']">
-              Username must be at least 3 characters.
-            </span>
+          <div class="name-row">
+            <div class="form-group">
+              <label for="firstName">First name</label>
+              <input
+                id="firstName"
+                class="form-control"
+                type="text"
+                [(ngModel)]="firstName"
+                name="firstName"
+                placeholder="Jane"
+                autocomplete="given-name"
+                required minlength="1" maxlength="60"
+              />
+            </div>
+            <div class="form-group">
+              <label for="lastName">Last name</label>
+              <input
+                id="lastName"
+                class="form-control"
+                type="text"
+                [(ngModel)]="lastName"
+                name="lastName"
+                placeholder="Doe"
+                autocomplete="family-name"
+                required minlength="1" maxlength="60"
+              />
+            </div>
           </div>
 
           <div class="form-group">
@@ -144,6 +155,15 @@ import { ApiService } from '../../../core/services/api.service';
       color: var(--color-accent-dark);
       margin-bottom: 1.25rem;
     }
+    /* First/last name share a row on wide enough screens; stack on phones. */
+    .name-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: .75rem;
+    }
+    @media (max-width: 420px) {
+      .name-row { grid-template-columns: 1fr; }
+    }
   `]
 })
 export class RegisterComponent {
@@ -151,17 +171,21 @@ export class RegisterComponent {
   private api    = inject(ApiService);
   private router = inject(Router);
 
-  username = '';
-  email    = '';
-  password = '';
-  plan     = signal<'free' | 'monthly' | 'annual'>('free');
-  loading  = signal(false);
-  error    = signal('');
+  firstName = '';
+  lastName  = '';
+  email     = '';
+  password  = '';
+  plan      = signal<'free' | 'monthly' | 'annual'>('free');
+  loading   = signal(false);
+  error     = signal('');
 
   submit(): void {
     this.error.set('');
-    if (!this.username || this.username.length < 3) {
-      this.error.set('Username must be at least 3 characters.'); return;
+    if (!this.firstName.trim()) {
+      this.error.set('Please enter your first name.'); return;
+    }
+    if (!this.lastName.trim()) {
+      this.error.set('Please enter your last name.'); return;
     }
     if (!this.email || !this.email.includes('@')) {
       this.error.set('Please enter a valid email address.'); return;
@@ -173,7 +197,7 @@ export class RegisterComponent {
 
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 
-    this.auth.register(this.username, this.email, this.password, tz).subscribe({
+    this.auth.register(this.firstName.trim(), this.lastName.trim(), this.email, this.password, tz).subscribe({
       next: () => {
         if (this.plan() === 'free') {
           this.router.navigate(['/onboarding']);

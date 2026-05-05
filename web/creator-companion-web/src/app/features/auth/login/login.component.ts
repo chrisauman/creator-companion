@@ -20,15 +20,15 @@ import { AuthService } from '../../../core/services/auth.service';
 
         <form class="stack stack--md" (ngSubmit)="submit()" #f="ngForm">
           <div class="form-group">
-            <label for="identifier">Email or username</label>
+            <label for="email">Email</label>
             <input
-              id="identifier"
+              id="email"
               class="form-control"
-              type="text"
-              [(ngModel)]="identifier"
-              name="identifier"
+              type="email"
+              [(ngModel)]="email"
+              name="email"
               placeholder="you@example.com"
-              autocomplete="username"
+              autocomplete="email"
               required
             />
           </div>
@@ -90,17 +90,17 @@ export class LoginComponent {
   private auth   = inject(AuthService);
   private router = inject(Router);
 
-  identifier = '';
+  email = '';
   password   = '';
   loading    = signal(false);
   error      = signal('');
 
   submit(): void {
-    if (!this.identifier || !this.password) return;
+    if (!this.email || !this.password) return;
     this.loading.set(true);
     this.error.set('');
 
-    this.auth.login(this.identifier, this.password).subscribe({
+    this.auth.login(this.email, this.password).subscribe({
       next: res => {
         if (!res.user.onboardingCompleted) {
           this.router.navigate(['/onboarding']);

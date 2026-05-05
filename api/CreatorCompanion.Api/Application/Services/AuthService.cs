@@ -54,20 +54,20 @@ public class AuthService(AppDbContext db, IConfiguration config, IEmailService e
     public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
     {
         var emailExists = await db.Users.AnyAsync(u => u.Email == request.Email.ToLower());
-        var usernameExists = await db.Users.AnyAsync(u => u.Username == request.Username.ToLower());
-        if (emailExists || usernameExists)
-            throw new InvalidOperationException("An account with those details already exists.");
+        if (emailExists)
+            throw new InvalidOperationException("An account with that email already exists.");
 
         var user = new User
         {
-            Username = request.Username.ToLower(),
+            FirstName = request.FirstName.Trim(),
+            LastName  = request.LastName.Trim(),
             Email = request.Email.ToLower(),
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
             TimeZoneId = request.TimeZoneId
         };
 
         db.Users.Add(user);
-        await audit.LogAsync("user.registered", user.Id, $"username={user.Username}");
+        await audit.LogAsync("user.registered", user.Id, $"email={user.Email}");
 
         // Create email verification token (best-effort — email may not send until domain is set up)
         var verificationToken = new Domain.Models.EmailVerificationToken
@@ -115,7 +115,7 @@ public class AuthService(AppDbContext db, IConfiguration config, IEmailService e
         }
 
         // Send welcome email (best-effort)
-        try { await emailService.SendWelcomeAsync(user.Email, user.Username); }
+        try { await emailService.SendWelcomeAsync(user.Email, user.FirstName); }
         catch (Exception ex) { Console.WriteLine($"[WARN] Failed to send welcome email to {user.Email}: {ex.Message}"); }
 
         return result;
@@ -123,18 +123,18 @@ public class AuthService(AppDbContext db, IConfiguration config, IEmailService e
 
     public async Task<AuthResponse> LoginAsync(LoginRequest request)
     {
-        var identifier = request.EmailOrUsername.ToLower();
+        var identifier = request.Email.ToLower();
 
         if (IsLockedOut(identifier))
             throw new UnauthorizedAccessException("Too many failed attempts. Please try again in 15 minutes.");
 
         var user = await db.Users
-            .FirstOrDefaultAsync(u => u.Email == identifier || u.Username == identifier);
+            .FirstOrDefaultAsync(u => u.Email == identifier);
 
         if (user is null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
         {
             RecordFailure(identifier);
-            await audit.LogAsync("login.failed", null, $"identifier={identifier}");
+            await audit.LogAsync("login.failed", null, $"email={identifier}");
             throw new UnauthorizedAccessException("Invalid credentials.");
         }
 
@@ -294,7 +294,8 @@ public class AuthService(AppDbContext db, IConfiguration config, IEmailService e
             expiresAt,
             new UserSummary(
                 user.Id,
-                user.Username,
+                user.FirstName,
+                user.LastName,
                 user.Email,
                 user.Tier.ToString(),
                 user.TimeZoneId,
@@ -312,7 +313,8 @@ public class AuthService(AppDbContext db, IConfiguration config, IEmailService e
         {
             new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, user.Email),
-            new Claim("username", user.Username),
+            new Claim("firstName", user.FirstName),
+            new Claim("lastName", user.LastName),
             new Claim("tier", user.Tier.ToString()),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };

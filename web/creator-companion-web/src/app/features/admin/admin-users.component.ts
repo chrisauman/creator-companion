@@ -29,7 +29,7 @@ import { ApiService } from '../../core/services/api.service';
         <input
           class="form-control search-input"
           type="search"
-          placeholder="Search by email or username…"
+          placeholder="Search by name or email…"
           [(ngModel)]="searchQuery"
           (input)="onSearch()"
         />
@@ -43,7 +43,7 @@ import { ApiService } from '../../core/services/api.service';
           <table class="admin-table">
             <thead>
               <tr>
-                <th>Username</th>
+                <th>Name</th>
                 <th>Email</th>
                 <th>Tier</th>
                 <th>Status</th>
@@ -55,7 +55,7 @@ import { ApiService } from '../../core/services/api.service';
               @for (u of users(); track u.id) {
                 <tr>
                   <td>
-                    {{ u.username }}
+                    {{ u.firstName }} {{ u.lastName }}
                     @if (u.isAdmin) { <span class="badge badge--admin">admin</span> }
                   </td>
                   <td class="text-muted">{{ u.email }}</td>

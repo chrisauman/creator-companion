@@ -5,7 +5,26 @@ namespace CreatorCompanion.Api.Domain.Models;
 public class User
 {
     public Guid Id { get; set; } = Guid.NewGuid();
-    public string Username { get; set; } = string.Empty;
+
+    /// <summary>
+    /// First name shown next to the avatar in the UI and used in
+    /// greetings on outgoing emails ("Hi {FirstName}, …"). Required
+    /// at registration; existing rows are backfilled from the legacy
+    /// Username column when the AddNameFields migration runs.
+    /// </summary>
+    public string FirstName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Last name. Required at registration. Empty for grandfathered
+    /// users whose legacy username didn't have a clean split — they
+    /// can fill it in from the Account page.
+    /// </summary>
+    public string LastName { get; set; } = string.Empty;
+
+    // The legacy Username column was dropped in migration
+    // RemoveUsernameUseFirstLastName. If you need to look up users by
+    // a string handle, query Email directly.
+
     public string Email { get; set; } = string.Empty;
     public string PasswordHash { get; set; } = string.Empty;
     public AccountTier Tier { get; set; } = AccountTier.Free;

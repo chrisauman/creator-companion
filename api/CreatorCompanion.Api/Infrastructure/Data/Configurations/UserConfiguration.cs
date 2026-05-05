@@ -9,7 +9,8 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
     public void Configure(EntityTypeBuilder<User> builder)
     {
         builder.HasKey(u => u.Id);
-        builder.Property(u => u.Username).HasMaxLength(50).IsRequired();
+        builder.Property(u => u.FirstName).HasMaxLength(60).IsRequired();
+        builder.Property(u => u.LastName).HasMaxLength(60).IsRequired();
         builder.Property(u => u.Email).HasMaxLength(256).IsRequired();
         builder.Property(u => u.PasswordHash).IsRequired();
         builder.Property(u => u.TimeZoneId).HasMaxLength(100).IsRequired();
@@ -21,6 +22,5 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.ProfileImagePath).HasMaxLength(500);
 
         builder.HasIndex(u => u.Email).IsUnique();
-        builder.HasIndex(u => u.Username).IsUnique();
     }
 }

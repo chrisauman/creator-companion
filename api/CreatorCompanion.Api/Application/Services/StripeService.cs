@@ -114,7 +114,7 @@ public class StripeService(AppDbContext db, IOptions<StripeConfig> config, IEmai
 
         await db.SaveChangesAsync();
 
-        try { await email.SendPaymentReceiptAsync(user.Email, user.Username); }
+        try { await email.SendPaymentReceiptAsync(user.Email, user.FirstName); }
         catch (Exception ex) { Console.WriteLine($"[WARN] Failed to send receipt email to {user.Email}: {ex.Message}"); }
     }
 
@@ -184,7 +184,7 @@ public class StripeService(AppDbContext db, IOptions<StripeConfig> config, IEmai
         var customer = await svc.CreateAsync(new CustomerCreateOptions
         {
             Email    = user.Email,
-            Name     = user.Username,
+            Name     = $"{user.FirstName} {user.LastName}".Trim(),
             Metadata = new Dictionary<string, string> { ["userId"] = user.Id.ToString() }
         });
 
