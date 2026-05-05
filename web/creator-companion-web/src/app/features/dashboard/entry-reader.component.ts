@@ -326,14 +326,14 @@ import { MoodIconComponent } from '../../shared/mood-icon/mood-icon.component';
     }
 
     .reading__body {
-      font-size: 1.0625rem;
-      line-height: 1.55;
+      font-size: 1rem;
+      line-height: 1.5;
       color: var(--color-text);
       word-wrap: break-word;
     }
     .reading__body :first-child { margin-top: 0; }
     .reading__body :last-child { margin-bottom: 0; }
-    .reading__body p { margin: 0 0 1rem; }
+    .reading__body p { margin: 0 0 .875rem; }
     .reading__body p:first-of-type::first-letter {
       font-family: var(--font-sans);
       font-size: 3rem;

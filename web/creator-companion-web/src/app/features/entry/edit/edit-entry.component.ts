@@ -37,41 +37,45 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
       <!-- Main content -->
       <main class="main-content">
 
-        <!-- Reader-style top bar — matches the inline reader so the
-             reading → editing transition feels continuous. -->
+        <!-- Reader-style top bar — wraps inner row in a 760px-max
+             box centred to match the article body below. The Cancel
+             pill / heart / Save button align horizontally with the
+             title and content edges. -->
         <div class="reader-top">
-          <button class="cancel-pill" type="button" (click)="cancelEdit()">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="2.4" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            Cancel
-          </button>
-          <div class="reader-top__breadcrumb">
-            {{ monthYearLabel() }} · <strong>{{ weekdayDayLabel() }}</strong>
-          </div>
-          <div class="reader-top__actions">
-            <div class="save-indicator-mini" [class]="'save-indicator--' + saveState()">
-              <span *ngIf="saveState() === 'saving'">Saving…</span>
-              <span *ngIf="saveState() === 'saved'">Saved</span>
-              <span *ngIf="saveState() === 'error'">Save failed</span>
+          <div class="reader-top__inner">
+            <button class="cancel-pill" type="button" (click)="cancelEdit()">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2.4" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              Cancel
+            </button>
+            <div class="reader-top__breadcrumb">
+              {{ monthYearLabel() }} · <strong>{{ weekdayDayLabel() }}</strong>
             </div>
-            <button
-              class="reader-icon-btn"
-              [class.reader-icon-btn--fav-active]="isFavorited()"
-              [title]="isFavorited() ? 'Remove from favorites' : 'Add to favorites'"
-              (click)="toggleFavorite()"
-              [disabled]="favoriteLoading()"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24"
-                [attr.fill]="isFavorited() ? 'currentColor' : 'none'"
-                stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-              </svg>
-            </button>
-            <button class="save-btn" type="button"
-                    (click)="saveNow()"
-                    [disabled]="saving() || !title.trim() || wordCount() < 10 || wordCount() > maxWords()">
-              {{ saving() ? 'Saving…' : 'Save' }}
-            </button>
+            <div class="reader-top__actions">
+              <div class="save-indicator-mini" [class]="'save-indicator--' + saveState()">
+                <span *ngIf="saveState() === 'saving'">Saving…</span>
+                <span *ngIf="saveState() === 'saved'">Saved</span>
+                <span *ngIf="saveState() === 'error'">Save failed</span>
+              </div>
+              <button
+                class="reader-icon-btn"
+                [class.reader-icon-btn--fav-active]="isFavorited()"
+                [title]="isFavorited() ? 'Remove from favorites' : 'Add to favorites'"
+                (click)="toggleFavorite()"
+                [disabled]="favoriteLoading()"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24"
+                  [attr.fill]="isFavorited() ? 'currentColor' : 'none'"
+                  stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                </svg>
+              </button>
+              <button class="save-btn" type="button"
+                      (click)="saveNow()"
+                      [disabled]="saving() || !title.trim() || wordCount() < 10 || wordCount() > maxWords()">
+                {{ saving() ? 'Saving…' : 'Save' }}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -314,15 +318,21 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
       flex-direction: column;
     }
     .page--embedded .main-content {
-      padding: .5rem 1.25rem 2.5rem !important;
+      /* No horizontal padding so the sticky reader-top can span the
+         full column width and align with the entry-reader's layout
+         when the user transitions reading → editing. */
+      padding: 0 0 2.5rem !important;
       background: transparent !important;
     }
     .page--embedded .desktop-bar {
       padding: .25rem 0 .75rem;
     }
     .page--embedded .editor-form {
-      max-width: none;
-      padding: 0;
+      /* Body shares the reader's 760px-max centred article so the
+         title, toolbar, and body all line up to the same edges. */
+      max-width: 760px;
+      margin: 0 auto;
+      padding: .75rem 2.5rem 2.5rem;
     }
     @media (min-width: 768px) { .page { flex-direction: row; } }
 
@@ -430,26 +440,40 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
       &--error  { color: var(--color-danger); }
     }
 
-    /* ── Title input ─────────────────────────────────────────────── */
+    /* ── Title input — matches the entry-reader title size so
+       reading → editing feels continuous and never overflows. ─── */
     .title-input {
       width: 100%; border: none; outline: none; background: transparent;
       font-family: var(--font-sans);
-      font-size: 1.875rem; font-weight: 700; letter-spacing: -.015em;
-      line-height: 1.2; color: var(--color-text); padding: 0; margin-bottom: 1rem;
+      font-size: 1.3125rem; font-weight: 700; letter-spacing: -.01em;
+      line-height: 1.3; color: var(--color-text); padding: 0; margin-bottom: 1rem;
       &::placeholder { color: var(--color-text-3); font-weight: 600; }
       &:disabled { opacity: .6; }
     }
 
-    /* ── Reader-style top bar (matches the inline reader) ──────── */
+    /* ── Reader-style top bar — full-column-width sticky surface
+       holds an inner row that's max-width 760px and centred so the
+       Cancel pill and Save button align horizontally with the title
+       and body content below. */
     .reader-top {
       display: flex;
-      align-items: center;
-      gap: .5rem;
-      padding: 1rem 1.75rem;
-      border-bottom: 1px solid var(--color-border);
+      align-items: stretch;
+      height: 64px;
       background: var(--color-surface);
       position: sticky; top: 0;
       z-index: 5;
+      box-sizing: border-box;
+      flex-shrink: 0;
+    }
+    .reader-top__inner {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      width: 100%;
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 0 2.5rem;
+      box-sizing: border-box;
     }
     .cancel-pill {
       display: inline-flex;
@@ -636,13 +660,13 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
     .tiptap-wrapper { min-height: 80px; cursor: text; margin-bottom: .5rem; }
     ::ng-deep .tiptap-wrapper .tiptap {
       min-height: 80px; outline: none;
-      font-family: var(--font-sans); font-size: 1.0625rem;
-      line-height: 1.75; color: var(--color-text);
+      font-family: var(--font-sans); font-size: 1rem;
+      line-height: 1.5; color: var(--color-text);
       p.is-editor-empty:first-child::before {
         content: attr(data-placeholder); color: var(--color-text-3);
         float: left; pointer-events: none; height: 0;
       }
-      p { margin: 0 0 .5em; &:last-child { margin-bottom: 0; } }
+      p { margin: 0 0 .875em; &:last-child { margin-bottom: 0; } }
       h2 {
         font-family: var(--font-sans, system-ui); font-size: 1.25rem; font-weight: 700;
         line-height: 1.3; color: var(--color-text); margin: 1.25rem 0 .4rem;
