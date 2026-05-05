@@ -855,12 +855,13 @@ import { ActivatedRoute } from '@angular/router';
       flex-wrap: wrap;
       margin-bottom: .5rem;
     }
-    /* Title-case full date ("Monday, May 4, 2026"). Not uppercase
-       since the longer label reads better in normal case. */
+    /* Matches the right-column eyebrow treatment (e.g. "YOUR DAILY
+       SPARK"): small, all-caps, tracked, brand cyan. */
     .entry-row__date {
-      font-size: .8125rem;
-      font-weight: 600;
-      letter-spacing: 0;
+      font-size: .6875rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .14em;
       color: var(--color-accent);
     }
     /* Mood pushed to the right edge of the meta row so the entry

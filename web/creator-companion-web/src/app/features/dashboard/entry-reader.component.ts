@@ -287,13 +287,14 @@ import { MoodIconComponent } from '../../shared/mood-icon/mood-icon.component';
       flex-wrap: wrap;
       margin-bottom: 1rem;
     }
-    /* Title-case date · time (e.g. "Monday, May 4, 2026 • 1:53 PM").
-       Not uppercase so the longer label reads naturally. */
+    /* Matches the right-column eyebrow treatment (e.g. "YOUR DAILY
+       SPARK"): small, all-caps, tracked, brand cyan. */
     .reading__date {
-      font-size: .8125rem;
+      font-size: .6875rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .14em;
       color: var(--color-accent);
-      font-weight: 600;
-      letter-spacing: 0;
     }
     .reading__mood {
       display: inline-flex;
