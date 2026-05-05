@@ -42,7 +42,7 @@ const DEFAULT_REMINDER_MESSAGE = 'Remember to log an entry to keep your streak a
                 </svg>
                 Today
               </button>
-              <div class="reader-top__breadcrumb"><strong>Notifications</strong></div>
+              <div class="reader-top__breadcrumb"></div>
               <div class="reader-top__actions"></div>
             </div>
           </div>
