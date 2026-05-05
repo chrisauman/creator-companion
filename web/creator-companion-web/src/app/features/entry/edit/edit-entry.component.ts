@@ -329,10 +329,15 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
     }
     .page--embedded .editor-form {
       /* Body shares the reader's 760px-max centred article so the
-         title, toolbar, and body all line up to the same edges. */
+         title, toolbar, and body all line up to the same edges.
+         width: 100% is required because .main-content is a flex
+         column and margin:auto + max-width alone would let this
+         element shrink to its content width. */
+      width: 100%;
       max-width: 760px;
       margin: 0 auto;
       padding: .75rem 2.5rem 2.5rem;
+      box-sizing: border-box;
     }
     @media (min-width: 768px) { .page { flex-direction: row; } }
 
