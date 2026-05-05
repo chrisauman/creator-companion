@@ -148,7 +148,7 @@ import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
   styles: [`
     :host { display: block; }
     .today {
-      padding: 1.75rem 2rem 4rem;
+      padding: 1.25rem 1.5rem 3rem;
       max-width: 720px;
       margin: 0 auto;
     }
@@ -163,11 +163,11 @@ import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
     .spark-hero {
       background: linear-gradient(180deg, #0c0e13 0%, #1a1d24 100%);
       color: #fff;
-      border-radius: 24px;
-      padding: 1.75rem 1.75rem 1.5rem;
+      border-radius: 20px;
+      padding: 1.5rem 1.5rem 1.25rem;
       position: relative;
       overflow: hidden;
-      margin-bottom: 1.5rem;
+      margin-bottom: 1rem;
     }
     .spark-hero::before {
       content: '';
@@ -344,11 +344,11 @@ import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
     .hero-card {
       background: linear-gradient(180deg, #0c0e13 0%, #1a1d24 100%);
       color: #fff;
-      border-radius: 24px;
-      padding: 1.75rem 1.75rem 1.5rem;
+      border-radius: 20px;
+      padding: 1.5rem 1.5rem 1.25rem;
       position: relative;
       overflow: hidden;
-      margin-bottom: 1.5rem;
+      margin-bottom: 1rem;
     }
     .hero-card::before {
       content: '';

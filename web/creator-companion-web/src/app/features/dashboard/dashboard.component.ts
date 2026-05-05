@@ -337,7 +337,11 @@ import { ActivatedRoute } from '@angular/router';
     }
     @media (min-width: 768px) {
       .main-content {
-        padding: 2.5rem 3rem 4rem;
+        /* Tight top padding — the streak now lives in the sidebar so
+           we don't need a tall greeting strip up here anymore. Side
+           padding is just enough breathing room from the sidebar's
+           dark edge before the entry list starts. */
+        padding: 1rem 1.25rem 4rem;
         background: #f7f7f5;
       }
     }
@@ -431,25 +435,25 @@ import { ActivatedRoute } from '@angular/router';
     .work__right-col { display: none; }
 
     @media (min-width: 768px) {
-      /* Two equal-height columns. Both fill the viewport so the right
-         column's reader-top stays pinned at the top. The shared top
-         bars (search-bar on the left, reader-top on the right) are
-         sized to match (64px) and align horizontally across the
-         divider. Each column scrolls independently. */
+      /* Two equal-height columns, no rule line between them — the
+         change in background color (paper → surface) on the right
+         column already provides separation. The shared top bars
+         (search-bar on the left, reader-top on the right) are sized
+         to match (64px) and align horizontally. Each column scrolls
+         independently. */
       .work {
         display: grid;
-        grid-template-columns: minmax(360px, 420px) 1fr;
+        grid-template-columns: minmax(340px, 400px) 1fr;
         gap: 0;
         align-items: stretch;
-        margin: 0 -3rem -4rem 0;
-        /* Span the full content height: viewport minus top padding of
-           main-content (2.5rem). */
-        height: calc(100vh - 2.5rem);
+        /* Pull the right column flush with the page edge; the left
+           column sits flush against the sidebar's content padding. */
+        margin: 0 -1.25rem -4rem 0;
+        height: calc(100vh - 1rem);
         min-height: 600px;
       }
       .work__list-col {
-        padding: 0 1.75rem 1rem 0;
-        border-right: 1px solid var(--color-border);
+        padding: 0 1.25rem 1rem 0;
         min-width: 0;
         overflow-y: auto;
       }
@@ -583,8 +587,7 @@ import { ActivatedRoute } from '@angular/router';
       align-items: center;
       gap: .5rem;
       height: 64px;
-      padding: 0 1.75rem;
-      border-bottom: 1px solid var(--color-border);
+      padding: 0 1.5rem;
       background: var(--color-surface);
       position: sticky; top: 0;
       z-index: 5;
@@ -624,7 +627,7 @@ import { ActivatedRoute } from '@angular/router';
       display: flex; gap: .5rem; flex-shrink: 0; min-width: 36px;
     }
     .embedded-section__body {
-      padding: 1.5rem 2rem 2.5rem;
+      padding: 1rem 1.5rem 2rem;
       flex: 1;
       overflow-y: auto;
     }
@@ -700,9 +703,8 @@ import { ActivatedRoute } from '@angular/router';
       .search-bar {
         margin: 0;
         height: 64px;
-        padding: 0 0 0 .25rem;
+        padding: 0;
         box-sizing: border-box;
-        border-bottom: 1px solid var(--color-border);
         flex-shrink: 0;
         position: sticky;
         top: 0;

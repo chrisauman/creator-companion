@@ -134,14 +134,14 @@ import { MoodIconComponent } from '../../shared/mood-icon/mood-icon.component';
 
     /* ── Top bar ─────────────────────────────────────────────── */
     /* Fixed 64px so the right column's header aligns with the search
-       bar at the top of the entry-list column. */
+       bar at the top of the entry-list column. No rule line — the
+       padding plus the column's surface bg do the job cleanly. */
     .reader-top {
       display: flex;
       align-items: center;
       gap: .5rem;
       height: 64px;
-      padding: 0 1.75rem;
-      border-bottom: 1px solid var(--color-border);
+      padding: 0 1.5rem;
       position: sticky; top: 0;
       background: var(--color-surface);
       z-index: 5;
