@@ -279,7 +279,7 @@ import { MoodIconComponent } from '../../shared/mood-icon/mood-icon.component';
       width: 100%;
       max-width: 760px;
       margin: 0 auto;
-      padding: 2rem 2.5rem 4rem;
+      padding: .75rem 2.5rem 4rem;
       box-sizing: border-box;
     }
     .reading__date-row {
