@@ -56,48 +56,41 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
         </button>
       </div>
 
-      <!-- Streak module (replaces the old greeting). Hidden when the
-           sidebar is collapsed — there's no room for the progress bar. -->
+      <!-- Streak module (Variant A — compact inline header). Hidden
+           when the sidebar is collapsed since there's no room for the
+           progress bar or footnote at 64px wide. -->
       <div class="sidebar__streak" *ngIf="!collapsed() && streak()">
-        <div class="sidebar__streak-main">
-          <span class="sidebar__streak-num">{{ streak()!.currentStreak }}</span>
-          <span class="sidebar__streak-unit">{{ streak()!.currentStreak === 1 ? 'day' : 'days' }}</span>
-        </div>
-        <div class="sidebar__streak-label">Current streak</div>
-
         <ng-container *ngIf="progressToNext() as p">
-          <div class="sidebar__reward" *ngIf="p.current">
-            <span class="sidebar__reward-badge"
-                  [class.sidebar__reward-badge--top]="p.isAtTopTier">
-              <app-tier-icon [tier]="p.current.title" [size]="12"></app-tier-icon>
+          <div class="sidebar__streak-row">
+            <div class="sidebar__streak-num-wrap">
+              <span class="sidebar__streak-num">{{ streak()!.currentStreak }}</span>
+              <span class="sidebar__streak-unit">{{ streak()!.currentStreak === 1 ? 'day streak' : 'day streak' }}</span>
+            </div>
+            <span *ngIf="p.current"
+                  class="sidebar__streak-tier"
+                  [class.sidebar__streak-tier--top]="p.isAtTopTier">
+              <app-tier-icon [tier]="p.current.title" [size]="11"></app-tier-icon>
               {{ p.current.title }}
             </span>
-            <ng-container *ngIf="!p.isAtTopTier && p.next">
-              <div class="sidebar__reward-track">
-                <div class="sidebar__reward-fill" [style.width.%]="p.percentToNext"></div>
-              </div>
-              <div class="sidebar__reward-text">
-                <strong>{{ p.daysToNext }}</strong> to {{ p.next.title }}
-              </div>
-            </ng-container>
-            <div class="sidebar__reward-text sidebar__reward-text--top" *ngIf="p.isAtTopTier">
-              The highest tier — keep going.
-            </div>
           </div>
 
-          <div class="sidebar__reward sidebar__reward--pre" *ngIf="!p.current && p.next">
-            <div class="sidebar__reward-track">
-              <div class="sidebar__reward-fill" [style.width.%]="p.percentToNext"></div>
-            </div>
-            <div class="sidebar__reward-text">
+          <div class="sidebar__streak-bar"
+               *ngIf="!p.isAtTopTier && p.next">
+            <div class="sidebar__streak-bar-fill" [style.width.%]="p.percentToNext"></div>
+          </div>
+
+          <div class="sidebar__streak-foot">
+            <span *ngIf="p.next && !p.isAtTopTier">
               <strong>{{ p.daysToNext }}</strong> to {{ p.next.title }}
-            </div>
+            </span>
+            <span *ngIf="p.isAtTopTier" class="sidebar__streak-foot--top">
+              Top tier — keep going
+            </span>
+            <span *ngIf="streak()!.longestStreak > 0">
+              Best <strong>{{ streak()!.longestStreak }}</strong>
+            </span>
           </div>
         </ng-container>
-
-        <div class="sidebar__streak-longest" *ngIf="streak()!.longestStreak > 0">
-          Longest: <strong>{{ streak()!.longestStreak }}</strong> {{ streak()!.longestStreak === 1 ? 'day' : 'days' }}
-        </div>
       </div>
 
       <!-- New Entry button (cyan; full pill expanded, just + icon collapsed) -->
@@ -348,21 +341,30 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
       .sidebar__collapse { display: none !important; }
     }
 
-    /* ── Streak module (just below logo, hidden when collapsed) ──── */
+    /* ── Streak module (Variant A — compact inline header) ────────
+       One row with the streak number + tier pill, a 3px progress
+       bar, and a footnote split between "N to NextTier" and "Best N".
+       Total height ~85px expanded, way down from the old ~135px. */
     .sidebar__streak {
-      padding: 0 1.25rem 1rem;
-      border-bottom: 1px solid rgba(255,255,255,.07);
-      margin-bottom: 1rem;
-      margin-top: -.5rem;
+      padding: 0 1rem 1rem;
+      margin: -.25rem 0 .75rem;
     }
-    .sidebar__streak-main {
+    .sidebar__streak-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: .5rem;
+      margin-bottom: .625rem;
+    }
+    .sidebar__streak-num-wrap {
       display: flex;
       align-items: baseline;
-      gap: .375rem;
+      gap: .25rem;
+      min-width: 0;
     }
     .sidebar__streak-num {
       font-family: var(--font-sans);
-      font-size: 2rem;
+      font-size: 1.875rem;
       font-weight: 800;
       line-height: 1;
       letter-spacing: -.03em;
@@ -371,96 +373,78 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
     .sidebar__streak-unit {
       font-size: .75rem;
       font-weight: 500;
-      color: rgba(255,255,255,.45);
-    }
-    .sidebar__streak-label {
-      margin-top: .375rem;
-      font-size: .625rem;
-      color: rgba(255,255,255,.55);
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .1em;
+      color: rgba(255,255,255,.5);
+      margin-left: .125rem;
     }
 
-    /* Tier reward — original warm gold/cream pill, kept as-is for the
-       dark sidebar (cream pill on dark contrasts cleanly). The progress
-       track and label colors are tweaked for readability on dark. */
-    .sidebar__reward { margin-top: .625rem; }
-    .sidebar__reward-badge {
+    /* Tier pill — keeps original warm gold/cream colours; reads
+       cleanly on the dark sidebar background. */
+    .sidebar__streak-tier {
       display: inline-flex;
       align-items: center;
-      justify-content: center;
-      gap: .375rem;
-      width: 100%;
-      padding: 4px 8px;
+      gap: .25rem;
+      flex-shrink: 0;
       background: #faf2dc;
       border: 1px solid rgba(224,168,58,.3);
       color: #8b6912;
-      border-radius: 6px;
+      border-radius: 4px;
+      padding: 2px 7px;
       font-size: .625rem;
       font-weight: 700;
-      letter-spacing: .03em;
+      letter-spacing: .04em;
       box-sizing: border-box;
     }
-    .sidebar__reward-badge--top {
+    .sidebar__streak-tier--top {
       background: linear-gradient(135deg, #faf2dc 0%, #f0d77a 100%);
       border-color: rgba(224,168,58,.55);
       color: #6e5610;
     }
-    .sidebar__reward-track {
-      margin-top: .5rem;
-      height: 4px;
+
+    /* Slim 3px progress bar. */
+    .sidebar__streak-bar {
+      height: 3px;
       background: rgba(255,255,255,.08);
-      border-radius: 2px;
+      border-radius: 3px;
       overflow: hidden;
+      margin-bottom: .5rem;
     }
-    .sidebar__reward-fill {
+    .sidebar__streak-bar-fill {
       height: 100%;
       background: linear-gradient(90deg, #0d9bb5, var(--color-accent));
-      border-radius: 2px;
+      border-radius: 3px;
       transition: width .35s ease;
     }
-    .sidebar__reward-text {
+
+    /* Footnote split-row: "N to Tier" left, "Best N" right. */
+    .sidebar__streak-foot {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: .5rem;
       font-size: .6875rem;
-      color: rgba(255,255,255,.55);
+      color: rgba(255,255,255,.5);
       font-weight: 500;
-      margin-top: 6px;
     }
-    .sidebar__reward-text strong {
-      color: #5fdcef;
+    .sidebar__streak-foot strong {
+      color: rgba(255,255,255,.9);
       font-weight: 700;
     }
-    .sidebar__reward-text--top {
-      text-align: center;
+    .sidebar__streak-foot--top {
       color: #d8b85f;
       font-weight: 600;
     }
 
-    .sidebar__streak-longest {
-      margin-top: .75rem;
-      padding-top: .625rem;
-      border-top: 1px solid rgba(255,255,255,.06);
-      font-size: .75rem;
-      color: rgba(255,255,255,.55);
-    }
-    .sidebar__streak-longest strong {
-      color: #fff;
-      font-weight: 700;
-    }
-
-    /* Larger streak on the mobile drawer to match its bigger nav scale. */
+    /* On the mobile drawer the streak gets a small bump in scale to
+       match the larger nav items, but the layout stays identical. */
     @media (max-width: 767px) {
       .sidebar__streak {
-        padding: 0 1.25rem 1.25rem;
-        margin-top: -.25rem;
+        padding: 0 1rem 1.25rem;
       }
-      .sidebar__streak-num { font-size: 2.5rem; }
-      .sidebar__streak-unit { font-size: .9375rem; }
-      .sidebar__streak-label { font-size: .6875rem; margin-top: .5rem; }
-      .sidebar__reward-badge { font-size: .6875rem; padding: 5px 10px; }
-      .sidebar__reward-track { height: 5px; margin-top: .625rem; }
-      .sidebar__reward-text { font-size: .75rem; }
-      .sidebar__streak-longest { font-size: .8125rem; margin-top: .875rem; padding-top: .75rem; }
+      .sidebar__streak-num { font-size: 2.125rem; }
+      .sidebar__streak-unit { font-size: .8125rem; }
+      .sidebar__streak-tier { font-size: .6875rem; padding: 3px 8px; }
+      .sidebar__streak-bar { height: 4px; }
+      .sidebar__streak-foot { font-size: .75rem; }
     }
 
     /* ── New Entry button (cyan pill expanded; circular + icon collapsed) ── */

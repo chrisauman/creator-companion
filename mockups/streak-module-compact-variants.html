@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Streak module — compact redesign variants</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --ink: #0c0e13;
+    --cyan: #12C4E3;
+    --cyan-dark: #0d9bb5;
+    --gold-bg: #faf2dc;
+    --gold-text: #8b6912;
+    --gold-border: rgba(224,168,58,.3);
+  }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: #ebe7df;
+    padding: 2rem 1rem 4rem;
+    -webkit-font-smoothing: antialiased;
+  }
+  .lab-header { max-width: 1280px; margin: 0 auto 2rem; }
+  .lab-header h1 { font-size: 1.5rem; font-weight: 800; letter-spacing: -.01em; margin-bottom: .375rem; }
+  .lab-header p { color: #5d6470; line-height: 1.6; max-width: 740px; }
+
+  .grid {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.75rem;
+  }
+
+  /* Each variant lives in a "sidebar" slice for context. */
+  .variant {
+    background: var(--ink);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 20px 50px -25px rgba(0,0,0,.3);
+  }
+  .variant__label {
+    background: rgba(255,255,255,.04);
+    color: rgba(255,255,255,.85);
+    font-size: .75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    padding: .625rem 1rem;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .variant__label small {
+    text-transform: none; letter-spacing: 0;
+    color: rgba(255,255,255,.45);
+    font-size: .6875rem; font-weight: 500;
+  }
+  .variant__sidebar {
+    width: 240px;
+    color: #fff;
+    padding: 1rem 0 1rem;
+  }
+
+  /* Fake logo at top of each sidebar slice */
+  .fake-logo {
+    display: flex; align-items: center; gap: .5rem;
+    padding: 0 1rem 1rem;
+    border-bottom: 1px solid rgba(255,255,255,.07);
+    margin-bottom: 1rem;
+  }
+  .fake-logo__dot {
+    width: 26px; height: 26px;
+    background: var(--cyan); border-radius: 50%;
+    display: grid; place-items: center;
+    color: var(--ink); font-weight: 800; font-size: .6875rem;
+  }
+  .fake-logo__name { font-weight: 700; font-size: .9375rem; }
+
+  /* Fake compose pill below */
+  .fake-compose {
+    margin: 0 1rem;
+    padding: .5rem 1rem;
+    background: var(--cyan); color: var(--ink);
+    border-radius: 999px;
+    font-size: .8125rem; font-weight: 700;
+    text-align: center;
+  }
+  .fake-compose-spacer { height: 1rem; }
+
+  /* ──────────────────────────────────────────────────────────── */
+  /* Variant A — single-line streak + slim progress + footnote   */
+  /* ──────────────────────────────────────────────────────────── */
+  .vA {
+    margin: 0 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+  }
+  .vA__row {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: .5rem;
+    margin-bottom: .625rem;
+  }
+  .vA__num {
+    font-size: 1.875rem; font-weight: 800; color: var(--cyan);
+    line-height: 1; letter-spacing: -.03em;
+  }
+  .vA__num small {
+    font-size: .8125rem; color: rgba(255,255,255,.5);
+    font-weight: 500; margin-left: .25rem;
+  }
+  .vA__tier {
+    background: var(--gold-bg);
+    color: var(--gold-text);
+    border: 1px solid var(--gold-border);
+    border-radius: 4px;
+    padding: 2px 7px;
+    font-size: .625rem; font-weight: 700;
+    letter-spacing: .04em;
+    display: inline-flex; align-items: center; gap: .25rem;
+  }
+  .vA__progress {
+    height: 3px;
+    background: rgba(255,255,255,.08);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: .5rem;
+  }
+  .vA__progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--cyan-dark), var(--cyan));
+  }
+  .vA__foot {
+    display: flex; justify-content: space-between;
+    font-size: .6875rem; color: rgba(255,255,255,.5);
+  }
+  .vA__foot strong { color: rgba(255,255,255,.85); font-weight: 600; }
+
+  /* ──────────────────────────────────────────────────────────── */
+  /* Variant B — flame icon + horizontal tier track              */
+  /* ──────────────────────────────────────────────────────────── */
+  .vB {
+    margin: 0 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+  }
+  .vB__row {
+    display: flex; align-items: center; gap: .625rem;
+    margin-bottom: .75rem;
+  }
+  .vB__flame {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, rgba(18,196,227,.2), rgba(18,196,227,.05));
+    border: 1px solid rgba(18,196,227,.3);
+    border-radius: 10px;
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .vB__num {
+    font-size: 1.625rem; font-weight: 800; color: #fff;
+    line-height: 1; letter-spacing: -.02em;
+  }
+  .vB__sub {
+    font-size: .6875rem; color: rgba(255,255,255,.55);
+    font-weight: 600; margin-top: 2px;
+  }
+  .vB__sub strong { color: var(--cyan); font-weight: 700; }
+  .vB__track {
+    height: 4px;
+    background: rgba(255,255,255,.08);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: .5rem;
+  }
+  .vB__fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--cyan-dark), var(--cyan));
+  }
+  .vB__legend {
+    display: flex; justify-content: space-between;
+    font-size: .625rem; color: rgba(255,255,255,.45);
+    text-transform: uppercase; letter-spacing: .08em; font-weight: 700;
+  }
+  .vB__legend span:first-child { color: var(--gold-text); background: var(--gold-bg); padding: 1px 5px; border-radius: 3px; }
+  .vB__legend span:last-child { color: rgba(255,255,255,.6); }
+
+  /* ──────────────────────────────────────────────────────────── */
+  /* Variant C — pill-row everything                             */
+  /* ──────────────────────────────────────────────────────────── */
+  .vC {
+    margin: 0 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+  }
+  .vC__main {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: .625rem;
+  }
+  .vC__num-wrap {
+    display: flex; align-items: baseline; gap: .25rem;
+  }
+  .vC__num {
+    font-size: 2.25rem; font-weight: 800; color: var(--cyan);
+    line-height: 1; letter-spacing: -.03em;
+  }
+  .vC__day-label {
+    font-size: .625rem; font-weight: 700;
+    color: rgba(255,255,255,.5);
+    text-transform: uppercase; letter-spacing: .12em;
+  }
+  .vC__best {
+    font-size: .6875rem; color: rgba(255,255,255,.45);
+    text-align: right;
+  }
+  .vC__best strong { color: rgba(255,255,255,.85); font-weight: 700; }
+  .vC__progress {
+    display: flex; align-items: center; gap: .5rem;
+  }
+  .vC__pill {
+    background: var(--gold-bg);
+    color: var(--gold-text);
+    border: 1px solid var(--gold-border);
+    border-radius: 999px;
+    padding: 2px 8px;
+    font-size: .625rem; font-weight: 700;
+    letter-spacing: .03em;
+    flex-shrink: 0;
+    display: inline-flex; align-items: center; gap: .25rem;
+  }
+  .vC__bar {
+    flex: 1;
+    height: 4px;
+    background: rgba(255,255,255,.08);
+    border-radius: 2px;
+    overflow: hidden;
+    position: relative;
+  }
+  .vC__bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--cyan-dark), var(--cyan));
+  }
+  .vC__next {
+    font-size: .6875rem; color: rgba(255,255,255,.55);
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .vC__next strong { color: var(--cyan); }
+
+  /* ──────────────────────────────────────────────────────────── */
+  /* Variant D — segmented dots / journey                        */
+  /* ──────────────────────────────────────────────────────────── */
+  .vD {
+    margin: 0 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+  }
+  .vD__top {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: .625rem;
+  }
+  .vD__num {
+    font-size: 2rem; font-weight: 800; color: var(--cyan);
+    line-height: 1; letter-spacing: -.03em;
+  }
+  .vD__num small {
+    font-size: .75rem; color: rgba(255,255,255,.5);
+    font-weight: 500; margin-left: .25rem;
+  }
+  .vD__best {
+    font-size: .6875rem; color: rgba(255,255,255,.45);
+  }
+  .vD__best strong { color: rgba(255,255,255,.85); font-weight: 700; }
+  .vD__journey {
+    display: flex; align-items: center; gap: 4px;
+  }
+  .vD__dot {
+    flex: 1; height: 5px;
+    background: rgba(255,255,255,.08);
+    border-radius: 2px;
+    transition: background .2s;
+  }
+  .vD__dot--filled { background: var(--cyan); }
+  .vD__dot--current { background: var(--cyan); box-shadow: 0 0 0 2px rgba(18,196,227,.25); }
+  .vD__legend {
+    margin-top: .5rem;
+    font-size: .625rem; color: rgba(255,255,255,.5);
+    display: flex; justify-content: space-between;
+  }
+  .vD__legend strong { color: var(--gold-text); background: var(--gold-bg); padding: 1px 6px; border-radius: 3px; font-weight: 700; }
+
+  /* ──────────────────────────────────────────────────────────── */
+  /* Variant E — minimalist single-line + tooltip-style          */
+  /* ──────────────────────────────────────────────────────────── */
+  .vE {
+    margin: 0 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+  }
+  .vE__top {
+    display: flex; align-items: center; gap: .5rem;
+    margin-bottom: .5rem;
+  }
+  .vE__num {
+    font-size: 1.5rem; font-weight: 800; color: var(--cyan);
+    line-height: 1; letter-spacing: -.02em;
+  }
+  .vE__streak-label {
+    font-size: .75rem; color: rgba(255,255,255,.6);
+    font-weight: 600;
+  }
+  .vE__pill {
+    margin-left: auto;
+    background: var(--gold-bg);
+    color: var(--gold-text);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: .6125rem; font-weight: 700;
+    letter-spacing: .03em;
+  }
+  .vE__bar {
+    height: 3px;
+    background: rgba(255,255,255,.08);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: .375rem;
+  }
+  .vE__fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--cyan-dark), var(--cyan));
+  }
+  .vE__foot {
+    font-size: .6875rem; color: rgba(255,255,255,.45);
+  }
+  .vE__foot strong { color: rgba(255,255,255,.7); font-weight: 600; }
+  .vE__foot .vE__sep {
+    margin: 0 .5rem;
+    color: rgba(255,255,255,.2);
+  }
+
+  /* ──────────────────────────────────────────────────────────── */
+  /* Variant F — circular progress                               */
+  /* ──────────────────────────────────────────────────────────── */
+  .vF {
+    margin: 0 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+  }
+  .vF__row {
+    display: flex; align-items: center; gap: .875rem;
+  }
+  .vF__ring {
+    width: 56px; height: 56px;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .vF__ring svg {
+    width: 100%; height: 100%;
+    transform: rotate(-90deg);
+  }
+  .vF__ring-track {
+    fill: none;
+    stroke: rgba(255,255,255,.08);
+    stroke-width: 4;
+  }
+  .vF__ring-fill {
+    fill: none;
+    stroke: var(--cyan);
+    stroke-width: 4;
+    stroke-linecap: round;
+    stroke-dasharray: 144.5;
+    stroke-dashoffset: 101.15; /* 30% — for 14/30 */
+  }
+  .vF__ring-num {
+    position: absolute; inset: 0;
+    display: grid; place-items: center;
+    font-size: 1.125rem; font-weight: 800; color: #fff;
+    letter-spacing: -.02em;
+  }
+  .vF__info { flex: 1; min-width: 0; }
+  .vF__pill {
+    background: var(--gold-bg);
+    color: var(--gold-text);
+    border-radius: 4px;
+    padding: 2px 7px;
+    font-size: .625rem; font-weight: 700;
+    letter-spacing: .03em;
+    display: inline-flex; align-items: center; gap: .25rem;
+    margin-bottom: .25rem;
+  }
+  .vF__next {
+    font-size: .6875rem; color: rgba(255,255,255,.55);
+    font-weight: 500;
+  }
+  .vF__next strong { color: var(--cyan); font-weight: 700; }
+  .vF__best {
+    font-size: .625rem; color: rgba(255,255,255,.4);
+    margin-top: 2px;
+  }
+  .vF__best strong { color: rgba(255,255,255,.65); font-weight: 600; }
+
+  /* Description card under each variant */
+  .desc {
+    padding: 1rem 1.25rem;
+    background: rgba(0,0,0,.18);
+    color: rgba(255,255,255,.65);
+    font-size: .8125rem;
+    line-height: 1.55;
+  }
+  .desc strong { color: rgba(255,255,255,.95); font-weight: 600; }
+  .desc-stats {
+    display: flex; gap: 1rem;
+    margin-top: .5rem;
+    font-size: .6875rem; color: rgba(255,255,255,.55);
+  }
+  .desc-stats span { display: inline-flex; align-items: center; gap: .25rem; }
+  .desc-stats span::before {
+    content: ''; width: 6px; height: 6px; border-radius: 50%;
+    background: rgba(255,255,255,.3);
+  }
+
+  .current-note {
+    max-width: 1280px;
+    margin: 2.5rem auto 1.25rem;
+    padding: 1rem 1.25rem;
+    background: rgba(255,255,255,.5);
+    border: 1px solid rgba(0,0,0,.06);
+    border-radius: 12px;
+    font-size: .9375rem;
+    color: #5d6470;
+    line-height: 1.55;
+  }
+  .current-note h2 {
+    font-size: 1rem; font-weight: 700; color: #1a1d24; margin-bottom: .25rem;
+  }
+</style>
+</head>
+<body>
+
+<div class="lab-header">
+  <h1>Streak module — compact redesign variants</h1>
+  <p>Six options for shrinking the streak module. Each shown in a 240px sidebar slice for real context. The current production version uses ~135px of vertical space; targets here range from 50px to 95px. Pick one (or mix-and-match elements) and I'll wire it up.</p>
+</div>
+
+<div class="grid">
+
+  <!-- ── A: single-line streak + slim progress + footnote ───── -->
+  <div>
+    <div class="variant">
+      <div class="variant__label">A · Inline header <small>~85px tall</small></div>
+      <div class="variant__sidebar">
+        <div class="fake-logo">
+          <div class="fake-logo__dot">C</div>
+          <div class="fake-logo__name">Creator Companion</div>
+        </div>
+        <div class="vA">
+          <div class="vA__row">
+            <div><span class="vA__num">14</span><small>day streak</small></div>
+            <span class="vA__tier">★ Novice</span>
+          </div>
+          <div class="vA__progress"><div class="vA__progress-fill" style="width: 30%"></div></div>
+          <div class="vA__foot">
+            <span><strong>16</strong> to Seeker</span>
+            <span>Best <strong>42</strong></span>
+          </div>
+        </div>
+        <div class="fake-compose-spacer"></div>
+        <div class="fake-compose">+ New Entry</div>
+      </div>
+      <div class="desc">
+        <strong>Streak number + tier badge in one row.</strong> Slim progress bar (3px) below. Footnote shows "16 to next tier" on the left and "Best 42" on the right.
+        <div class="desc-stats"><span>Compact</span><span>Two-line height</span><span>Familiar feel</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── B: flame icon + tier track + bracketed legend ──────── -->
+  <div>
+    <div class="variant">
+      <div class="variant__label">B · Icon + flame block <small>~95px tall</small></div>
+      <div class="variant__sidebar">
+        <div class="fake-logo">
+          <div class="fake-logo__dot">C</div>
+          <div class="fake-logo__name">Creator Companion</div>
+        </div>
+        <div class="vB">
+          <div class="vB__row">
+            <div class="vB__flame">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#12C4E3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2C12 2 8 6 8 10C8 14 11 14 11 14C11 14 8 16 8 19C8 21.5 10 22 12 22C14 22 16 21.5 16 19C16 16 13 14 13 14C13 14 16 14 16 10C16 6 12 2 12 2Z"/>
+              </svg>
+            </div>
+            <div>
+              <div class="vB__num">14 days</div>
+              <div class="vB__sub">Best ever <strong>42</strong></div>
+            </div>
+          </div>
+          <div class="vB__track"><div class="vB__fill" style="width: 30%"></div></div>
+          <div class="vB__legend">
+            <span>Novice</span>
+            <span>14/30 → Seeker</span>
+          </div>
+        </div>
+        <div class="fake-compose-spacer"></div>
+        <div class="fake-compose">+ New Entry</div>
+      </div>
+      <div class="desc">
+        <strong>Flame icon block adds visual identity.</strong> Number + "best ever" sit beside it. The tier badge becomes a small text label on the progress bar's left edge — gold pill is gone, gold colour shows up only as a tiny text tint.
+        <div class="desc-stats"><span>Iconic</span><span>Less gold visual weight</span><span>More info dense</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── C: pill-row everything ─────────────────────────────── -->
+  <div>
+    <div class="variant">
+      <div class="variant__label">C · Big number, inline progress <small>~95px tall</small></div>
+      <div class="variant__sidebar">
+        <div class="fake-logo">
+          <div class="fake-logo__dot">C</div>
+          <div class="fake-logo__name">Creator Companion</div>
+        </div>
+        <div class="vC">
+          <div class="vC__main">
+            <div class="vC__num-wrap">
+              <span class="vC__num">14</span>
+              <span class="vC__day-label">DAY STREAK</span>
+            </div>
+            <div class="vC__best">Best<br><strong>42</strong> days</div>
+          </div>
+          <div class="vC__progress">
+            <span class="vC__pill">★ Novice</span>
+            <div class="vC__bar"><div class="vC__bar-fill" style="width: 30%"></div></div>
+            <span class="vC__next"><strong>16</strong> to next</span>
+          </div>
+        </div>
+        <div class="fake-compose-spacer"></div>
+        <div class="fake-compose">+ New Entry</div>
+      </div>
+      <div class="desc">
+        <strong>Hero number stays prominent.</strong> Tier pill, progress bar, and "16 to next" all share one inline row beneath. Best score is up top right as a small two-line label.
+        <div class="desc-stats"><span>Big number stays</span><span>Single progress row</span><span>Most info per line</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── D: segmented dots / journey ─────────────────────────── -->
+  <div>
+    <div class="variant">
+      <div class="variant__label">D · Tier journey segments <small>~85px tall</small></div>
+      <div class="variant__sidebar">
+        <div class="fake-logo">
+          <div class="fake-logo__dot">C</div>
+          <div class="fake-logo__name">Creator Companion</div>
+        </div>
+        <div class="vD">
+          <div class="vD__top">
+            <div><span class="vD__num">14</span><small>day streak</small></div>
+            <div class="vD__best">Best <strong>42</strong></div>
+          </div>
+          <div class="vD__journey">
+            <span class="vD__dot vD__dot--filled"></span>
+            <span class="vD__dot vD__dot--filled"></span>
+            <span class="vD__dot vD__dot--filled"></span>
+            <span class="vD__dot vD__dot--filled"></span>
+            <span class="vD__dot vD__dot--current"></span>
+            <span class="vD__dot"></span>
+            <span class="vD__dot"></span>
+            <span class="vD__dot"></span>
+            <span class="vD__dot"></span>
+          </div>
+          <div class="vD__legend">
+            <span><strong>★ Novice</strong></span>
+            <span>16 days to Seeker</span>
+          </div>
+        </div>
+        <div class="fake-compose-spacer"></div>
+        <div class="fake-compose">+ New Entry</div>
+      </div>
+      <div class="desc">
+        <strong>Segmented dots show the tier journey at a glance.</strong> Each dot = a milestone or week. The current segment glows. Most novel — gives a sense of "where you are" on the bigger arc.
+        <div class="desc-stats"><span>Most distinctive</span><span>Visual progress</span><span>Slightly experimental</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── E: minimalist single-line ──────────────────────────── -->
+  <div>
+    <div class="variant">
+      <div class="variant__label">E · Minimal · text-first <small>~75px tall</small></div>
+      <div class="variant__sidebar">
+        <div class="fake-logo">
+          <div class="fake-logo__dot">C</div>
+          <div class="fake-logo__name">Creator Companion</div>
+        </div>
+        <div class="vE">
+          <div class="vE__top">
+            <span class="vE__num">14</span>
+            <span class="vE__streak-label">day streak</span>
+            <span class="vE__pill">Novice</span>
+          </div>
+          <div class="vE__bar"><div class="vE__fill" style="width: 30%"></div></div>
+          <div class="vE__foot">
+            <strong>16</strong> to Seeker<span class="vE__sep">·</span>best <strong>42</strong>
+          </div>
+        </div>
+        <div class="fake-compose-spacer"></div>
+        <div class="fake-compose">+ New Entry</div>
+      </div>
+      <div class="desc">
+        <strong>Smallest hero number, leanest layout.</strong> Three rows of compact info. The footnote uses inline "·" separators to fit "16 to Seeker · best 42" on one line.
+        <div class="desc-stats"><span>Smallest</span><span>Most text-first</span><span>Reads fast</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── F: circular progress ring ──────────────────────────── -->
+  <div>
+    <div class="variant">
+      <div class="variant__label">F · Progress ring <small>~85px tall</small></div>
+      <div class="variant__sidebar">
+        <div class="fake-logo">
+          <div class="fake-logo__dot">C</div>
+          <div class="fake-logo__name">Creator Companion</div>
+        </div>
+        <div class="vF">
+          <div class="vF__row">
+            <div class="vF__ring">
+              <svg viewBox="0 0 52 52">
+                <circle class="vF__ring-track" cx="26" cy="26" r="23"/>
+                <circle class="vF__ring-fill" cx="26" cy="26" r="23"/>
+              </svg>
+              <div class="vF__ring-num">14</div>
+            </div>
+            <div class="vF__info">
+              <div class="vF__pill">★ Novice</div>
+              <div class="vF__next"><strong>16 days</strong> to Seeker</div>
+              <div class="vF__best">Best ever <strong>42</strong></div>
+            </div>
+          </div>
+        </div>
+        <div class="fake-compose-spacer"></div>
+        <div class="fake-compose">+ New Entry</div>
+      </div>
+      <div class="desc">
+        <strong>Circular progress ring is the star.</strong> The ring itself communicates progress visually. Number sits inside the ring. Tier, next-tier, and best-ever info stack to the right.
+        <div class="desc-stats"><span>Most visual</span><span>Apple-Watch vibe</span><span>No flat bar</span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="current-note">
+  <h2>Current production version (for comparison)</h2>
+  <p>Big "14 days" hero (32px) → "Current streak" label → full-width gold tier pill → progress bar → "16 to Seeker / 14 / 30" two-line label → hairline divider → "Longest: 42 days". Total ~135px tall. The redesigns range from 75–95px tall and put more information per line.</p>
+</div>
+
+</body>
+</html>
