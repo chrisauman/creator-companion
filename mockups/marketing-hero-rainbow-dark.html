@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Marketing hero — subtle rainbow on dark</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --ink: #0a0d12;
+    --ink-2: #131820;
+    --cyan: #12C4E3;
+    --cyan-deep: #0d9bb5;
+    --indigo: #6366f1;
+    --violet: #a855f7;
+    --pink: #ec4899;
+    --rose: #f472b6;
+    --amber: #f59e0b;
+    --gold: #eab308;
+    --teal: #14b8a6;
+    --text-muted: rgba(255,255,255,.55);
+  }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: #0c0e13;
+    color: #fff;
+    -webkit-font-smoothing: antialiased;
+    padding: 2rem 1rem 4rem;
+  }
+
+  .lab-header { max-width: 1280px; margin: 0 auto 2rem; }
+  .lab-header h1 { font-size: 1.75rem; font-weight: 800; letter-spacing: -.01em; margin-bottom: .375rem; color: #fff; }
+  .lab-header p { color: var(--text-muted); line-height: 1.6; max-width: 740px; }
+
+  .grid {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
+
+  .variant {
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 30px 60px -30px rgba(0,0,0,.6);
+    background: var(--ink);
+  }
+  .variant__label {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: .875rem 1.25rem;
+    background: rgba(255,255,255,.04);
+    border-bottom: 1px solid rgba(255,255,255,.06);
+    font-size: .8125rem; font-weight: 600;
+    color: rgba(255,255,255,.85);
+  }
+  .variant__label small { font-weight: 500; color: rgba(255,255,255,.45); }
+  .variant__hero {
+    position: relative;
+    height: 480px;
+    overflow: hidden;
+    isolation: isolate;
+    background: var(--ink);
+  }
+  .variant__desc {
+    padding: 1rem 1.25rem;
+    background: rgba(255,255,255,.02);
+    border-top: 1px solid rgba(255,255,255,.06);
+    font-size: .8125rem;
+    color: rgba(255,255,255,.55);
+    line-height: 1.55;
+  }
+  .variant__desc strong { color: rgba(255,255,255,.9); font-weight: 600; }
+  .variant__desc em { font-style: normal; color: rgba(255,255,255,.7); }
+
+  /* ── Hero content (always on top, never animated) ─────────────── */
+  .hero-content {
+    position: relative; z-index: 10;
+    height: 100%;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 2.5rem 2rem;
+    text-align: center;
+  }
+  .hero-eyebrow {
+    display: inline-flex; align-items: center; gap: .5rem;
+    font-size: .6875rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .18em;
+    color: var(--cyan);
+    margin-bottom: 1.25rem;
+  }
+  .hero-eyebrow::before {
+    content: ''; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--cyan); box-shadow: 0 0 12px var(--cyan);
+  }
+  .hero-title {
+    font-size: clamp(2rem, 4.5vw, 3.5rem);
+    font-weight: 800;
+    letter-spacing: -.025em;
+    line-height: 1.05;
+    color: #fff;
+    margin-bottom: 1rem;
+    max-width: 720px;
+  }
+  .hero-sub {
+    font-size: 1.0625rem; line-height: 1.55;
+    color: rgba(255,255,255,.6);
+    max-width: 540px; margin-bottom: 1.75rem;
+  }
+  .hero-cta {
+    display: inline-flex; align-items: center; gap: .5rem;
+    background: var(--cyan); color: var(--ink);
+    padding: .875rem 1.5rem;
+    border: none; border-radius: 999px;
+    font-family: inherit; font-size: .9375rem; font-weight: 600;
+    cursor: pointer;
+    transition: background .15s, transform .15s;
+  }
+  .hero-cta:hover {
+    background: #0bd2f0;
+    transform: translateY(-1px);
+  }
+
+  /* ──────────────────────────────────────────────────────────── */
+  /* R1 · Aurora bands                                           */
+  /* Soft horizontal bands of cyan → indigo → violet → pink     */
+  /* drift slowly. Heavy blur keeps everything as atmosphere.   */
+  /* ──────────────────────────────────────────────────────────── */
+  .r1__aurora {
+    position: absolute; inset: -20%;
+    background:
+      linear-gradient(180deg,
+        transparent 0%,
+        rgba(18,196,227,.30) 18%,
+        transparent 30%,
+        rgba(99,102,241,.28) 50%,
+        transparent 62%,
+        rgba(236,72,153,.22) 78%,
+        transparent 90%);
+    filter: blur(60px);
+    opacity: .9;
+    will-change: transform;
+    animation: r1-shift 22s ease-in-out infinite;
+  }
+  .r1__aurora--2 {
+    background:
+      linear-gradient(180deg,
+        transparent 0%,
+        rgba(168,85,247,.18) 30%,
+        transparent 50%,
+        rgba(20,184,166,.20) 70%,
+        transparent 100%);
+    animation: r1-shift 28s ease-in-out infinite reverse;
+    opacity: .6;
+  }
+  @keyframes r1-shift {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50%      { transform: translateY(40px) scale(1.05); }
+  }
+
+  /* ──────────────────────────────────────────────────────────── */
+  /* R2 · Multi-color blob cluster                              */
+  /* Five large heavily-blurred blobs (cyan / indigo / violet / */
+  /* pink / amber) drifting on independent loops. Most         */
+  /* "premium SaaS hero" feel.                                  */
+  /* ──────────────────────────────────────────────────────────── */
+  .r2__blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: .55;
+    will-change: transform;
+  }
+  .r2__blob--cyan {
+    width: 520px; height: 520px;
+    background: var(--cyan);
+    top: -150px; left: -120px;
+    animation: r2-drift-1 26s ease-in-out infinite;
+  }
+  .r2__blob--indigo {
+    width: 460px; height: 460px;
+    background: var(--indigo);
+    top: 30%; right: -160px;
+    animation: r2-drift-2 32s ease-in-out infinite;
+    opacity: .45;
+  }
+  .r2__blob--violet {
+    width: 380px; height: 380px;
+    background: var(--violet);
+    bottom: -120px; left: 20%;
+    animation: r2-drift-3 28s ease-in-out infinite;
+    opacity: .35;
+  }
+  .r2__blob--pink {
+    width: 320px; height: 320px;
+    background: var(--pink);
+    top: 10%; left: 45%;
+    animation: r2-drift-4 36s ease-in-out infinite;
+    opacity: .3;
+  }
+  .r2__blob--amber {
+    width: 280px; height: 280px;
+    background: var(--amber);
+    bottom: 10%; right: 20%;
+    animation: r2-drift-5 24s ease-in-out infinite;
+    opacity: .25;
+  }
+  @keyframes r2-drift-1 {
+    0%, 100% { transform: translate(0, 0); }
+    50%      { transform: translate(180px, 100px); }
+  }
+  @keyframes r2-drift-2 {
+    0%, 100% { transform: translate(0, 0); }
+    50%      { transform: translate(-200px, -80px); }
+  }
+  @keyframes r2-drift-3 {
+    0%, 100% { transform: translate(0, 0); }
+    50%      { transform: translate(120px, -140px); }
+  }
+  @keyframes r2-drift-4 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50%      { transform: translate(-100px, 80px) scale(1.15); }
+  }
+  @keyframes r2-drift-5 {
+    0%, 100% { transform: translate(0, 0); }
+    50%      { transform: translate(-140px, -100px); }
+  }
+
+  /* ──────────────────────────────────────────────────────────── */
+  /* R3 · Slow conic spectrum                                    */
+  /* One enormous conic gradient through the rainbow, blurred    */
+  /* heavily, rotating 60s. Reads as a single "spectrum sky".    */
+  /* ──────────────────────────────────────────────────────────── */
+  .r3__conic {
+    position: absolute;
+    inset: -40%;
+    background: conic-gradient(from 0deg at 50% 50%,
+      var(--cyan) 0deg,
+      var(--indigo) 90deg,
+      var(--violet) 180deg,
+      var(--pink) 240deg,
+      var(--amber) 300deg,
+      var(--cyan) 360deg);
+    filter: blur(110px);
+    opacity: .35;
+    animation: r3-spin 60s linear infinite;
+    will-change: transform;
+  }
+  .r3__conic--2 {
+    animation: r3-spin 90s linear infinite reverse;
+    opacity: .2;
+    inset: -60%;
+  }
+  @keyframes r3-spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+
+  /* ──────────────────────────────────────────────────────────── */
+  /* R4 · Hue-shifting layered waves                             */
+  /* Same W7 wave architecture, but the strokes cycle through    */
+  /* hues over the animation. Cyan → indigo → violet → cyan.     */
+  /* ──────────────────────────────────────────────────────────── */
+  .r4__glow {
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 60% 50% at 50% 60%,
+      rgba(18,196,227,.22) 0%, transparent 70%);
+    pointer-events: none;
+    animation: r4-glow 14s ease-in-out infinite;
+  }
+  @keyframes r4-glow {
+    0%, 100% {
+      background: radial-gradient(ellipse 60% 50% at 50% 60%,
+        rgba(18,196,227,.22) 0%, transparent 70%);
+    }
+    33% {
+      background: radial-gradient(ellipse 60% 50% at 50% 60%,
+        rgba(99,102,241,.22) 0%, transparent 70%);
+    }
+    66% {
+      background: radial-gradient(ellipse 60% 50% at 50% 60%,
+        rgba(168,85,247,.22) 0%, transparent 70%);
+    }
+  }
+  .r4__wave {
+    position: absolute; left: -10%; width: 120%;
+    height: 100%;
+    pointer-events: none;
+  }
+  .r4__wave path {
+    fill: none;
+    stroke-width: 1.5;
+    opacity: .55;
+    filter: drop-shadow(0 0 6px currentColor);
+  }
+  .r4__wave--1 {
+    animation: r4-drift 24s ease-in-out infinite;
+    color: var(--cyan);
+  }
+  .r4__wave--1 path {
+    stroke: currentColor;
+    animation: r4-hue 14s ease-in-out infinite;
+  }
+  .r4__wave--2 {
+    animation: r4-drift 30s ease-in-out infinite reverse;
+    color: var(--indigo);
+  }
+  .r4__wave--2 path {
+    stroke: currentColor;
+    animation: r4-hue 14s ease-in-out infinite -4s;
+    opacity: .35;
+  }
+  .r4__wave--3 {
+    animation: r4-drift 36s ease-in-out infinite;
+    color: var(--violet);
+  }
+  .r4__wave--3 path {
+    stroke: currentColor;
+    animation: r4-hue 14s ease-in-out infinite -8s;
+    opacity: .22;
+  }
+  @keyframes r4-drift {
+    0%, 100% { transform: translateX(0); }
+    50%      { transform: translateX(-90px); }
+  }
+  @keyframes r4-hue {
+    0%, 100% { stroke: var(--cyan);   filter: drop-shadow(0 0 6px var(--cyan)); }
+    33%      { stroke: var(--indigo); filter: drop-shadow(0 0 6px var(--indigo)); }
+    66%      { stroke: var(--violet); filter: drop-shadow(0 0 6px var(--violet)); }
+  }
+
+  /* ──────────────────────────────────────────────────────────── */
+  /* R5 · Iridescent diagonal sweep                              */
+  /* A blurred angled gradient (cyan → violet → pink → amber)    */
+  /* slowly slides diagonally. Reads like oil-on-water sheen.    */
+  /* ──────────────────────────────────────────────────────────── */
+  .r5__sheen {
+    position: absolute;
+    inset: -30%;
+    background: linear-gradient(115deg,
+      transparent 0%,
+      rgba(18,196,227,.30) 25%,
+      rgba(168,85,247,.30) 50%,
+      rgba(236,72,153,.25) 65%,
+      rgba(245,158,11,.18) 80%,
+      transparent 100%);
+    filter: blur(70px);
+    will-change: transform;
+    animation: r5-slide 30s ease-in-out infinite;
+  }
+  .r5__sheen--2 {
+    background: linear-gradient(115deg,
+      transparent 0%,
+      rgba(99,102,241,.20) 30%,
+      rgba(20,184,166,.18) 60%,
+      transparent 100%);
+    animation: r5-slide 42s ease-in-out infinite reverse;
+    opacity: .7;
+  }
+  @keyframes r5-slide {
+    0%, 100% { transform: translate(-15%, -10%) rotate(0deg); }
+    50%      { transform: translate(15%, 10%) rotate(4deg); }
+  }
+
+  /* ──────────────────────────────────────────────────────────── */
+  /* R6 · Color trails                                           */
+  /* Thin colored streaks slowly arc across the hero, fading in */
+  /* and out. Like comets passing through.                       */
+  /* ──────────────────────────────────────────────────────────── */
+  .r6__trail {
+    position: absolute;
+    width: 600px; height: 2px;
+    border-radius: 999px;
+    pointer-events: none;
+    opacity: 0;
+    will-change: transform, opacity;
+  }
+  .r6__trail::before {
+    content: '';
+    position: absolute; inset: 0;
+    border-radius: inherit;
+    box-shadow: 0 0 24px currentColor;
+  }
+  .r6__trail--1 {
+    color: var(--cyan); background: var(--cyan);
+    top: 18%; left: -50%;
+    transform: rotate(8deg);
+    animation: r6-pass 14s linear infinite;
+  }
+  .r6__trail--2 {
+    color: var(--indigo); background: var(--indigo);
+    top: 42%; left: -50%;
+    transform: rotate(-6deg);
+    animation: r6-pass 18s linear infinite -6s;
+  }
+  .r6__trail--3 {
+    color: var(--violet); background: var(--violet);
+    top: 65%; left: -50%;
+    transform: rotate(10deg);
+    animation: r6-pass 22s linear infinite -3s;
+  }
+  .r6__trail--4 {
+    color: var(--pink); background: var(--pink);
+    top: 30%; left: -50%;
+    transform: rotate(-4deg);
+    animation: r6-pass 26s linear infinite -10s;
+  }
+  .r6__trail--5 {
+    color: var(--amber); background: var(--amber);
+    top: 80%; left: -50%;
+    transform: rotate(6deg);
+    animation: r6-pass 20s linear infinite -14s;
+  }
+  @keyframes r6-pass {
+    0%   { left: -50%; opacity: 0; }
+    20%  { opacity: .55; }
+    80%  { opacity: .55; }
+    100% { left: 110%; opacity: 0; }
+  }
+  /* Subtle ambient cyan glow stays under everything so the page
+     keeps brand identity even when no trail is mid-pass. */
+  .r6__glow {
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 60% 50% at 50% 55%,
+      rgba(18,196,227,.18) 0%, transparent 65%);
+    pointer-events: none;
+  }
+
+  /* ──────────────────────────────────────────────────────────── */
+  /* R7 · Painted-glass washes                                   */
+  /* Three giant rounded color washes overlap in screen-blend.   */
+  /* Painterly, slow, less geometric than the blob cluster.      */
+  /* ──────────────────────────────────────────────────────────── */
+  .r7__wash {
+    position: absolute;
+    border-radius: 50%;
+    mix-blend-mode: screen;
+    filter: blur(100px);
+    will-change: transform;
+  }
+  .r7__wash--cyan {
+    width: 700px; height: 500px;
+    background: var(--cyan);
+    top: -10%; left: -15%;
+    opacity: .35;
+    animation: r7-drift-1 32s ease-in-out infinite;
+  }
+  .r7__wash--violet {
+    width: 600px; height: 600px;
+    background: var(--violet);
+    top: 20%; right: -10%;
+    opacity: .25;
+    animation: r7-drift-2 38s ease-in-out infinite;
+  }
+  .r7__wash--rose {
+    width: 500px; height: 500px;
+    background: var(--rose);
+    bottom: -10%; left: 30%;
+    opacity: .2;
+    animation: r7-drift-3 42s ease-in-out infinite;
+  }
+  @keyframes r7-drift-1 {
+    0%, 100% { transform: translate(0,0); }
+    50%      { transform: translate(120px, 80px); }
+  }
+  @keyframes r7-drift-2 {
+    0%, 100% { transform: translate(0,0); }
+    50%      { transform: translate(-150px, 60px); }
+  }
+  @keyframes r7-drift-3 {
+    0%, 100% { transform: translate(0,0); }
+    50%      { transform: translate(80px, -100px); }
+  }
+
+  /* ──────────────────────────────────────────────────────────── */
+  /* R8 · Spectrum ripple                                        */
+  /* Concentric thin rings, each a different color, slowly       */
+  /* expanding and fading. Most "energy emanating" feel.         */
+  /* ──────────────────────────────────────────────────────────── */
+  .r8__center {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+  .r8__ring {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 200px; height: 200px;
+    border-radius: 50%;
+    border: 1px solid currentColor;
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    will-change: transform, opacity;
+  }
+  .r8__ring--cyan   { color: var(--cyan);   animation: r8-pulse 8s ease-out infinite; }
+  .r8__ring--indigo { color: var(--indigo); animation: r8-pulse 8s ease-out infinite -2s; }
+  .r8__ring--violet { color: var(--violet); animation: r8-pulse 8s ease-out infinite -4s; }
+  .r8__ring--pink   { color: var(--pink);   animation: r8-pulse 8s ease-out infinite -6s; }
+  @keyframes r8-pulse {
+    0%   { transform: translate(-50%, -50%) scale(.2); opacity: 0; }
+    20%  { opacity: .5; }
+    100% { transform: translate(-50%, -50%) scale(6); opacity: 0; }
+  }
+  /* Underlying cyan glow so the centre always reads as brand. */
+  .r8__glow {
+    position: absolute; inset: 0;
+    background: radial-gradient(circle at 50% 50%,
+      rgba(18,196,227,.20) 0%, transparent 50%);
+    pointer-events: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: .01s !important;
+      animation-iteration-count: 1 !important;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="lab-header">
+  <h1>Marketing hero — subtle rainbow on dark</h1>
+  <p>Eight directions for a quietly multi-coloured background on the existing dark hero. All keep cyan as the dominant brand colour, layer in indigo / violet / pink / amber at low opacity, and run on slow loops (14–60s). Heavy blurs keep colours as atmosphere — never as discrete graphic shapes — so the headline always wins. Respects <code>prefers-reduced-motion</code>.</p>
+</div>
+
+<div class="grid">
+
+  <!-- ── R1 · Aurora bands ────────────────────────────────── -->
+  <div class="variant">
+    <div class="variant__label">R1 · Aurora bands <small>northern-lights · most ambient</small></div>
+    <div class="variant__hero">
+      <div class="r1__aurora"></div>
+      <div class="r1__aurora r1__aurora--2"></div>
+      <div class="hero-content">
+        <span class="hero-eyebrow">Creator Companion</span>
+        <h1 class="hero-title">A journal for the work you keep showing up to.</h1>
+        <p class="hero-sub">Capture small wins, track the streak that builds your craft, and keep your private notes safe — for as long as you keep creating.</p>
+        <button class="hero-cta">Start writing today →</button>
+      </div>
+    </div>
+    <div class="variant__desc"><strong>Two stacked vertical gradients</strong> — cyan → indigo → pink and a fainter violet → teal layer — drift up/down with very heavy blur. Reads as light shifting in a sky. Most "northern-lights" of the set, most likely to feel calming over long viewing. <em>Verdict: safest, most atmospheric.</em></div>
+  </div>
+
+  <!-- ── R2 · Multi-colour blob cluster ───────────────────── -->
+  <div class="variant">
+    <div class="variant__label">R2 · Multi-colour blob cluster <small>premium · familiar SaaS</small></div>
+    <div class="variant__hero">
+      <div class="r2__blob r2__blob--cyan"></div>
+      <div class="r2__blob r2__blob--indigo"></div>
+      <div class="r2__blob r2__blob--violet"></div>
+      <div class="r2__blob r2__blob--pink"></div>
+      <div class="r2__blob r2__blob--amber"></div>
+      <div class="hero-content">
+        <span class="hero-eyebrow">Creator Companion</span>
+        <h1 class="hero-title">A journal for the work you keep showing up to.</h1>
+        <p class="hero-sub">Capture small wins, track the streak that builds your craft, and keep your private notes safe — for as long as you keep creating.</p>
+        <button class="hero-cta">Start writing today →</button>
+      </div>
+    </div>
+    <div class="variant__desc"><strong>Five blurred colour blobs</strong> drifting on independent loops at varying opacities. Cyan dominates (.55), accents fall to .25–.45. Most familiar premium-SaaS pattern (think Linear / Vercel / Stripe). <em>Verdict: safe, expected, and quietly multi-coloured without ever feeling "rainbow".</em></div>
+  </div>
+
+  <!-- ── R3 · Slow conic spectrum ─────────────────────────── -->
+  <div class="variant">
+    <div class="variant__label">R3 · Slow conic spectrum <small>painterly · single rotating wash</small></div>
+    <div class="variant__hero">
+      <div class="r3__conic"></div>
+      <div class="r3__conic r3__conic--2"></div>
+      <div class="hero-content">
+        <span class="hero-eyebrow">Creator Companion</span>
+        <h1 class="hero-title">A journal for the work you keep showing up to.</h1>
+        <p class="hero-sub">Capture small wins, track the streak that builds your craft, and keep your private notes safe — for as long as you keep creating.</p>
+        <button class="hero-cta">Start writing today →</button>
+      </div>
+    </div>
+    <div class="variant__desc"><strong>Two giant conic gradients</strong> through the full rainbow at 35% / 20% opacity, blurred at 110px, rotating in opposite directions over 60s and 90s. Looks painterly — colours bleed into each other instead of forming bands. <em>Verdict: most "atmosphere" feel, no recognisable shapes, deeply slow.</em></div>
+  </div>
+
+  <!-- ── R4 · Hue-shifting waves ──────────────────────────── -->
+  <div class="variant">
+    <div class="variant__label">R4 · Hue-shifting layered waves <small>W7 + colour cycle</small></div>
+    <div class="variant__hero">
+      <div class="r4__glow"></div>
+      <svg class="r4__wave r4__wave--1" viewBox="0 0 1200 480" preserveAspectRatio="none">
+        <path d="M-50 240 C 200 120, 400 360, 600 240 C 800 120, 1000 360, 1250 240"/>
+      </svg>
+      <svg class="r4__wave r4__wave--2" viewBox="0 0 1200 480" preserveAspectRatio="none">
+        <path d="M-50 300 C 250 180, 500 420, 750 300 C 950 200, 1100 360, 1250 300"/>
+      </svg>
+      <svg class="r4__wave r4__wave--3" viewBox="0 0 1200 480" preserveAspectRatio="none">
+        <path d="M-50 180 C 200 60, 500 300, 750 180 C 950 80, 1100 240, 1250 180"/>
+      </svg>
+      <div class="hero-content">
+        <span class="hero-eyebrow">Creator Companion</span>
+        <h1 class="hero-title">A journal for the work you keep showing up to.</h1>
+        <p class="hero-sub">Capture small wins, track the streak that builds your craft, and keep your private notes safe — for as long as you keep creating.</p>
+        <button class="hero-cta">Start writing today →</button>
+      </div>
+    </div>
+    <div class="variant__desc"><strong>Direct evolution of the W7 you've already shipped</strong> — same three glowing waves, but the strokes shift through cyan → indigo → violet over 14s, and the underlying glow follows the same hue. Each wave is staggered by ~4s so they're never all the same colour. <em>Verdict: the smallest leap from your current site, easiest "and now with rainbow" upgrade.</em></div>
+  </div>
+
+  <!-- ── R5 · Iridescent diagonal sheen ───────────────────── -->
+  <div class="variant">
+    <div class="variant__label">R5 · Iridescent diagonal sheen <small>oil-on-water · fashion-y</small></div>
+    <div class="variant__hero">
+      <div class="r5__sheen"></div>
+      <div class="r5__sheen r5__sheen--2"></div>
+      <div class="hero-content">
+        <span class="hero-eyebrow">Creator Companion</span>
+        <h1 class="hero-title">A journal for the work you keep showing up to.</h1>
+        <p class="hero-sub">Capture small wins, track the streak that builds your craft, and keep your private notes safe — for as long as you keep creating.</p>
+        <button class="hero-cta">Start writing today →</button>
+      </div>
+    </div>
+    <div class="variant__desc"><strong>Two angled blurred gradients</strong> sweep diagonally at different rates, one with the warm rainbow (cyan → violet → pink → amber) and one with the cool counterpart (indigo + teal). Reads as oil-on-water iridescence. <em>Verdict: most fashion-y / arty, slightly off-brand if you want to stay reserved.</em></div>
+  </div>
+
+  <!-- ── R6 · Colour trails ───────────────────────────────── -->
+  <div class="variant">
+    <div class="variant__label">R6 · Colour trails <small>cinematic · most explicitly "moving"</small></div>
+    <div class="variant__hero">
+      <div class="r6__glow"></div>
+      <span class="r6__trail r6__trail--1"></span>
+      <span class="r6__trail r6__trail--2"></span>
+      <span class="r6__trail r6__trail--3"></span>
+      <span class="r6__trail r6__trail--4"></span>
+      <span class="r6__trail r6__trail--5"></span>
+      <div class="hero-content">
+        <span class="hero-eyebrow">Creator Companion</span>
+        <h1 class="hero-title">A journal for the work you keep showing up to.</h1>
+        <p class="hero-sub">Capture small wins, track the streak that builds your craft, and keep your private notes safe — for as long as you keep creating.</p>
+        <button class="hero-cta">Start writing today →</button>
+      </div>
+    </div>
+    <div class="variant__desc"><strong>Five thin glowing streaks</strong> arc across the hero at different angles / speeds / colours, fading in and out as they pass. An ambient cyan glow stays under everything so the page never reads as "no brand colour visible". <em>Verdict: most explicitly animated of the set; could distract if streaks line up with text.</em></div>
+  </div>
+
+  <!-- ── R7 · Painted-glass washes ────────────────────────── -->
+  <div class="variant">
+    <div class="variant__label">R7 · Painted-glass washes <small>cyan-dominant · two accent washes</small></div>
+    <div class="variant__hero">
+      <div class="r7__wash r7__wash--cyan"></div>
+      <div class="r7__wash r7__wash--violet"></div>
+      <div class="r7__wash r7__wash--rose"></div>
+      <div class="hero-content">
+        <span class="hero-eyebrow">Creator Companion</span>
+        <h1 class="hero-title">A journal for the work you keep showing up to.</h1>
+        <p class="hero-sub">Capture small wins, track the streak that builds your craft, and keep your private notes safe — for as long as you keep creating.</p>
+        <button class="hero-cta">Start writing today →</button>
+      </div>
+    </div>
+    <div class="variant__desc"><strong>Three big colour washes</strong> with <code>mix-blend-mode: screen</code>, blurred at 100px. Cyan dominates (.35), violet and rose support at .25/.20. Painterly, less geometric than R2's blob cluster. <em>Verdict: closest to "brand cyan with hints of colour" — would look great paired with the W7 wave overlay.</em></div>
+  </div>
+
+  <!-- ── R8 · Spectrum ripple ─────────────────────────────── -->
+  <div class="variant">
+    <div class="variant__label">R8 · Spectrum ripple <small>energy emanating · novel</small></div>
+    <div class="variant__hero">
+      <div class="r8__glow"></div>
+      <div class="r8__center">
+        <span class="r8__ring r8__ring--cyan"></span>
+        <span class="r8__ring r8__ring--indigo"></span>
+        <span class="r8__ring r8__ring--violet"></span>
+        <span class="r8__ring r8__ring--pink"></span>
+      </div>
+      <div class="hero-content">
+        <span class="hero-eyebrow">Creator Companion</span>
+        <h1 class="hero-title">A journal for the work you keep showing up to.</h1>
+        <p class="hero-sub">Capture small wins, track the streak that builds your craft, and keep your private notes safe — for as long as you keep creating.</p>
+        <button class="hero-cta">Start writing today →</button>
+      </div>
+    </div>
+    <div class="variant__desc"><strong>Four thin coloured rings</strong> expand from the centre, each staggered by 2s so there's always one mid-flight. Cyan glow underneath anchors the centre. Reads as energy radiating outward. <em>Verdict: most novel / distinctive, tightest visual centre. Risk: rings can compete with the headline if they expand through it.</em></div>
+  </div>
+
+</div>
+
+</body>
+</html>

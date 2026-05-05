@@ -223,21 +223,37 @@ a:hover { text-decoration: underline; }
   text-align: center;
 }
 
-/* Centered cyan glow that the waves animate through. Sits behind the
-   waves (z-index unset = below the explicit z-index: 1 on .hero__wave). */
+/* Radial glow that gently cycles through cyan → violet → pink behind
+   the waves. Sits at z-index unset so the waves (z-index: 1) layer on
+   top of it. */
 .hero__glow {
   position: absolute;
   inset: 0;
   background: radial-gradient(ellipse 60% 50% at 50% 55%,
-    rgba(18,196,227,.28) 0%,
-    rgba(18,196,227,.08) 40%,
-    transparent 70%);
+    rgba(18,196,227,.22) 0%, transparent 70%);
   pointer-events: none;
+  animation: hero-glow-shift 18s ease-in-out infinite;
+}
+@keyframes hero-glow-shift {
+  0%, 100% {
+    background: radial-gradient(ellipse 60% 50% at 50% 55%,
+      rgba(18,196,227,.22) 0%, transparent 70%);
+  }
+  33% {
+    background: radial-gradient(ellipse 60% 50% at 50% 55%,
+      rgba(168,85,247,.22) 0%, transparent 70%);
+  }
+  66% {
+    background: radial-gradient(ellipse 60% 50% at 50% 55%,
+      rgba(236,72,153,.22) 0%, transparent 70%);
+  }
 }
 
-/* Three stroke-only waves drifting horizontally at different speeds.
-   The drop-shadow filter is what makes the cyan literally glow on the
-   dark ground — it's the same look as the W7 mockup. */
+/* Three stroked waves drifting horizontally. The stroke uses the
+   shared <linearGradient id="hero-rainbow"> defined inline at the top
+   of the body — cyan → indigo → violet → pink → amber across the
+   wave's length. The drop-shadow keeps the cyan/violet glow read
+   from the original W7 design. */
 .hero__wave {
   position: absolute;
   left: -10%;
@@ -248,36 +264,37 @@ a:hover { text-decoration: underline; }
 }
 .hero__wave path {
   fill: none;
-  stroke: var(--cyan);
-  stroke-width: 1.5;
-  filter: drop-shadow(0 0 6px var(--cyan));
+  stroke: url(#hero-rainbow);
+  stroke-width: 3;
+  filter: drop-shadow(0 0 12px rgba(168,85,247,.5));
 }
 .hero__wave--1 {
   top: 0;
-  animation: hero-wave-drift 24s ease-in-out infinite;
+  animation: hero-wave-drift 22s ease-in-out infinite;
 }
-.hero__wave--1 path { opacity: .55; }
+.hero__wave--1 path { opacity: .85; }
 .hero__wave--2 {
   top: 0;
-  animation: hero-wave-drift 30s ease-in-out infinite reverse;
+  animation: hero-wave-drift 28s ease-in-out infinite reverse;
 }
-.hero__wave--2 path { opacity: .35; }
+.hero__wave--2 path { opacity: .50; stroke-width: 2; }
 .hero__wave--3 {
   top: 0;
-  animation: hero-wave-drift 36s ease-in-out infinite;
+  animation: hero-wave-drift 34s ease-in-out infinite;
 }
-.hero__wave--3 path { opacity: .22; }
+.hero__wave--3 path { opacity: .30; stroke-width: 1.5; }
 
 @keyframes hero-wave-drift {
   0%, 100% { transform: translateX(0); }
   50%      { transform: translateX(-90px); }
 }
 
-/* Respect user motion preferences — pause the waves to a static
-   composition for anyone who's opted out. Glow + waves still
-   render, just don't drift. */
+/* Respect user motion preferences — pause the wave drift and glow
+   shift to a static composition for anyone who's opted out. The
+   gradient + glow still render. */
 @media (prefers-reduced-motion: reduce) {
-  .hero__wave { animation: none !important; }
+  .hero__wave,
+  .hero__glow { animation: none !important; }
 }
 
 /* Bumped to z-index: 2 so the waves (z-index: 1) sit safely behind. */

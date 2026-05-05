@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Marketing hero — animated rainbow waves</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --ink: #0a0d12;
+    --cyan: #12C4E3;
+    --teal: #14b8a6;
+    --indigo: #6366f1;
+    --violet: #a855f7;
+    --pink: #ec4899;
+    --rose: #f472b6;
+    --amber: #f59e0b;
+    --gold: #eab308;
+  }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: #0c0e13;
+    color: #fff;
+    -webkit-font-smoothing: antialiased;
+    padding: 2rem 1rem 4rem;
+  }
+
+  .lab-header { max-width: 1280px; margin: 0 auto 2rem; }
+  .lab-header h1 { font-size: 1.75rem; font-weight: 800; letter-spacing: -.01em; margin-bottom: .375rem; color: #fff; }
+  .lab-header p { color: rgba(255,255,255,.55); line-height: 1.6; max-width: 740px; }
+
+  .grid {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
+
+  .variant {
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 30px 60px -30px rgba(0,0,0,.6);
+    background: var(--ink);
+  }
+  .variant__label {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: .875rem 1.25rem;
+    background: rgba(255,255,255,.04);
+    border-bottom: 1px solid rgba(255,255,255,.06);
+    font-size: .8125rem; font-weight: 600;
+    color: rgba(255,255,255,.85);
+  }
+  .variant__label small { font-weight: 500; color: rgba(255,255,255,.45); }
+  .variant__hero {
+    position: relative;
+    height: 480px;
+    overflow: hidden;
+    isolation: isolate;
+    background: var(--ink);
+  }
+  .variant__desc {
+    padding: 1rem 1.25rem;
+    background: rgba(255,255,255,.02);
+    border-top: 1px solid rgba(255,255,255,.06);
+    font-size: .8125rem;
+    color: rgba(255,255,255,.55);
+    line-height: 1.55;
+  }
+  .variant__desc strong { color: rgba(255,255,255,.9); font-weight: 600; }
+  .variant__desc em { font-style: normal; color: rgba(255,255,255,.7); }
+
+  /* ── Hero content (always on top, never animated) ─────────────── */
+  .hero-content {
+    position: relative; z-index: 10;
+    height: 100%;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 2.5rem 2rem;
+    text-align: center;
+  }
+  .hero-eyebrow {
+    display: inline-flex; align-items: center; gap: .5rem;
+    font-size: .6875rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .18em;
+    color: var(--cyan);
+    margin-bottom: 1.25rem;
+  }
+  .hero-eyebrow::before {
+    content: ''; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--cyan); box-shadow: 0 0 12px var(--cyan);
+  }
+  .hero-title {
+    font-size: clamp(2rem, 4.5vw, 3.5rem);
+    font-weight: 800;
+    letter-spacing: -.025em;
+    line-height: 1.05;
+    color: #fff;
+    margin-bottom: 1rem;
+    max-width: 720px;
+  }
+  .hero-sub {
+    font-size: 1.0625rem; line-height: 1.55;
+    color: rgba(255,255,255,.6);
+    max-width: 540px; margin-bottom: 1.75rem;
+  }
+  .hero-cta {
+    display: inline-flex; align-items: center; gap: .5rem;
+    background: var(--cyan); color: var(--ink);
+    padding: .875rem 1.5rem;
+    border: none; border-radius: 999px;
+    font-family: inherit; font-size: .9375rem; font-weight: 600;
+    cursor: pointer;
+    transition: background .15s, transform .15s;
+  }
+  .hero-cta:hover {
+    background: #0bd2f0;
+    transform: translateY(-1px);
+  }
+
+  /* ──────────────────────────────────────────────────────────── */
+  /* W1 · Five rainbow waves stacked                             */
+  /* Same W7 wave architecture, but each of the five layers is  */
+  /* a different colour. Waves drift horizontally at varying    */
+  /* speeds. All glow via drop-shadow.                           */
+  /* ──────────────────────────────────────────────────────────── */
+  .w1__glow {
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 60% 50% at 50% 60%,
+      rgba(18,196,227,.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .w1__wave {
+    position: absolute; left: -10%; width: 120%;
+    height: 100%;
+    pointer-events: none;
+  }
+  .w1__wave path {
+    fill: none; stroke-width: 1.5;
+    filter: drop-shadow(0 0 6px currentColor);
+  }
+  .w1__wave--cyan   { color: var(--cyan);   animation: w1-drift 24s ease-in-out infinite; }
+  .w1__wave--indigo { color: var(--indigo); animation: w1-drift 28s ease-in-out infinite reverse; }
+  .w1__wave--violet { color: var(--violet); animation: w1-drift 32s ease-in-out infinite; }
+  .w1__wave--pink   { color: var(--pink);   animation: w1-drift 36s ease-in-out infinite reverse; }
+  .w1__wave--amber  { color: var(--amber);  animation: w1-drift 40s ease-in-out infinite; }
+  .w1__wave path { stroke: currentColor; }
+  .w1__wave--cyan   path { opacity: .55; }
+  .w1__wave--indigo path { opacity: .35; }
+  .w1__wave--violet path { opacity: .28; }
+  .w1__wave--pink   path { opacity: .22; }
+  .w1__wave--amber  path { opacity: .18; }
+
+  @keyframes w1-drift {
+    0%, 100% { transform: translateX(0); }
+    50%      { transform: translateX(-90px); }
+  }
+
+  /* ──────────────────────────────────────────────────────────── */
+  /* W2 · Single wave with rainbow-gradient stroke               */
+  /* One thick stroked wave with a multi-stop linear gradient    */
+  /* applied via SVG <linearGradient>. The gradient itself       */
+  /* slides under the wave so the colours appear to flow along   */
+  /* its length.                                                 */
+  /* ──────────────────────────────────────────────────────────── */
+  .w2__glow {
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 60% 50% at 50% 55%,
+      rgba(168,85,247,.18) 0%, transparent 70%);
+    pointer-events: none;
+    animation: w2-glow-shift 18s ease-in-out infinite;
+  }
+  @keyframes w2-glow-shift {
+    0%, 100% {
+      background: radial-gradient(ellipse 60% 50% at 50% 55%,
+        rgba(18,196,227,.18) 0%, transparent 70%);
+    }
+    33% {
+      background: radial-gradient(ellipse 60% 50% at 50% 55%,
+        rgba(168,85,247,.18) 0%, transparent 70%);
+    }
+    66% {
+      background: radial-gradient(ellipse 60% 50% at 50% 55%,
+        rgba(236,72,153,.18) 0%, transparent 70%);
+    }
+  }
+  .w2__svg {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+  }
+  .w2__path {
+    fill: none;
+    stroke-width: 3;
+    stroke: url(#w2-gradient);
+    opacity: .85;
+    filter: drop-shadow(0 0 12px rgba(168,85,247,.5));
+  }
+  .w2__path--1 { animation: w2-drift 22s ease-in-out infinite; }
+  .w2__path--2 { animation: w2-drift 28s ease-in-out infinite reverse; opacity: .5; stroke-width: 2; }
+  .w2__path--3 { animation: w2-drift 34s ease-in-out infinite; opacity: .3; stroke-width: 1.5; }
+  @keyframes w2-drift {
+    0%, 100% { transform: translateX(0); }
+    50%      { transform: translateX(-90px); }
+  }
+
+  /* ──────────────────────────────────────────────────────────── */
+  /* W3 · Filled rainbow wave bands                              */
+  /* Stacked filled wave shapes — cyan / violet / pink filling   */
+  /* the bottom half of the hero like layered hills. Each        */
+  /* drifts horizontally; each is a distinct band of colour.     */
+  /* ──────────────────────────────────────────────────────────── */
+  .w3__wave {
+    position: absolute; bottom: -10%; left: -10%;
+    width: 120%; height: 80%;
+    pointer-events: none;
+  }
+  .w3__wave path { opacity: .35; }
+  .w3__wave--back   { animation: w3-drift 32s ease-in-out infinite; }
+  .w3__wave--mid    { animation: w3-drift 26s ease-in-out infinite reverse; }
+  .w3__wave--front  { animation: w3-drift 22s ease-in-out infinite; }
+  .w3__wave--accent { animation: w3-drift 18s ease-in-out infinite reverse; }
+  .w3__wave--back   path { fill: var(--violet); opacity: .25; }
+  .w3__wave--mid    path { fill: var(--indigo); opacity: .30; }
+  .w3__wave--front  path { fill: var(--cyan);   opacity: .35; }
+  .w3__wave--accent path { fill: var(--pink);   opacity: .15; }
+  @keyframes w3-drift {
+    0%, 100% { transform: translateX(0); }
+    50%      { transform: translateX(60px); }
+  }
+
+  /* ──────────────────────────────────────────────────────────── */
+  /* W4 · Hue-shift looping wave                                 */
+  /* Three waves whose strokes cycle through the spectrum on    */
+  /* a hue-rotate filter. One element per "ring" — keeps the    */
+  /* DOM minimal and reads as the same wave changing colour.    */
+  /* ──────────────────────────────────────────────────────────── */
+  .w4__svg {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    animation: w4-hue 24s linear infinite;
+  }
+  .w4__svg path {
+    fill: none; stroke-width: 1.5;
+    stroke: var(--cyan);
+    filter: drop-shadow(0 0 6px var(--cyan));
+  }
+  .w4__svg .p1 { animation: w4-drift 24s ease-in-out infinite; }
+  .w4__svg .p2 { animation: w4-drift 30s ease-in-out infinite reverse; opacity: .35; }
+  .w4__svg .p3 { animation: w4-drift 36s ease-in-out infinite; opacity: .22; }
+  @keyframes w4-hue {
+    0%, 100% { filter: hue-rotate(0deg); }
+    50%      { filter: hue-rotate(360deg); }
+  }
+  @keyframes w4-drift {
+    0%, 100% { transform: translateX(0); }
+    50%      { transform: translateX(-90px); }
+  }
+
+  /* ──────────────────────────────────────────────────────────── */
+  /* W5 · Rainbow gradient ribbon                                */
+  /* A single thick filled wave (ribbon) with a linear-gradient  */
+  /* fill spanning the full spectrum. Drifts horizontally; the   */
+  /* gradient itself stays fixed so the ribbon appears to ripple */
+  /* through different colour zones.                             */
+  /* ──────────────────────────────────────────────────────────── */
+  .w5__ribbon {
+    position: absolute; left: -10%; width: 120%;
+    height: 100%;
+    pointer-events: none;
+    animation: w5-drift 26s ease-in-out infinite;
+  }
+  .w5__ribbon path {
+    fill: url(#w5-gradient);
+    opacity: .45;
+  }
+  .w5__ribbon--2 {
+    animation: w5-drift 34s ease-in-out infinite reverse;
+    height: 80%; top: 10%;
+  }
+  .w5__ribbon--2 path { opacity: .25; }
+  .w5__ribbon--3 {
+    animation: w5-drift 42s ease-in-out infinite;
+    height: 70%; top: 20%;
+  }
+  .w5__ribbon--3 path { opacity: .15; }
+  @keyframes w5-drift {
+    0%, 100% { transform: translateX(0); }
+    50%      { transform: translateX(-100px); }
+  }
+
+  /* ──────────────────────────────────────────────────────────── */
+  /* W6 · Diagonal rainbow waves                                 */
+  /* Three rainbow-gradient waves rotated diagonally so they    */
+  /* sweep up-right across the hero. Most "abstract painting"   */
+  /* of the set.                                                 */
+  /* ──────────────────────────────────────────────────────────── */
+  .w6__svg {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 140%; height: 140%;
+    transform: translate(-50%, -50%) rotate(-12deg);
+    pointer-events: none;
+  }
+  .w6__svg path {
+    fill: none;
+    stroke-width: 2.5;
+    filter: drop-shadow(0 0 8px currentColor);
+  }
+  .w6__svg .l1 { stroke: url(#w6-gradient); animation: w6-drift 28s ease-in-out infinite; opacity: .55; }
+  .w6__svg .l2 { stroke: url(#w6-gradient); animation: w6-drift 34s ease-in-out infinite reverse; opacity: .35; }
+  .w6__svg .l3 { stroke: url(#w6-gradient); animation: w6-drift 40s ease-in-out infinite; opacity: .22; }
+  @keyframes w6-drift {
+    0%, 100% { transform: translateX(0); }
+    50%      { transform: translateX(-80px); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: .01s !important;
+      animation-iteration-count: 1 !important;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- Shared SVG defs — referenced by gradient-stroke variants -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <!-- W2: cyan → indigo → violet → pink → amber across the wave -->
+    <linearGradient id="w2-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="#12C4E3"/>
+      <stop offset="25%"  stop-color="#6366f1"/>
+      <stop offset="50%"  stop-color="#a855f7"/>
+      <stop offset="75%"  stop-color="#ec4899"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+
+    <!-- W5: filled ribbon — soft, lower opacities will be added via stops -->
+    <linearGradient id="w5-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="#12C4E3"/>
+      <stop offset="33%"  stop-color="#6366f1"/>
+      <stop offset="66%"  stop-color="#a855f7"/>
+      <stop offset="100%" stop-color="#ec4899"/>
+    </linearGradient>
+
+    <!-- W6: diagonal stroke gradient -->
+    <linearGradient id="w6-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="#12C4E3"/>
+      <stop offset="20%"  stop-color="#14b8a6"/>
+      <stop offset="40%"  stop-color="#6366f1"/>
+      <stop offset="60%"  stop-color="#a855f7"/>
+      <stop offset="80%"  stop-color="#ec4899"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<div class="lab-header">
+  <h1>Marketing hero — animated rainbow waves</h1>
+  <p>Six directions for slow-moving rainbow waves on the dark hero. Same wave architecture you've already shipped (W7), now coloured. All loops in the 18–40 second range so they read as ambient. Cyan stays present in every variant so the hero never loses its brand anchor. Respects <code>prefers-reduced-motion</code>.</p>
+</div>
+
+<div class="grid">
+
+  <!-- ── W1 · Five rainbow waves stacked ──────────────────── -->
+  <div class="variant">
+    <div class="variant__label">W1 · Five rainbow waves stacked <small>most direct rainbow read</small></div>
+    <div class="variant__hero">
+      <div class="w1__glow"></div>
+      <svg class="w1__wave w1__wave--cyan" viewBox="0 0 1200 480" preserveAspectRatio="none">
+        <path d="M-50 220 C 200 100, 400 340, 600 220 C 800 100, 1000 340, 1250 220"/>
+      </svg>
+      <svg class="w1__wave w1__wave--indigo" viewBox="0 0 1200 480" preserveAspectRatio="none">
+        <path d="M-50 270 C 250 150, 500 390, 750 270 C 950 170, 1100 330, 1250 270"/>
+      </svg>
+      <svg class="w1__wave w1__wave--violet" viewBox="0 0 1200 480" preserveAspectRatio="none">
+        <path d="M-50 320 C 200 200, 500 440, 750 320 C 950 220, 1100 380, 1250 320"/>
+      </svg>
+      <svg class="w1__wave w1__wave--pink" viewBox="0 0 1200 480" preserveAspectRatio="none">
+        <path d="M-50 170 C 200 50, 500 290, 750 170 C 950 70, 1100 230, 1250 170"/>
+      </svg>
+      <svg class="w1__wave w1__wave--amber" viewBox="0 0 1200 480" preserveAspectRatio="none">
+        <path d="M-50 370 C 200 250, 500 490, 750 370 C 950 270, 1100 430, 1250 370"/>
+      </svg>
+      <div class="hero-content">
+        <span class="hero-eyebrow">Creator Companion</span>
+        <h1 class="hero-title">A journal for the work you keep showing up to.</h1>
+        <p class="hero-sub">Capture small wins, track the streak that builds your craft, and keep your private notes safe — for as long as you keep creating.</p>
+        <button class="hero-cta">Start writing today →</button>
+      </div>
+    </div>
+    <div class="variant__desc"><strong>Five waves at five colours</strong> — cyan (.55), indigo (.35), violet (.28), pink (.22), amber (.18) — each drifting horizontally at a different speed (24–40s) with a per-stroke drop-shadow glow. Cyan stays loudest so the hero still reads as brand-cyan-first. <em>Verdict: the most literal "rainbow waves" of the set.</em></div>
+  </div>
+
+  <!-- ── W2 · Single rainbow-gradient stroke ──────────────── -->
+  <div class="variant">
+    <div class="variant__label">W2 · Rainbow-gradient stroke <small>colour flows along the wave</small></div>
+    <div class="variant__hero">
+      <div class="w2__glow"></div>
+      <svg class="w2__svg" viewBox="0 0 1200 480" preserveAspectRatio="none">
+        <path class="w2__path w2__path--1" d="M-50 240 C 200 120, 400 360, 600 240 C 800 120, 1000 360, 1250 240"/>
+        <path class="w2__path w2__path--2" d="M-50 300 C 250 180, 500 420, 750 300 C 950 200, 1100 360, 1250 300"/>
+        <path class="w2__path w2__path--3" d="M-50 180 C 200 60, 500 300, 750 180 C 950 80, 1100 240, 1250 180"/>
+      </svg>
+      <div class="hero-content">
+        <span class="hero-eyebrow">Creator Companion</span>
+        <h1 class="hero-title">A journal for the work you keep showing up to.</h1>
+        <p class="hero-sub">Capture small wins, track the streak that builds your craft, and keep your private notes safe — for as long as you keep creating.</p>
+        <button class="hero-cta">Start writing today →</button>
+      </div>
+    </div>
+    <div class="variant__desc"><strong>Three waves with a single SVG linear gradient</strong> spanning their stroke — left edge cyan, right edge amber, with indigo / violet / pink in between. The gradient stays fixed; the wave drifts <em>through</em> it so the same wave reads cyan on the left and pink on the right. The radial glow underneath cycles cyan → violet → pink. <em>Verdict: most painterly, single-stroke elegance.</em></div>
+  </div>
+
+  <!-- ── W3 · Filled rainbow bands ────────────────────────── -->
+  <div class="variant">
+    <div class="variant__label">W3 · Filled rainbow bands <small>layered hills · most graphic</small></div>
+    <div class="variant__hero">
+      <svg class="w3__wave w3__wave--accent" viewBox="0 0 1200 400" preserveAspectRatio="none">
+        <path d="M0,180 C200,100 500,260 800,180 C1000,140 1100,200 1200,180 L1200,400 L0,400 Z"/>
+      </svg>
+      <svg class="w3__wave w3__wave--back" viewBox="0 0 1200 400" preserveAspectRatio="none">
+        <path d="M0,200 C300,140 600,280 900,200 C1050,165 1150,220 1200,200 L1200,400 L0,400 Z"/>
+      </svg>
+      <svg class="w3__wave w3__wave--mid" viewBox="0 0 1200 400" preserveAspectRatio="none">
+        <path d="M0,250 C200,180 500,320 800,250 C1000,210 1100,260 1200,250 L1200,400 L0,400 Z"/>
+      </svg>
+      <svg class="w3__wave w3__wave--front" viewBox="0 0 1200 400" preserveAspectRatio="none">
+        <path d="M0,300 C250,240 550,360 850,300 C1050,260 1100,310 1200,300 L1200,400 L0,400 Z"/>
+      </svg>
+      <div class="hero-content">
+        <span class="hero-eyebrow">Creator Companion</span>
+        <h1 class="hero-title">A journal for the work you keep showing up to.</h1>
+        <p class="hero-sub">Capture small wins, track the streak that builds your craft, and keep your private notes safe — for as long as you keep creating.</p>
+        <button class="hero-cta">Start writing today →</button>
+      </div>
+    </div>
+    <div class="variant__desc"><strong>Four filled wave bands</strong> — pink (back, .15), violet (mid-back, .25), indigo (mid, .30), cyan (front, .35) — stacked at the bottom of the hero like coloured hills. Drift independently. The headline area stays clean; colour lives at the foot of the section. <em>Verdict: most graphic / illustrative; the hero feels "grounded" in colour.</em></div>
+  </div>
+
+  <!-- ── W4 · Hue-shift looping wave ──────────────────────── -->
+  <div class="variant">
+    <div class="variant__label">W4 · Hue-shift looping wave <small>same wave, cycling colour</small></div>
+    <div class="variant__hero">
+      <svg class="w4__svg" viewBox="0 0 1200 480" preserveAspectRatio="none">
+        <path class="p1" d="M-50 240 C 200 120, 400 360, 600 240 C 800 120, 1000 360, 1250 240"/>
+        <path class="p2" d="M-50 300 C 250 180, 500 420, 750 300 C 950 200, 1100 360, 1250 300"/>
+        <path class="p3" d="M-50 180 C 200 60, 500 300, 750 180 C 950 80, 1100 240, 1250 180"/>
+      </svg>
+      <div class="hero-content">
+        <span class="hero-eyebrow">Creator Companion</span>
+        <h1 class="hero-title">A journal for the work you keep showing up to.</h1>
+        <p class="hero-sub">Capture small wins, track the streak that builds your craft, and keep your private notes safe — for as long as you keep creating.</p>
+        <button class="hero-cta">Start writing today →</button>
+      </div>
+    </div>
+    <div class="variant__desc"><strong>The W7 wave architecture you already have</strong> with a CSS <code>filter: hue-rotate()</code> wrapping the whole SVG over 24s. The wave starts cyan, rotates through teal → green → yellow → red → magenta → blue, and returns to cyan. <em>Verdict: smallest visual leap from your current hero — same shapes, just gently colour-cycling.</em></div>
+  </div>
+
+  <!-- ── W5 · Rainbow gradient ribbon ─────────────────────── -->
+  <div class="variant">
+    <div class="variant__label">W5 · Filled rainbow ribbon <small>thick gradient ribbon, painterly</small></div>
+    <div class="variant__hero">
+      <svg class="w5__ribbon" viewBox="0 0 1200 480" preserveAspectRatio="none">
+        <path d="M-50 220 C 200 100, 400 340, 600 220 C 800 100, 1000 340, 1250 220 L 1250 280 C 1000 400, 800 160, 600 280 C 400 400, 200 160, -50 280 Z"/>
+      </svg>
+      <svg class="w5__ribbon w5__ribbon--2" viewBox="0 0 1200 480" preserveAspectRatio="none">
+        <path d="M-50 280 C 200 160, 400 400, 600 280 C 800 160, 1000 400, 1250 280 L 1250 340 C 1000 460, 800 220, 600 340 C 400 460, 200 220, -50 340 Z"/>
+      </svg>
+      <svg class="w5__ribbon w5__ribbon--3" viewBox="0 0 1200 480" preserveAspectRatio="none">
+        <path d="M-50 160 C 200 40, 400 280, 600 160 C 800 40, 1000 280, 1250 160 L 1250 220 C 1000 340, 800 100, 600 220 C 400 340, 200 100, -50 220 Z"/>
+      </svg>
+      <div class="hero-content">
+        <span class="hero-eyebrow">Creator Companion</span>
+        <h1 class="hero-title">A journal for the work you keep showing up to.</h1>
+        <p class="hero-sub">Capture small wins, track the streak that builds your craft, and keep your private notes safe — for as long as you keep creating.</p>
+        <button class="hero-cta">Start writing today →</button>
+      </div>
+    </div>
+    <div class="variant__desc"><strong>Three thick filled wave ribbons</strong> with the cyan → indigo → violet → pink gradient running left-to-right across each. The ribbon shapes drift horizontally; opacities stack (.45 / .25 / .15). Reads as flowing painted brushstrokes. <em>Verdict: most colour mass on the page; if you want the rainbow to feel "painted in" rather than "outlined".</em></div>
+  </div>
+
+  <!-- ── W6 · Diagonal rainbow waves ──────────────────────── -->
+  <div class="variant">
+    <div class="variant__label">W6 · Diagonal rainbow waves <small>tilted · abstract painting</small></div>
+    <div class="variant__hero">
+      <svg class="w6__svg" viewBox="0 0 1200 480" preserveAspectRatio="none">
+        <path class="l1" d="M-50 200 C 250 60, 500 340, 800 200 C 1000 100, 1100 280, 1250 200"/>
+        <path class="l2" d="M-50 280 C 250 140, 500 420, 800 280 C 1000 180, 1100 360, 1250 280"/>
+        <path class="l3" d="M-50 360 C 250 220, 500 500, 800 360 C 1000 260, 1100 440, 1250 360"/>
+      </svg>
+      <div class="hero-content">
+        <span class="hero-eyebrow">Creator Companion</span>
+        <h1 class="hero-title">A journal for the work you keep showing up to.</h1>
+        <p class="hero-sub">Capture small wins, track the streak that builds your craft, and keep your private notes safe — for as long as you keep creating.</p>
+        <button class="hero-cta">Start writing today →</button>
+      </div>
+    </div>
+    <div class="variant__desc"><strong>Three rainbow-gradient stroked waves</strong> (cyan → teal → indigo → violet → pink → amber) rotated -12° so they sweep diagonally across the hero. The whole composition tilts. Most distinctive / least ordinary of the set. <em>Verdict: most "designed" — pairs well with bold marketing if you want the page to feel like an art object.</em></div>
+  </div>
+
+</div>
+
+</body>
+</html>

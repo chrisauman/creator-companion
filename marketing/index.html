@@ -23,6 +23,21 @@
 </head>
 <body>
 
+  <!-- Shared SVG defs — referenced by hero wave strokes. Hidden from
+       layout (width/height 0); just a place to declare the rainbow
+       gradient that the hero waves use as their stroke. -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <linearGradient id="hero-rainbow" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%"   stop-color="#12C4E3"/>
+        <stop offset="25%"  stop-color="#6366f1"/>
+        <stop offset="50%"  stop-color="#a855f7"/>
+        <stop offset="75%"  stop-color="#ec4899"/>
+        <stop offset="100%" stop-color="#f59e0b"/>
+      </linearGradient>
+    </defs>
+  </svg>
+
   <!-- ── Nav ─────────────────────────────────────────────────────────── -->
   <nav class="nav" id="nav">
     <div class="nav__inner">
@@ -53,8 +68,11 @@
 
   <!-- ── Hero ─────────────────────────────────────────────────────────── -->
   <section class="hero">
-    <!-- Animated background: cyan radial glow + three slow-drifting
-         stroke-only waves with a CSS drop-shadow. Brand-cyan on ink. -->
+    <!-- Animated background: hue-cycling radial glow + three slow-
+         drifting waves whose strokes share the rainbow linear-gradient
+         declared in the <defs> at the top of the body. The gradient
+         stays fixed; the waves drift through it so the same wave
+         reads cyan on the left and amber on the right. -->
     <div class="hero__glow" aria-hidden="true"></div>
     <svg class="hero__wave hero__wave--1" aria-hidden="true"
          viewBox="0 0 1200 480" preserveAspectRatio="none">
