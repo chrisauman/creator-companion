@@ -11,13 +11,14 @@ namespace CreatorCompanion.Api.Api.Controllers;
 [ApiController]
 [Route("v1/users")]
 [Authorize]
-public class UsersController(AppDbContext db, IStorageService storage) : ControllerBase
+public class UsersController(AppDbContext db, IStorageService storage, IImageProcessor imageProcessor) : ControllerBase
 {
     private static readonly HashSet<string> AllowedImageTypes = new(StringComparer.OrdinalIgnoreCase)
     {
         "image/jpeg", "image/png", "image/webp"
     };
-    private const long MaxProfileImageBytes = 5 * 1024 * 1024; // 5 MB
+    private const long MaxProfileImageBytes = 5 * 1024 * 1024; // 5 MB raw upload — server downscales to 512px²
+    private const int  ProfileImageMaxSidePx = 512;
 
     private Guid UserId => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)
         ?? User.FindFirstValue("sub")!);
@@ -145,10 +146,20 @@ public class UsersController(AppDbContext db, IStorageService storage) : Control
         var user = await db.Users.FindAsync(UserId);
         if (user is null) return NotFound();
 
-        // Save the new image first; only delete the old one once the upload succeeds.
+        // Downscale + recompress through ImageSharp so we never store
+        // multi-megabyte phone-camera originals as someone's avatar.
+        // 512px on the longest side keeps the ~30 KB after JPEG re-encode.
         string newPath;
-        await using (var stream = file.OpenReadStream())
-            newPath = await storage.SaveAsync(stream, $"avatar_{file.FileName}", file.ContentType);
+        await using (var source = file.OpenReadStream())
+        {
+            var (processed, processedType) =
+                await imageProcessor.ProcessAsync(source, ProfileImageMaxSidePx);
+            await using (processed)
+            {
+                var fileName = Path.ChangeExtension($"avatar_{file.FileName}", ".jpg");
+                newPath = await storage.SaveAsync(processed, fileName, processedType);
+            }
+        }
 
         var oldPath = user.ProfileImagePath;
         user.ProfileImagePath = newPath;

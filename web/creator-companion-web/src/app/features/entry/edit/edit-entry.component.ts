@@ -51,6 +51,9 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
             <div class="reader-top__breadcrumb">
               {{ monthYearLabel() }} · <strong>{{ weekdayDayLabel() }}</strong>
             </div>
+            <!-- Toolbar holds the heart only (right-aligned) — Save
+                 lives at the bottom of the form, mirroring where Edit
+                 sits on the read view. -->
             <div class="reader-top__actions">
               <div class="save-indicator-mini" [class]="'save-indicator--' + saveState()">
                 <span *ngIf="saveState() === 'saving'">Saving…</span>
@@ -69,11 +72,6 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
                   stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
                 </svg>
-              </button>
-              <button class="save-btn" type="button"
-                      (click)="saveNow()"
-                      [disabled]="saving() || !title.trim() || wordCount() < 10 || wordCount() > maxWords()">
-                {{ saving() ? 'Saving…' : 'Save' }}
               </button>
             </div>
           </div>
@@ -180,7 +178,7 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
                   } @else {
                     <span class="drop-zone__icon">🖼</span>
                     <span class="drop-zone__text">Add photos</span>
-                    <span class="drop-zone__hint">Click or drag &amp; drop · JPEG, PNG, WEBP, HEIC · max 20 MB</span>
+                    <span class="drop-zone__hint">Click or drag &amp; drop · JPEG, PNG, WEBP, HEIC · max 15 MB</span>
                   }
                 </div>
               }
@@ -267,8 +265,9 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
               }
             </div>
 
-            <!-- Footer: word count on the left, subtle trash link on the right.
-                 Save moved up to the reader-style top bar. -->
+            <!-- Footer: word count + trash link on the left,
+                 right-aligned Save button (mirrors where Edit lives
+                 on the read view). -->
             <div class="editor-footer">
               <span class="word-count"
                 [class.word-count--warn]="wordCount() > maxWords() * 0.9"
@@ -283,6 +282,11 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
                   <path d="M10 11v6"/><path d="M14 11v6"/>
                 </svg>
                 Move to trash
+              </button>
+              <button class="save-btn save-btn--bottom" type="button"
+                      (click)="saveNow()"
+                      [disabled]="saving() || !title.trim() || wordCount() < 10 || wordCount() > maxWords()">
+                {{ saving() ? 'Saving…' : 'Save' }}
               </button>
             </div>
 
@@ -786,15 +790,18 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
     .mood-lock-text { font-size: .8125rem; color: var(--color-text-2); font-weight: 500; text-align: center; }
 
     /* ── Footer / actions ────────────────────────────────────────── */
+    /* word-count (left) · trash-link · Save button (right). */
     .editor-footer {
-      display: flex; align-items: center; justify-content: space-between;
-      flex-wrap: wrap; gap: 1rem; margin-top: 1.5rem;
+      display: flex; align-items: center; gap: 1rem;
+      flex-wrap: wrap; margin-top: 1.5rem;
       padding-top: 1rem; border-top: 1px solid var(--color-border);
     }
     .word-count { font-size: .8125rem; color: var(--color-text-3);
       &--warn { color: var(--color-streak); }
       &--over { color: var(--color-danger); font-weight: 600; }
     }
+    /* Save sits on the right edge regardless of how wide the row is. */
+    .save-btn--bottom { margin-left: auto; }
     .editor-actions { display: flex; gap: .75rem; flex-wrap: wrap; }
 
     /* Subtle "move to trash" link in the footer (Save is now in the top bar) */

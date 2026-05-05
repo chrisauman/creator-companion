@@ -9,14 +9,24 @@ namespace CreatorCompanion.Api.Application.Services;
 public class MediaService(
     AppDbContext db,
     IStorageService storage,
-    IEntitlementService entitlements) : IMediaService
+    IEntitlementService entitlements,
+    IImageProcessor imageProcessor) : IMediaService
 {
     private static readonly HashSet<string> AllowedTypes = new(StringComparer.OrdinalIgnoreCase)
     {
         "image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"
     };
 
-    private const long MaxFileSizeBytes = 20 * 1024 * 1024; // 20 MB
+    /// <summary>Upload cap (raw, before compression). 15 MB covers
+    /// just about any phone camera; ImageSharp downscales and
+    /// re-encodes everything we can decode, so the bytes that
+    /// actually hit storage are typically far smaller.</summary>
+    private const long MaxFileSizeBytes = 15 * 1024 * 1024;
+
+    /// <summary>Longest dimension photos are resized to. 2048px is
+    /// plenty for a journaling app's photo gallery and keeps stored
+    /// files in the 200–800 KB range after JPEG re-encoding.</summary>
+    private const int  MaxLongestSidePx  = 2048;
 
     public async Task<MediaSummary> UploadAsync(Guid userId, Guid entryId, IFormFile file)
     {
@@ -25,7 +35,7 @@ public class MediaService(
                 "File type not allowed. Accepted: JPEG, PNG, WEBP, HEIC.");
 
         if (file.Length > MaxFileSizeBytes)
-            throw new InvalidOperationException("File exceeds the 20 MB size limit.");
+            throw new InvalidOperationException("File exceeds the 15 MB size limit.");
 
         var entry = await db.Entries
             .FirstOrDefaultAsync(e => e.Id == entryId && e.UserId == userId && e.DeletedAt == null)
@@ -35,17 +45,42 @@ public class MediaService(
         await entitlements.EnforceImageLimitAsync(user!, entryId);
 
         string storagePath;
-        await using (var stream = file.OpenReadStream())
+        long   storedBytes;
+        string storedContentType = file.ContentType;
+        string storedFileName    = file.FileName;
+
+        if (imageProcessor.CanProcess(file.ContentType))
+        {
+            // Decode → auto-orient → resize → re-encode as JPEG. This
+            // keeps stored files small no matter what the camera
+            // produced. HEIC inputs skip this branch and go through
+            // as-is (browsers usually send JPEG anyway).
+            await using var source = file.OpenReadStream();
+            var (processed, processedType) =
+                await imageProcessor.ProcessAsync(source, MaxLongestSidePx);
+            await using (processed)
+            {
+                storedContentType = processedType;
+                storedFileName    = Path.ChangeExtension(file.FileName, ".jpg");
+                storedBytes       = processed.Length;
+                storagePath       = await storage.SaveAsync(processed, storedFileName, processedType);
+            }
+        }
+        else
+        {
+            await using var stream = file.OpenReadStream();
             storagePath = await storage.SaveAsync(stream, file.FileName, file.ContentType);
+            storedBytes = file.Length;
+        }
 
         var media = new EntryMedia
         {
-            EntryId = entryId,
-            UserId = userId,
-            FileName = file.FileName,
-            ContentType = file.ContentType,
-            FileSizeBytes = file.Length,
-            StoragePath = storagePath
+            EntryId       = entryId,
+            UserId        = userId,
+            FileName      = storedFileName,
+            ContentType   = storedContentType,
+            FileSizeBytes = storedBytes,
+            StoragePath   = storagePath
         };
 
         db.EntryMedia.Add(media);

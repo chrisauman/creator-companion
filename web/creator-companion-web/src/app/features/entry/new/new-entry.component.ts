@@ -289,23 +289,6 @@ interface PendingImage {
               }
             </div>
 
-            <div class="editor-actions" hidden>
-              <button class="btn btn--secondary btn--sm" routerLink="/dashboard" [disabled]="submitting()">
-                Save draft
-              </button>
-              <button
-                class="btn btn--primary"
-                (click)="submit()"
-                [disabled]="submitting() || wordCount() < 10 || wordCount() > maxWords()"
-              >
-                @if (submitting()) {
-                  @if (uploadProgress()) { {{ uploadProgress() }} }
-                  @else { Publishing… }
-                } @else {
-                  Publish entry
-                }
-              </button>
-            </div>
           </div>
 
           @if (submitError()) {

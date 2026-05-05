@@ -782,9 +782,10 @@ import { ActivatedRoute } from '@angular/router';
       text-transform: uppercase;
       letter-spacing: .14em;
       color: var(--color-text-3);
-      padding: 0 0 .375rem;
-      /* Close to the entries below it, more breathing room above. */
-      margin: 1.75rem 0 .375rem;
+      padding: 0 0 .5rem;
+      /* Breathing room above; a full rem of space below the rule
+         before the first entry starts. */
+      margin: 1.75rem 0 1rem;
       border-bottom: 1px solid var(--color-border);
     }
     .date-divider--first { margin-top: .5rem; }

@@ -158,6 +158,9 @@ try
     builder.Services.AddScoped<IDraftService, DraftService>();
     builder.Services.AddScoped<IJournalService, JournalService>();
     builder.Services.AddScoped<IMediaService, MediaService>();
+    // Image processing — used by MediaService and the avatar upload
+    // endpoint to downscale + recompress before saving.
+    builder.Services.AddSingleton<IImageProcessor, ImageSharpProcessor>();
     // Use R2 in production, local filesystem in development
     if (builder.Environment.IsDevelopment())
         builder.Services.AddScoped<IStorageService, LocalStorageService>();
