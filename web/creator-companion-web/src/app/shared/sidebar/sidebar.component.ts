@@ -269,11 +269,17 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
       }
       .sidebar-backdrop { display: none; }
     }
-    /* Wider desktops get a roomier sidebar. */
+    /* Wider desktops get a roomier sidebar. The collapsed-state
+       override has to be re-stated here so it wins over the wider
+       default in the cascade. */
     @media (min-width: 1200px) {
       .sidebar {
         width: 260px;
         min-width: 260px;
+      }
+      .sidebar--collapsed {
+        width: 64px;
+        min-width: 64px;
       }
     }
 
