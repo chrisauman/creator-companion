@@ -37,13 +37,11 @@ import { MoodIconComponent } from '../../shared/mood-icon/mood-icon.component';
             Today
           </button>
 
-          @if (entry) {
-            <div class="reader-top__breadcrumb">
-              {{ monthYear() }} · <strong>{{ weekdayDayLabel() }}</strong>
-            </div>
-          } @else {
-            <div class="reader-top__breadcrumb"></div>
-          }
+          <!-- Breadcrumb intentionally empty — the entry's full date
+               now lives below the title in the article header
+               ("Monday, May 4, 2026 • 1:53 PM"), so the toolbar
+               keeps just the Today pill and heart. -->
+          <div class="reader-top__breadcrumb"></div>
 
           <div class="reader-top__actions">
             @if (entry && canFavorite) {
@@ -289,12 +287,13 @@ import { MoodIconComponent } from '../../shared/mood-icon/mood-icon.component';
       flex-wrap: wrap;
       margin-bottom: 1rem;
     }
+    /* Title-case date · time (e.g. "Monday, May 4, 2026 • 1:53 PM").
+       Not uppercase so the longer label reads naturally. */
     .reading__date {
-      font-size: .6875rem;
-      text-transform: uppercase;
-      letter-spacing: .14em;
+      font-size: .8125rem;
       color: var(--color-accent);
-      font-weight: 700;
+      font-weight: 600;
+      letter-spacing: 0;
     }
     .reading__mood {
       display: inline-flex;
@@ -446,9 +445,11 @@ export class EntryReaderComponent implements OnChanges {
     if (!this.entry) return '';
     const d = new Date(this.entry.entryDate + 'T00:00:00');
     const created = new Date(this.entry.createdAt);
-    const weekday = d.toLocaleDateString('en-US', { weekday: 'long' });
+    const fullDate = d.toLocaleDateString('en-US', {
+      weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
+    });
     const time = created.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-    return `${weekday} · ${time}`;
+    return `${fullDate} • ${time}`;
   });
 
   monthYear = computed(() => {

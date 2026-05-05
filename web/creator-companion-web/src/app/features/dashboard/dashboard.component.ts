@@ -855,11 +855,12 @@ import { ActivatedRoute } from '@angular/router';
       flex-wrap: wrap;
       margin-bottom: .5rem;
     }
+    /* Title-case full date ("Monday, May 4, 2026"). Not uppercase
+       since the longer label reads better in normal case. */
     .entry-row__date {
-      font-size: .6875rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .12em;
+      font-size: .8125rem;
+      font-weight: 600;
+      letter-spacing: 0;
       color: var(--color-accent);
     }
     /* Mood pushed to the right edge of the meta row so the entry
@@ -1426,11 +1427,9 @@ export class DashboardComponent implements OnInit {
    * for); time comes from createdAt (when it was actually written).
    */
   entryShortDate(entry: EntryListItem): string {
-    const day = new Date(entry.entryDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' });
-    const time = new Date(entry.createdAt).toLocaleTimeString('en-US', {
-      hour: 'numeric', minute: '2-digit', hour12: true
+    return new Date(entry.entryDate + 'T00:00:00').toLocaleDateString('en-US', {
+      weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
     });
-    return `${day} · ${time}`;
   }
 
   /**
