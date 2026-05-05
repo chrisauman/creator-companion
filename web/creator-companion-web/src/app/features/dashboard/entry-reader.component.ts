@@ -23,49 +23,43 @@ import { MoodIconComponent } from '../../shared/mood-icon/mood-icon.component';
   template: `
     <div class="reader">
 
-      <!-- Top bar -->
+      <!-- Top bar — inner content is bounded to the same max-width
+           as the entry body so the Today pill / heart align with the
+           left and right edges of the article below. -->
       <div class="reader-top">
-        <button class="today-pill" type="button"
-                (click)="returnToToday.emit()"
-                title="Return to today's view">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2Z"/>
-          </svg>
-          Today
-        </button>
+        <div class="reader-top__inner">
+          <button class="today-pill" type="button"
+                  (click)="returnToToday.emit()"
+                  title="Return to today's view">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2Z"/>
+            </svg>
+            Today
+          </button>
 
-        @if (entry) {
-          <div class="reader-top__breadcrumb">
-            {{ monthYear() }} · <strong>{{ weekdayDayLabel() }}</strong>
-          </div>
-        } @else {
-          <div class="reader-top__breadcrumb"></div>
-        }
-
-        <div class="reader-top__actions">
-          @if (entry && canFavorite) {
-            <button class="icon-btn-round"
-                    type="button"
-                    [class.icon-btn-round--fav-active]="entry.isFavorited"
-                    [title]="entry.isFavorited ? 'Remove from favorites' : 'Add to favorites'"
-                    (click)="toggleFavorite.emit()">
-              <svg width="14" height="14" viewBox="0 0 24 24"
-                   [attr.fill]="entry.isFavorited ? 'currentColor' : 'none'"
-                   stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-              </svg>
-            </button>
-          }
           @if (entry) {
-            <button class="edit-btn" type="button" (click)="edit.emit()">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 20h9"/>
-                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/>
-              </svg>
-              Edit
-            </button>
+            <div class="reader-top__breadcrumb">
+              {{ monthYear() }} · <strong>{{ weekdayDayLabel() }}</strong>
+            </div>
+          } @else {
+            <div class="reader-top__breadcrumb"></div>
           }
+
+          <div class="reader-top__actions">
+            @if (entry && canFavorite) {
+              <button class="icon-btn-round"
+                      type="button"
+                      [class.icon-btn-round--fav-active]="entry.isFavorited"
+                      [title]="entry.isFavorited ? 'Remove from favorites' : 'Add to favorites'"
+                      (click)="toggleFavorite.emit()">
+                <svg width="14" height="14" viewBox="0 0 24 24"
+                     [attr.fill]="entry.isFavorited ? 'currentColor' : 'none'"
+                     stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                </svg>
+              </button>
+            }
+          </div>
         </div>
       </div>
 
@@ -125,6 +119,20 @@ import { MoodIconComponent } from '../../shared/mood-icon/mood-icon.component';
                 }
               </div>
             }
+
+            <!-- Edit lives at the bottom of the entry, right-aligned —
+                 a quieter "I'm done reading, want to change something"
+                 affordance than a big top-right button. -->
+            <div class="reading__edit-row">
+              <button class="edit-btn" type="button" (click)="edit.emit()">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 20h9"/>
+                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/>
+                </svg>
+                Edit
+              </button>
+            </div>
           </article>
         </div>
       }
@@ -142,20 +150,29 @@ import { MoodIconComponent } from '../../shared/mood-icon/mood-icon.component';
     }
 
     /* ── Top bar ─────────────────────────────────────────────── */
-    /* Fixed 64px so the right column's header aligns with the search
-       bar at the top of the entry-list column. No rule line — the
-       padding plus the column's surface bg do the job cleanly. */
+    /* Fixed 64px tall, full-width background so the column reads as
+       one continuous surface; inner row is bounded to the same
+       max-width and padding as the entry article so the Today pill
+       and heart align horizontally with the title's left/right edges. */
     .reader-top {
       display: flex;
-      align-items: center;
-      gap: .5rem;
+      align-items: stretch;
       height: 64px;
-      padding: 0 1.5rem;
-      position: sticky; top: 0;
       background: var(--color-surface);
       z-index: 5;
       box-sizing: border-box;
       flex-shrink: 0;
+      position: sticky; top: 0;
+    }
+    .reader-top__inner {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      width: 100%;
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 0 2.5rem;
+      box-sizing: border-box;
     }
     .today-pill {
       display: inline-flex;
@@ -289,14 +306,16 @@ import { MoodIconComponent } from '../../shared/mood-icon/mood-icon.component';
     }
     .reading__mood app-mood-icon { color: var(--color-text-3); }
 
+    /* Title matches the entry-list row title so both columns read
+       the same — same font-size, same wrapping behaviour. */
     .reading__title {
       font-family: var(--font-sans);
-      font-size: 2.125rem;
+      font-size: 1.3125rem;
       font-weight: 700;
-      line-height: 1.15;
-      letter-spacing: -.015em;
+      line-height: 1.3;
+      letter-spacing: -.01em;
       color: var(--color-text);
-      margin: 0 0 1.5rem;
+      margin: 0 0 1rem;
       word-break: break-word;
     }
     .reading__backfill {
@@ -308,13 +327,13 @@ import { MoodIconComponent } from '../../shared/mood-icon/mood-icon.component';
 
     .reading__body {
       font-size: 1.0625rem;
-      line-height: 1.75;
+      line-height: 1.55;
       color: var(--color-text);
       word-wrap: break-word;
     }
     .reading__body :first-child { margin-top: 0; }
     .reading__body :last-child { margin-bottom: 0; }
-    .reading__body p { margin: 0 0 1.25rem; }
+    .reading__body p { margin: 0 0 1rem; }
     .reading__body p:first-of-type::first-letter {
       font-family: var(--font-sans);
       font-size: 3rem;
@@ -381,6 +400,14 @@ import { MoodIconComponent } from '../../shared/mood-icon/mood-icon.component';
       background: #f4ede0;
       color: #8a7a52;
       font-weight: 600;
+    }
+
+    /* Edit button row — sits at the bottom of the entry, aligned
+       right. Quieter than a hero top-right CTA. */
+    .reading__edit-row {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 1.75rem;
     }
   `]
 })
