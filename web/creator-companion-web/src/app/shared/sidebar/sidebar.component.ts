@@ -56,43 +56,6 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
         </button>
       </div>
 
-      <!-- Streak module (Variant A — compact inline header). Hidden
-           when the sidebar is collapsed since there's no room for the
-           progress bar or footnote at 64px wide. -->
-      <div class="sidebar__streak" *ngIf="!collapsed() && streak()">
-        <ng-container *ngIf="progressToNext() as p">
-          <div class="sidebar__streak-row">
-            <div class="sidebar__streak-num-wrap">
-              <span class="sidebar__streak-num">{{ streak()!.currentStreak }}</span>
-              <span class="sidebar__streak-unit">{{ streak()!.currentStreak === 1 ? 'day streak' : 'day streak' }}</span>
-            </div>
-            <span *ngIf="p.current"
-                  class="sidebar__streak-tier"
-                  [class.sidebar__streak-tier--top]="p.isAtTopTier">
-              <app-tier-icon [tier]="p.current.title" [size]="11"></app-tier-icon>
-              {{ p.current.title }}
-            </span>
-          </div>
-
-          <div class="sidebar__streak-bar"
-               *ngIf="!p.isAtTopTier && p.next">
-            <div class="sidebar__streak-bar-fill" [style.width.%]="p.percentToNext"></div>
-          </div>
-
-          <div class="sidebar__streak-foot">
-            <span *ngIf="p.next && !p.isAtTopTier">
-              <strong>{{ p.daysToNext }}</strong> to {{ p.next.title }}
-            </span>
-            <span *ngIf="p.isAtTopTier" class="sidebar__streak-foot--top">
-              Top tier — keep going
-            </span>
-            <span *ngIf="streak()!.longestStreak > 0">
-              Best <strong>{{ streak()!.longestStreak }}</strong>
-            </span>
-          </div>
-        </ng-container>
-      </div>
-
       <!-- New Entry button (cyan; full pill expanded, just + icon collapsed) -->
       <a class="sidebar__compose"
          [class.sidebar__compose--collapsed]="collapsed()"
@@ -151,6 +114,45 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
       </nav>
 
       <div class="sidebar__spacer"></div>
+
+      <!-- Streak module (Layout 1 — sits just above the user-card
+           footer, no rule lines around it, pushed to the bottom by
+           the spacer above). Hidden when the sidebar is collapsed
+           since there's no room for the progress bar or footnote at
+           64px wide. -->
+      <div class="sidebar__streak" *ngIf="!collapsed() && streak()">
+        <ng-container *ngIf="progressToNext() as p">
+          <div class="sidebar__streak-row">
+            <div class="sidebar__streak-num-wrap">
+              <span class="sidebar__streak-num">{{ streak()!.currentStreak }}</span>
+              <span class="sidebar__streak-unit">day streak</span>
+            </div>
+            <span *ngIf="p.current"
+                  class="sidebar__streak-tier"
+                  [class.sidebar__streak-tier--top]="p.isAtTopTier">
+              <app-tier-icon [tier]="p.current.title" [size]="11"></app-tier-icon>
+              {{ p.current.title }}
+            </span>
+          </div>
+
+          <div class="sidebar__streak-bar"
+               *ngIf="!p.isAtTopTier && p.next">
+            <div class="sidebar__streak-bar-fill" [style.width.%]="p.percentToNext"></div>
+          </div>
+
+          <div class="sidebar__streak-foot">
+            <span *ngIf="p.next && !p.isAtTopTier">
+              <strong>{{ p.daysToNext }}</strong> to {{ p.next.title }}
+            </span>
+            <span *ngIf="p.isAtTopTier" class="sidebar__streak-foot--top">
+              Top tier — keep going
+            </span>
+            <span *ngIf="streak()!.longestStreak > 0">
+              Best <strong>{{ streak()!.longestStreak }}</strong>
+            </span>
+          </div>
+        </ng-container>
+      </div>
 
       <!-- Footer: user card + settings + logout -->
       <div class="sidebar__footer-wrap">
@@ -344,10 +346,10 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
     /* ── Streak module (Variant A — compact inline header) ────────
        One row with the streak number + tier pill, a 3px progress
        bar, and a footnote split between "N to NextTier" and "Best N".
-       Total height ~85px expanded, way down from the old ~135px. */
+       Sits just above the user-card footer (Layout 1) with no rule
+       lines — the spacer above pushes it to the bottom. */
     .sidebar__streak {
       padding: 0 1rem 1rem;
-      margin: -.25rem 0 .75rem;
     }
     .sidebar__streak-row {
       display: flex;
