@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Marketing hero — animated background variants</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --ink: #0c0e13;
+    --cyan: #12C4E3;
+    --cyan-deep: #0d9bb5;
+    --paper: #faf8f4;
+    --cream-1: #fdfaf2;
+    --cream-2: #f6f1e6;
+    --line: #ebe7df;
+    --text: #1a1d24;
+    --text-2: #5d6470;
+  }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: #ebe7df;
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    padding: 2rem 1rem 4rem;
+  }
+
+  .lab-header { max-width: 1280px; margin: 0 auto 2rem; }
+  .lab-header h1 { font-size: 1.75rem; font-weight: 800; letter-spacing: -.01em; margin-bottom: .375rem; }
+  .lab-header p { color: var(--text-2); line-height: 1.6; max-width: 740px; }
+
+  .grid {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
+
+  .variant {
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 30px 60px -30px rgba(0,0,0,.25);
+    background: white;
+  }
+  .variant__label {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: .875rem 1.25rem;
+    background: rgba(0,0,0,.03);
+    border-bottom: 1px solid rgba(0,0,0,.06);
+    font-size: .8125rem; font-weight: 600;
+  }
+  .variant__label small {
+    font-weight: 500; color: var(--text-2);
+  }
+  .variant__hero {
+    position: relative;
+    height: 480px;
+    overflow: hidden;
+    isolation: isolate;
+  }
+  .variant__desc {
+    padding: 1rem 1.25rem;
+    background: rgba(0,0,0,.02);
+    border-top: 1px solid rgba(0,0,0,.06);
+    font-size: .8125rem;
+    color: var(--text-2);
+    line-height: 1.55;
+  }
+  .variant__desc strong { color: var(--text); font-weight: 600; }
+
+  /* ── Hero content (shared across all variants) ────────────────── */
+  .hero-content {
+    position: relative; z-index: 10;
+    height: 100%;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 2.5rem 2rem;
+    text-align: center;
+  }
+  .hero-eyebrow {
+    display: inline-flex; align-items: center; gap: .5rem;
+    font-size: .6875rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .18em;
+    color: var(--cyan);
+    margin-bottom: 1.25rem;
+  }
+  .hero-eyebrow::before {
+    content: ''; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--cyan); box-shadow: 0 0 12px var(--cyan);
+  }
+  .hero-title {
+    font-size: clamp(2rem, 4.5vw, 3.5rem);
+    font-weight: 800;
+    letter-spacing: -.025em;
+    line-height: 1.05;
+    color: var(--ink);
+    margin-bottom: 1rem;
+    max-width: 720px;
+  }
+  .hero-sub {
+    font-size: 1.0625rem;
+    line-height: 1.55;
+    color: var(--text-2);
+    max-width: 540px;
+    margin-bottom: 1.75rem;
+  }
+  .hero-cta {
+    display: inline-flex; align-items: center; gap: .5rem;
+    background: var(--ink); color: #fff;
+    padding: .875rem 1.5rem;
+    border: none; border-radius: 999px;
+    font-family: inherit; font-size: .9375rem; font-weight: 600;
+    cursor: pointer;
+    transition: background .15s, transform .15s;
+  }
+  .hero-cta:hover {
+    background: var(--cyan); color: var(--ink);
+    transform: translateY(-1px);
+  }
+
+  /* Variant-specific hero overrides for dark variants */
+  .hero--dark .hero-title { color: #fff; }
+  .hero--dark .hero-sub { color: rgba(255,255,255,.65); }
+  .hero--dark .hero-cta { background: var(--cyan); color: var(--ink); }
+  .hero--dark .hero-cta:hover { background: #0bd2f0; }
+
+  /* ──────────────────────────────────────────────────────────── */
+  /* 1 · FLOATING ORBS                                            */
+  /* Soft cyan + cream blobs drifting in slow loops. Brand colours,
+     calm & dreamy. Most "spa-app" feel — works for journaling.   */
+  /* ──────────────────────────────────────────────────────────── */
+  .v1 .variant__hero {
+    background: linear-gradient(180deg, var(--cream-1), var(--cream-2));
+  }
+  .v1__orbs {
+    position: absolute; inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .v1__orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(60px);
+    opacity: .55;
+    will-change: transform;
+  }
+  .v1__orb--a {
+    width: 420px; height: 420px;
+    background: radial-gradient(circle, var(--cyan) 0%, transparent 70%);
+    top: -120px; left: -100px;
+    animation: orbDrift1 22s ease-in-out infinite;
+  }
+  .v1__orb--b {
+    width: 360px; height: 360px;
+    background: radial-gradient(circle, #f0c570 0%, transparent 70%);
+    bottom: -120px; right: -80px;
+    animation: orbDrift2 28s ease-in-out infinite;
+  }
+  .v1__orb--c {
+    width: 280px; height: 280px;
+    background: radial-gradient(circle, #ff9a76 0%, transparent 70%);
+    top: 40%; left: 40%;
+    opacity: .35;
+    animation: orbDrift3 18s ease-in-out infinite;
+  }
+  @keyframes orbDrift1 {
+    0%, 100% { transform: translate(0, 0); }
+    50%      { transform: translate(180px, 100px); }
+  }
+  @keyframes orbDrift2 {
+    0%, 100% { transform: translate(0, 0); }
+    50%      { transform: translate(-200px, -120px); }
+  }
+  @keyframes orbDrift3 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50%      { transform: translate(-80px, -60px) scale(1.2); }
+  }
+
+  /* ──────────────────────────────────────────────────────────── */
+  /* 2 · ANIMATED MESH GRADIENT                                   */
+  /* Conic gradient slowly rotating + radial blobs blending in.   */
+  /* Reads as a constantly-shifting "northern lights" wash.        */
+  /* ──────────────────────────────────────────────────────────── */
+  .v2 .variant__hero {
+    background: var(--ink);
+    overflow: hidden;
+  }
+  .v2__mesh {
+    position: absolute; inset: -20%;
+    background:
+      radial-gradient(at 20% 30%, var(--cyan) 0%, transparent 45%),
+      radial-gradient(at 80% 20%, #6366f1 0%, transparent 45%),
+      radial-gradient(at 40% 80%, #ec4899 0%, transparent 45%),
+      radial-gradient(at 90% 70%, var(--cyan-deep) 0%, transparent 45%);
+    opacity: .65;
+    filter: blur(40px);
+    animation: meshSlow 18s ease-in-out infinite;
+    will-change: transform;
+  }
+  @keyframes meshSlow {
+    0%, 100% { transform: rotate(0deg) scale(1); }
+    33%      { transform: rotate(8deg) scale(1.08); }
+    66%      { transform: rotate(-6deg) scale(1.04); }
+  }
+
+  /* ──────────────────────────────────────────────────────────── */
+  /* 3 · CONSTELLATION                                            */
+  /* Floating dots connected by thin lines — feels like ideas     */
+  /* connecting. Pure CSS dots, SVG lines for structure.          */
+  /* ──────────────────────────────────────────────────────────── */
+  .v3 .variant__hero {
+    background:
+      radial-gradient(circle at 30% 50%, rgba(18,196,227,.08) 0%, transparent 60%),
+      linear-gradient(180deg, var(--cream-1), var(--cream-2));
+  }
+  .v3__svg {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+  }
+  .v3__dot { fill: var(--cyan); }
+  .v3__line { stroke: var(--cyan); stroke-width: 1; opacity: .25; }
+  .v3__dot--a { animation: drift-a 14s ease-in-out infinite; }
+  .v3__dot--b { animation: drift-b 18s ease-in-out infinite; }
+  .v3__dot--c { animation: drift-c 12s ease-in-out infinite; }
+  .v3__dot--d { animation: drift-d 16s ease-in-out infinite; }
+  .v3__dot--e { animation: drift-e 20s ease-in-out infinite; }
+  @keyframes drift-a { 0%,100% { transform: translate(0,0); } 50% { transform: translate(20px,15px); } }
+  @keyframes drift-b { 0%,100% { transform: translate(0,0); } 50% { transform: translate(-25px,18px); } }
+  @keyframes drift-c { 0%,100% { transform: translate(0,0); } 50% { transform: translate(15px,-20px); } }
+  @keyframes drift-d { 0%,100% { transform: translate(0,0); } 50% { transform: translate(-18px,-12px); } }
+  @keyframes drift-e { 0%,100% { transform: translate(0,0); } 50% { transform: translate(22px,-10px); } }
+
+  /* ──────────────────────────────────────────────────────────── */
+  /* 4 · INK / FLOWING LINES                                      */
+  /* SVG paths drawing themselves slowly — feels like handwriting */
+  /* / drafts forming. Most "journal-y" of the bunch.             */
+  /* ──────────────────────────────────────────────────────────── */
+  .v4 .variant__hero {
+    background: var(--paper);
+  }
+  .v4__svg {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+  }
+  .v4__path {
+    fill: none;
+    stroke: var(--cyan);
+    stroke-width: 1.5;
+    opacity: .35;
+    stroke-dasharray: 1200;
+    stroke-dashoffset: 1200;
+    animation: drawPath 8s ease-in-out infinite;
+  }
+  .v4__path--2 { animation-delay: 2.5s; opacity: .25; stroke: var(--cyan-deep); }
+  .v4__path--3 { animation-delay: 5s; opacity: .2; stroke: #f0c570; }
+  @keyframes drawPath {
+    0%   { stroke-dashoffset: 1200; }
+    40%  { stroke-dashoffset: 0; opacity: .35; }
+    70%  { stroke-dashoffset: 0; opacity: .35; }
+    100% { stroke-dashoffset: -1200; opacity: 0; }
+  }
+
+  /* ──────────────────────────────────────────────────────────── */
+  /* 5 · SPARKS / TWINKLING DOTS                                  */
+  /* Small dots fade-in/out at random intervals — matches the     */
+  /* "Daily Spark" brand metaphor literally.                      */
+  /* ──────────────────────────────────────────────────────────── */
+  .v5 .variant__hero {
+    background: linear-gradient(180deg, var(--ink) 0%, #1a1d24 100%);
+  }
+  .v5__sparks { position: absolute; inset: 0; pointer-events: none; }
+  .v5__spark {
+    position: absolute;
+    width: 4px; height: 4px;
+    background: var(--cyan);
+    border-radius: 50%;
+    box-shadow: 0 0 12px var(--cyan), 0 0 4px var(--cyan);
+    opacity: 0;
+    animation: twinkle 4s ease-in-out infinite;
+  }
+  /* Hand-placed for visual interest. */
+  .v5__spark:nth-child(1)  { top: 12%; left: 18%; animation-delay: 0s; }
+  .v5__spark:nth-child(2)  { top: 28%; left: 72%; animation-delay: .8s; }
+  .v5__spark:nth-child(3)  { top: 8%;  left: 55%; animation-delay: 1.4s; }
+  .v5__spark:nth-child(4)  { top: 78%; left: 22%; animation-delay: 2s; }
+  .v5__spark:nth-child(5)  { top: 65%; left: 88%; animation-delay: 2.6s; }
+  .v5__spark:nth-child(6)  { top: 38%; left: 8%;  animation-delay: 3.2s; }
+  .v5__spark:nth-child(7)  { top: 88%; left: 60%; animation-delay: .4s; }
+  .v5__spark:nth-child(8)  { top: 18%; left: 90%; animation-delay: 1.2s; }
+  .v5__spark:nth-child(9)  { top: 48%; left: 38%; animation-delay: 2.4s; }
+  .v5__spark:nth-child(10) { top: 72%; left: 50%; animation-delay: 3.6s; }
+  .v5__spark:nth-child(11) { top: 22%; left: 35%; animation-delay: 1.8s; }
+  .v5__spark:nth-child(12) { top: 58%; left: 15%; animation-delay: 3s; }
+  @keyframes twinkle {
+    0%, 100% { opacity: 0; transform: scale(.5); }
+    50%      { opacity: .9; transform: scale(1); }
+  }
+
+  /* ──────────────────────────────────────────────────────────── */
+  /* 6 · ANIMATED GRID / GRAPH PAPER                              */
+  /* Subtle grid lines pulse / fade — references the journal     */
+  /* notebook ruled-page feel without being literal.              */
+  /* ──────────────────────────────────────────────────────────── */
+  .v6 .variant__hero {
+    background: var(--paper);
+    position: relative;
+  }
+  .v6__grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(18,196,227,.12) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(18,196,227,.12) 1px, transparent 1px);
+    background-size: 48px 48px;
+    animation: gridShift 20s linear infinite;
+    mask-image: radial-gradient(circle at 50% 50%, #000 0%, #000 50%, transparent 90%);
+    -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 0%, #000 50%, transparent 90%);
+  }
+  @keyframes gridShift {
+    from { background-position: 0 0; }
+    to   { background-position: 48px 48px; }
+  }
+  .v6__pulse {
+    position: absolute;
+    width: 600px; height: 600px;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    border: 1px solid rgba(18,196,227,.35);
+    opacity: 0;
+    animation: pulseRing 4s ease-out infinite;
+  }
+  .v6__pulse--2 { animation-delay: 1.3s; }
+  .v6__pulse--3 { animation-delay: 2.6s; }
+  @keyframes pulseRing {
+    0%   { transform: translate(-50%, -50%) scale(.3); opacity: 0; }
+    20%  { opacity: .7; }
+    100% { transform: translate(-50%, -50%) scale(1.1); opacity: 0; }
+  }
+
+  /* ──────────────────────────────────────────────────────────── */
+  /* 7 · LIQUID / WAVE                                            */
+  /* SVG curves that morph slowly — calm & flowing.               */
+  /* ──────────────────────────────────────────────────────────── */
+  .v7 .variant__hero {
+    background: linear-gradient(180deg, var(--cream-1), var(--cream-2));
+    overflow: hidden;
+  }
+  .v7__wave {
+    position: absolute;
+    bottom: -10%;
+    left: -10%;
+    width: 120%;
+    height: 60%;
+  }
+  .v7__wave path {
+    fill: var(--cyan);
+    opacity: .12;
+  }
+  .v7__wave--back path { fill: var(--cyan); opacity: .18; }
+  .v7__wave--mid  path { fill: var(--cyan); opacity: .22; }
+  .v7__wave--front path { fill: var(--cyan); opacity: .35; }
+
+  .v7__wave--back  { animation: waveSlide 14s ease-in-out infinite; }
+  .v7__wave--mid   { animation: waveSlide 11s ease-in-out infinite reverse; }
+  .v7__wave--front { animation: waveSlide 9s  ease-in-out infinite; }
+  @keyframes waveSlide {
+    0%, 100% { transform: translateX(0); }
+    50%      { transform: translateX(60px); }
+  }
+
+  /* ──────────────────────────────────────────────────────────── */
+  /* 8 · DRIFTING WORDS                                           */
+  /* Words from journaling prompts float past slowly — most       */
+  /* on-brand for a journaling app.                               */
+  /* ──────────────────────────────────────────────────────────── */
+  .v8 .variant__hero {
+    background: linear-gradient(180deg, var(--cream-1) 0%, var(--cream-2) 100%);
+    overflow: hidden;
+  }
+  .v8__words { position: absolute; inset: 0; pointer-events: none; }
+  .v8__word {
+    position: absolute;
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem;
+    font-style: italic;
+    color: rgba(13,155,181,.35);
+    white-space: nowrap;
+    will-change: transform;
+  }
+  .v8__word:nth-child(1)  { top: 8%;  font-size: .875rem; animation: drift-l 28s linear infinite; animation-delay: 0s; }
+  .v8__word:nth-child(2)  { top: 22%; font-size: 1.125rem; animation: drift-l 32s linear infinite; animation-delay: -7s; opacity: .55; }
+  .v8__word:nth-child(3)  { top: 38%; font-size: .9375rem; animation: drift-r 30s linear infinite; animation-delay: -3s; }
+  .v8__word:nth-child(4)  { top: 60%; font-size: 1.25rem; animation: drift-l 36s linear infinite; animation-delay: -12s; opacity: .45; }
+  .v8__word:nth-child(5)  { top: 75%; font-size: 1rem;    animation: drift-r 34s linear infinite; animation-delay: -5s; }
+  .v8__word:nth-child(6)  { top: 88%; font-size: .875rem; animation: drift-l 40s linear infinite; animation-delay: -18s; opacity: .55; }
+  .v8__word:nth-child(7)  { top: 50%; font-size: .9375rem; animation: drift-r 26s linear infinite; animation-delay: -10s; opacity: .35; }
+  @keyframes drift-l {
+    from { transform: translateX(110%); }
+    to   { transform: translateX(-100%); }
+  }
+  @keyframes drift-r {
+    from { transform: translateX(-100%); }
+    to   { transform: translateX(110%); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: .01s !important;
+      animation-iteration-count: 1 !important;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="lab-header">
+  <h1>Marketing hero — animated background variants</h1>
+  <p>Eight directions for a hero-section background. Same headline / sub / CTA in each, so you can compare the energy of each animation against identical content. All use the brand cyan + warm cream palette and respect <code>prefers-reduced-motion</code>.</p>
+</div>
+
+<div class="grid">
+
+  <!-- ── 1 · Floating orbs ─────────────────────────────────── -->
+  <div class="variant v1">
+    <div class="variant__label">1 · Floating gradient orbs <small>calm · spa-like · most popular SaaS pattern</small></div>
+    <div class="variant__hero">
+      <div class="v1__orbs">
+        <div class="v1__orb v1__orb--a"></div>
+        <div class="v1__orb v1__orb--b"></div>
+        <div class="v1__orb v1__orb--c"></div>
+      </div>
+      <div class="hero-content">
+        <span class="hero-eyebrow">Creator Companion</span>
+        <h1 class="hero-title">A journal for the work you keep showing up to.</h1>
+        <p class="hero-sub">Capture small wins, track the streak that builds your craft, and keep your private notes safe — for as long as you keep creating.</p>
+        <button class="hero-cta">Start writing today →</button>
+      </div>
+    </div>
+    <div class="variant__desc"><strong>Three blurred radial blobs</strong> drift in slow loops — cyan, gold, blush. The blur softens them into atmosphere. Most familiar pattern (think Linear, Vercel, Stripe). Calm without being cold. <em>Verdict: safe + on-brand.</em></div>
+  </div>
+
+  <!-- ── 2 · Animated mesh gradient ────────────────────────── -->
+  <div class="variant v2">
+    <div class="variant__label">2 · Animated mesh gradient (dark) <small>moody · premium · "northern lights"</small></div>
+    <div class="variant__hero">
+      <div class="v2__mesh"></div>
+      <div class="hero-content hero--dark">
+        <span class="hero-eyebrow">Creator Companion</span>
+        <h1 class="hero-title">A journal for the work you keep showing up to.</h1>
+        <p class="hero-sub">Capture small wins, track the streak that builds your craft, and keep your private notes safe — for as long as you keep creating.</p>
+        <button class="hero-cta">Start writing today →</button>
+      </div>
+    </div>
+    <div class="variant__desc"><strong>Layered radial gradients on a dark base</strong>, slowly rotating + scaling. Cyan + indigo + pink blend into an aurora-like wash. Most "premium product" feel — currently very on-trend (think Vercel's deploy page, Replicate). <em>Verdict: most striking, highest contrast with the cyan brand mark.</em></div>
+  </div>
+
+  <!-- ── 3 · Constellation ─────────────────────────────────── -->
+  <div class="variant v3">
+    <div class="variant__label">3 · Constellation <small>thoughtful · networked · "ideas connecting"</small></div>
+    <div class="variant__hero">
+      <svg class="v3__svg" viewBox="0 0 1200 480" preserveAspectRatio="none">
+        <line class="v3__line" x1="120" y1="80"  x2="320" y2="180"/>
+        <line class="v3__line" x1="320" y1="180" x2="540" y2="100"/>
+        <line class="v3__line" x1="540" y1="100" x2="780" y2="220"/>
+        <line class="v3__line" x1="780" y1="220" x2="980" y2="120"/>
+        <line class="v3__line" x1="320" y1="180" x2="280" y2="380"/>
+        <line class="v3__line" x1="280" y1="380" x2="600" y2="400"/>
+        <line class="v3__line" x1="600" y1="400" x2="780" y2="220"/>
+        <line class="v3__line" x1="780" y1="220" x2="900" y2="380"/>
+        <line class="v3__line" x1="900" y1="380" x2="600" y2="400"/>
+        <circle class="v3__dot v3__dot--a" cx="120"  cy="80"  r="4"/>
+        <circle class="v3__dot v3__dot--b" cx="320"  cy="180" r="5"/>
+        <circle class="v3__dot v3__dot--c" cx="540"  cy="100" r="3"/>
+        <circle class="v3__dot v3__dot--d" cx="780"  cy="220" r="6"/>
+        <circle class="v3__dot v3__dot--e" cx="980"  cy="120" r="4"/>
+        <circle class="v3__dot v3__dot--a" cx="280"  cy="380" r="3"/>
+        <circle class="v3__dot v3__dot--b" cx="600"  cy="400" r="5"/>
+        <circle class="v3__dot v3__dot--c" cx="900"  cy="380" r="4"/>
+      </svg>
+      <div class="hero-content">
+        <span class="hero-eyebrow">Creator Companion</span>
+        <h1 class="hero-title">A journal for the work you keep showing up to.</h1>
+        <p class="hero-sub">Capture small wins, track the streak that builds your craft, and keep your private notes safe — for as long as you keep creating.</p>
+        <button class="hero-cta">Start writing today →</button>
+      </div>
+    </div>
+    <div class="variant__desc"><strong>SVG dots connected by faint lines</strong>, gently drifting. Reads as "ideas connecting" — fits the journaling-as-thinking metaphor. Subtle enough not to compete with the headline. <em>Verdict: thoughtful, slightly intellectual. Could feel "B2B SaaS" if not careful.</em></div>
+  </div>
+
+  <!-- ── 4 · Ink / flowing lines ───────────────────────────── -->
+  <div class="variant v4">
+    <div class="variant__label">4 · Ink / flowing lines <small>journal-y · handwritten · contemplative</small></div>
+    <div class="variant__hero">
+      <svg class="v4__svg" viewBox="0 0 1200 480" preserveAspectRatio="none">
+        <path class="v4__path" d="M -50 240 Q 200 80, 400 220 T 800 200 T 1250 240"/>
+        <path class="v4__path v4__path--2" d="M -50 320 Q 250 200, 500 320 T 900 280 T 1250 340"/>
+        <path class="v4__path v4__path--3" d="M -50 160 Q 300 360, 550 180 T 950 220 T 1250 140"/>
+      </svg>
+      <div class="hero-content">
+        <span class="hero-eyebrow">Creator Companion</span>
+        <h1 class="hero-title">A journal for the work you keep showing up to.</h1>
+        <p class="hero-sub">Capture small wins, track the streak that builds your craft, and keep your private notes safe — for as long as you keep creating.</p>
+        <button class="hero-cta">Start writing today →</button>
+      </div>
+    </div>
+    <div class="variant__desc"><strong>SVG curves draw themselves</strong> as if a pen is moving across paper, then fade. Looped staggered so there's always one mid-stroke. Most literally "journal-y" of the set. <em>Verdict: most distinctive, hardest to get right (timing matters). Strongest brand match.</em></div>
+  </div>
+
+  <!-- ── 5 · Twinkling sparks ──────────────────────────────── -->
+  <div class="variant v5">
+    <div class="variant__label">5 · Twinkling sparks (dark) <small>literal "Daily Spark" metaphor · cinematic</small></div>
+    <div class="variant__hero">
+      <div class="v5__sparks">
+        <span class="v5__spark"></span><span class="v5__spark"></span><span class="v5__spark"></span>
+        <span class="v5__spark"></span><span class="v5__spark"></span><span class="v5__spark"></span>
+        <span class="v5__spark"></span><span class="v5__spark"></span><span class="v5__spark"></span>
+        <span class="v5__spark"></span><span class="v5__spark"></span><span class="v5__spark"></span>
+      </div>
+      <div class="hero-content hero--dark">
+        <span class="hero-eyebrow">Creator Companion</span>
+        <h1 class="hero-title">A journal for the work you keep showing up to.</h1>
+        <p class="hero-sub">Capture small wins, track the streak that builds your craft, and keep your private notes safe — for as long as you keep creating.</p>
+        <button class="hero-cta">Start writing today →</button>
+      </div>
+    </div>
+    <div class="variant__desc"><strong>Tiny cyan dots twinkle in / out</strong> at staggered intervals against a dark background. Literal nod to the "Daily Spark" feature. Cinematic — feels like you're sitting in front of a starfield about to write. <em>Verdict: most playful, ties the brand language together visually.</em></div>
+  </div>
+
+  <!-- ── 6 · Animated grid + pulse rings ──────────────────── -->
+  <div class="variant v6">
+    <div class="variant__label">6 · Graph paper + pulse rings <small>structured · tech-leaning · "ruled paper"</small></div>
+    <div class="variant__hero">
+      <div class="v6__grid"></div>
+      <div class="v6__pulse"></div>
+      <div class="v6__pulse v6__pulse--2"></div>
+      <div class="v6__pulse v6__pulse--3"></div>
+      <div class="hero-content">
+        <span class="hero-eyebrow">Creator Companion</span>
+        <h1 class="hero-title">A journal for the work you keep showing up to.</h1>
+        <p class="hero-sub">Capture small wins, track the streak that builds your craft, and keep your private notes safe — for as long as you keep creating.</p>
+        <button class="hero-cta">Start writing today →</button>
+      </div>
+    </div>
+    <div class="variant__desc"><strong>Graph-paper grid drifts diagonally</strong> with concentric rings pulsing out from the centre. Visual reference to a notebook page with attention emanating outward. Slightly more techy / engineered. <em>Verdict: distinctive but tilts toward "developer tool" rather than "creative practice."</em></div>
+  </div>
+
+  <!-- ── 7 · Liquid waves ─────────────────────────────────── -->
+  <div class="variant v7">
+    <div class="variant__label">7 · Liquid waves <small>flowing · meditative · low-key</small></div>
+    <div class="variant__hero">
+      <svg class="v7__wave v7__wave--back" viewBox="0 0 1200 300" preserveAspectRatio="none">
+        <path d="M0,150 C300,80 600,220 900,150 C1050,115 1150,180 1200,150 L1200,300 L0,300 Z"/>
+      </svg>
+      <svg class="v7__wave v7__wave--mid" viewBox="0 0 1200 300" preserveAspectRatio="none">
+        <path d="M0,180 C200,120 500,250 800,180 C1000,135 1100,200 1200,180 L1200,300 L0,300 Z"/>
+      </svg>
+      <svg class="v7__wave v7__wave--front" viewBox="0 0 1200 300" preserveAspectRatio="none">
+        <path d="M0,220 C250,160 550,290 850,220 C1050,180 1100,240 1200,220 L1200,300 L0,300 Z"/>
+      </svg>
+      <div class="hero-content">
+        <span class="hero-eyebrow">Creator Companion</span>
+        <h1 class="hero-title">A journal for the work you keep showing up to.</h1>
+        <p class="hero-sub">Capture small wins, track the streak that builds your craft, and keep your private notes safe — for as long as you keep creating.</p>
+        <button class="hero-cta">Start writing today →</button>
+      </div>
+    </div>
+    <div class="variant__desc"><strong>Three layered SVG waves</strong> at the bottom edge, each shifting horizontally at different speeds. Low-key, calm, breathes. Gives the hero "ground" without dominating. <em>Verdict: subtle. Pairs well with photography or product screenshots above the fold.</em></div>
+  </div>
+
+  <!-- ── 8 · Drifting prompt words ────────────────────────── -->
+  <div class="variant v8">
+    <div class="variant__label">8 · Drifting prompt words <small>most on-brand for journaling · poetic</small></div>
+    <div class="variant__hero">
+      <div class="v8__words">
+        <span class="v8__word">What did you almost write but didn't?</span>
+        <span class="v8__word">What surprised you this week?</span>
+        <span class="v8__word">Describe something small you noticed.</span>
+        <span class="v8__word">What's been on your mind?</span>
+        <span class="v8__word">What did you make today?</span>
+        <span class="v8__word">What pulled you out of your process?</span>
+        <span class="v8__word">What's a small win from this week?</span>
+      </div>
+      <div class="hero-content">
+        <span class="hero-eyebrow">Creator Companion</span>
+        <h1 class="hero-title">A journal for the work you keep showing up to.</h1>
+        <p class="hero-sub">Capture small wins, track the streak that builds your craft, and keep your private notes safe — for as long as you keep creating.</p>
+        <button class="hero-cta">Start writing today →</button>
+      </div>
+    </div>
+    <div class="variant__desc"><strong>Real journaling prompts drift past</strong> in italics, slowly, at varying speeds and opacities. Background = product. Most "this app is for me" feeling. Subtle but immediate brand tell. <em>Verdict: most unique, most clearly tied to what the product actually does.</em></div>
+  </div>
+
+</div>
+
+</body>
+</html>

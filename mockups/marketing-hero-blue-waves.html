@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Marketing hero — slow blue wave variants</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --ink: #0c0e13;
+    --cyan: #12C4E3;
+    --cyan-deep: #0d9bb5;
+    --cyan-soft: rgba(18,196,227,.18);
+    --paper: #faf8f4;
+    --cream-1: #fdfaf2;
+    --cream-2: #f6f1e6;
+    --line: #ebe7df;
+    --text: #1a1d24;
+    --text-2: #5d6470;
+  }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: #ebe7df;
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    padding: 2rem 1rem 4rem;
+  }
+
+  .lab-header { max-width: 1280px; margin: 0 auto 2rem; }
+  .lab-header h1 { font-size: 1.75rem; font-weight: 800; letter-spacing: -.01em; margin-bottom: .375rem; }
+  .lab-header p { color: var(--text-2); line-height: 1.6; max-width: 740px; }
+
+  .grid {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
+
+  .variant {
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 30px 60px -30px rgba(0,0,0,.25);
+    background: white;
+  }
+  .variant__label {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: .875rem 1.25rem;
+    background: rgba(0,0,0,.03);
+    border-bottom: 1px solid rgba(0,0,0,.06);
+    font-size: .8125rem; font-weight: 600;
+  }
+  .variant__label small { font-weight: 500; color: var(--text-2); }
+  .variant__hero {
+    position: relative;
+    height: 480px;
+    overflow: hidden;
+    isolation: isolate;
+  }
+  .variant__desc {
+    padding: 1rem 1.25rem;
+    background: rgba(0,0,0,.02);
+    border-top: 1px solid rgba(0,0,0,.06);
+    font-size: .8125rem;
+    color: var(--text-2);
+    line-height: 1.55;
+  }
+  .variant__desc strong { color: var(--text); font-weight: 600; }
+
+  /* ── Hero content ────────────────────────────────────────────── */
+  .hero-content {
+    position: relative; z-index: 10;
+    height: 100%;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 2.5rem 2rem;
+    text-align: center;
+  }
+  .hero-eyebrow {
+    display: inline-flex; align-items: center; gap: .5rem;
+    font-size: .6875rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .18em;
+    color: var(--cyan);
+    margin-bottom: 1.25rem;
+  }
+  .hero-eyebrow::before {
+    content: ''; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--cyan); box-shadow: 0 0 12px var(--cyan);
+  }
+  .hero-title {
+    font-size: clamp(2rem, 4.5vw, 3.5rem);
+    font-weight: 800;
+    letter-spacing: -.025em;
+    line-height: 1.05;
+    color: var(--ink);
+    margin-bottom: 1rem;
+    max-width: 720px;
+  }
+  .hero-sub {
+    font-size: 1.0625rem; line-height: 1.55;
+    color: var(--text-2);
+    max-width: 540px; margin-bottom: 1.75rem;
+  }
+  .hero-cta {
+    display: inline-flex; align-items: center; gap: .5rem;
+    background: var(--ink); color: #fff;
+    padding: .875rem 1.5rem;
+    border: none; border-radius: 999px;
+    font-family: inherit; font-size: .9375rem; font-weight: 600;
+    cursor: pointer;
+    transition: background .15s, transform .15s;
+  }
+  .hero-cta:hover {
+    background: var(--cyan); color: var(--ink);
+    transform: translateY(-1px);
+  }
+
+  /* ──────────────────────────────────────────────────────────── */
+  /* W1 · Stacked horizontal waves (full-width, layered)         */
+  /* Long horizontal wave bands stretched across the hero, each  */
+  /* drifting at a different speed. Calm, ambient, ocean-like.   */
+  /* ──────────────────────────────────────────────────────────── */
+  .w1 .variant__hero {
+    background: linear-gradient(180deg, var(--cream-1), var(--cream-2));
+  }
+  .w1__wave {
+    position: absolute; left: -10%; width: 120%;
+    height: 100%;
+    pointer-events: none;
+  }
+  .w1__wave path { fill: var(--cyan); }
+
+  .w1__wave--1 { top: 0;    opacity: .08; animation: waveSlideX 22s ease-in-out infinite; }
+  .w1__wave--2 { top: 12%;  opacity: .12; animation: waveSlideX 28s ease-in-out infinite reverse; }
+  .w1__wave--3 { top: 28%;  opacity: .15; animation: waveSlideX 32s ease-in-out infinite; }
+  .w1__wave--4 { top: 50%;  opacity: .18; animation: waveSlideX 26s ease-in-out infinite reverse; }
+  .w1__wave--5 { top: 72%;  opacity: .22; animation: waveSlideX 34s ease-in-out infinite; }
+
+  @keyframes waveSlideX {
+    0%, 100% { transform: translateX(0); }
+    50%      { transform: translateX(-90px); }
+  }
+
+  /* ──────────────────────────────────────────────────────────── */
+  /* W2 · Single morphing liquid blob                            */
+  /* One big SVG path slowly morphing between two states. Reads  */
+  /* as a calm, breathing fluid shape. Single dominant element.  */
+  /* ──────────────────────────────────────────────────────────── */
+  .w2 .variant__hero {
+    background: var(--paper);
+  }
+  .w2__blob {
+    position: absolute;
+    inset: -10%;
+    width: 120%; height: 120%;
+    opacity: .35;
+  }
+  .w2__blob path {
+    fill: var(--cyan);
+    animation: blobMorph 16s ease-in-out infinite;
+    transform-origin: center;
+  }
+  @keyframes blobMorph {
+    0%, 100% {
+      d: path('M 460 200 C 600 140, 780 180, 820 320 C 860 460, 700 540, 540 500 C 380 460, 320 320, 380 240 C 410 200, 430 215, 460 200 Z');
+    }
+    50% {
+      d: path('M 480 240 C 640 180, 800 240, 800 380 C 800 520, 640 540, 480 480 C 320 420, 320 280, 380 220 C 420 180, 460 230, 480 240 Z');
+    }
+  }
+  /* Fallback animation for browsers without `d` interpolation:
+     scale + translate gives a similar breathing feel. */
+  @supports not (d: path('M0,0')) {
+    .w2__blob path { animation: blobBreathe 16s ease-in-out infinite; }
+  }
+  @keyframes blobBreathe {
+    0%, 100% { transform: scale(1) translate(0, 0); }
+    50%      { transform: scale(1.08) translate(20px, -10px); }
+  }
+
+  /* ──────────────────────────────────────────────────────────── */
+  /* W3 · Topographic / contour lines                            */
+  /* Stacked thin SVG curves at different opacities — reads like */
+  /* a map's contour lines. Most "design-magazine" feel.         */
+  /* ──────────────────────────────────────────────────────────── */
+  .w3 .variant__hero {
+    background: var(--paper);
+  }
+  .w3__svg {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+  }
+  .w3__line {
+    fill: none; stroke: var(--cyan); stroke-width: 1.5;
+    will-change: transform;
+  }
+  .w3__line--1 { opacity: .12; animation: lineShift 20s ease-in-out infinite; }
+  .w3__line--2 { opacity: .16; animation: lineShift 22s ease-in-out infinite reverse; }
+  .w3__line--3 { opacity: .20; animation: lineShift 24s ease-in-out infinite; }
+  .w3__line--4 { opacity: .25; animation: lineShift 26s ease-in-out infinite reverse; }
+  .w3__line--5 { opacity: .30; animation: lineShift 28s ease-in-out infinite; }
+  .w3__line--6 { opacity: .35; animation: lineShift 30s ease-in-out infinite reverse; }
+  @keyframes lineShift {
+    0%, 100% { transform: translateX(0); }
+    50%      { transform: translateX(-50px); }
+  }
+
+  /* ──────────────────────────────────────────────────────────── */
+  /* W4 · Vertical wave ribbons                                  */
+  /* Two flowing vertical ribbons cascade top-to-bottom. Most   */
+  /* dynamic of the bunch — feels alive without being busy.     */
+  /* ──────────────────────────────────────────────────────────── */
+  .w4 .variant__hero {
+    background: linear-gradient(180deg, var(--cream-1), var(--cream-2));
+  }
+  .w4__ribbon {
+    position: absolute; top: -10%;
+    width: 220px; height: 120%;
+    pointer-events: none;
+  }
+  .w4__ribbon path {
+    fill: var(--cyan);
+    opacity: .14;
+  }
+  .w4__ribbon--1 { left: 8%;  animation: ribbonSway 18s ease-in-out infinite; }
+  .w4__ribbon--2 { right: 12%; animation: ribbonSway 22s ease-in-out infinite reverse; opacity: .9; }
+  .w4__ribbon--2 path { opacity: .2; }
+  .w4__ribbon--3 { left: 50%; transform: translateX(-50%); animation: ribbonSway 28s ease-in-out infinite; }
+  .w4__ribbon--3 path { opacity: .08; }
+  @keyframes ribbonSway {
+    0%, 100% { transform: translateX(0) rotate(0deg); }
+    50%      { transform: translateX(40px) rotate(2deg); }
+  }
+  .w4__ribbon--3 {
+    /* override for centered ribbon */
+    animation: ribbonSwayCentered 28s ease-in-out infinite;
+  }
+  @keyframes ribbonSwayCentered {
+    0%, 100% { transform: translateX(-50%) rotate(0deg); }
+    50%      { transform: translateX(calc(-50% + 30px)) rotate(-2deg); }
+  }
+
+  /* ──────────────────────────────────────────────────────────── */
+  /* W5 · Sine wave field (grid of horizontal sines)             */
+  /* Many short wave segments tile across the area, each with a */
+  /* slightly different phase. Like a flag rippling.             */
+  /* ──────────────────────────────────────────────────────────── */
+  .w5 .variant__hero {
+    background: linear-gradient(180deg, #f6fafd, var(--cream-2));
+  }
+  .w5__svg {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+  }
+  .w5__sine { fill: none; stroke: var(--cyan); stroke-width: 1; opacity: .35; }
+  .w5__group { will-change: transform; }
+  .w5__group--a { animation: sineSlide 18s linear infinite; }
+  .w5__group--b { animation: sineSlide 24s linear infinite reverse; }
+  @keyframes sineSlide {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-120px); }
+  }
+
+  /* ──────────────────────────────────────────────────────────── */
+  /* W6 · Single big breathing wave                              */
+  /* One large arc fills the lower half, rising + falling.      */
+  /* Quiet, anchored — gives the hero "ground" without busy.    */
+  /* ──────────────────────────────────────────────────────────── */
+  .w6 .variant__hero {
+    background: var(--paper);
+  }
+  .w6__wave {
+    position: absolute;
+    bottom: 0; left: -10%;
+    width: 120%; height: 70%;
+    pointer-events: none;
+    animation: waveBreathe 12s ease-in-out infinite;
+    transform-origin: bottom center;
+  }
+  .w6__wave path {
+    fill: var(--cyan);
+    opacity: .2;
+  }
+  .w6__wave--accent {
+    animation: waveBreathe 12s ease-in-out infinite reverse;
+    height: 50%;
+  }
+  .w6__wave--accent path { fill: var(--cyan-deep); opacity: .12; }
+  @keyframes waveBreathe {
+    0%, 100% { transform: scaleY(1) translateY(0); }
+    50%      { transform: scaleY(1.08) translateY(-12px); }
+  }
+
+  /* ──────────────────────────────────────────────────────────── */
+  /* W7 · Wave + glow on dark                                    */
+  /* Same layered-wave language as W1 but on a deep ink ground. */
+  /* The cyan glows. Most premium / nighttime feel.              */
+  /* ──────────────────────────────────────────────────────────── */
+  .w7 .variant__hero {
+    background: linear-gradient(180deg, #0a0d12 0%, #131820 100%);
+  }
+  .w7__glow {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 60% 50% at 50% 60%,
+      rgba(18,196,227,.25) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .w7__wave {
+    position: absolute; left: -10%; width: 120%;
+    height: 100%;
+    pointer-events: none;
+  }
+  .w7__wave path {
+    fill: none;
+    stroke: var(--cyan);
+    stroke-width: 1.5;
+    opacity: .55;
+    filter: drop-shadow(0 0 6px var(--cyan));
+  }
+  .w7__wave--1 { animation: waveSlideX 24s ease-in-out infinite; }
+  .w7__wave--2 { animation: waveSlideX 30s ease-in-out infinite reverse; }
+  .w7__wave--2 path { opacity: .35; }
+  .w7__wave--3 { animation: waveSlideX 36s ease-in-out infinite; }
+  .w7__wave--3 path { opacity: .22; }
+
+  .hero--dark .hero-title { color: #fff; }
+  .hero--dark .hero-sub { color: rgba(255,255,255,.6); }
+  .hero--dark .hero-cta { background: var(--cyan); color: var(--ink); }
+  .hero--dark .hero-cta:hover { background: #0bd2f0; }
+
+  /* ──────────────────────────────────────────────────────────── */
+  /* W8 · Marbled fluid                                          */
+  /* Slowly rotating conic gradient masked into wave-shaped     */
+  /* layers. Reads like marbled paper. Most "art object" feel.  */
+  /* ──────────────────────────────────────────────────────────── */
+  .w8 .variant__hero {
+    background: var(--cream-1);
+    overflow: hidden;
+  }
+  .w8__layer {
+    position: absolute;
+    inset: -30%;
+    background: conic-gradient(from 0deg at 50% 50%,
+      rgba(18,196,227,.0) 0deg,
+      rgba(18,196,227,.4) 90deg,
+      rgba(13,155,181,.5) 180deg,
+      rgba(18,196,227,.4) 270deg,
+      rgba(18,196,227,.0) 360deg);
+    filter: blur(90px);
+    will-change: transform;
+    animation: marbleSpin 40s linear infinite;
+  }
+  .w8__layer--2 {
+    animation: marbleSpin 60s linear infinite reverse;
+    opacity: .6;
+  }
+  @keyframes marbleSpin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: .01s !important;
+      animation-iteration-count: 1 !important;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="lab-header">
+  <h1>Marketing hero — slow blue wave variants</h1>
+  <p>Eight directions all built around <strong>slow-moving brand-cyan waves</strong>. Same headline / sub / CTA in each so you can compare animation against identical content. All cycle in the 12–40 second range so they read as ambient, not busy. Respects <code>prefers-reduced-motion</code>.</p>
+</div>
+
+<div class="grid">
+
+  <!-- ── W1 · Stacked horizontal waves ─────────────────────── -->
+  <div class="variant w1">
+    <div class="variant__label">W1 · Layered horizontal waves <small>ocean-calm · most familiar</small></div>
+    <div class="variant__hero">
+      <svg class="w1__wave w1__wave--1" viewBox="0 0 1200 480" preserveAspectRatio="none">
+        <path d="M0,80 C200,140 400,40 600,80 C800,120 1000,40 1200,80 L1200,480 L0,480 Z"/>
+      </svg>
+      <svg class="w1__wave w1__wave--2" viewBox="0 0 1200 480" preserveAspectRatio="none">
+        <path d="M0,140 C250,200 500,80 750,140 C950,180 1100,120 1200,140 L1200,480 L0,480 Z"/>
+      </svg>
+      <svg class="w1__wave w1__wave--3" viewBox="0 0 1200 480" preserveAspectRatio="none">
+        <path d="M0,220 C200,280 450,160 700,220 C900,260 1100,200 1200,220 L1200,480 L0,480 Z"/>
+      </svg>
+      <svg class="w1__wave w1__wave--4" viewBox="0 0 1200 480" preserveAspectRatio="none">
+        <path d="M0,300 C300,360 550,240 800,300 C1000,340 1100,280 1200,300 L1200,480 L0,480 Z"/>
+      </svg>
+      <svg class="w1__wave w1__wave--5" viewBox="0 0 1200 480" preserveAspectRatio="none">
+        <path d="M0,380 C200,420 500,340 750,380 C950,410 1100,360 1200,380 L1200,480 L0,480 Z"/>
+      </svg>
+      <div class="hero-content">
+        <span class="hero-eyebrow">Creator Companion</span>
+        <h1 class="hero-title">A journal for the work you keep showing up to.</h1>
+        <p class="hero-sub">Capture small wins, track the streak that builds your craft, and keep your private notes safe — for as long as you keep creating.</p>
+        <button class="hero-cta">Start writing today →</button>
+      </div>
+    </div>
+    <div class="variant__desc"><strong>Five wave bands stacked across the full hero</strong> at increasing opacities, drifting horizontally at different speeds (22s–34s). Reads as ocean-quiet — the eye sees motion without being able to track any single element. <em>Most universal of the set.</em></div>
+  </div>
+
+  <!-- ── W2 · Morphing liquid blob ─────────────────────────── -->
+  <div class="variant w2">
+    <div class="variant__label">W2 · Single morphing liquid blob <small>focal · breathing · sculptural</small></div>
+    <div class="variant__hero">
+      <svg class="w2__blob" viewBox="0 0 1200 480" preserveAspectRatio="xMidYMid slice">
+        <path d="M 460 200 C 600 140, 780 180, 820 320 C 860 460, 700 540, 540 500 C 380 460, 320 320, 380 240 C 410 200, 430 215, 460 200 Z"/>
+      </svg>
+      <div class="hero-content">
+        <span class="hero-eyebrow">Creator Companion</span>
+        <h1 class="hero-title">A journal for the work you keep showing up to.</h1>
+        <p class="hero-sub">Capture small wins, track the streak that builds your craft, and keep your private notes safe — for as long as you keep creating.</p>
+        <button class="hero-cta">Start writing today →</button>
+      </div>
+    </div>
+    <div class="variant__desc"><strong>One big amorphous shape</strong> slowly morphing between two states (16s loop). Most sculptural / focal — the blob behaves like a focal piece behind the headline rather than ambient texture. <em>Dialed back to .35 opacity so the morph reads as gentle breathing, not pulsing.</em></div>
+  </div>
+
+  <!-- ── W3 · Topographic contour lines ────────────────────── -->
+  <div class="variant w3">
+    <div class="variant__label">W3 · Topographic contour lines <small>cartographic · editorial</small></div>
+    <div class="variant__hero">
+      <svg class="w3__svg" viewBox="0 0 1200 480" preserveAspectRatio="none">
+        <path class="w3__line w3__line--1" d="M -50 60 C 200 20, 400 100, 650 60 S 1050 20, 1250 60"/>
+        <path class="w3__line w3__line--2" d="M -50 120 C 250 80, 450 160, 700 120 S 1100 80, 1250 120"/>
+        <path class="w3__line w3__line--3" d="M -50 180 C 200 140, 500 220, 750 180 S 1100 140, 1250 180"/>
+        <path class="w3__line w3__line--4" d="M -50 260 C 300 220, 550 300, 800 260 S 1100 220, 1250 260"/>
+        <path class="w3__line w3__line--5" d="M -50 340 C 250 300, 500 380, 750 340 S 1100 300, 1250 340"/>
+        <path class="w3__line w3__line--6" d="M -50 420 C 200 380, 450 460, 700 420 S 1100 380, 1250 420"/>
+      </svg>
+      <div class="hero-content">
+        <span class="hero-eyebrow">Creator Companion</span>
+        <h1 class="hero-title">A journal for the work you keep showing up to.</h1>
+        <p class="hero-sub">Capture small wins, track the streak that builds your craft, and keep your private notes safe — for as long as you keep creating.</p>
+        <button class="hero-cta">Start writing today →</button>
+      </div>
+    </div>
+    <div class="variant__desc"><strong>Six stroke-only wave lines</strong> stacked at increasing opacities, each shifting horizontally at its own speed (20s–30s). Reads like contour lines on a topographic map. <em>Most editorial / design-magazine of the set — pairs well with serif type if you ever introduce one.</em></div>
+  </div>
+
+  <!-- ── W4 · Vertical wave ribbons ───────────────────────── -->
+  <div class="variant w4">
+    <div class="variant__label">W4 · Vertical ribbons <small>flowing · top-to-bottom motion</small></div>
+    <div class="variant__hero">
+      <svg class="w4__ribbon w4__ribbon--1" viewBox="0 0 220 600" preserveAspectRatio="none">
+        <path d="M 110 0 C 60 100, 160 200, 110 300 C 60 400, 160 500, 110 600 L 220 600 L 220 0 Z"/>
+      </svg>
+      <svg class="w4__ribbon w4__ribbon--2" viewBox="0 0 220 600" preserveAspectRatio="none">
+        <path d="M 110 0 C 170 100, 50 200, 110 300 C 170 400, 50 500, 110 600 L 0 600 L 0 0 Z"/>
+      </svg>
+      <svg class="w4__ribbon w4__ribbon--3" viewBox="0 0 220 600" preserveAspectRatio="none">
+        <path d="M 110 0 C 70 100, 150 200, 110 300 C 70 400, 150 500, 110 600 L 220 600 L 220 0 Z"/>
+      </svg>
+      <div class="hero-content">
+        <span class="hero-eyebrow">Creator Companion</span>
+        <h1 class="hero-title">A journal for the work you keep showing up to.</h1>
+        <p class="hero-sub">Capture small wins, track the streak that builds your craft, and keep your private notes safe — for as long as you keep creating.</p>
+        <button class="hero-cta">Start writing today →</button>
+      </div>
+    </div>
+    <div class="variant__desc"><strong>Three flowing vertical ribbons</strong> running the full height of the hero, swaying side-to-side at different rates. Most dynamic of the wave variants — gives the hero a sense of "flow downward" toward the CTA. <em>Risk: can feel decorative if pushed too dense; current opacity (~.14) keeps it ambient.</em></div>
+  </div>
+
+  <!-- ── W5 · Sine wave field ─────────────────────────────── -->
+  <div class="variant w5">
+    <div class="variant__label">W5 · Sine wave field <small>scientific · rhythmic</small></div>
+    <div class="variant__hero">
+      <svg class="w5__svg" viewBox="0 0 1200 480" preserveAspectRatio="none">
+        <g class="w5__group w5__group--a">
+          <path class="w5__sine" d="M 0 80 q 30 -20 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0"/>
+          <path class="w5__sine" d="M 0 160 q 30 -20 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0"/>
+          <path class="w5__sine" d="M 0 240 q 30 -20 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0"/>
+        </g>
+        <g class="w5__group w5__group--b">
+          <path class="w5__sine" d="M 0 320 q 40 -20 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0"/>
+          <path class="w5__sine" d="M 0 400 q 40 -20 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0"/>
+        </g>
+      </svg>
+      <div class="hero-content">
+        <span class="hero-eyebrow">Creator Companion</span>
+        <h1 class="hero-title">A journal for the work you keep showing up to.</h1>
+        <p class="hero-sub">Capture small wins, track the streak that builds your craft, and keep your private notes safe — for as long as you keep creating.</p>
+        <button class="hero-cta">Start writing today →</button>
+      </div>
+    </div>
+    <div class="variant__desc"><strong>Repeated sine-wave strokes</strong> tiled across the area at two different scales. Two groups slide in opposite directions. Most rhythmic / mathematical — reads as "pulse / heartbeat." <em>Slightly more technical-feeling than the others.</em></div>
+  </div>
+
+  <!-- ── W6 · Single breathing wave ───────────────────────── -->
+  <div class="variant w6">
+    <div class="variant__label">W6 · Single breathing wave <small>most subtle · grounds the page</small></div>
+    <div class="variant__hero">
+      <svg class="w6__wave w6__wave--accent" viewBox="0 0 1200 320" preserveAspectRatio="none">
+        <path d="M0,180 C200,80 500,260 800,180 C1000,130 1100,200 1200,180 L1200,320 L0,320 Z"/>
+      </svg>
+      <svg class="w6__wave" viewBox="0 0 1200 320" preserveAspectRatio="none">
+        <path d="M0,140 C250,40 600,240 850,140 C1050,90 1100,160 1200,140 L1200,320 L0,320 Z"/>
+      </svg>
+      <div class="hero-content">
+        <span class="hero-eyebrow">Creator Companion</span>
+        <h1 class="hero-title">A journal for the work you keep showing up to.</h1>
+        <p class="hero-sub">Capture small wins, track the streak that builds your craft, and keep your private notes safe — for as long as you keep creating.</p>
+        <button class="hero-cta">Start writing today →</button>
+      </div>
+    </div>
+    <div class="variant__desc"><strong>Two stacked waves at the bottom of the hero</strong> breathing in/out (12s, scaleY animation). Most architecturally simple — gives the section "ground" and a slow pulse without animating the upper area at all. <em>The headline never has motion behind it. Most subtle.</em></div>
+  </div>
+
+  <!-- ── W7 · Wave + glow on dark ──────────────────────────── -->
+  <div class="variant w7">
+    <div class="variant__label">W7 · Wave + glow (dark) <small>premium · nighttime</small></div>
+    <div class="variant__hero">
+      <div class="w7__glow"></div>
+      <svg class="w7__wave w7__wave--1" viewBox="0 0 1200 480" preserveAspectRatio="none">
+        <path d="M-50 240 C 200 120, 400 360, 600 240 C 800 120, 1000 360, 1250 240"/>
+      </svg>
+      <svg class="w7__wave w7__wave--2" viewBox="0 0 1200 480" preserveAspectRatio="none">
+        <path d="M-50 300 C 250 180, 500 420, 750 300 C 950 200, 1100 360, 1250 300"/>
+      </svg>
+      <svg class="w7__wave w7__wave--3" viewBox="0 0 1200 480" preserveAspectRatio="none">
+        <path d="M-50 180 C 200 60, 500 300, 750 180 C 950 80, 1100 240, 1250 180"/>
+      </svg>
+      <div class="hero-content hero--dark">
+        <span class="hero-eyebrow">Creator Companion</span>
+        <h1 class="hero-title">A journal for the work you keep showing up to.</h1>
+        <p class="hero-sub">Capture small wins, track the streak that builds your craft, and keep your private notes safe — for as long as you keep creating.</p>
+        <button class="hero-cta">Start writing today →</button>
+      </div>
+    </div>
+    <div class="variant__desc"><strong>Stroke-only waves with a CSS drop-shadow glow</strong> on a deep ink ground. The cyan literally glows. Premium / nighttime-app feel — most striking for a hero shot, but commits the rest of the page to handling a transition out of dark. <em>Pairs well with light product screenshots below.</em></div>
+  </div>
+
+  <!-- ── W8 · Marbled fluid ───────────────────────────────── -->
+  <div class="variant w8">
+    <div class="variant__label">W8 · Marbled fluid <small>art-object · slowest</small></div>
+    <div class="variant__hero">
+      <div class="w8__layer"></div>
+      <div class="w8__layer w8__layer--2"></div>
+      <div class="hero-content">
+        <span class="hero-eyebrow">Creator Companion</span>
+        <h1 class="hero-title">A journal for the work you keep showing up to.</h1>
+        <p class="hero-sub">Capture small wins, track the streak that builds your craft, and keep your private notes safe — for as long as you keep creating.</p>
+        <button class="hero-cta">Start writing today →</button>
+      </div>
+    </div>
+    <div class="variant__desc"><strong>Two heavily-blurred conic gradients</strong> rotating very slowly (40s + 60s reverse). No literal wave shapes — instead the cyan washes around the page like marbled paper. <em>Smoothest motion of the set; reads as "atmosphere" rather than "graphic."</em></div>
+  </div>
+
+</div>
+
+</body>
+</html>
