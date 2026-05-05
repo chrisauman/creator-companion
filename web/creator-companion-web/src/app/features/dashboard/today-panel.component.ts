@@ -159,10 +159,11 @@ import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
       max-width: none;
     }
 
-    /* ── Spark hero ───────────────────────────────────────────── */
+    /* ── Spark hero (Variant 3 — warm cream gradient) ─────────── */
     .spark-hero {
-      background: linear-gradient(180deg, #0c0e13 0%, #1a1d24 100%);
-      color: #fff;
+      background: linear-gradient(180deg, #fdfaf2 0%, #f6f1e6 100%);
+      color: var(--color-text);
+      border: 1px solid rgba(190,170,130,.22);
       border-radius: 20px;
       padding: 1.5rem 1.5rem 1.25rem;
       position: relative;
@@ -174,8 +175,8 @@ import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
       position: absolute;
       top: -30%; right: -20%;
       width: 320px; height: 320px;
-      background: radial-gradient(circle, #12C4E3 0%, transparent 65%);
-      opacity: .25;
+      background: radial-gradient(circle, rgba(18,196,227,.55) 0%, transparent 65%);
+      opacity: .35;
       pointer-events: none;
     }
     .spark-hero__eyebrow {
@@ -184,14 +185,14 @@ import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: .14em;
-      color: #12C4E3;
+      color: var(--color-accent-dark);
       margin-bottom: 1.25rem;
       position: relative;
     }
     .spark-hero__eyebrow::before {
       content: ''; width: 7px; height: 7px;
       background: #12C4E3; border-radius: 50%;
-      box-shadow: 0 0 10px #12C4E3;
+      box-shadow: 0 0 10px rgba(18,196,227,.6);
       animation: pulse 2.5s ease-in-out infinite;
     }
     @keyframes pulse {
@@ -203,39 +204,41 @@ import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
       font-size: 1.25rem;
       line-height: 1.45;
       font-weight: 500;
-      color: rgba(255,255,255,.95);
+      color: var(--color-text);
       position: relative;
       margin: 0 0 1.25rem;
       letter-spacing: -.005em;
     }
     .spark-hero__author {
       font-size: .8125rem;
-      color: rgba(255,255,255,.55);
+      color: var(--color-text-2);
       margin: 0 0 1.25rem;
       position: relative;
     }
     .spark-hero__divider {
       height: 1px;
-      background: rgba(255,255,255,.1);
+      background: rgba(190,170,130,.25);
       margin: 0 0 1rem;
       position: relative;
     }
     .spark-hero__body {
       font-size: .9375rem;
       line-height: 1.7;
-      color: rgba(255,255,255,.88);
+      color: var(--color-text);
       position: relative;
       margin: 0 0 1.25rem;
       white-space: pre-wrap;
     }
     .spark-hero--expanded {
-      background: linear-gradient(180deg, #0c0e13 0%, #1a1d24 60%, #232831 100%);
+      background: linear-gradient(180deg, #fdfaf2 0%, #f6f1e6 60%, #f0e9d6 100%);
     }
     /* When the hero has more content to reveal, the whole box is clickable. */
     .spark-hero--clickable { cursor: pointer; }
-    .spark-hero--clickable:hover { background: linear-gradient(180deg, #14171f 0%, #1f232c 100%); }
+    .spark-hero--clickable:hover {
+      background: linear-gradient(180deg, #fefcf6 0%, #faf5ea 100%);
+    }
     .spark-hero--clickable.spark-hero--expanded:hover {
-      background: linear-gradient(180deg, #14171f 0%, #1f232c 60%, #2a2f3a 100%);
+      background: linear-gradient(180deg, #fefcf6 0%, #faf5ea 60%, #f4eedb 100%);
     }
 
     /* Bottom-right "Read more / Show less" link */
@@ -245,7 +248,7 @@ import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
       bottom: 1rem;
       background: none;
       border: none;
-      color: rgba(18,196,227,.95);
+      color: var(--color-accent-dark);
       font-size: .75rem;
       font-weight: 700;
       text-transform: uppercase;
@@ -257,7 +260,7 @@ import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
       z-index: 1;
     }
     .spark-hero__readmore:hover {
-      color: var(--color-accent);
+      color: #0c0e13;
       transform: translateX(2px);
     }
     /* Make room at the bottom of the box for the absolutely-positioned link. */
@@ -270,19 +273,19 @@ import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
       right: .875rem;
       width: 32px; height: 32px;
       display: grid; place-items: center;
-      background: rgba(255,255,255,.06);
-      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.7);
+      border: 1px solid rgba(190,170,130,.3);
       border-radius: 50%;
-      color: rgba(255,255,255,.85);
+      color: var(--color-text-2);
       cursor: pointer;
       font-family: inherit;
       transition: background .15s, border-color .15s, transform .15s;
       z-index: 1;
     }
     .spark-hero__expand:hover {
-      background: rgba(18,196,227,.18);
-      border-color: rgba(18,196,227,.4);
-      color: #fff;
+      background: rgba(18,196,227,.12);
+      border-color: rgba(18,196,227,.35);
+      color: var(--color-accent-dark);
     }
     .spark-hero__expand svg { transition: transform .25s ease; }
     .spark-hero__actions {
@@ -292,6 +295,7 @@ import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
       align-items: center;
       flex-wrap: wrap;
     }
+    /* Primary CTA — match the entry-reader Edit button (dark ink). */
     .spark-action {
       display: inline-flex;
       align-items: center;
@@ -299,28 +303,35 @@ import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
       gap: .375rem;
       height: 36px;
       padding: 0 .875rem;
-      border: 1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(190,170,130,.3);
+      background: rgba(255,255,255,.6);
       border-radius: 999px;
-      color: rgba(255,255,255,.85);
+      color: var(--color-text);
       font-family: inherit;
       font-size: .8125rem;
       font-weight: 600;
       cursor: pointer;
       transition: all .15s;
     }
-    .spark-action:hover { background: rgba(255,255,255,.1); }
+    .spark-action:hover {
+      background: rgba(255,255,255,.85);
+      border-color: rgba(190,170,130,.5);
+    }
     .spark-action--primary {
+      background: #0c0e13;
+      border-color: #0c0e13;
+      color: #fff;
+    }
+    .spark-action--primary:hover {
       background: #12C4E3;
       border-color: #12C4E3;
       color: #0c0e13;
     }
-    .spark-action--primary:hover { background: #0bd2f0; }
     .spark-action--icon { width: 36px; padding: 0; }
     .spark-action--fav-active {
-      color: #ff6b8a;
-      border-color: rgba(255,107,138,.3);
-      background: rgba(255,107,138,.08);
+      color: #e11d48;
+      border-color: rgba(225,29,72,.3);
+      background: rgba(225,29,72,.06);
     }
 
     /* ── Or, begin somewhere else ────────────────────────────── */
@@ -340,10 +351,12 @@ import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
       line-height: 1.5;
     }
 
-    /* ── Hero card (shared dark gradient — used by Daily Prompt and Mood) ── */
+    /* ── Hero card (Variant 3 — shared cream gradient, used by
+       Daily Prompt and Mood) ─────────────────────────────────── */
     .hero-card {
-      background: linear-gradient(180deg, #0c0e13 0%, #1a1d24 100%);
-      color: #fff;
+      background: linear-gradient(180deg, #fdfaf2 0%, #f6f1e6 100%);
+      color: var(--color-text);
+      border: 1px solid rgba(190,170,130,.22);
       border-radius: 20px;
       padding: 1.5rem 1.5rem 1.25rem;
       position: relative;
@@ -355,8 +368,8 @@ import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
       position: absolute;
       top: -30%; right: -20%;
       width: 320px; height: 320px;
-      background: radial-gradient(circle, #12C4E3 0%, transparent 65%);
-      opacity: .2;
+      background: radial-gradient(circle, rgba(18,196,227,.45) 0%, transparent 65%);
+      opacity: .35;
       pointer-events: none;
     }
     .hero-card__eyebrow {
@@ -365,7 +378,7 @@ import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: .14em;
-      color: #12C4E3;
+      color: var(--color-accent-dark);
       margin-bottom: .875rem;
       position: relative;
     }
@@ -374,14 +387,14 @@ import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
       font-size: 1.25rem;
       line-height: 1.45;
       font-weight: 500;
-      color: rgba(255,255,255,.95);
+      color: var(--color-text);
       position: relative;
       margin: 0 0 1.25rem;
       letter-spacing: -.005em;
     }
     .hero-card__sub {
       font-size: .8125rem;
-      color: rgba(255,255,255,.55);
+      color: var(--color-text-2);
       position: relative;
       margin: 0 0 1.25rem;
       line-height: 1.5;
@@ -399,23 +412,23 @@ import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
       right: 1rem;
       width: 32px; height: 32px;
       display: grid; place-items: center;
-      background: rgba(255,255,255,.06);
-      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.7);
+      border: 1px solid rgba(190,170,130,.3);
       border-radius: 50%;
-      color: rgba(255,255,255,.85);
+      color: var(--color-text-2);
       cursor: pointer;
       font-family: inherit;
       transition: background .15s, border-color .15s, transform .25s;
       z-index: 1;
     }
     .hero-card__shuffle:hover {
-      background: rgba(18,196,227,.18);
-      border-color: rgba(18,196,227,.4);
-      color: #fff;
+      background: rgba(18,196,227,.12);
+      border-color: rgba(18,196,227,.35);
+      color: var(--color-accent-dark);
       transform: rotate(180deg);
     }
 
-    /* Mood grid inside the hero card — reflows from 6 → 4 → 3 cols */
+    /* Mood grid inside the cream hero card — reflows from 6 → 4 → 3 cols */
     .mood-row {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
@@ -428,26 +441,27 @@ import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
       align-items: center;
       gap: .5rem;
       padding: .75rem .25rem .625rem;
-      border: 1px solid rgba(255,255,255,.1);
+      border: 1px solid rgba(190,170,130,.25);
       border-radius: 12px;
-      background: rgba(255,255,255,.04);
-      color: #12C4E3;
+      background: rgba(255,255,255,.55);
+      color: var(--color-accent-dark);
       cursor: pointer;
       transition: all .15s;
       font-family: inherit;
     }
     .mood:hover {
-      border-color: rgba(18,196,227,.5);
-      background: rgba(18,196,227,.12);
+      border-color: rgba(18,196,227,.45);
+      background: rgba(255,255,255,.85);
+      color: var(--color-accent-dark);
       transform: translateY(-2px);
     }
     .mood-label {
       font-size: .625rem;
       font-weight: 500;
-      color: rgba(255,255,255,.55);
+      color: var(--color-text-2);
       text-align: center;
     }
-    .mood:hover .mood-label { color: rgba(255,255,255,.85); }
+    .mood:hover .mood-label { color: var(--color-text); }
 
     /* Just begin */
     .blank-card {
