@@ -160,17 +160,20 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
         </ng-container>
       </div>
 
-      <!-- Footer: user card + settings + logout -->
+      <!-- Footer: avatar + name + (account / logout) icons all in one
+           inline row. Click on the avatar/name routes to /account; the
+           gear and door are explicit shortcuts. -->
       <div class="sidebar__footer-wrap">
         <a class="sidebar__usercard"
            routerLink="/account"
            [class.sidebar__usercard--active]="active === 'account'"
-           [title]="collapsed() ? (displayName() + ' · ' + tierLabel()) : null">
-          <div class="sidebar__avatar">{{ userInitial() }}</div>
-          <div class="sidebar__user-info">
-            <div class="sidebar__user-name">{{ displayName() }}</div>
-            <div class="sidebar__user-tier">{{ tierLabel() }}</div>
+           [title]="collapsed() ? displayName() : null">
+          <div class="sidebar__avatar"
+               [style.background-image]="profileImageUrl() ? 'url(' + profileImageUrl() + ')' : null"
+               [class.sidebar__avatar--photo]="!!profileImageUrl()">
+            <span *ngIf="!profileImageUrl()">{{ userInitial() }}</span>
           </div>
+          <div class="sidebar__user-name">{{ displayName() }}</div>
         </a>
 
         <div class="sidebar__footer-actions">
@@ -544,78 +547,79 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
 
     .sidebar__spacer { flex: 1; }
 
-    /* ── Footer: user card + actions ─────────────────────────────── */
+    /* ── Footer: avatar + name + icons in one inline row ─────── */
+    /* Single row: usercard (avatar + name) takes flex:1, icons sit
+       at the right. Name is vertically centred since the plan label
+       is gone. */
     .sidebar__footer-wrap {
-      padding: .25rem .75rem .25rem;
+      padding: .25rem .5rem .25rem;
       display: flex;
-      flex-direction: column;
-      gap: .5rem;
+      flex-direction: row;
+      align-items: center;
+      gap: .25rem;
+      min-width: 0;
     }
     .sidebar--collapsed .sidebar__footer-wrap {
+      flex-direction: column;
       padding: .75rem .375rem .25rem;
+      gap: .5rem;
     }
 
     .sidebar__usercard {
+      flex: 1;
+      min-width: 0;
       display: flex; align-items: center; gap: .625rem;
       padding: .5rem .625rem;
       background: rgba(255,255,255,.04);
       border-radius: 10px;
       text-decoration: none;
       transition: background .15s;
-      min-width: 0;
     }
     .sidebar__usercard:hover { background: rgba(255,255,255,.08); text-decoration: none; }
-    .sidebar__usercard--active {
-      background: rgba(18,196,227,.12);
-    }
+    .sidebar__usercard--active { background: rgba(18,196,227,.12); }
     .sidebar__usercard--active .sidebar__user-name { color: #12C4E3; }
 
     .sidebar--collapsed .sidebar__usercard {
+      flex: none;
       justify-content: center;
       padding: .375rem;
     }
-    .sidebar--collapsed .sidebar__user-info { display: none; }
+    .sidebar--collapsed .sidebar__user-name { display: none; }
 
     .sidebar__avatar {
       width: 30px; height: 30px; border-radius: 50%;
       background: linear-gradient(135deg, #ff9a76, #c25fb5);
+      background-size: cover;
+      background-position: center;
       color: #fff;
       font-size: .75rem; font-weight: 700;
       display: flex; align-items: center; justify-content: center;
       flex-shrink: 0;
     }
-    .sidebar__user-info {
-      min-width: 0;
-      flex: 1;
-      line-height: 1.2;
+    /* When a profile image is set, the gradient placeholder is masked
+       by the photo. Initial-letter span is hidden via *ngIf. */
+    .sidebar__avatar--photo {
+      background-color: #1a1d24;
     }
     .sidebar__user-name {
+      flex: 1;
+      min-width: 0;
       font-size: .8125rem; font-weight: 600;
       color: #fff;
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
       transition: color .15s;
-    }
-    .sidebar__user-tier {
-      font-size: .625rem;
-      font-weight: 700;
-      color: #12C4E3;
-      text-transform: uppercase;
-      letter-spacing: .1em;
-      margin-top: 1px;
+      line-height: 1;
     }
 
     .sidebar__footer-actions {
       display: flex;
-      gap: .25rem;
-      justify-content: flex-end;
-      padding: 0 .25rem;
+      align-items: center;
+      gap: .125rem;
+      flex-shrink: 0;
     }
     .sidebar--collapsed .sidebar__footer-actions {
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
       gap: .375rem;
-      padding: 0;
     }
 
     .sidebar__icon-btn {
@@ -712,20 +716,27 @@ export class SidebarComponent implements OnInit {
   username      = computed(() => this.tokens.getCachedUser()?.username ?? '');
   userInitial   = computed(() => (this.tokens.getCachedUser()?.username?.[0] ?? '?').toUpperCase());
 
-  /** Display name for the user card — capitalize the first letter of the
-   *  username. Future: when we have first/last names on the User model,
-   *  prefer those. */
+  /** Display name for the user card. Prefers firstName + lastName
+   *  when those are set on the User model (backend support coming);
+   *  falls back to a capitalised version of the username's local
+   *  part (so "chris@sanctuarymg.com" → "Chris"). */
   displayName = computed(() => {
-    const u = this.tokens.getCachedUser();
-    if (!u?.username) return '';
+    const u = this.tokens.getCachedUser() as ({ firstName?: string; lastName?: string; username?: string } | null);
+    if (!u) return '';
+    const first = (u.firstName ?? '').trim();
+    const last  = (u.lastName ?? '').trim();
+    if (first || last) return `${first} ${last}`.trim();
+    if (!u.username) return '';
     const base = u.username.includes('@') ? u.username.split('@')[0] : u.username;
     return base.charAt(0).toUpperCase() + base.slice(1);
   });
 
-  /** Tier label shown beneath the user's name. */
-  tierLabel = computed(() => {
-    const tier = this.tokens.getCachedUser()?.tier;
-    return tier === 'Paid' ? 'Paid plan' : 'Free plan';
+  /** Profile picture URL — null until the user has uploaded one.
+   *  When a URL is present, the avatar circle renders the image
+   *  instead of the initial-letter fallback. */
+  profileImageUrl = computed<string | null>(() => {
+    const u = this.tokens.getCachedUser() as ({ profileImageUrl?: string | null } | null);
+    return u?.profileImageUrl?.trim() || null;
   });
 
   /** Tier-progress data for the streak module's badge + progress bar. */
