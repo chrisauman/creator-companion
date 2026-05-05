@@ -7,12 +7,11 @@ import { AuthService } from '../../core/services/auth.service';
 import { TokenService } from '../../core/services/token.service';
 import { StreakStats, EntryListItem, MotivationEntry, Entry } from '../../core/models/models';
 import { getMoodEmoji } from '../../core/constants/moods';
-import { MILESTONES, getMilestoneForDays, getMilestoneIndex, getMilestoneProgress, Milestone, MilestoneProgress } from '../../core/constants/milestones';
+import { MILESTONES, getMilestoneIndex, Milestone } from '../../core/constants/milestones';
 import { PushService } from '../../core/services/push.service';
 import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
 import { SidebarStateService } from '../../shared/sidebar/sidebar-state.service';
 import { MoodIconComponent } from '../../shared/mood-icon/mood-icon.component';
-import { TierIconComponent } from '../../shared/tier-icon/tier-icon.component';
 import { TodayPanelComponent } from './today-panel.component';
 import { EntryReaderComponent } from './entry-reader.component';
 import { NewEntryComponent } from '../entry/new/new-entry.component';
@@ -25,7 +24,7 @@ import { ActivatedRoute } from '@angular/router';
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, SidebarComponent, MoodIconComponent, TierIconComponent, TodayPanelComponent, EntryReaderComponent, NewEntryComponent, EditEntryComponent, NotificationsComponent, FavoriteSparksComponent, ActionItemsCardComponent],
+  imports: [CommonModule, RouterLink, FormsModule, SidebarComponent, MoodIconComponent, TodayPanelComponent, EntryReaderComponent, NewEntryComponent, EditEntryComponent, NotificationsComponent, FavoriteSparksComponent, ActionItemsCardComponent],
   template: `
     <div class="dashboard">
 
@@ -70,115 +69,10 @@ import { ActivatedRoute } from '@angular/router';
           </button>
         </div>
 
-        <!-- ── Desktop stats strip ──────────────────────────── -->
-        <div class="stats-strip" *ngIf="streak()">
-          <div class="stat stat--streak">
-            <div class="stat__num">
-              {{ streak()!.currentStreak }}<span class="stat__unit">{{ streak()!.currentStreak === 1 ? 'day' : 'days' }}</span>
-            </div>
-            <div class="stat__label">Current streak</div>
+        <!-- Streak module lives in the sidebar on every breakpoint —
+             desktop has it pinned just below the logo; mobile shows it
+             at the top of the slide-out drawer when the user opens it. -->
 
-            <ng-container *ngIf="progressToNext() as p">
-              <div class="reward" *ngIf="p.current">
-                <span class="reward__badge"
-                      [class.reward__badge--top]="p.isAtTopTier">
-                  <app-tier-icon [tier]="p.current.title" [size]="12"></app-tier-icon>
-                  {{ p.current.title }}
-                </span>
-
-                <ng-container *ngIf="!p.isAtTopTier && p.next">
-                  <div class="reward__track">
-                    <div class="reward__fill" [style.width.%]="p.percentToNext"></div>
-                  </div>
-                  <div class="reward__label">
-                    <span><strong>{{ p.daysToNext }}</strong> to {{ p.next.title }}</span>
-                  </div>
-                </ng-container>
-                <div class="reward__label reward__label--top" *ngIf="p.isAtTopTier">
-                  The highest tier — keep going.
-                </div>
-              </div>
-
-              <div class="reward reward--pre" *ngIf="!p.current && p.next">
-                <div class="reward__track">
-                  <div class="reward__fill" [style.width.%]="p.percentToNext"></div>
-                </div>
-                <div class="reward__label">
-                  <span><strong>{{ p.daysToNext }}</strong> to {{ p.next.title }}</span>
-                </div>
-              </div>
-            </ng-container>
-          </div>
-
-          <div class="stat">
-            <div class="stat__num">
-              {{ streak()!.longestStreak }}<span class="stat__unit">{{ streak()!.longestStreak === 1 ? 'day' : 'days' }}</span>
-            </div>
-            <div class="stat__label">Longest streak</div>
-          </div>
-          <div class="stat">
-            <div class="stat__num">{{ streak()!.totalEntries }}</div>
-            <div class="stat__label">Total entries</div>
-          </div>
-          <div class="stat">
-            <div class="stat__num">
-              {{ streak()!.totalActiveDays }}<span class="stat__unit">{{ streak()!.totalActiveDays === 1 ? 'day' : 'days' }}</span>
-            </div>
-            <div class="stat__label">Days active</div>
-          </div>
-        </div>
-        <div class="stats-strip stats-strip--skeleton" *ngIf="!streak() && !error()">
-          <div class="stat" *ngFor="let i of [1,2,3,4]">
-            <div class="stat__num">—</div>
-            <div class="stat__label">Loading…</div>
-          </div>
-        </div>
-
-        <!-- Mobile-only streak card (matches desktop layout w/ progress bar) -->
-        <div class="streak-mobile" *ngIf="streak()">
-          <div class="streak-mobile__main">
-            <div class="streak-mobile__num">
-              {{ streak()!.currentStreak }}<span class="streak-mobile__unit">{{ streak()!.currentStreak === 1 ? 'day' : 'days' }}</span>
-            </div>
-            <div class="streak-mobile__label">Current streak</div>
-          </div>
-
-          <ng-container *ngIf="progressToNext() as p">
-            <div class="streak-mobile__reward" *ngIf="p.current">
-              <span class="reward__badge"
-                    [class.reward__badge--top]="p.isAtTopTier">
-                <app-tier-icon [tier]="p.current.title" [size]="12"></app-tier-icon>
-                {{ p.current.title }}
-              </span>
-              <ng-container *ngIf="!p.isAtTopTier && p.next">
-                <div class="reward__track">
-                  <div class="reward__fill" [style.width.%]="p.percentToNext"></div>
-                </div>
-                <div class="reward__label">
-                  <span><strong>{{ p.daysToNext }}</strong> to {{ p.next.title }}</span>
-                </div>
-              </ng-container>
-            </div>
-            <div class="streak-mobile__reward" *ngIf="!p.current && p.next">
-              <div class="reward__track">
-                <div class="reward__fill" [style.width.%]="p.percentToNext"></div>
-              </div>
-              <div class="reward__label">
-                <span><strong>{{ p.daysToNext }}</strong> to {{ p.next.title }}</span>
-              </div>
-            </div>
-          </ng-container>
-
-          <div class="streak-mobile__longest" *ngIf="streak()!.longestStreak > 0">
-            Longest: <strong>{{ streak()!.longestStreak }}</strong> {{ streak()!.longestStreak === 1 ? 'day' : 'days' }}
-          </div>
-        </div>
-        <div class="streak-mobile streak-mobile--skeleton" *ngIf="!streak() && !error()">
-          <div class="streak-mobile__main">
-            <div class="streak-mobile__num">—</div>
-            <div class="streak-mobile__label">Loading…</div>
-          </div>
-        </div>
 
         <!-- Daily Motivation card (mobile only — desktop shows it inside the Today panel as the Spark hero) -->
         @if (motivation()) {
@@ -496,126 +390,9 @@ import { ActivatedRoute } from '@angular/router';
       transform: translateY(-1px);
     }
 
-    /* ── Desktop stats strip (condensed) ─────────────────────────── */
-    .stats-strip { display: none; }
-    @media (min-width: 768px) {
-      .stats-strip {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 0;
-        padding: .75rem 0 .875rem;
-        margin-top: -1rem;
-        margin-bottom: 0;
-        border-bottom: 1px solid var(--color-border);
-        row-gap: .875rem;
-      }
-    }
-    /* Wider screens get the original 4-across single-row strip. */
-    @media (min-width: 1100px) {
-      .stats-strip {
-        grid-template-columns: repeat(4, 1fr);
-        row-gap: 0;
-      }
-    }
-    .stats-strip .stat {
-      padding: 0 1rem;
-      border-right: 1px solid var(--color-border);
-      min-width: 0;
-    }
-    .stats-strip .stat:nth-child(2n) { border-right: none; }
-    @media (min-width: 1100px) {
-      .stats-strip .stat:nth-child(2n) { border-right: 1px solid var(--color-border); }
-      .stats-strip .stat:last-child { border-right: none; }
-    }
-    .stats-strip .stat:first-child { padding-left: 0; }
-    @media (min-width: 1100px) {
-      .stats-strip .stat:nth-child(3) { padding-left: 1rem; }
-    }
-    @media (max-width: 1099px) and (min-width: 768px) {
-      .stats-strip .stat:nth-child(3) { padding-left: 0; }
-    }
-
-    .stats-strip .stat__num {
-      font-family: var(--font-display);
-      font-size: 1.5rem;
-      font-weight: 700;
-      line-height: 1;
-      letter-spacing: -.02em;
-      color: var(--color-text);
-    }
-    /* Streak gets the cyan accent — it's the most motivating stat. */
-    .stats-strip .stat--streak .stat__num { color: var(--color-accent); }
-    .stats-strip .stat__unit {
-      font-size: .6875rem;
-      color: var(--color-text-3);
-      font-family: var(--font-sans);
-      font-weight: 500;
-      margin-left: 3px;
-    }
-    .stats-strip .stat__label {
-      margin-top: .25rem;
-      font-size: .625rem;
-      color: var(--color-text-2);
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: .1em;
-    }
-    .stats-strip--skeleton .stat__num { opacity: .4; }
-    .stats-strip--skeleton .stat__label { opacity: .6; }
-
-    /* ── Hybrid progress reward ──────────────────────────────────── */
-    .reward { margin-top: .375rem; }
-    .reward__badge {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: .375rem;
-      width: 100%;
-      padding: 3px 8px;
-      background: #faf2dc;
-      border: 1px solid rgba(224,168,58,.3);
-      color: #8b6912;
-      border-radius: 6px;
-      font-size: .625rem;
-      font-weight: 700;
-      letter-spacing: .03em;
-      box-sizing: border-box;
-    }
-    .reward__badge--top {
-      background: linear-gradient(135deg, #faf2dc 0%, #f0d77a 100%);
-      border-color: rgba(224,168,58,.55);
-      color: #6e5610;
-    }
-    .reward__track {
-      margin-top: .5rem;
-      height: 4px;
-      background: var(--color-border);
-      border-radius: 2px;
-      overflow: hidden;
-    }
-    .reward__fill {
-      height: 100%;
-      background: linear-gradient(90deg, #0d9bb5, var(--color-accent));
-      border-radius: 2px;
-      transition: width .35s ease;
-    }
-    .reward__label {
-      font-size: .6875rem;
-      color: var(--color-text-3);
-      font-weight: 500;
-      margin-top: 6px;
-      text-align: left;
-    }
-    .reward__label strong {
-      color: #0d9bb5;
-      font-weight: 700;
-    }
-    .reward__label--top {
-      text-align: center;
-      color: #8b6912;
-      font-weight: 600;
-    }
-    .reward--pre .reward__label { margin-top: 6px; }
+    /* The desktop stats strip and mobile streak card are gone — the
+       streak module now lives in the sidebar at every breakpoint
+       (see sidebar.component.ts). */
 
     /* ── New entry button ────────────────────────────────────────── */
     .new-entry-bar {
@@ -629,54 +406,6 @@ import { ActivatedRoute } from '@angular/router';
       .new-entry-bar--mobile { display: none; }
     }
 
-    /* ── Mobile-only streak card (matches desktop layout) ──────── */
-    .streak-mobile {
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: 16px;
-      padding: 1.25rem 1.25rem 1.125rem;
-      margin-bottom: 1rem;
-    }
-    @media (min-width: 768px) {
-      .streak-mobile { display: none; }
-    }
-    .streak-mobile__main {
-      display: flex;
-      align-items: baseline;
-      gap: .625rem;
-      margin-bottom: .5rem;
-    }
-    .streak-mobile__num {
-      font-family: var(--font-sans);
-      font-size: 2rem;
-      font-weight: 800;
-      line-height: 1;
-      letter-spacing: -.03em;
-      color: var(--color-accent);
-    }
-    .streak-mobile__unit {
-      font-size: .8125rem;
-      font-weight: 500;
-      color: var(--color-text-3);
-      margin-left: 4px;
-    }
-    .streak-mobile__label {
-      font-size: .625rem;
-      color: var(--color-text-2);
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .1em;
-    }
-    .streak-mobile__reward { margin-top: .5rem; }
-    .streak-mobile__longest {
-      margin-top: .75rem;
-      padding-top: .75rem;
-      border-top: 1px solid var(--color-border);
-      font-size: .75rem;
-      color: var(--color-text-2);
-    }
-    .streak-mobile__longest strong { color: var(--color-text); font-weight: 700; }
-    .streak-mobile--skeleton .streak-mobile__num { opacity: .4; }
     .skeleton { opacity: .5; }
 
     /* ── Push nudge ──────────────────────────────────────────────── */
@@ -702,28 +431,34 @@ import { ActivatedRoute } from '@angular/router';
     .work__right-col { display: none; }
 
     @media (min-width: 768px) {
+      /* Two equal-height columns. Both fill the viewport so the entry
+         list scrolls inside its column and the right column's reader-top
+         stays pinned at the top. The shared top bars (search-bar on the
+         left, reader-top on the right) are sized to match (64px) and
+         align horizontally across the divider. */
       .work {
         display: grid;
         grid-template-columns: minmax(360px, 420px) 1fr;
         gap: 0;
-        align-items: start;
-        margin-top: 1rem;
+        align-items: stretch;
+        margin: 0 -3rem -4rem 0;
+        /* Span the full content height: viewport minus top padding of
+           main-content (2.5rem). */
+        height: calc(100vh - 2.5rem);
+        min-height: 600px;
       }
       .work__list-col {
-        padding-right: 1.75rem;
+        padding: 0 1.75rem 1rem 0;
         border-right: 1px solid var(--color-border);
         min-width: 0;
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
       }
       .work__right-col {
         display: block;
-        position: sticky;
-        top: 1rem;
-        max-height: calc(100vh - 2rem);
         overflow-y: auto;
-        padding-left: 0;
-        margin: -2.5rem -3rem -4rem 0;
         background: var(--color-surface);
-        border-left: 1px solid var(--color-border);
       }
     }
 
@@ -849,11 +584,14 @@ import { ActivatedRoute } from '@angular/router';
       display: flex;
       align-items: center;
       gap: .5rem;
-      padding: 1rem 1.75rem;
+      height: 64px;
+      padding: 0 1.75rem;
       border-bottom: 1px solid var(--color-border);
       background: var(--color-surface);
       position: sticky; top: 0;
       z-index: 5;
+      box-sizing: border-box;
+      flex-shrink: 0;
     }
     .embedded-section .cancel-pill {
       display: inline-flex;
@@ -956,6 +694,23 @@ import { ActivatedRoute } from '@angular/router';
     .search-bar {
       display: flex; align-items: center; gap: .5rem;
       margin-top: 1rem; margin-bottom: .5rem;
+    }
+    /* On desktop, the search bar sits at the top of the entry-list
+       column and aligns with the reader-top (64px) on the right column.
+       Both panes share a bottom hairline for a continuous header rule. */
+    @media (min-width: 768px) {
+      .search-bar {
+        margin: 0;
+        height: 64px;
+        padding: 0 0 0 .25rem;
+        box-sizing: border-box;
+        border-bottom: 1px solid var(--color-border);
+        flex-shrink: 0;
+        position: sticky;
+        top: 0;
+        background: #f7f7f5;
+        z-index: 4;
+      }
     }
     .search-input-wrap { flex: 1; position: relative; display: flex; align-items: center; }
     .search-icon {
@@ -1170,18 +925,6 @@ export class DashboardComponent implements OnInit {
   isPaid     = signal(false);
   showCelebration    = signal(false);
   celebrationMilestone = signal<Milestone | null>(null);
-
-  currentStreakMilestone = computed(() => getMilestoneForDays(this.streak()?.currentStreak ?? 0));
-  longestStreakMilestone = computed(() => getMilestoneForDays(this.streak()?.longestStreak ?? 0));
-
-  /**
-   * Hybrid progress reward data: current tier, next tier, days into current
-   * tier, days remaining, percent progress. Drives the badge + progress bar
-   * shown under the streak number on desktop.
-   */
-  progressToNext = computed<MilestoneProgress>(() =>
-    getMilestoneProgress(this.streak()?.currentStreak ?? 0)
-  );
 
   /**
    * Time-of-day greeting using the user's first-name-or-username, e.g.

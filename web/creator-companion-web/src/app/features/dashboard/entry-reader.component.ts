@@ -133,15 +133,20 @@ import { MoodIconComponent } from '../../shared/mood-icon/mood-icon.component';
     }
 
     /* ── Top bar ─────────────────────────────────────────────── */
+    /* Fixed 64px so the right column's header aligns with the search
+       bar at the top of the entry-list column. */
     .reader-top {
       display: flex;
       align-items: center;
       gap: .5rem;
-      padding: 1rem 1.75rem;
+      height: 64px;
+      padding: 0 1.75rem;
       border-bottom: 1px solid var(--color-border);
       position: sticky; top: 0;
       background: var(--color-surface);
       z-index: 5;
+      box-sizing: border-box;
+      flex-shrink: 0;
     }
     .today-pill {
       display: inline-flex;

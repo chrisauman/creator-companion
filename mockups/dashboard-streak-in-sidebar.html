@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Dashboard — streak moved into sidebar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --ink: #0c0e13;
+    --paper: #faf8f4;
+    --paper-2: #ffffff;
+    --line: #ebe7df;
+    --line-2: #e1ddd3;
+    --text: #1a1d24;
+    --text-2: #5d6470;
+    --text-3: #9099a5;
+    --cyan: #12C4E3;
+    --cyan-dark: #0d9bb5;
+  }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: #d8d4cc;
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    padding: 2rem 1rem 5rem;
+  }
+  .lab-header { max-width: 1440px; margin: 0 auto 1.5rem; }
+  .lab-header h1 { font-size: 1.75rem; font-weight: 800; letter-spacing: -.02em; margin-bottom: .5rem; }
+  .lab-header p { color: var(--text-2); line-height: 1.6; max-width: 800px; }
+
+  /* App frame */
+  .app {
+    max-width: 1440px;
+    height: 820px;
+    margin: 0 auto;
+    background: var(--paper);
+    border-radius: 14px;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    box-shadow: 0 30px 80px -30px rgba(0,0,0,.25), 0 8px 20px -10px rgba(0,0,0,.1);
+    border: 1px solid rgba(0,0,0,.06);
+  }
+
+  /* ── Sidebar ──────────────────────────────────────────────── */
+  .side {
+    background: var(--ink);
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    padding: 1rem 0 1rem;
+  }
+  .side__logo {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 1rem 1rem;
+    border-bottom: 1px solid rgba(255,255,255,.07);
+    margin-bottom: 1rem;
+  }
+  .side__logo-wrap {
+    display: inline-flex; align-items: center; gap: .5rem;
+    font-weight: 700; color: #fff; font-size: .9375rem;
+  }
+  .side__logo-icon {
+    width: 26px; height: 26px;
+    background: var(--cyan); border-radius: 50%;
+    display: grid; place-items: center;
+    color: var(--ink); font-weight: 800; font-size: .6875rem;
+  }
+  .side__collapse {
+    width: 24px; height: 24px;
+    color: rgba(255,255,255,.4);
+    background: transparent; border: none;
+    display: grid; place-items: center;
+    cursor: pointer;
+  }
+
+  /* ── Streak module in sidebar (NEW POSITION) ──────────────── */
+  .side__streak {
+    margin: 0 1rem 1rem;
+    padding: 1rem 1.125rem;
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 14px;
+  }
+  .side__streak-num {
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -.03em;
+    color: var(--cyan);
+  }
+  .side__streak-unit {
+    font-size: .75rem;
+    font-weight: 500;
+    color: rgba(255,255,255,.45);
+    margin-left: 4px;
+  }
+  .side__streak-label {
+    margin-top: .375rem;
+    font-size: .625rem;
+    color: rgba(255,255,255,.5);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+  }
+  /* Tier reward — KEEP the original warm gold/cream pill colors;
+     they read cleanly against the dark sidebar. */
+  .side__reward { margin-top: .625rem; }
+  .side__reward-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .375rem;
+    width: 100%;
+    padding: 4px 10px;
+    background: #faf2dc;
+    border: 1px solid rgba(224,168,58,.3);
+    color: #8b6912;
+    border-radius: 6px;
+    font-size: .6875rem;
+    font-weight: 700;
+    letter-spacing: .03em;
+    box-sizing: border-box;
+  }
+  .side__reward-track {
+    margin-top: .5rem;
+    height: 4px;
+    background: rgba(255,255,255,.08);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .side__reward-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--cyan-dark), var(--cyan));
+    border-radius: 2px;
+  }
+  .side__reward-label {
+    font-size: .625rem;
+    color: rgba(255,255,255,.55);
+    font-weight: 500;
+    margin-top: 6px;
+    display: flex; justify-content: space-between;
+  }
+  .side__reward-label strong { color: var(--cyan); font-weight: 700; }
+  .side__longest {
+    margin-top: .75rem;
+    padding-top: .75rem;
+    border-top: 1px solid rgba(255,255,255,.08);
+    font-size: .6875rem;
+    color: rgba(255,255,255,.5);
+  }
+  .side__longest strong { color: rgba(255,255,255,.85); font-weight: 700; }
+
+  /* ── Compose button ──────────────────────────────────────── */
+  .side__compose {
+    margin: 0 1rem 1rem;
+    padding: .625rem 1rem;
+    background: var(--cyan);
+    color: var(--ink);
+    border: none;
+    border-radius: 999px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .5rem;
+    font-size: .875rem;
+  }
+
+  /* ── Nav ─────────────────────────────────────────────────── */
+  .side__nav { padding: 0 .5rem; display: flex; flex-direction: column; gap: 2px; }
+  .side__link {
+    display: flex; align-items: center; gap: .625rem;
+    padding: .5625rem .75rem;
+    color: rgba(255,255,255,.55);
+    border-radius: 7px;
+    font-size: .875rem; font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+  }
+  .side__link.active { background: rgba(18,196,227,.12); color: var(--cyan); font-weight: 600; }
+
+  .side__spacer { flex: 1; }
+  .side__user-row {
+    display: flex; align-items: center; gap: .375rem;
+    padding: .5rem .75rem 0;
+    border-top: 1px solid rgba(255,255,255,.07);
+    margin-top: .5rem;
+  }
+  .side__user-card {
+    flex: 1; display: flex; align-items: center; gap: .5rem;
+    padding: .375rem .5rem;
+    background: rgba(255,255,255,.04);
+    border-radius: 10px;
+    cursor: pointer;
+    min-width: 0;
+  }
+  .side__avatar {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ff9a76, #c25fb5);
+    display: grid; place-items: center;
+    color: #fff; font-weight: 700; font-size: .6875rem;
+    flex-shrink: 0;
+  }
+  .side__user-info { min-width: 0; }
+  .side__user-name {
+    font-size: .8125rem; font-weight: 600;
+    color: #fff;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .side__user-tier {
+    font-size: .5625rem; color: var(--cyan);
+    font-weight: 700; text-transform: uppercase;
+    letter-spacing: .1em;
+  }
+  .side__icon-btn {
+    width: 32px; height: 32px;
+    background: transparent; border: none;
+    border-radius: 8px;
+    color: rgba(255,255,255,.4);
+    cursor: pointer;
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+
+  /* ── Main content (TWO COLUMNS, FULL HEIGHT) ──────────────── */
+  .main {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    overflow: hidden;
+    height: 820px;
+  }
+  .col {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .col-list {
+    border-right: 1px solid var(--line);
+  }
+
+  /* TOP BARS — search bar (left) + reader-top (right). SAME HEIGHT. */
+  .top-bar {
+    display: flex;
+    align-items: center;
+    height: 64px;       /* shared height */
+    padding: 0 1.25rem;
+    border-bottom: 1px solid var(--line);
+    flex-shrink: 0;
+    background: var(--paper-2);
+  }
+  .top-bar--list { gap: .5rem; }
+  .top-bar--reader { gap: .5rem; }
+
+  .search-input {
+    flex: 1;
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: .625rem 1rem .625rem 2.5rem;
+    font-family: inherit;
+    font-size: .875rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239099a5' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: 14px center;
+  }
+  .filter-pill {
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: .5rem 1rem;
+    font-family: inherit;
+    font-size: .8125rem;
+    font-weight: 500;
+    color: var(--text-2);
+  }
+
+  /* Reader-top elements */
+  .today-pill {
+    display: inline-flex; align-items: center; gap: .375rem;
+    background: rgba(18,196,227,.1);
+    color: var(--cyan-dark);
+    border: 1px solid rgba(18,196,227,.25);
+    padding: .375rem .75rem;
+    border-radius: 999px;
+    font-size: .75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+  }
+  .breadcrumb {
+    flex: 1; text-align: center;
+    font-size: .8125rem; color: var(--text-3);
+  }
+  .breadcrumb strong { color: var(--text); }
+
+  /* Body content (scrollable) */
+  .body-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem 1.25rem 2rem;
+  }
+
+  /* Entry rows */
+  .entry-row {
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    margin-bottom: .75rem;
+    overflow: hidden;
+  }
+  .entry-body { padding: 1rem 1.25rem; }
+  .entry-meta {
+    display: flex; gap: .75rem; margin-bottom: .5rem;
+  }
+  .entry-date {
+    font-size: .75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    color: var(--cyan-dark);
+  }
+  .entry-mood {
+    font-size: .8125rem;
+    color: var(--text-2);
+  }
+  .entry-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--text);
+    letter-spacing: -.01em;
+  }
+  .entry-photo {
+    height: 160px;
+    background: linear-gradient(135deg, #ffd6a5 0%, #ff8fab 100%);
+  }
+  .entry-photo--var2 { background: linear-gradient(135deg, #b8e0d2, #95b8d1); }
+
+  .month-divider {
+    font-size: .6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .14em;
+    color: var(--text-3);
+    padding: 0 0 .375rem;
+    margin: 1rem 0 .5rem;
+    border-bottom: 1px solid var(--line);
+  }
+
+  /* Right column body (Today panel — abbreviated) */
+  .spark-card {
+    background: linear-gradient(180deg, var(--ink) 0%, #1a1d24 100%);
+    color: #fff;
+    border-radius: 20px;
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .spark-card::before {
+    content: '';
+    position: absolute;
+    top: -30%; right: -20%;
+    width: 280px; height: 280px;
+    background: radial-gradient(circle, var(--cyan) 0%, transparent 65%);
+    opacity: .25;
+  }
+  .spark-eyebrow {
+    font-size: .625rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .14em;
+    color: var(--cyan);
+    margin-bottom: .875rem;
+    display: block;
+    position: relative;
+  }
+  .spark-quote {
+    font-size: 1.125rem;
+    line-height: 1.45;
+    font-weight: 500;
+    margin-bottom: 1rem;
+    position: relative;
+  }
+  .spark-btn {
+    background: var(--cyan);
+    color: var(--ink);
+    border: none;
+    padding: .5rem 1rem;
+    border-radius: 999px;
+    font-size: .8125rem;
+    font-weight: 700;
+    cursor: pointer;
+    position: relative;
+  }
+
+  .legend {
+    max-width: 1440px;
+    margin: 1.5rem auto 0;
+    padding: 1.25rem 1.5rem;
+    background: rgba(255,255,255,.7);
+    border: 1px solid rgba(0,0,0,.06);
+    border-radius: 12px;
+    font-size: .9375rem;
+    color: var(--text-2);
+    line-height: 1.65;
+  }
+  .legend strong { color: var(--text); font-weight: 700; }
+  .legend ul { margin-top: .5rem; padding-left: 1.25rem; }
+  .legend li { margin-bottom: .375rem; }
+
+  /* ── Mobile preview ──────────────────────────────────────── */
+  .mobile-section {
+    max-width: 1440px;
+    margin: 3rem auto 0;
+  }
+  .mobile-section h2 {
+    font-size: 1.25rem; font-weight: 800; letter-spacing: -.01em;
+    margin-bottom: .375rem;
+  }
+  .mobile-section p {
+    color: var(--text-2); margin-bottom: 1.5rem; max-width: 720px;
+    line-height: 1.6;
+  }
+  .mobile-grid {
+    display: grid;
+    grid-template-columns: 380px 380px;
+    gap: 2rem;
+    align-items: start;
+  }
+  .phone {
+    width: 380px;
+    height: 760px;
+    background: var(--paper);
+    border-radius: 36px;
+    border: 10px solid #1a1d24;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 30px 80px -30px rgba(0,0,0,.3);
+  }
+  .phone__notch {
+    position: absolute;
+    top: 0; left: 50%; transform: translateX(-50%);
+    width: 120px; height: 22px;
+    background: #1a1d24;
+    border-radius: 0 0 16px 16px;
+    z-index: 20;
+  }
+  .phone-label {
+    text-align: center;
+    font-size: .8125rem;
+    font-weight: 600;
+    color: var(--text-2);
+    margin-top: .75rem;
+  }
+
+  /* Mobile dashboard (drawer closed) */
+  .m-header {
+    display: flex; align-items: center; gap: .5rem;
+    padding: 1rem 1rem .75rem;
+    background: var(--paper);
+    border-bottom: 1px solid var(--line);
+  }
+  .m-hamburger {
+    width: 40px; height: 40px;
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 4px;
+  }
+  .m-hamburger span {
+    width: 18px; height: 2px;
+    background: var(--text);
+    border-radius: 2px;
+  }
+  .m-logo {
+    flex: 1;
+    display: flex; align-items: center; gap: .375rem;
+    color: var(--text);
+    font-size: .8125rem;
+    font-weight: 700;
+  }
+  .m-logo-icon {
+    width: 24px; height: 24px;
+    background: var(--cyan); border-radius: 50%;
+    display: grid; place-items: center;
+    color: var(--ink); font-weight: 800; font-size: .625rem;
+  }
+  .m-create {
+    background: var(--cyan); color: var(--ink);
+    border: none; border-radius: 999px;
+    padding: .5rem .875rem;
+    font-size: .8125rem; font-weight: 700;
+    display: inline-flex; align-items: center; gap: .375rem;
+  }
+  .m-body { padding: 1rem; }
+  .m-spark {
+    background: linear-gradient(180deg, var(--ink) 0%, #1a1d24 100%);
+    color: #fff; border-radius: 18px;
+    padding: 1.25rem; margin-bottom: 1rem;
+    position: relative; overflow: hidden;
+  }
+  .m-spark::before {
+    content: '';
+    position: absolute;
+    top: -30%; right: -20%;
+    width: 240px; height: 240px;
+    background: radial-gradient(circle, var(--cyan) 0%, transparent 65%);
+    opacity: .25;
+  }
+  .m-spark-eyebrow {
+    font-size: .625rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .14em;
+    color: var(--cyan); margin-bottom: .5rem;
+    display: block; position: relative;
+  }
+  .m-spark-quote {
+    font-size: .9375rem; line-height: 1.45;
+    margin-bottom: .875rem; position: relative;
+  }
+  .m-spark-btn {
+    background: var(--cyan); color: var(--ink);
+    border: none; padding: .5rem 1rem;
+    border-radius: 999px;
+    font-size: .75rem; font-weight: 700;
+    position: relative;
+  }
+  .m-search {
+    width: 100%;
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: .625rem 1rem .625rem 2.5rem;
+    font-family: inherit;
+    font-size: .8125rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239099a5' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: 14px center;
+    margin-bottom: .75rem;
+  }
+  .m-month {
+    font-size: .625rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .14em;
+    color: var(--text-3);
+    padding: 0 0 .375rem;
+    margin: .5rem 0 .375rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .m-entry {
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    margin-bottom: .5rem;
+    overflow: hidden;
+  }
+  .m-entry-body { padding: .75rem 1rem; }
+  .m-entry-meta { display: flex; gap: .5rem; margin-bottom: .25rem; }
+  .m-entry-date {
+    font-size: .6875rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .12em;
+    color: var(--cyan-dark);
+  }
+  .m-entry-mood { font-size: .6875rem; color: var(--text-2); }
+  .m-entry-title { font-size: .9375rem; font-weight: 700; line-height: 1.3; }
+  .m-entry-photo {
+    height: 110px;
+    background: linear-gradient(135deg, #ffd6a5 0%, #ff8fab 100%);
+  }
+
+  /* Mobile drawer open — full sidebar with streak at top */
+  .drawer {
+    background: var(--ink); color: #fff;
+    height: 100%;
+    display: flex; flex-direction: column;
+    padding: 1.25rem 0 1rem;
+    position: relative;
+  }
+  .drawer__top {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 1rem 1rem;
+    border-bottom: 1px solid rgba(255,255,255,.07);
+    margin-bottom: 1rem;
+  }
+  .drawer__logo-wrap {
+    display: inline-flex; align-items: center; gap: .5rem;
+    font-weight: 700; color: #fff; font-size: .9375rem;
+  }
+  .drawer__close {
+    width: 36px; height: 36px;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 50%;
+    color: #fff;
+    display: grid; place-items: center;
+  }
+
+  /* Streak module — sized larger for the mobile drawer */
+  .drawer__streak {
+    margin: 0 1rem 1rem;
+    padding: 1.125rem 1.25rem;
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 14px;
+  }
+  .drawer__streak-num {
+    font-size: 2.5rem;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -.03em;
+    color: var(--cyan);
+  }
+  .drawer__streak-unit {
+    font-size: .9375rem;
+    font-weight: 500;
+    color: rgba(255,255,255,.5);
+    margin-left: 6px;
+  }
+  .drawer__streak-label {
+    margin-top: .5rem;
+    font-size: .6875rem;
+    color: rgba(255,255,255,.55);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+  }
+  .drawer__reward { margin-top: .75rem; }
+  .drawer__reward-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .375rem;
+    width: 100%;
+    padding: 5px 10px;
+    background: #faf2dc;
+    border: 1px solid rgba(224,168,58,.3);
+    color: #8b6912;
+    border-radius: 6px;
+    font-size: .75rem;
+    font-weight: 700;
+    letter-spacing: .03em;
+  }
+  .drawer__reward-track {
+    margin-top: .625rem;
+    height: 5px;
+    background: rgba(255,255,255,.08);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .drawer__reward-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--cyan-dark), var(--cyan));
+    border-radius: 3px;
+  }
+  .drawer__reward-label {
+    font-size: .75rem;
+    color: rgba(255,255,255,.55);
+    font-weight: 500;
+    margin-top: 8px;
+    display: flex; justify-content: space-between;
+  }
+  .drawer__reward-label strong { color: var(--cyan); font-weight: 700; }
+  .drawer__longest {
+    margin-top: .875rem;
+    padding-top: .75rem;
+    border-top: 1px solid rgba(255,255,255,.08);
+    font-size: .8125rem;
+    color: rgba(255,255,255,.55);
+  }
+  .drawer__longest strong { color: #fff; font-weight: 700; }
+
+  .drawer__compose {
+    margin: 0 1rem 1rem;
+    padding: .75rem 1rem;
+    background: var(--cyan); color: var(--ink);
+    border: none; border-radius: 999px;
+    font-weight: 700; font-size: .9375rem;
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: .5rem;
+  }
+  .drawer__nav {
+    padding: 0 .625rem;
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .drawer__link {
+    display: flex; align-items: center; gap: .875rem;
+    padding: .75rem 1rem;
+    color: rgba(255,255,255,.85);
+    border-radius: 7px;
+    font-size: 1rem; font-weight: 600;
+  }
+  .drawer__link.active {
+    background: rgba(18,196,227,.12); color: var(--cyan);
+  }
+</style>
+</head>
+<body>
+
+<div class="lab-header">
+  <h1>Dashboard with streak in sidebar</h1>
+  <p>Streak module moves out of the top stats strip into the sidebar (replacing the greeting/date). Longest streak below it as small text. Total entries + days active are gone. Main content is now two equal-height columns; search bar (left) and reader-top (right) share the same 64px-tall top bar height and align horizontally.</p>
+</div>
+
+<div class="app">
+
+  <!-- ── Sidebar ──────────────────────────────────────────── -->
+  <aside class="side">
+    <div class="side__logo">
+      <div class="side__logo-wrap">
+        <span class="side__logo-icon">C</span>
+        <span>Creator Companion</span>
+      </div>
+      <button class="side__collapse">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+    </div>
+
+    <!-- ✨ Streak module — moved here from the top stats strip -->
+    <div class="side__streak">
+      <div>
+        <span class="side__streak-num">14</span><span class="side__streak-unit">days</span>
+      </div>
+      <div class="side__streak-label">Current streak</div>
+
+      <div class="side__reward">
+        <span class="side__reward-badge">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 4 L13 11 L20 12 L13 13 L12 20 L11 13 L4 12 L11 11 Z"/></svg>
+          Novice
+        </span>
+        <div class="side__reward-track">
+          <div class="side__reward-fill" style="width: 30%"></div>
+        </div>
+        <div class="side__reward-label">
+          <span><strong>16 days</strong> to Seeker</span>
+          <span>14 / 30</span>
+        </div>
+      </div>
+
+      <div class="side__longest">
+        Longest: <strong>42</strong> days
+      </div>
+    </div>
+
+    <!-- Compose button -->
+    <a class="side__compose" href="#">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      New Entry
+    </a>
+
+    <!-- Nav -->
+    <nav class="side__nav">
+      <a class="side__link active">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Journal
+      </a>
+      <a class="side__link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        Notifications
+      </a>
+      <a class="side__link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        To Do List
+      </a>
+      <a class="side__link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        Favorite Sparks
+      </a>
+      <a class="side__link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/></svg>
+        Trash
+      </a>
+    </nav>
+
+    <div class="side__spacer"></div>
+
+    <div class="side__user-row">
+      <div class="side__user-card">
+        <div class="side__avatar">CA</div>
+        <div class="side__user-info">
+          <div class="side__user-name">Chris Auman</div>
+          <div class="side__user-tier">Paid plan</div>
+        </div>
+      </div>
+      <button class="side__icon-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+      <button class="side__icon-btn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ── Main: two equal-height columns ─────────────────── -->
+  <div class="main">
+
+    <!-- Entry list column -->
+    <div class="col col-list">
+      <div class="top-bar top-bar--list">
+        <input class="search-input" placeholder="Search your entries…">
+        <button class="filter-pill">Newest ⌄</button>
+      </div>
+      <div class="body-scroll">
+        <div class="month-divider">May 2026</div>
+
+        <div class="entry-row">
+          <div class="entry-body">
+            <div class="entry-meta">
+              <span class="entry-date">Sun · 9:14 AM</span>
+              <span class="entry-mood">😊 Grateful</span>
+            </div>
+            <div class="entry-title">A quiet morning at the studio</div>
+          </div>
+          <div class="entry-photo"></div>
+        </div>
+
+        <div class="entry-row">
+          <div class="entry-body">
+            <div class="entry-meta">
+              <span class="entry-date">Sat · 10:42 PM</span>
+              <span class="entry-mood">✨ Inspired</span>
+            </div>
+            <div class="entry-title">Notes from the garden show</div>
+          </div>
+          <div class="entry-photo entry-photo--var2"></div>
+        </div>
+
+        <div class="entry-row">
+          <div class="entry-body">
+            <div class="entry-meta">
+              <span class="entry-date">Fri · 7:08 AM</span>
+              <span class="entry-mood">🙂 Hopeful</span>
+            </div>
+            <div class="entry-title">First of the month resolutions</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right column -->
+    <div class="col">
+      <div class="top-bar top-bar--reader">
+        <button class="today-pill">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2Z"/></svg>
+          Today
+        </button>
+        <div class="breadcrumb">Sunday, May 4</div>
+        <div></div>
+      </div>
+      <div class="body-scroll">
+        <div class="spark-card">
+          <span class="spark-eyebrow">● Your Daily Spark</span>
+          <p class="spark-quote">"The most regretful people on earth are those who felt the call to creative work and gave it neither power nor time."</p>
+          <button class="spark-btn">✏️ Start writing</button>
+        </div>
+
+        <div class="spark-card" style="background: linear-gradient(180deg, var(--ink) 0%, #1a1d24 100%);">
+          <span class="spark-eyebrow">Your Daily Prompt</span>
+          <p class="spark-quote">What excited you when you were creating today?</p>
+          <button class="spark-btn">✏️ Start writing</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="legend">
+  <strong>What's different (desktop):</strong>
+  <ul>
+    <li><strong>Sidebar</strong> — greeting/date removed. Streak module sits where the greeting was: number, "Current streak" label, tier badge (kept in the original warm gold/cream colors — they read cleanly on the dark sidebar), progress bar to next tier, and "Longest: 42 days" as small text below a hairline divider.</li>
+    <li><strong>Top stats strip</strong> — entirely gone. Total entries + days active are deleted from the UI. The streak module in the sidebar is the only stat displayed.</li>
+    <li><strong>Main area</strong> — two columns at full viewport height (820px in this mockup). Vertical hairline border separates them; both columns scroll independently.</li>
+    <li><strong>Top bars</strong> — both 64px tall, both with a 1px bottom border. The search bar (left) and the reader-top "Today" pill + breadcrumb (right) align horizontally to the pixel.</li>
+  </ul>
+</div>
+
+<!-- ── Mobile preview ──────────────────────────────────────── -->
+<div class="mobile-section">
+  <h2>Mobile</h2>
+  <p>The streak module also moves into the sidebar on mobile (you'll see it when you open the drawer). The standalone "streak card" that used to sit above the entry list on phones is gone — same idea as desktop: reclaim the space for content. Drawer-only means you check your streak when you open the menu, not on every screen.</p>
+
+  <div class="mobile-grid">
+
+    <!-- Phone 1 — drawer closed, dashboard visible -->
+    <div>
+      <div class="phone">
+        <div class="phone__notch"></div>
+        <div class="m-header">
+          <button class="m-hamburger"><span></span><span></span><span></span></button>
+          <div class="m-logo">
+            <span class="m-logo-icon">C</span>
+            <span>Creator Companion</span>
+          </div>
+          <button class="m-create">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+            Create Entry
+          </button>
+        </div>
+        <div class="m-body">
+          <div class="m-spark">
+            <span class="m-spark-eyebrow">● Daily Spark</span>
+            <p class="m-spark-quote">"The most regretful people on earth are those who felt the call to creative work and gave it neither power nor time."</p>
+            <button class="m-spark-btn">✏️ Start writing</button>
+          </div>
+          <input class="m-search" placeholder="Search your entries…">
+          <div class="m-month">May 2026</div>
+          <div class="m-entry">
+            <div class="m-entry-body">
+              <div class="m-entry-meta">
+                <span class="m-entry-date">Sun · 9:14 AM</span>
+                <span class="m-entry-mood">😊 Grateful</span>
+              </div>
+              <div class="m-entry-title">A quiet morning at the studio</div>
+            </div>
+            <div class="m-entry-photo"></div>
+          </div>
+          <div class="m-entry">
+            <div class="m-entry-body">
+              <div class="m-entry-meta">
+                <span class="m-entry-date">Sat · 10:42 PM</span>
+                <span class="m-entry-mood">✨ Inspired</span>
+              </div>
+              <div class="m-entry-title">Notes from the garden show</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-label">Drawer closed — clean dashboard, no streak card</div>
+    </div>
+
+    <!-- Phone 2 — drawer open, streak module visible -->
+    <div>
+      <div class="phone">
+        <div class="phone__notch"></div>
+        <div class="drawer">
+          <div class="drawer__top">
+            <div class="drawer__logo-wrap">
+              <span class="m-logo-icon">C</span>
+              <span>Creator Companion</span>
+            </div>
+            <button class="drawer__close">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- ✨ Streak module in mobile drawer (larger sizing) -->
+          <div class="drawer__streak">
+            <div>
+              <span class="drawer__streak-num">14</span><span class="drawer__streak-unit">days</span>
+            </div>
+            <div class="drawer__streak-label">Current streak</div>
+
+            <div class="drawer__reward">
+              <span class="drawer__reward-badge">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 4 L13 11 L20 12 L13 13 L12 20 L11 13 L4 12 L11 11 Z"/></svg>
+                Novice
+              </span>
+              <div class="drawer__reward-track">
+                <div class="drawer__reward-fill" style="width: 30%"></div>
+              </div>
+              <div class="drawer__reward-label">
+                <span><strong>16 days</strong> to Seeker</span>
+                <span>14 / 30</span>
+              </div>
+            </div>
+
+            <div class="drawer__longest">
+              Longest: <strong>42</strong> days
+            </div>
+          </div>
+
+          <a class="drawer__compose">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            New Entry
+          </a>
+
+          <nav class="drawer__nav">
+            <a class="drawer__link active">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              Journal
+            </a>
+            <a class="drawer__link">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              Notifications
+            </a>
+            <a class="drawer__link">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+              To Do List
+            </a>
+            <a class="drawer__link">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              Favorite Sparks
+            </a>
+          </nav>
+        </div>
+      </div>
+      <div class="phone-label">Drawer open — streak module at the top, larger sizing for thumb-friendly reading</div>
+    </div>
+
+  </div>
+
+  <div class="legend" style="margin-top: 1.5rem;">
+    <strong>Mobile changes:</strong>
+    <ul>
+      <li>The "streak-mobile" card that used to sit above the entry list is removed entirely. The dashboard's mobile view is now: header → daily spark → search → entries.</li>
+      <li>Inside the slide-out drawer, the streak module appears at the top (where the date/welcome used to be) — same content as desktop, but with larger text and a beefier progress bar to match the drawer's bigger nav scale.</li>
+      <li>The tier badge keeps its original warm gold/cream colors here too.</li>
+    </ul>
+  </div>
+</div>
+
+</body>
+</html>

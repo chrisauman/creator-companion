@@ -7,13 +7,15 @@ import { TokenService } from '../../core/services/token.service';
 import { AuthService } from '../../core/services/auth.service';
 import { StreakStats } from '../../core/models/models';
 import { SidebarStateService } from './sidebar-state.service';
+import { TierIconComponent } from '../tier-icon/tier-icon.component';
+import { getMilestoneProgress, MilestoneProgress } from '../../core/constants/milestones';
 
 const COLLAPSE_KEY = 'cc_sidebar_collapsed';
 
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, TierIconComponent],
   template: `
     <!-- Backdrop: visible only when the mobile drawer is open. Click to close. -->
     @if (mobileOpen()) {
@@ -54,10 +56,48 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
         </button>
       </div>
 
-      <!-- Greeting + date (hidden when collapsed) -->
-      <div class="sidebar__greeting" *ngIf="!collapsed()">
-        <div class="sidebar__greeting-hello">{{ greetingMessage() }}</div>
-        <div class="sidebar__greeting-date">{{ todayLabel() }}</div>
+      <!-- Streak module (replaces the old greeting). Hidden when the
+           sidebar is collapsed — there's no room for the progress bar. -->
+      <div class="sidebar__streak" *ngIf="!collapsed() && streak()">
+        <div class="sidebar__streak-main">
+          <span class="sidebar__streak-num">{{ streak()!.currentStreak }}</span>
+          <span class="sidebar__streak-unit">{{ streak()!.currentStreak === 1 ? 'day' : 'days' }}</span>
+        </div>
+        <div class="sidebar__streak-label">Current streak</div>
+
+        <ng-container *ngIf="progressToNext() as p">
+          <div class="sidebar__reward" *ngIf="p.current">
+            <span class="sidebar__reward-badge"
+                  [class.sidebar__reward-badge--top]="p.isAtTopTier">
+              <app-tier-icon [tier]="p.current.title" [size]="12"></app-tier-icon>
+              {{ p.current.title }}
+            </span>
+            <ng-container *ngIf="!p.isAtTopTier && p.next">
+              <div class="sidebar__reward-track">
+                <div class="sidebar__reward-fill" [style.width.%]="p.percentToNext"></div>
+              </div>
+              <div class="sidebar__reward-text">
+                <strong>{{ p.daysToNext }}</strong> to {{ p.next.title }}
+              </div>
+            </ng-container>
+            <div class="sidebar__reward-text sidebar__reward-text--top" *ngIf="p.isAtTopTier">
+              The highest tier — keep going.
+            </div>
+          </div>
+
+          <div class="sidebar__reward sidebar__reward--pre" *ngIf="!p.current && p.next">
+            <div class="sidebar__reward-track">
+              <div class="sidebar__reward-fill" [style.width.%]="p.percentToNext"></div>
+            </div>
+            <div class="sidebar__reward-text">
+              <strong>{{ p.daysToNext }}</strong> to {{ p.next.title }}
+            </div>
+          </div>
+        </ng-container>
+
+        <div class="sidebar__streak-longest" *ngIf="streak()!.longestStreak > 0">
+          Longest: <strong>{{ streak()!.longestStreak }}</strong> {{ streak()!.longestStreak === 1 ? 'day' : 'days' }}
+        </div>
       </div>
 
       <!-- New Entry button (cyan; full pill expanded, just + icon collapsed) -->
@@ -308,30 +348,119 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
       .sidebar__collapse { display: none !important; }
     }
 
-    /* ── Greeting + date (just below logo, hidden when collapsed) ── */
-    .sidebar__greeting {
-      padding: 0 1.25rem .875rem;
+    /* ── Streak module (just below logo, hidden when collapsed) ──── */
+    .sidebar__streak {
+      padding: 0 1.25rem 1rem;
       border-bottom: 1px solid rgba(255,255,255,.07);
       margin-bottom: 1rem;
       margin-top: -.5rem;
     }
-    .sidebar__greeting-hello {
+    .sidebar__streak-main {
+      display: flex;
+      align-items: baseline;
+      gap: .375rem;
+    }
+    .sidebar__streak-num {
       font-family: var(--font-sans);
-      font-size: .9375rem;
-      font-weight: 700;
-      color: #fff;
-      letter-spacing: -.005em;
-      line-height: 1.2;
+      font-size: 2rem;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -.03em;
+      color: var(--color-accent);
     }
-    .sidebar__greeting-date {
-      font-size: .6875rem;
+    .sidebar__streak-unit {
+      font-size: .75rem;
+      font-weight: 500;
       color: rgba(255,255,255,.45);
-      margin-top: 2px;
     }
+    .sidebar__streak-label {
+      margin-top: .375rem;
+      font-size: .625rem;
+      color: rgba(255,255,255,.55);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+    }
+
+    /* Tier reward — original warm gold/cream pill, kept as-is for the
+       dark sidebar (cream pill on dark contrasts cleanly). The progress
+       track and label colors are tweaked for readability on dark. */
+    .sidebar__reward { margin-top: .625rem; }
+    .sidebar__reward-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: .375rem;
+      width: 100%;
+      padding: 4px 8px;
+      background: #faf2dc;
+      border: 1px solid rgba(224,168,58,.3);
+      color: #8b6912;
+      border-radius: 6px;
+      font-size: .625rem;
+      font-weight: 700;
+      letter-spacing: .03em;
+      box-sizing: border-box;
+    }
+    .sidebar__reward-badge--top {
+      background: linear-gradient(135deg, #faf2dc 0%, #f0d77a 100%);
+      border-color: rgba(224,168,58,.55);
+      color: #6e5610;
+    }
+    .sidebar__reward-track {
+      margin-top: .5rem;
+      height: 4px;
+      background: rgba(255,255,255,.08);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .sidebar__reward-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #0d9bb5, var(--color-accent));
+      border-radius: 2px;
+      transition: width .35s ease;
+    }
+    .sidebar__reward-text {
+      font-size: .6875rem;
+      color: rgba(255,255,255,.55);
+      font-weight: 500;
+      margin-top: 6px;
+    }
+    .sidebar__reward-text strong {
+      color: #5fdcef;
+      font-weight: 700;
+    }
+    .sidebar__reward-text--top {
+      text-align: center;
+      color: #d8b85f;
+      font-weight: 600;
+    }
+
+    .sidebar__streak-longest {
+      margin-top: .75rem;
+      padding-top: .625rem;
+      border-top: 1px solid rgba(255,255,255,.06);
+      font-size: .75rem;
+      color: rgba(255,255,255,.55);
+    }
+    .sidebar__streak-longest strong {
+      color: #fff;
+      font-weight: 700;
+    }
+
+    /* Larger streak on the mobile drawer to match its bigger nav scale. */
     @media (max-width: 767px) {
-      .sidebar__greeting-hello { font-size: 1.125rem; }
-      .sidebar__greeting-date { font-size: .8125rem; margin-top: 4px; }
-      .sidebar__greeting { padding: 0 1.25rem 1.125rem; margin-bottom: 1.125rem; }
+      .sidebar__streak {
+        padding: 0 1.25rem 1.25rem;
+        margin-top: -.25rem;
+      }
+      .sidebar__streak-num { font-size: 2.5rem; }
+      .sidebar__streak-unit { font-size: .9375rem; }
+      .sidebar__streak-label { font-size: .6875rem; margin-top: .5rem; }
+      .sidebar__reward-badge { font-size: .6875rem; padding: 5px 10px; }
+      .sidebar__reward-track { height: 5px; margin-top: .625rem; }
+      .sidebar__reward-text { font-size: .75rem; }
+      .sidebar__streak-longest { font-size: .8125rem; margin-top: .875rem; padding-top: .75rem; }
     }
 
     /* ── New Entry button (cyan pill expanded; circular + icon collapsed) ── */
@@ -600,28 +729,10 @@ export class SidebarComponent implements OnInit {
     return tier === 'Paid' ? 'Paid plan' : 'Free plan';
   });
 
-  /** Time-of-day greeting shown just below the logo (sidebar). */
-  greetingMessage = computed(() => {
-    const name = this.firstName();
-    const hour = new Date().getHours();
-    const period = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
-    return name ? `Good ${period}, ${name}` : `Good ${period}`;
-  });
-
-  /** Date subtitle below the greeting, e.g. "Sun · May 4". */
-  todayLabel = computed(() => {
-    const now = new Date();
-    return now.toLocaleDateString('en-US', {
-      weekday: 'short', month: 'short', day: 'numeric'
-    });
-  });
-
-  private firstName(): string {
-    const u = this.tokens.getCachedUser();
-    if (!u?.username) return '';
-    const base = u.username.includes('@') ? u.username.split('@')[0] : u.username;
-    return base.charAt(0).toUpperCase() + base.slice(1);
-  }
+  /** Tier-progress data for the streak module's badge + progress bar. */
+  progressToNext = computed<MilestoneProgress>(() =>
+    getMilestoneProgress(this.streak()?.currentStreak ?? 0)
+  );
 
   toggleCollapsed(): void {
     const next = !this.collapsedPref();
