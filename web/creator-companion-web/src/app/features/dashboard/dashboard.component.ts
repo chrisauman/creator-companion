@@ -431,11 +431,11 @@ import { ActivatedRoute } from '@angular/router';
     .work__right-col { display: none; }
 
     @media (min-width: 768px) {
-      /* Two equal-height columns. Both fill the viewport so the entry
-         list scrolls inside its column and the right column's reader-top
-         stays pinned at the top. The shared top bars (search-bar on the
-         left, reader-top on the right) are sized to match (64px) and
-         align horizontally across the divider. */
+      /* Two equal-height columns. Both fill the viewport so the right
+         column's reader-top stays pinned at the top. The shared top
+         bars (search-bar on the left, reader-top on the right) are
+         sized to match (64px) and align horizontally across the
+         divider. Each column scrolls independently. */
       .work {
         display: grid;
         grid-template-columns: minmax(360px, 420px) 1fr;
@@ -451,8 +451,6 @@ import { ActivatedRoute } from '@angular/router';
         padding: 0 1.75rem 1rem 0;
         border-right: 1px solid var(--color-border);
         min-width: 0;
-        display: flex;
-        flex-direction: column;
         overflow-y: auto;
       }
       .work__right-col {
