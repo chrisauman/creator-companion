@@ -12,7 +12,7 @@ using System.Web;
 
 namespace CreatorCompanion.Api.Application.Services;
 
-public class AuthService(AppDbContext db, IConfiguration config, IEmailService emailService, IAuditService audit) : IAuthService
+public class AuthService(AppDbContext db, IConfiguration config, IEmailService emailService, IAuditService audit, IStorageService storage) : IAuthService
 {
     // In-memory lockout tracker: identifier → (failCount, windowStart)
     private static readonly Dictionary<string, (int Count, DateTime WindowStart)> _failedAttempts = new();
@@ -298,7 +298,8 @@ public class AuthService(AppDbContext db, IConfiguration config, IEmailService e
                 user.Email,
                 user.Tier.ToString(),
                 user.TimeZoneId,
-                user.OnboardingCompleted));
+                user.OnboardingCompleted,
+                string.IsNullOrEmpty(user.ProfileImagePath) ? null : storage.GetUrl(user.ProfileImagePath)));
     }
 
     private string GenerateJwt(User user, DateTime expiresAt)

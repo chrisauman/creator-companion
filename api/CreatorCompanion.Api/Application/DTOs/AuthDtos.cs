@@ -41,5 +41,6 @@ public record UserSummary(
     string Email,
     string Tier,
     string TimeZoneId,
-    bool OnboardingCompleted
+    bool OnboardingCompleted,
+    string? ProfileImageUrl
 );

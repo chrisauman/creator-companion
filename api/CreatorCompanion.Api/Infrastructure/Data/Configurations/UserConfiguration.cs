@@ -18,6 +18,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.ShowActionItems).HasDefaultValue(true);
         builder.Property(u => u.StripeCustomerId).HasMaxLength(255);
         builder.Property(u => u.StripeSubscriptionId).HasMaxLength(255);
+        builder.Property(u => u.ProfileImagePath).HasMaxLength(500);
 
         builder.HasIndex(u => u.Email).IsUnique();
         builder.HasIndex(u => u.Username).IsUnique();

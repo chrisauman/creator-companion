@@ -319,6 +319,20 @@ export class ApiService {
     return this.http.delete<void>(`${this.base}/media/${mediaId}`);
   }
 
+  /** Upload a new profile picture for the current user. Server returns
+   *  the public URL of the uploaded image (already cropped/resized
+   *  server-side). */
+  uploadProfileImage(file: File): Observable<{ profileImageUrl: string }> {
+    const form = new FormData();
+    form.append('file', file);
+    return this.http.post<{ profileImageUrl: string }>(`${this.base}/users/me/profile-image`, form);
+  }
+
+  /** Remove the current profile picture (revert to initial-letter avatar). */
+  deleteProfileImage(): Observable<void> {
+    return this.http.delete<void>(`${this.base}/users/me/profile-image`);
+  }
+
   // ── Admin: Reminder Config ───────────────────────────────────────────────
   adminGetReminderConfig(): Observable<ReminderConfigResponse> {
     return this.http.get<ReminderConfigResponse>(`${this.base}/admin/reminder-config`);

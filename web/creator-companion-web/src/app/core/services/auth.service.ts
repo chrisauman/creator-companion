@@ -98,7 +98,8 @@ export class AuthService {
         this._user.set(user);
         this.tokens.cacheUser({
           id: user.id, username: user.username,
-          email: user.email, tier: user.tier
+          email: user.email, tier: user.tier,
+          profileImageUrl: user.profileImageUrl ?? null
         });
       })
     );
@@ -117,7 +118,8 @@ export class AuthService {
         id: res.user.id,
         username: res.user.username,
         email: res.user.email,
-        tier: res.user.tier
+        tier: res.user.tier,
+        profileImageUrl: res.user.profileImageUrl ?? null
       });
     }
   }

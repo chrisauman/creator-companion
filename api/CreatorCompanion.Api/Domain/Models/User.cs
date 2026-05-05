@@ -27,6 +27,15 @@ public class User
     public string? StripeCustomerId { get; set; }
     public string? StripeSubscriptionId { get; set; }
 
+    /// <summary>
+    /// Storage path / URL for the user's profile picture. Null when the
+    /// user hasn't uploaded one (the UI falls back to a generated
+    /// initial-letter circle in that case). Stored as a relative key
+    /// returned by IStorageService.SaveAsync; convert to a public URL
+    /// via IStorageService.GetUrl().
+    /// </summary>
+    public string? ProfileImagePath { get; set; }
+
     public ICollection<Journal> Journals { get; set; } = new List<Journal>();
     public ICollection<Entry> Entries { get; set; } = new List<Entry>();
     public ICollection<Draft> Drafts { get; set; } = new List<Draft>();

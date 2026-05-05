@@ -9,6 +9,9 @@ export interface User {
   trialEndsAt?: string;
   showMotivation: boolean;
   showActionItems: boolean;
+  /** Public URL of the user's uploaded profile picture, or null/absent
+   *  when they haven't set one (UI shows the initial-letter avatar). */
+  profileImageUrl?: string | null;
 }
 
 export interface MotivationEntry {

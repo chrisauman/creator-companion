@@ -716,24 +716,12 @@ export class SidebarComponent implements OnInit {
   username      = computed(() => this.tokens.getCachedUser()?.username ?? '');
   userInitial   = computed(() => (this.tokens.getCachedUser()?.username?.[0] ?? '?').toUpperCase());
 
-  /** Display name for the user card. Prefers firstName + lastName
-   *  when those are set on the User model (backend support coming);
-   *  falls back to a capitalised version of the username's local
-   *  part (so "chris@sanctuarymg.com" → "Chris"). */
-  displayName = computed(() => {
-    const u = this.tokens.getCachedUser() as ({ firstName?: string; lastName?: string; username?: string } | null);
-    if (!u) return '';
-    const first = (u.firstName ?? '').trim();
-    const last  = (u.lastName ?? '').trim();
-    if (first || last) return `${first} ${last}`.trim();
-    if (!u.username) return '';
-    const base = u.username.includes('@') ? u.username.split('@')[0] : u.username;
-    return base.charAt(0).toUpperCase() + base.slice(1);
-  });
+  /** Display name shown next to the avatar — just the username. */
+  displayName = computed(() => this.tokens.getCachedUser()?.username ?? '');
 
   /** Profile picture URL — null until the user has uploaded one.
-   *  When a URL is present, the avatar circle renders the image
-   *  instead of the initial-letter fallback. */
+   *  When set, the avatar circle renders the image instead of the
+   *  initial-letter fallback. */
   profileImageUrl = computed<string | null>(() => {
     const u = this.tokens.getCachedUser() as ({ profileImageUrl?: string | null } | null);
     return u?.profileImageUrl?.trim() || null;

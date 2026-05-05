@@ -26,7 +26,8 @@ public record UserProfileResponse(
     DateTime CreatedAt,
     DateTime? TrialEndsAt,
     bool ShowMotivation,
-    bool ShowActionItems
+    bool ShowActionItems,
+    string? ProfileImageUrl
 );
 
 // ── Action Items ────────────────────────────────────────────────────────────

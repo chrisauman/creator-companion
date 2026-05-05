@@ -6,6 +6,7 @@ import { ApiService } from '../../core/services/api.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ExportService } from '../../core/services/export.service';
 import { PushService } from '../../core/services/push.service';
+import { TokenService } from '../../core/services/token.service';
 import { User, Capabilities, Tag, StreakStats, Reminder } from '../../core/models/models';
 import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
 const DEFAULT_REMINDER_MESSAGE = "Remember to log an entry to keep your streak alive.";
@@ -169,7 +170,49 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log an entry to keep your streak a
         <!-- Profile -->
         <section class="card">
           <h2 style="margin-bottom:1rem">Profile</h2>
-          <div class="profile-rows">
+
+          <!-- Profile picture: shows current avatar with Change /
+               Remove buttons. Click the avatar itself to also pick
+               a file. JPEG / PNG / WebP, 5 MB max. -->
+          <div class="profile-image-row">
+            <button class="profile-image-circle"
+                    type="button"
+                    (click)="profileImageInput.click()"
+                    [disabled]="profileImageWorking()"
+                    [style.background-image]="profileImageUrl() ? 'url(' + profileImageUrl() + ')' : null"
+                    [class.profile-image-circle--photo]="!!profileImageUrl()"
+                    title="Change profile picture">
+              <span *ngIf="!profileImageUrl()">{{ profileImageInitial() }}</span>
+            </button>
+            <div class="profile-image-actions">
+              <input #profileImageInput
+                     type="file"
+                     accept="image/jpeg,image/png,image/webp"
+                     style="display:none"
+                     (change)="onProfileImagePicked($event)" />
+              <button class="btn btn--secondary btn--sm"
+                      type="button"
+                      (click)="profileImageInput.click()"
+                      [disabled]="profileImageWorking()">
+                {{ profileImageUrl() ? 'Change photo' : 'Upload photo' }}
+              </button>
+              <button *ngIf="profileImageUrl()"
+                      class="btn btn--ghost btn--sm"
+                      type="button"
+                      (click)="removeProfileImage()"
+                      [disabled]="profileImageWorking()">
+                Remove
+              </button>
+              <p *ngIf="profileImageError()" class="text-sm" style="color:var(--color-danger);margin-top:.5rem">
+                {{ profileImageError() }}
+              </p>
+              <p *ngIf="profileImageWorking()" class="text-sm text-muted" style="margin-top:.5rem">
+                Working…
+              </p>
+            </div>
+          </div>
+
+          <div class="profile-rows" style="margin-top:1.5rem">
             <div class="profile-row">
               <span class="cap-label">Username</span>
               <span>{{ user()!.username }}</span>
@@ -510,6 +553,41 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log an entry to keep your streak a
     .profile-rows { display:flex; flex-direction:column; }
     .export-actions { display:flex; gap:.75rem; flex-wrap:wrap; }
 
+    /* Profile picture upload row */
+    .profile-image-row {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+    .profile-image-circle {
+      width: 84px; height: 84px;
+      border-radius: 50%;
+      border: 1px solid var(--color-border);
+      background: linear-gradient(135deg, #ff9a76, #c25fb5);
+      background-size: cover;
+      background-position: center;
+      color: #fff;
+      font-size: 1.75rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: transform .15s, box-shadow .15s;
+      padding: 0;
+      font-family: inherit;
+    }
+    .profile-image-circle:not(:disabled):hover {
+      transform: scale(1.02);
+      box-shadow: 0 6px 20px -6px rgba(0,0,0,.18);
+    }
+    .profile-image-circle:disabled { opacity: .6; cursor: wait; }
+    .profile-image-circle--photo { background-color: #1a1d24; }
+    .profile-image-actions {
+      display: flex;
+      flex-direction: column;
+      gap: .5rem;
+      align-items: flex-start;
+    }
+
     .password-form { display:flex; flex-direction:column; gap:.875rem; }
     .field-group { display:flex; flex-direction:column; gap:.3rem; }
     .field-label { font-size:.8125rem; font-weight:500; color:var(--color-text); }
@@ -705,6 +783,21 @@ export class AccountComponent implements OnInit {
   private auth     = inject(AuthService);
   private exporter = inject(ExportService);
   private push     = inject(PushService);
+  private tokens   = inject(TokenService);
+
+  // Profile picture upload
+  profileImageWorking = signal(false);
+  profileImageError   = signal('');
+  profileImageUrl     = computed<string | null>(() => {
+    // Source from the cached user (which TokenService updates after upload)
+    // so the avatar refreshes the moment a new image is set without a
+    // page reload.
+    return this.tokens.getCachedUser()?.profileImageUrl?.trim() || null;
+  });
+  profileImageInitial = computed(() => {
+    const u = this.user();
+    return (u?.username?.[0] ?? '?').toUpperCase();
+  });
 
   readonly defaultReminderMessage = DEFAULT_REMINDER_MESSAGE;
 
@@ -1045,6 +1138,64 @@ export class AccountComponent implements OnInit {
       error: err => {
         this.changingPassword.set(false);
         this.passwordError.set(err?.error?.error ?? 'Could not update password. Please try again.');
+      }
+    });
+  }
+
+  /** User picked a file from the <input type="file"> for profile pic. */
+  onProfileImagePicked(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    // Reset the input so re-selecting the same filename still fires change
+    input.value = '';
+    if (!file) return;
+
+    // Client-side validation — server validates again, but bail early
+    // for an instant error message instead of a round trip.
+    const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowed.includes(file.type)) {
+      this.profileImageError.set('Please choose a JPEG, PNG, or WebP image.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      this.profileImageError.set('Image must be 5 MB or smaller.');
+      return;
+    }
+
+    this.profileImageError.set('');
+    this.profileImageWorking.set(true);
+    this.api.uploadProfileImage(file).subscribe({
+      next: ({ profileImageUrl }) => {
+        // Mirror the new URL onto the cached user; the sidebar's
+        // profileImageUrl computed reads from the same source so its
+        // avatar refreshes immediately. Also update the live `user()`
+        // signal so the Profile section reflects the change.
+        this.tokens.updateCachedUser({ profileImageUrl });
+        const current = this.user();
+        if (current) this.auth.setUser({ ...current, profileImageUrl });
+        this.profileImageWorking.set(false);
+      },
+      error: err => {
+        this.profileImageError.set(err?.error?.error ?? 'Could not upload image. Try again.');
+        this.profileImageWorking.set(false);
+      }
+    });
+  }
+
+  /** Remove the current profile picture and revert to the initial-letter avatar. */
+  removeProfileImage(): void {
+    this.profileImageError.set('');
+    this.profileImageWorking.set(true);
+    this.api.deleteProfileImage().subscribe({
+      next: () => {
+        this.tokens.updateCachedUser({ profileImageUrl: null });
+        const current = this.user();
+        if (current) this.auth.setUser({ ...current, profileImageUrl: null });
+        this.profileImageWorking.set(false);
+      },
+      error: err => {
+        this.profileImageError.set(err?.error?.error ?? 'Could not remove image. Try again.');
+        this.profileImageWorking.set(false);
       }
     });
   }

@@ -11,8 +11,14 @@ namespace CreatorCompanion.Api.Api.Controllers;
 [ApiController]
 [Route("v1/users")]
 [Authorize]
-public class UsersController(AppDbContext db) : ControllerBase
+public class UsersController(AppDbContext db, IStorageService storage) : ControllerBase
 {
+    private static readonly HashSet<string> AllowedImageTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "image/jpeg", "image/png", "image/webp"
+    };
+    private const long MaxProfileImageBytes = 5 * 1024 * 1024; // 5 MB
+
     private Guid UserId => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)
         ?? User.FindFirstValue("sub")!);
 
@@ -26,7 +32,8 @@ public class UsersController(AppDbContext db) : ControllerBase
             user.Id, user.Username, user.Email,
             user.Tier.ToString(), user.TimeZoneId,
             user.OnboardingCompleted, user.CreatedAt, user.TrialEndsAt,
-            user.ShowMotivation, user.ShowActionItems));
+            user.ShowMotivation, user.ShowActionItems,
+            string.IsNullOrEmpty(user.ProfileImagePath) ? null : storage.GetUrl(user.ProfileImagePath)));
     }
 
     [HttpPatch("me/timezone")]
@@ -106,6 +113,62 @@ public class UsersController(AppDbContext db) : ControllerBase
         await db.SaveChangesAsync();
 
         return Ok(new { showActionItems = user.ShowActionItems });
+    }
+
+    [HttpPost("me/profile-image")]
+    [RequestSizeLimit(MaxProfileImageBytes)]
+    public async Task<IActionResult> UploadProfileImage(IFormFile file)
+    {
+        if (file is null || file.Length == 0)
+            return BadRequest(new { error = "No file uploaded." });
+
+        if (!AllowedImageTypes.Contains(file.ContentType))
+            return BadRequest(new { error = "Only JPEG, PNG, or WebP images are allowed." });
+
+        if (file.Length > MaxProfileImageBytes)
+            return BadRequest(new { error = "Image must be 5 MB or smaller." });
+
+        var user = await db.Users.FindAsync(UserId);
+        if (user is null) return NotFound();
+
+        // Save the new image first; only delete the old one once the upload succeeds.
+        string newPath;
+        await using (var stream = file.OpenReadStream())
+            newPath = await storage.SaveAsync(stream, $"avatar_{file.FileName}", file.ContentType);
+
+        var oldPath = user.ProfileImagePath;
+        user.ProfileImagePath = newPath;
+        user.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync();
+
+        // Best-effort delete of the previous avatar to keep storage tidy.
+        if (!string.IsNullOrEmpty(oldPath))
+        {
+            try { await storage.DeleteAsync(oldPath); }
+            catch { /* logged elsewhere — never fail the request over cleanup */ }
+        }
+
+        return Ok(new { profileImageUrl = storage.GetUrl(newPath) });
+    }
+
+    [HttpDelete("me/profile-image")]
+    public async Task<IActionResult> DeleteProfileImage()
+    {
+        var user = await db.Users.FindAsync(UserId);
+        if (user is null) return NotFound();
+
+        var oldPath = user.ProfileImagePath;
+        user.ProfileImagePath = null;
+        user.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync();
+
+        if (!string.IsNullOrEmpty(oldPath))
+        {
+            try { await storage.DeleteAsync(oldPath); }
+            catch { /* swallow — file may already be gone */ }
+        }
+
+        return NoContent();
     }
 
     [HttpDelete("me")]
