@@ -71,53 +71,62 @@ import { MoodIconComponent } from '../../shared/mood-icon/mood-icon.component';
 
       <!-- Body -->
       @if (loading) {
-        <div class="state-msg">Loading…</div>
+        <div class="reading-scroll">
+          <div class="state-msg">Loading…</div>
+        </div>
       } @else if (loadError) {
-        <div class="state-msg state-msg--error">
-          Could not load this entry. It may have been deleted.
+        <div class="reading-scroll">
+          <div class="state-msg state-msg--error">
+            Could not load this entry. It may have been deleted.
+          </div>
         </div>
       } @else if (entry) {
-        <article class="reading">
-          <div class="reading__date-row">
-            <span class="reading__date">{{ dateLabel() }}</span>
-            @if (entry.mood) {
-              <span class="reading__mood">
-                <app-mood-icon [mood]="entry.mood" [size]="14"></app-mood-icon>
-                {{ entry.mood }}
-              </span>
+        <!-- Scrollable wrapper fills the column; inner article is
+             always centred at max-width 760px so every entry renders
+             at the same width regardless of content length. -->
+        <div class="reading-scroll">
+          <article class="reading">
+            <div class="reading__date-row">
+              <span class="reading__date">{{ dateLabel() }}</span>
+              @if (entry.mood) {
+                <span class="reading__mood">
+                  <app-mood-icon [mood]="entry.mood" [size]="14"></app-mood-icon>
+                  {{ entry.mood }}
+                </span>
+              }
+            </div>
+
+            @if (entry.title) {
+              <h1 class="reading__title">{{ entry.title }}</h1>
             }
-          </div>
 
-          @if (entry.title) {
-            <h1 class="reading__title">{{ entry.title }}</h1>
-          }
+            @if (entry.entrySource === 1) {
+              <p class="reading__backfill">Backfilled on {{ createdAtLabel() }}</p>
+            }
 
-          @if (entry.entrySource === 1) {
-            <p class="reading__backfill">Backfilled on {{ createdAtLabel() }}</p>
-          }
+            <div class="reading__body" [innerHTML]="renderedContent()"></div>
 
-          <div class="reading__body" [innerHTML]="renderedContent()"></div>
+            @if (entry.media.length > 0) {
+              <div class="reading__images" [class.reading__images--single]="entry.media.length === 1">
+                @for (img of entry.media; track img.id) {
+                  <img class="reading__image"
+                       [src]="fullImageUrl(img.url)"
+                       [alt]="img.fileName"
+                       loading="lazy"
+                       (error)="onImgError($event)" />
+                }
+              </div>
+            }
 
-          @if (entry.media.length > 0) {
-            <div class="reading__images" [class.reading__images--single]="entry.media.length === 1">
-              @for (img of entry.media; track img.id) {
-                <img class="reading__image"
-                     [src]="fullImageUrl(img.url)"
-                     [alt]="img.fileName"
-                     loading="lazy"
-                     (error)="onImgError($event)" />
-              }
-            </div>
-          }
-
-          @if (entry.tags.length > 0) {
-            <div class="reading__tags">
-              @for (tag of entry.tags; track tag) {
-                <span class="reading__tag">#{{ tag }}</span>
-              }
-            </div>
-          }
-        </article>
+            @if (entry.tags.length > 0) {
+              <div class="reading__tags">
+                @for (tag of entry.tags; track tag) {
+                  <span class="reading__tag">#{{ tag }}</span>
+                }
+              </div>
+            }
+          </article>
+        </div>
       }
     </div>
   `,
@@ -241,12 +250,20 @@ import { MoodIconComponent } from '../../shared/mood-icon/mood-icon.component';
     .state-msg--error { color: #e11d48; }
 
     /* ── Reading body ───────────────────────────────────────── */
-    .reading {
-      padding: 2rem 2.5rem 4rem;
-      max-width: 760px;
-      margin: 0 auto;
+    /* Scroll wrapper fills the right column; the article inside is
+       always 760px max and centred. This way every entry renders at
+       the exact same width regardless of how short or long it is. */
+    .reading-scroll {
       flex: 1;
       overflow-y: auto;
+      min-height: 0;
+    }
+    .reading {
+      width: 100%;
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 2rem 2.5rem 4rem;
+      box-sizing: border-box;
     }
     .reading__date-row {
       display: flex;
