@@ -77,10 +77,33 @@ export class AuthService {
     this._capabilities.set(null);
   }
 
+  /** Sessionstorage key set during logout. The publicGuard reads this on the
+   *  next page load and skips its background refresh attempt — otherwise the
+   *  HttpOnly refresh-token cookie (still valid until the server-side revoke
+   *  completes) would silently log the user back in, requiring a second
+   *  logout click. The flag is one-shot — read once, deleted. */
+  private static readonly LOGOUT_FLAG = 'cc_just_logged_out';
+
+  /** True if logout was just initiated (this page load). Public guard
+   *  consumes the flag once and clears it. */
+  static consumeJustLoggedOut(): boolean {
+    try {
+      const present = sessionStorage.getItem(AuthService.LOGOUT_FLAG) === '1';
+      if (present) sessionStorage.removeItem(AuthService.LOGOUT_FLAG);
+      return present;
+    } catch { return false; }
+  }
+
   logout(): void {
     this.tokens.clear();
     this._user.set(null);
     this._capabilities.set(null);
+    // Mark the next page load as a fresh-from-logout transition so the
+    // publicGuard skips its silent refresh attempt. Without this flag, the
+    // HttpOnly refresh-token cookie (still valid until the server-side
+    // revoke completes) would log the user right back in, making logout
+    // appear to take two clicks. See publicGuard in auth.guard.ts.
+    try { sessionStorage.setItem(AuthService.LOGOUT_FLAG, '1'); } catch {}
     // Fire revoke in the background — do NOT wait for it before navigating.
     // Railway cold starts can stall the revoke response for 8+ seconds, which
     // previously blocked window.location.replace('/login') from ever firing,

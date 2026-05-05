@@ -91,6 +91,13 @@ export const publicGuard: CanActivateFn = () => {
     return false;
   }
 
+  // If the user just clicked Logout, the HttpOnly refresh-token cookie may
+  // still be valid until the server-side revoke completes. Skip the silent
+  // refresh attempt for this page load so logout sticks on the first click.
+  // (Flag is read once and cleared — subsequent visits to /login restore
+  // the optimistic-restore behaviour.)
+  if (AuthService.consumeJustLoggedOut()) return true;
+
   // Show the login page immediately — don't block on a cold API round-trip.
   // Fire the refresh check in the background; if the cookie is still valid
   // the user will be silently redirected to the dashboard once it resolves.
