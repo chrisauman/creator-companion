@@ -337,11 +337,11 @@ import { ActivatedRoute } from '@angular/router';
     }
     @media (min-width: 768px) {
       .main-content {
-        /* Tight top padding — the streak now lives in the sidebar so
-           we don't need a tall greeting strip up here anymore. Side
-           padding is just enough breathing room from the sidebar's
-           dark edge before the entry list starts. */
-        padding: 1rem 1.25rem 4rem;
+        /* No top padding — the search bar (left) and today-panel/
+           reader-top (right) push themselves to the top of the
+           viewport. Side padding is just enough breathing room from
+           the sidebar's dark edge before the entry list starts. */
+        padding: 0 1.25rem 4rem;
         background: #f7f7f5;
       }
     }
@@ -449,7 +449,7 @@ import { ActivatedRoute } from '@angular/router';
         /* Pull the right column flush with the page edge; the left
            column sits flush against the sidebar's content padding. */
         margin: 0 -1.25rem -4rem 0;
-        height: calc(100vh - 1rem);
+        height: 100vh;
         min-height: 600px;
       }
       .work__list-col {
