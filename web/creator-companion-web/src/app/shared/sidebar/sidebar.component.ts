@@ -278,17 +278,18 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
     }
 
     /* ── Top: logo + collapse toggle ─────────────────────────────── */
+    /* No rule below the logo — vertical rhythm comes from equal
+       1rem gaps between logo / button / nav. */
     .sidebar__top {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: .25rem;
-      padding: 0 .875rem 1.125rem;
-      border-bottom: 1px solid rgba(255,255,255,.07);
-      margin-bottom: 1.125rem;
+      padding: 0 .875rem;
+      margin-bottom: 1rem;
     }
     .sidebar--collapsed .sidebar__top {
-      padding: 0 .5rem 1.125rem;
+      padding: 0 .5rem;
       flex-direction: column;
       gap: .75rem;
     }
