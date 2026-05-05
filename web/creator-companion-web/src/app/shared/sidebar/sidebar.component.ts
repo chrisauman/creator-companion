@@ -25,9 +25,15 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
            [class.sidebar--collapsed]="collapsed()"
            [class.sidebar--mobile-open]="mobileOpen()">
 
-      <!-- Logo + collapse toggle (desktop) / close button (mobile) -->
+      <!-- Logo + collapse toggle (desktop) / close button (mobile).
+           Clicking the logo behaves like the "Today" pill in the right
+           column: navigate to /dashboard AND ask the dashboard to
+           reset to today mode (clears selected entry / closes compose/
+           edit). -->
       <div class="sidebar__top">
-        <a class="sidebar__logo-wrap" routerLink="/dashboard">
+        <a class="sidebar__logo-wrap"
+           routerLink="/dashboard"
+           (click)="goHome()">
           <img src="logo-icon.png" alt="" class="sidebar__logo-icon">
           <span class="sidebar__logo-text">Creator Companion</span>
         </a>
@@ -449,21 +455,23 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
       .sidebar__streak-foot { font-size: .75rem; }
     }
 
-    /* ── New Entry button (cyan pill expanded; circular + icon collapsed) ── */
+    /* ── New Entry button (matches the entry-reader Edit button's
+       metrics — .5rem/1rem padding, .8125rem font, weight 600 — so
+       primary CTAs are consistent across the app). ── */
     .sidebar__compose {
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: .5rem;
       margin: 0 .875rem 1rem;
-      padding: .625rem 1rem;
+      padding: .5rem 1rem;
       background: var(--color-accent);
       color: #0c0e13;
       border: none;
       border-radius: 999px;
       font-family: inherit;
-      font-size: .875rem;
-      font-weight: 700;
+      font-size: .8125rem;
+      font-weight: 600;
       cursor: pointer;
       text-decoration: none;
       transition: background .15s, transform .15s;
@@ -474,7 +482,7 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
       transform: translateY(-1px);
     }
     .sidebar__compose--collapsed {
-      width: 36px; height: 36px;
+      width: 32px; height: 32px;
       padding: 0;
       margin: 0 auto 1rem;
       border-radius: 50%;
@@ -531,9 +539,7 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
 
     /* ── Footer: user card + actions ─────────────────────────────── */
     .sidebar__footer-wrap {
-      border-top: 1px solid rgba(255,255,255,.07);
-      margin-top: .5rem;
-      padding: .875rem .75rem .25rem;
+      padding: .25rem .75rem .25rem;
       display: flex;
       flex-direction: column;
       gap: .5rem;
@@ -742,6 +748,17 @@ export class SidebarComponent implements OnInit {
     event.preventDefault();
     event.stopPropagation();
     this.auth.logout();
+  }
+
+  /**
+   * Logo click — also asks the dashboard to reset to "today" view
+   * (same as clicking the Today pill in the right column). The
+   * routerLink already navigates to /dashboard; this signal lets the
+   * dashboard react even when we're already on /dashboard (in which
+   * case the router doesn't fire a navigation).
+   */
+  goHome(): void {
+    this.drawer.requestReturnToToday();
   }
 
   ngOnInit(): void {

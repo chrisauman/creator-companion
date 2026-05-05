@@ -1,4 +1,5 @@
 import { Injectable, signal } from '@angular/core';
+import { Subject } from 'rxjs';
 
 /**
  * Coordinates the sidebar's mobile drawer state across components.
@@ -16,4 +17,14 @@ export class SidebarStateService {
   openMobile(): void { this.mobileOpen.set(true); }
   closeMobile(): void { this.mobileOpen.set(false); }
   toggleMobile(): void { this.mobileOpen.update(v => !v); }
+
+  /**
+   * Fires when the user clicks the sidebar logo while already on the
+   * dashboard. Behaves like clicking the "Today" pill in the right
+   * column — clears the selected entry, exits compose/edit mode, and
+   * resets the right column to the today panel. The dashboard
+   * subscribes to this and calls returnToToday().
+   */
+  readonly returnToTodayRequest$ = new Subject<void>();
+  requestReturnToToday(): void { this.returnToTodayRequest$.next(); }
 }

@@ -1018,6 +1018,11 @@ export class DashboardComponent implements OnInit {
     // a sidebar nav item while already on /dashboard).
     this.route.queryParamMap.subscribe(() => this.applySectionQueryParam());
 
+    // Sidebar logo click → reset to today view (mirrors the Today pill
+    // in the right column). The router won't re-fire a navigation when
+    // we're already on /dashboard, so we listen explicitly here.
+    this.sidebarState.returnToTodayRequest$.subscribe(() => this.returnToToday());
+
     // Safety net: if any API call hangs past 20 s, exit the loading state
     // gracefully rather than spinning forever. This covers Railway cold starts
     // and iOS PWA scenarios where network requests can be delayed.
