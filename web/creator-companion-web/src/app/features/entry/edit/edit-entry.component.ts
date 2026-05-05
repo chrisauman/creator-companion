@@ -449,14 +449,16 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
       &--error  { color: var(--color-danger); }
     }
 
-    /* ── Title input — matches the entry-reader title size so
-       reading → editing feels continuous and never overflows. ─── */
+    /* ── Title input — matches the entry-reader title size and
+       weight (500) so reading → editing feels continuous and the
+       title sits at the same typographic weight as the right-column
+       hero quote. ─── */
     .title-input {
       width: 100%; border: none; outline: none; background: transparent;
       font-family: var(--font-sans);
-      font-size: 1.3125rem; font-weight: 700; letter-spacing: -.01em;
+      font-size: 1.3125rem; font-weight: 500; letter-spacing: -.01em;
       line-height: 1.3; color: var(--color-text); padding: 0; margin-bottom: 1rem;
-      &::placeholder { color: var(--color-text-3); font-weight: 600; }
+      &::placeholder { color: var(--color-text-3); font-weight: 500; }
       &:disabled { opacity: .6; }
     }
 

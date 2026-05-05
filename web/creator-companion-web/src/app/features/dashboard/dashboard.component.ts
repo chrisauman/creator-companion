@@ -839,10 +839,12 @@ import { ActivatedRoute } from '@angular/router';
       color: var(--color-text-2);
     }
     .entry-row__mood app-mood-icon { color: var(--color-text-3); }
+    /* Title weight matches the right-column hero (spark quote) at
+       500 so the two columns read as the same typographic system. */
     .entry-row__title {
       font-family: var(--font-sans);
       font-size: 1.25rem;
-      font-weight: 700;
+      font-weight: 500;
       line-height: 1.3;
       color: var(--color-text);
       margin: 0;

@@ -306,12 +306,12 @@ import { MoodIconComponent } from '../../shared/mood-icon/mood-icon.component';
     }
     .reading__mood app-mood-icon { color: var(--color-text-3); }
 
-    /* Title matches the entry-list row title so both columns read
-       the same — same font-size, same wrapping behaviour. */
+    /* Title matches the entry-list row title and the right-column
+       spark quote — same font-size, same weight (500). */
     .reading__title {
       font-family: var(--font-sans);
       font-size: 1.3125rem;
-      font-weight: 700;
+      font-weight: 500;
       line-height: 1.3;
       letter-spacing: -.01em;
       color: var(--color-text);
