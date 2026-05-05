@@ -289,14 +289,16 @@ import { ActivatedRoute } from '@angular/router';
             @case ('todos') {
               <div class="embedded-section">
                 <div class="reader-top">
-                  <button class="cancel-pill" type="button" (click)="returnToToday()">
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2Z"/>
-                    </svg>
-                    Today
-                  </button>
-                  <div class="reader-top__breadcrumb"><strong>To Do List</strong></div>
-                  <div class="reader-top__actions"></div>
+                  <div class="reader-top__inner">
+                    <button class="cancel-pill" type="button" (click)="returnToToday()">
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2Z"/>
+                      </svg>
+                      Today
+                    </button>
+                    <div class="reader-top__breadcrumb"><strong>To Do List</strong></div>
+                    <div class="reader-top__actions"></div>
+                  </div>
                 </div>
                 <div class="embedded-section__body">
                   <div class="page-header">
@@ -584,15 +586,23 @@ import { ActivatedRoute } from '@angular/router';
     }
     .embedded-section .reader-top {
       display: flex;
-      align-items: center;
-      gap: .5rem;
+      align-items: stretch;
       height: 64px;
-      padding: 0 1.5rem;
       background: var(--color-surface);
       position: sticky; top: 0;
       z-index: 5;
       box-sizing: border-box;
       flex-shrink: 0;
+    }
+    .embedded-section .reader-top__inner {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      width: 100%;
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 0 2.5rem;
+      box-sizing: border-box;
     }
     .embedded-section .cancel-pill {
       display: inline-flex;
@@ -620,23 +630,42 @@ import { ActivatedRoute } from '@angular/router';
       flex: 1;
       text-align: center;
       font-size: .8125rem;
-      color: var(--color-text-3);
+      color: var(--color-text);
     }
     .embedded-section .reader-top__breadcrumb strong { color: var(--color-text); font-weight: 600; }
     .embedded-section .reader-top__actions {
       display: flex; gap: .5rem; flex-shrink: 0; min-width: 36px;
     }
+    /* Body bounded to the same 760px max-width as the reader so the
+       toolbar and content share horizontal edges. The wrapper itself
+       is the centred article; children render inside it without any
+       extra max-width / margin handling. */
     .embedded-section__body {
-      padding: 1rem 1.5rem 2rem;
       flex: 1;
       overflow-y: auto;
     }
-    .embedded-section__body .page-header { margin-bottom: 1.25rem; }
+    .embedded-section__body::before {
+      /* placeholder to keep the comment block grouped */
+      content: none;
+    }
+    .embedded-section__body > * {
+      width: 100%;
+      max-width: 760px;
+      margin-left: auto;
+      margin-right: auto;
+      padding-left: 2.5rem;
+      padding-right: 2.5rem;
+      box-sizing: border-box;
+    }
+    .embedded-section__body > *:first-child { margin-top: .75rem; }
+    .embedded-section__body > *:last-child { margin-bottom: 2rem; }
+    .embedded-section__body .page-header { margin-bottom: 1rem; }
     .embedded-section__body .page-title {
-      font-family: var(--font-display);
-      font-size: 1.5rem;
-      font-weight: 700;
+      font-family: var(--font-sans);
+      font-size: 1.3125rem;
+      font-weight: 500;
       letter-spacing: -.01em;
+      color: var(--color-text);
       margin: 0 0 .25rem;
     }
     .embedded-section__body .page-sub {

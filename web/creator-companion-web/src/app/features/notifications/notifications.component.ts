@@ -29,181 +29,189 @@ const DEFAULT_REMINDER_MESSAGE = 'Remember to log an entry to keep your streak a
 
       <main class="main-content">
 
-        <!-- Reader-style top bar when embedded -->
+        <!-- Reader-style top bar (embedded only). 64px tall full-
+             column-width sticky surface with an inner row capped at
+             max-width 760px so the Today pill aligns with the body
+             edges below — same pattern as the entry reader. -->
         @if (embedded) {
           <div class="reader-top">
-            <button class="cancel-pill" type="button" (click)="returnToToday.emit()">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2Z"/>
-              </svg>
-              Today
-            </button>
-            <div class="reader-top__breadcrumb"><strong>Notifications</strong></div>
-            <div class="reader-top__actions"></div>
+            <div class="reader-top__inner">
+              <button class="cancel-pill" type="button" (click)="returnToToday.emit()">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2Z"/>
+                </svg>
+                Today
+              </button>
+              <div class="reader-top__breadcrumb"><strong>Notifications</strong></div>
+              <div class="reader-top__actions"></div>
+            </div>
           </div>
         }
 
-        <div class="page-header" [class.page-header--embedded]="embedded">
-          <h1 class="page-title">Notifications</h1>
-          <p class="page-sub">Manage how and when you receive reminders.</p>
-        </div>
+        <!-- Body — bounded to 760px to match the reader/edit views
+             so toolbars and content share the same horizontal edges. -->
+        <div class="body-inner">
 
-        <!-- Push permissions card -->
-        <section class="card">
-          <div class="section-head">
-            <h2>This device</h2>
+          <div class="page-header">
+            <h1 class="page-title">Notifications</h1>
+            <p class="page-sub">Manage how and when you receive reminders.</p>
           </div>
 
-          @if (!pushSupported()) {
-            <p class="text-muted text-sm">Push notifications are not supported in this browser.</p>
-          } @else if (!pushEnabled()) {
-            <div class="push-prompt">
-              <p class="text-sm">Enable notifications on this device to receive daily reminders.</p>
-              <button class="btn btn--secondary btn--sm" (click)="enablePush()" [disabled]="pushWorking()">
-                {{ pushWorking() ? 'Enabling…' : '🔔 Enable notifications' }}
-              </button>
-              <p class="text-sm text-muted" *ngIf="pushDenied()">
-                Notifications are blocked. Please allow them in your browser/device settings and try again.
-              </p>
-            </div>
-          } @else {
-            <div class="push-active">
-              <span class="push-dot"></span>
-              <span class="text-sm">Notifications enabled on this device</span>
-              <button class="btn btn--ghost btn--sm" (click)="disablePush()" [disabled]="pushWorking()">
-                Disable
-              </button>
-            </div>
-          }
-        </section>
+          <!-- This device — flat section, no card chrome -->
+          <section class="block">
+            <h2 class="block__title">This device</h2>
 
-        <!-- Reminders card -->
-        <section class="card">
-          <div class="section-head">
-            <h2>Reminder times</h2>
-          </div>
-
-          @if (remindersLoading()) {
-            <p class="text-muted text-sm">Loading…</p>
-          }
-
-          <!-- FREE TIER -->
-          @if (!remindersLoading() && user()?.tier === 'Free') {
-            <div class="reminder-free-row">
-              <div class="reminder-free-info">
-                <p class="reminder-time-label">Daily at 12:00 PM</p>
-                <p class="text-sm text-muted">"{{ defaultReminderMessage }}"</p>
+            @if (!pushSupported()) {
+              <p class="block__body">Push notifications are not supported in this browser.</p>
+            } @else if (!pushEnabled()) {
+              <div class="push-prompt">
+                <p class="block__body">Enable notifications on this device to receive daily reminders.</p>
+                <button class="action-btn" (click)="enablePush()" [disabled]="pushWorking()">
+                  {{ pushWorking() ? 'Enabling…' : '🔔 Enable notifications' }}
+                </button>
+                <p class="block__body" *ngIf="pushDenied()">
+                  Notifications are blocked. Please allow them in your browser/device settings and try again.
+                </p>
               </div>
-              @if (defaultReminder()) {
-                <label class="toggle-switch">
-                  <input type="checkbox" [checked]="defaultReminder()!.isEnabled"
-                         [disabled]="reminderWorking()" (change)="toggleReminder(defaultReminder()!)" />
-                  <span class="toggle-track"><span class="toggle-thumb"></span></span>
-                </label>
-              }
-            </div>
-            <p class="upgrade-note text-sm text-muted">
-              Upgrade to Paid to set custom reminder times and add up to 5 additional reminders.
-            </p>
-          }
+            } @else {
+              <div class="push-active">
+                <span class="push-dot"></span>
+                <span>Notifications enabled on this device</span>
+                <button class="link-btn" (click)="disablePush()" [disabled]="pushWorking()">Disable</button>
+              </div>
+            }
+          </section>
 
-          <!-- PAID TIER -->
-          @if (!remindersLoading() && user()?.tier === 'Paid') {
+          <!-- Reminders -->
+          <section class="block">
+            <h2 class="block__title">Reminder times</h2>
 
-            <!-- Default reminder card -->
-            @if (defaultReminder(); as dr) {
-              <div class="reminder-card reminder-card--default">
-                <div class="reminder-card__header">
-                  <span class="default-badge">Default reminder</span>
-                  @if (customReminders().length > 0 && !dr.isEnabled) {
-                    <span class="text-sm text-muted">Off — your custom reminders are active</span>
-                  }
+            @if (remindersLoading()) {
+              <p class="block__body">Loading…</p>
+            }
+
+            <!-- FREE TIER -->
+            @if (!remindersLoading() && user()?.tier === 'Free') {
+              <!-- Highlighted "default reminder" surface — uses the
+                   warm cream gradient from the Daily Spark hero. -->
+              <div class="reminder-tile reminder-tile--accent">
+                <div class="reminder-tile__main">
+                  <p class="reminder-tile__time">Daily at 12:00 PM</p>
+                  <p class="reminder-tile__sub">"{{ defaultReminderMessage }}"</p>
                 </div>
-                <div class="reminder-card__fields">
-                  <div class="field-group">
-                    <label class="field-label">Time</label>
-                    <input type="time" class="time-input"
-                           [ngModel]="drafts[dr.id]?.time ?? dr.time"
-                           (ngModelChange)="draftChange(dr.id, 'time', $event)" />
-                  </div>
-                  <div class="field-group reminder-msg-group">
-                    <label class="field-label">Message <span class="optional">(optional)</span></label>
-                    <input type="text" class="text-input"
-                           [placeholder]="defaultReminderMessage"
-                           maxlength="200"
-                           [ngModel]="drafts[dr.id]?.message ?? (dr.message ?? '')"
-                           (ngModelChange)="draftChange(dr.id, 'message', $event)" />
-                  </div>
-                </div>
-                <div class="reminder-card__actions">
+                @if (defaultReminder()) {
                   <label class="toggle-switch">
-                    <input type="checkbox" [checked]="dr.isEnabled"
-                           [disabled]="reminderWorking()" (change)="toggleReminder(dr)" />
+                    <input type="checkbox" [checked]="defaultReminder()!.isEnabled"
+                           [disabled]="reminderWorking()" (change)="toggleReminder(defaultReminder()!)" />
                     <span class="toggle-track"><span class="toggle-thumb"></span></span>
                   </label>
-                  <button class="btn btn--primary btn--sm"
-                          [disabled]="reminderWorking() || !hasDraftChanges(dr)"
-                          (click)="saveReminder(dr)">Save</button>
-                </div>
-              </div>
-            }
-
-            <!-- Custom reminders -->
-            @if (customReminders().length > 0) {
-              <div class="reminders-section-label">Custom reminders</div>
-              <div class="reminders-list">
-                @for (r of customReminders(); track r.id) {
-                  <div class="reminder-card">
-                    <div class="reminder-card__fields">
-                      <div class="field-group">
-                        <label class="field-label">Time</label>
-                        <input type="time" class="time-input"
-                               [ngModel]="drafts[r.id]?.time ?? r.time"
-                               (ngModelChange)="draftChange(r.id, 'time', $event)" />
-                      </div>
-                      <div class="field-group reminder-msg-group">
-                        <label class="field-label">Message <span class="optional">(optional)</span></label>
-                        <input type="text" class="text-input"
-                               [placeholder]="defaultReminderMessage"
-                               maxlength="200"
-                               [ngModel]="drafts[r.id]?.message ?? (r.message ?? '')"
-                               (ngModelChange)="draftChange(r.id, 'message', $event)" />
-                      </div>
-                    </div>
-                    <div class="reminder-card__actions">
-                      <label class="toggle-switch">
-                        <input type="checkbox" [checked]="r.isEnabled"
-                               [disabled]="reminderWorking()" (change)="toggleReminder(r)" />
-                        <span class="toggle-track"><span class="toggle-thumb"></span></span>
-                      </label>
-                      <button class="btn btn--primary btn--sm"
-                              [disabled]="reminderWorking() || !hasDraftChanges(r)"
-                              (click)="saveReminder(r)">Save</button>
-                      <button class="btn btn--ghost btn--sm"
-                              [disabled]="reminderWorking()" (click)="deleteReminder(r)">Delete</button>
-                    </div>
-                  </div>
                 }
               </div>
+              <p class="block__body block__body--note">
+                Upgrade to Paid to set custom reminder times and add up to 5 additional reminders.
+              </p>
             }
 
-            @if (customReminders().length < 5) {
-              <button class="btn btn--secondary btn--sm" style="margin-top:.875rem"
-                      [disabled]="reminderWorking()" (click)="addReminder()">
-                + Add custom reminder
-              </button>
-              @if (customReminders().length === 0) {
-                <p class="text-sm text-muted" style="margin-top:.375rem">
-                  Adding a custom reminder will turn off the default noon reminder.
-                </p>
+            <!-- PAID TIER -->
+            @if (!remindersLoading() && user()?.tier === 'Paid') {
+
+              <!-- Default reminder — accent (cream-gradient) tile -->
+              @if (defaultReminder(); as dr) {
+                <div class="reminder-tile reminder-tile--accent">
+                  <div class="reminder-tile__head">
+                    <span class="default-badge">Default reminder</span>
+                    @if (customReminders().length > 0 && !dr.isEnabled) {
+                      <span class="reminder-tile__sub">Off — your custom reminders are active</span>
+                    }
+                  </div>
+                  <div class="reminder-tile__fields">
+                    <div class="field-group">
+                      <label class="field-label">Time</label>
+                      <input type="time" class="time-input"
+                             [ngModel]="drafts[dr.id]?.time ?? dr.time"
+                             (ngModelChange)="draftChange(dr.id, 'time', $event)" />
+                    </div>
+                    <div class="field-group reminder-msg-group">
+                      <label class="field-label">Message <span class="optional">(optional)</span></label>
+                      <input type="text" class="text-input"
+                             [placeholder]="defaultReminderMessage"
+                             maxlength="200"
+                             [ngModel]="drafts[dr.id]?.message ?? (dr.message ?? '')"
+                             (ngModelChange)="draftChange(dr.id, 'message', $event)" />
+                    </div>
+                  </div>
+                  <div class="reminder-tile__actions">
+                    <label class="toggle-switch">
+                      <input type="checkbox" [checked]="dr.isEnabled"
+                             [disabled]="reminderWorking()" (change)="toggleReminder(dr)" />
+                      <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                    </label>
+                    <button class="save-btn"
+                            [disabled]="reminderWorking() || !hasDraftChanges(dr)"
+                            (click)="saveReminder(dr)">Save</button>
+                  </div>
+                </div>
+              }
+
+              <!-- Custom reminders -->
+              @if (customReminders().length > 0) {
+                <div class="reminders-section-label">Custom reminders</div>
+                <div class="reminders-list">
+                  @for (r of customReminders(); track r.id) {
+                    <div class="reminder-tile">
+                      <div class="reminder-tile__fields">
+                        <div class="field-group">
+                          <label class="field-label">Time</label>
+                          <input type="time" class="time-input"
+                                 [ngModel]="drafts[r.id]?.time ?? r.time"
+                                 (ngModelChange)="draftChange(r.id, 'time', $event)" />
+                        </div>
+                        <div class="field-group reminder-msg-group">
+                          <label class="field-label">Message <span class="optional">(optional)</span></label>
+                          <input type="text" class="text-input"
+                                 [placeholder]="defaultReminderMessage"
+                                 maxlength="200"
+                                 [ngModel]="drafts[r.id]?.message ?? (r.message ?? '')"
+                                 (ngModelChange)="draftChange(r.id, 'message', $event)" />
+                        </div>
+                      </div>
+                      <div class="reminder-tile__actions">
+                        <label class="toggle-switch">
+                          <input type="checkbox" [checked]="r.isEnabled"
+                                 [disabled]="reminderWorking()" (change)="toggleReminder(r)" />
+                          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                        </label>
+                        <!-- Delete · Save (Save aligned right, both
+                             matching the dark-ink Edit-button style). -->
+                        <button class="link-btn link-btn--danger"
+                                [disabled]="reminderWorking()" (click)="deleteReminder(r)">Delete</button>
+                        <button class="save-btn"
+                                [disabled]="reminderWorking() || !hasDraftChanges(r)"
+                                (click)="saveReminder(r)">Save</button>
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+
+              @if (customReminders().length < 5) {
+                <button class="action-btn action-btn--add"
+                        [disabled]="reminderWorking()" (click)="addReminder()">
+                  + Add custom reminder
+                </button>
+                @if (customReminders().length === 0) {
+                  <p class="block__body block__body--note">
+                    Adding a custom reminder will turn off the default noon reminder.
+                  </p>
+                }
               }
             }
-          }
 
-          @if (reminderError()) {
-            <p class="alert alert--error" style="margin-top:.75rem">{{ reminderError() }}</p>
-          }
-        </section>
+            @if (reminderError()) {
+              <p class="alert alert--error" style="margin-top:.75rem">{{ reminderError() }}</p>
+            }
+          </section>
+        </div>
 
       </main>
     </div>
@@ -218,25 +226,37 @@ const DEFAULT_REMINDER_MESSAGE = 'Remember to log an entry to keep your streak a
       padding: 0 !important;
       background: transparent !important;
     }
-    .page--embedded .page-header { padding: 1.5rem 2rem 0; margin-bottom: 1rem; }
 
-    /* ── Reader-style top bar (embedded only) ───────────────────── */
+    /* ── Reader-style top bar (embedded only). Same pattern as the
+       entry reader / editor: full-column-width sticky surface, 64px
+       tall, with an inner row capped at max-width 760px so the Today
+       pill aligns with the body content edges below. */
     .reader-top {
       display: flex;
-      align-items: center;
-      gap: .5rem;
-      padding: 1rem 1.75rem;
-      border-bottom: 1px solid var(--color-border);
+      align-items: stretch;
+      height: 64px;
       background: var(--color-surface);
       position: sticky; top: 0;
       z-index: 5;
+      box-sizing: border-box;
+      flex-shrink: 0;
+    }
+    .reader-top__inner {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      width: 100%;
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 0 2.5rem;
+      box-sizing: border-box;
     }
     .cancel-pill {
       display: inline-flex;
       align-items: center;
       gap: .375rem;
       background: rgba(18,196,227,.1);
-      color: var(--color-accent-dark);
+      color: var(--color-accent);
       border: 1px solid rgba(18,196,227,.25);
       padding: .375rem .75rem;
       border-radius: 999px;
@@ -249,7 +269,7 @@ const DEFAULT_REMINDER_MESSAGE = 'Remember to log an entry to keep your streak a
       transition: all .15s;
     }
     .cancel-pill:hover { background: var(--color-accent); color: #0c0e13; border-color: var(--color-accent); }
-    .reader-top__breadcrumb { flex: 1; text-align: center; font-size: .8125rem; color: var(--color-text-3); }
+    .reader-top__breadcrumb { flex: 1; text-align: center; font-size: .8125rem; color: var(--color-text); }
     .reader-top__breadcrumb strong { color: var(--color-text); font-weight: 600; }
     .reader-top__actions { display: flex; gap: .5rem; flex-shrink: 0; min-width: 36px; }
 
@@ -268,53 +288,71 @@ const DEFAULT_REMINDER_MESSAGE = 'Remember to log an entry to keep your streak a
     .topbar__brand-name { font-family: var(--font-sans); font-size: .9375rem; font-weight: 700; color: #fff; }
 
     /* ── Main content ────────────────────────────────────────────── */
+    /* When standalone, fills the viewport like the entry-list column.
+       When embedded, the dashboard right column already gives us the
+       surface — body-inner caps everything to 760px to match the
+       reader/edit views. All text is brand-black; no greyed-out copy. */
     .main-content {
       flex: 1; min-width: 0;
-      padding: 1.25rem 1rem calc(80px + env(safe-area-inset-bottom, 0px));
-      background: var(--color-bg);
+      padding: 0 0 calc(80px + env(safe-area-inset-bottom, 0px));
+      background: var(--color-surface);
     }
     @media (min-width: 768px) {
-      .main-content { padding: 2.5rem 3rem 4rem; background: #f7f7f5; }
+      .main-content { padding: 0 0 4rem; background: var(--color-surface); }
     }
+    .body-inner {
+      width: 100%;
+      max-width: 760px;
+      margin: 0 auto;
+      padding: .75rem 2.5rem 3rem;
+      box-sizing: border-box;
+      color: var(--color-text);
+    }
+    .page--embedded .body-inner { padding-top: 1rem; }
 
     /* ── Page header ─────────────────────────────────────────────── */
-    .page-header { margin-bottom: 1.75rem; }
-    .page-header--embedded { margin-bottom: 1.25rem; }
+    .page-header { margin-bottom: 1.5rem; }
     .page-title {
       font-family: var(--font-sans);
-      font-size: 1.625rem; font-weight: 800;
-      letter-spacing: -.02em;
+      font-size: 1.3125rem; font-weight: 500;
+      letter-spacing: -.01em;
       color: var(--color-text);
       margin: 0 0 .25rem;
     }
-    .page-sub { font-size: .9375rem; color: var(--color-text-2); margin: 0; line-height: 1.5; }
-
-    /* ── Cards (clean — single outer border, no nested borders inside) ─── */
-    .card {
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: 16px;
-      padding: 1.5rem 1.625rem;
-      margin-bottom: 1rem;
-    }
-
-    .section-head {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 1.25rem;
-      gap: 1rem;
-    }
-    .section-head h2 {
-      font-family: var(--font-sans);
-      font-size: 1.0625rem;
-      font-weight: 700;
-      letter-spacing: -.005em;
-      margin: 0;
+    .page-sub {
+      font-size: .9375rem;
       color: var(--color-text);
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    /* ── Flat blocks — no card chrome, just typography + spacing ── */
+    .block {
+      margin-bottom: 2rem;
+    }
+    .block:last-child { margin-bottom: 0; }
+    .block__title {
+      font-family: var(--font-sans);
+      font-size: .6875rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .14em;
+      color: var(--color-text);
+      margin: 0 0 .875rem;
+    }
+    .block__body {
+      font-size: .9375rem;
+      line-height: 1.5;
+      color: var(--color-text);
+      margin: 0;
+    }
+    .block__body--note {
+      margin-top: .75rem;
+      font-size: .8125rem;
     }
 
     /* ── Push section ────────────────────────────────────────────── */
     .push-prompt { display: flex; flex-direction: column; gap: .75rem; align-items: flex-start; }
-    .push-prompt p { color: var(--color-text-2); line-height: 1.5; margin: 0; }
     .push-active {
       display: inline-flex;
       align-items: center;
@@ -323,7 +361,7 @@ const DEFAULT_REMINDER_MESSAGE = 'Remember to log an entry to keep your streak a
       border: 1px solid rgba(34,197,94,.25);
       color: #166534;
       border-radius: 999px;
-      padding: .5rem .875rem;
+      padding: .5rem .875rem 0.5rem 0.875rem;
       font-size: .8125rem;
       font-weight: 600;
     }
@@ -332,52 +370,59 @@ const DEFAULT_REMINDER_MESSAGE = 'Remember to log an entry to keep your streak a
       background: #22c55e; flex-shrink: 0;
       box-shadow: 0 0 8px #22c55e;
     }
-    .push-active .btn { margin-left: auto; }
+    .push-active .link-btn { margin-left: .375rem; }
 
-    /* ── Reminder rows (flat — sit inside the parent card with subtle dividers) ── */
-    .reminder-free-row {
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 1rem;
-    }
-    .reminder-free-info { flex: 1; }
-    .reminder-time-label {
-      font-size: 1rem; font-weight: 700; margin: 0 0 .2rem;
-      color: var(--color-text);
-    }
-    .reminder-free-info .text-sm { color: var(--color-text-2); }
-    .upgrade-note {
-      display: block;
-      color: var(--color-text-3);
-      font-size: .8125rem;
-      line-height: 1.5;
-      margin-top: 1rem;
-      padding-top: 1rem;
-      border-top: 1px solid var(--color-border);
-    }
-
-    .reminders-section-label {
-      font-size: .6875rem; font-weight: 700; color: var(--color-text-3);
-      text-transform: uppercase; letter-spacing: .14em;
-      margin-top: 1.5rem; margin-bottom: .75rem;
-    }
-    .reminders-list { display: flex; flex-direction: column; gap: 0; }
-    .reminder-card {
-      background: transparent;
-      border: none;
-      padding: 1.125rem 0;
+    /* ── Reminder tiles ─────────────────────────────────────────── */
+    /* Plain tiles are flat (no surface) with a thin divider between
+       them. The "accent" variant gets the warm cream gradient that
+       matches the Daily Spark hero card. */
+    .reminder-tile {
       display: flex; flex-direction: column; gap: 1rem;
+      padding: 1rem 0;
       border-bottom: 1px solid var(--color-border);
     }
-    .reminder-card:last-child { border-bottom: none; padding-bottom: 0; }
-    .reminders-list .reminder-card:first-child { padding-top: 0; }
-    .reminder-card--default {
-      padding: 1.125rem 1.25rem;
-      background: linear-gradient(135deg, rgba(18,196,227,.04), rgba(18,196,227,.08));
-      border: none;
-      border-radius: 14px;
-      margin-bottom: .5rem;
+    .reminders-list .reminder-tile:first-child { padding-top: 0; }
+    .reminders-list .reminder-tile:last-child {
+      padding-bottom: 0;
+      border-bottom: none;
     }
-    .reminder-card__header { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
+
+    .reminder-tile--accent {
+      padding: 1.25rem 1.25rem 1rem;
+      background: linear-gradient(180deg, #fdfaf2 0%, #f6f1e6 100%);
+      border: 1px solid rgba(190,170,130,.22);
+      border-radius: 16px;
+      margin-bottom: 1rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .reminder-tile--accent::before {
+      content: '';
+      position: absolute;
+      top: -30%; right: -20%;
+      width: 220px; height: 220px;
+      background: radial-gradient(circle, rgba(18,196,227,.4) 0%, transparent 65%);
+      opacity: .35;
+      pointer-events: none;
+    }
+    .reminder-tile__main { position: relative; }
+    .reminder-tile__head {
+      display: flex; align-items: center; gap: .75rem;
+      flex-wrap: wrap; position: relative;
+    }
+    .reminder-tile__time {
+      font-size: 1rem; font-weight: 600; margin: 0 0 .25rem;
+      color: var(--color-text);
+    }
+    .reminder-tile__sub {
+      font-size: .8125rem; line-height: 1.45; margin: 0;
+      color: var(--color-text);
+    }
+    /* Free-tier accent tile uses a row layout for the toggle. */
+    .reminder-tile--accent:has(.reminder-tile__main) {
+      flex-direction: row; align-items: center; gap: 1rem;
+    }
+
     .default-badge {
       display: inline-flex;
       align-items: center;
@@ -391,39 +436,46 @@ const DEFAULT_REMINDER_MESSAGE = 'Remember to log an entry to keep your streak a
       text-transform: uppercase;
       flex-shrink: 0;
     }
-    .reminder-card__fields {
-      display: grid; grid-template-columns: 120px 1fr; gap: .875rem; align-items: end;
+    .reminder-tile__fields {
+      position: relative;
+      display: grid; grid-template-columns: 160px 1fr;
+      gap: .875rem; align-items: end;
     }
-    @media (max-width: 500px) { .reminder-card__fields { grid-template-columns: 1fr; } }
-    .reminder-card__actions {
-      display: flex; align-items: center; gap: .75rem;
+    @media (max-width: 500px) { .reminder-tile__fields { grid-template-columns: 1fr; } }
+    .reminder-tile__actions {
+      display: flex; align-items: center; gap: .5rem;
+      position: relative;
     }
-    .reminder-card__actions .btn { margin-left: auto; }
 
     .field-group { display: flex; flex-direction: column; gap: .375rem; }
     .reminder-msg-group { min-width: 0; }
     .field-label {
       font-size: .6875rem; font-weight: 700;
-      color: var(--color-text-3);
+      color: var(--color-text);
       text-transform: uppercase;
       letter-spacing: .1em;
     }
-    .optional { font-weight: 500; color: var(--color-text-3); text-transform: none; letter-spacing: 0; }
+    .optional { font-weight: 500; color: var(--color-text); text-transform: none; letter-spacing: 0; }
+
+    /* Time + text inputs share the rounded-pill look; time gets a
+       roomier min-width so "12:00 PM" never gets clipped on the
+       narrow embedded column. */
     .time-input,
     .text-input {
-      width: 100%; padding: .5rem .875rem; font-size: .875rem;
+      width: 100%; padding: .5rem 1rem; font-size: .875rem;
       border: 1px solid var(--color-border); border-radius: 999px;
-      background: var(--color-surface); color: var(--color-text);
+      background: #fff; color: var(--color-text);
       font-family: var(--font-sans); box-sizing: border-box;
       transition: border-color .15s, background .15s;
     }
+    .time-input { min-width: 140px; }
     .time-input:focus,
     .text-input:focus {
       outline: none;
       border-color: var(--color-accent);
-      background: var(--color-surface);
+      box-shadow: 0 0 0 3px rgba(18,196,227,.12);
     }
-    .text-input::placeholder { color: var(--color-text-3); }
+    .text-input::placeholder { color: var(--color-text); opacity: .55; }
 
     /* ── Toggle switch (refined) ─────────────────────────────────── */
     .toggle-switch {
@@ -453,28 +505,66 @@ const DEFAULT_REMINDER_MESSAGE = 'Remember to log an entry to keep your streak a
     .toggle-switch input:checked + .toggle-track .toggle-thumb { transform: translateX(18px); }
     .toggle-switch input:disabled + .toggle-track { opacity: .5; cursor: not-allowed; }
 
-    /* ── Add reminder link (subtle, no border) ───────────────────── */
-    .add-reminder-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: .375rem;
-      margin-top: 1rem;
-      padding: .375rem 0;
-      background: transparent;
-      border: none;
-      color: var(--color-accent-dark);
-      font-family: var(--font-sans);
-      font-size: .8125rem;
-      font-weight: 700;
+    /* ── Buttons ─────────────────────────────────────────────────
+       save-btn   : black-ink Save (matches the Edit button on the
+                    reader). Pushes itself to the right edge of the
+                    tile actions row via margin-left: auto.
+       link-btn   : ghost-text button for "Disable" / "Delete".
+       action-btn : neutral pill for "Enable notifications" /
+                    "+ Add custom reminder". */
+    .save-btn {
+      margin-left: auto;
+      display: inline-flex; align-items: center; gap: .375rem;
+      background: #0c0e13; color: #fff;
+      border: none; padding: .5rem 1rem;
+      border-radius: 999px;
+      font-family: inherit; font-size: .8125rem; font-weight: 600;
       cursor: pointer;
-      letter-spacing: .04em;
-      transition: color .15s, transform .15s;
+      transition: background .15s, color .15s;
     }
-    .add-reminder-btn:hover:not(:disabled) {
-      color: var(--color-accent);
-      transform: translateX(2px);
+    .save-btn:hover:not(:disabled) {
+      background: var(--color-accent); color: #0c0e13;
     }
-    .add-reminder-btn:disabled { opacity: .5; cursor: not-allowed; }
+    .save-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    .link-btn {
+      background: transparent; border: none;
+      color: var(--color-text);
+      font-family: inherit; font-size: .8125rem; font-weight: 600;
+      padding: .25rem .5rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .link-btn:hover:not(:disabled) { background: var(--color-surface-2); }
+    .link-btn:disabled { opacity: .5; cursor: not-allowed; }
+    .link-btn--danger { color: var(--color-danger); }
+    .link-btn--danger:hover:not(:disabled) { background: rgba(225,29,72,.08); }
+
+    .action-btn {
+      display: inline-flex; align-items: center; gap: .375rem;
+      background: rgba(255,255,255,.6);
+      border: 1px solid var(--color-border);
+      color: var(--color-text);
+      padding: .5rem 1rem;
+      border-radius: 999px;
+      font-family: inherit; font-size: .8125rem; font-weight: 600;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .action-btn:hover:not(:disabled) {
+      border-color: var(--color-text-3);
+      background: var(--color-surface-2);
+    }
+    .action-btn:disabled { opacity: .5; cursor: not-allowed; }
+    .action-btn--add { margin-top: 1rem; }
+
+    .reminders-section-label {
+      font-size: .6875rem; font-weight: 700; color: var(--color-text);
+      text-transform: uppercase; letter-spacing: .14em;
+      margin-top: 1.25rem; margin-bottom: .25rem;
+    }
+    .reminders-list { display: flex; flex-direction: column; gap: 0; }
   `]
 })
 export class NotificationsComponent implements OnInit {

@@ -25,24 +25,30 @@ import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
       <!-- Main content -->
       <main class="main-content">
 
-        <!-- Reader-style top bar when embedded -->
+        <!-- Reader-style top bar (embedded only). Same pattern as
+             the entry reader: 64px sticky surface with an inner row
+             capped at max-width 760px so toolbar and body share
+             horizontal edges. -->
         @if (embedded) {
           <div class="reader-top">
-            <button class="cancel-pill" type="button" (click)="returnToToday.emit()">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2Z"/>
-              </svg>
-              Today
-            </button>
-            <div class="reader-top__breadcrumb"><strong>Favorite Sparks</strong></div>
-            <div class="reader-top__actions"></div>
+            <div class="reader-top__inner">
+              <button class="cancel-pill" type="button" (click)="returnToToday.emit()">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2Z"/>
+                </svg>
+                Today
+              </button>
+              <div class="reader-top__breadcrumb"><strong>Favorite Sparks</strong></div>
+              <div class="reader-top__actions"></div>
+            </div>
           </div>
         }
 
-        <div class="page-header" [class.page-header--embedded]="embedded">
-          <h1 class="page-title">Favorite Sparks</h1>
-          <p class="page-sub">Daily sparks you've saved.</p>
-        </div>
+        <div class="body-inner">
+          <div class="page-header">
+            <h1 class="page-title">Favorite Sparks</h1>
+            <p class="page-sub">Daily sparks you've saved.</p>
+          </div>
 
         <!-- Loading -->
         @if (loading()) {
@@ -103,6 +109,7 @@ import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
             }
           </div>
         }
+        </div><!-- /.body-inner -->
       </main>
     </div>
   `,
@@ -122,25 +129,36 @@ import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
       padding: 0 !important;
       background: transparent !important;
     }
-    .page--embedded .page-header { padding: 1.5rem 2rem 0; margin-bottom: 1rem; }
 
-    /* ── Reader-style top bar (embedded only) ───────────────────── */
+    /* ── Reader-style top bar — full-column-width sticky surface
+       holds an inner row capped at 760px so toolbar elements align
+       with the body content beneath. */
     .reader-top {
       display: flex;
-      align-items: center;
-      gap: .5rem;
-      padding: 1rem 1.75rem;
-      border-bottom: 1px solid var(--color-border);
+      align-items: stretch;
+      height: 64px;
       background: var(--color-surface);
       position: sticky; top: 0;
       z-index: 5;
+      box-sizing: border-box;
+      flex-shrink: 0;
+    }
+    .reader-top__inner {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      width: 100%;
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 0 2.5rem;
+      box-sizing: border-box;
     }
     .cancel-pill {
       display: inline-flex;
       align-items: center;
       gap: .375rem;
       background: rgba(18,196,227,.1);
-      color: var(--color-accent-dark);
+      color: var(--color-accent);
       border: 1px solid rgba(18,196,227,.25);
       padding: .375rem .75rem;
       border-radius: 999px;
@@ -161,10 +179,20 @@ import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
       flex: 1;
       text-align: center;
       font-size: .8125rem;
-      color: var(--color-text-3);
+      color: var(--color-text);
     }
     .reader-top__breadcrumb strong { color: var(--color-text); font-weight: 600; }
     .reader-top__actions { display: flex; gap: .5rem; flex-shrink: 0; min-width: 36px; }
+
+    /* Body bounded to 760px to match the reader/edit views. */
+    .body-inner {
+      width: 100%;
+      max-width: 760px;
+      margin: 0 auto;
+      padding: .75rem 2.5rem 3rem;
+      box-sizing: border-box;
+      color: var(--color-text);
+    }
 
     /* ── Mobile top bar ──────────────────────────────────────────── */
     .topbar {
@@ -183,24 +211,23 @@ import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
     /* ── Main content ────────────────────────────────────────────── */
     .main-content {
       flex: 1; min-width: 0;
-      padding: 1.25rem 1rem calc(80px + env(safe-area-inset-bottom, 0px));
-      background: var(--color-bg);
+      padding: 0 0 calc(80px + env(safe-area-inset-bottom, 0px));
+      background: var(--color-surface);
     }
     @media (min-width: 768px) {
-      .main-content { padding: 2.5rem 3rem 4rem; background: #f7f7f5; }
+      .main-content { padding: 0 0 4rem; background: var(--color-surface); }
     }
 
     /* ── Page header ─────────────────────────────────────────────── */
     .page-header { margin-bottom: 1.5rem; }
-    .page-header--embedded { margin-bottom: 1rem; }
     .page-title {
       font-family: var(--font-sans);
-      font-size: 1.5rem; font-weight: 700;
+      font-size: 1.3125rem; font-weight: 500;
       letter-spacing: -.01em;
       color: var(--color-text);
       margin: 0 0 .25rem;
     }
-    .page-sub { font-size: .8125rem; color: var(--color-text-2); margin: 0; }
+    .page-sub { font-size: .9375rem; color: var(--color-text); margin: 0; line-height: 1.5; }
 
     /* ── Spark card ──────────────────────────────────────────────── */
     .sparks-list { display: flex; flex-direction: column; gap: .75rem; }
