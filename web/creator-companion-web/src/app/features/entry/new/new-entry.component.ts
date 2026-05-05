@@ -720,14 +720,14 @@ interface PendingImage {
       border: 1px solid rgba(18,196,227,.2);
       border-radius: var(--radius-md);
       font-size: .875rem;
-      color: var(--color-accent-dark, #0d9bb5);
+      color: var(--color-accent);
       line-height: 1.5;
     }
     .prompt-banner__icon {
       flex-shrink: 0;
       display: inline-flex;
       align-items: center;
-      color: var(--color-accent-dark, #0d9bb5);
+      color: var(--color-accent);
     }
     .prompt-banner__text { flex: 1; min-width: 0; }
     .prompt-banner__text strong {
@@ -740,7 +740,7 @@ interface PendingImage {
       border: none;
       padding: .25rem;
       border-radius: 4px;
-      color: var(--color-accent-dark, #0d9bb5);
+      color: var(--color-accent);
       cursor: pointer;
       opacity: .65;
       display: flex;

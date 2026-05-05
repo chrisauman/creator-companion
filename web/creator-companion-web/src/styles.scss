@@ -11,9 +11,16 @@
   --color-text-2:       #6b6860;
   --color-text-3:       #a09d98;
 
+  /* Brand cyan. Use --color-accent everywhere that highlights or
+     accent text appears. --color-accent-dark used to be a darker
+     teal but it created two-tone blue all over the UI; it now
+     resolves to the same brand cyan so every "blue" in the app
+     reads as one consistent brand colour. Hover states use a
+     slightly punchier hover hex (#0bd2f0) instead of a darker
+     shade — see .sidebar__compose:hover for the canonical pattern. */
   --color-accent:       #12C4E3;
   --color-accent-light: #e0f7fc;
-  --color-accent-dark:  #0e7490;
+  --color-accent-dark:  #12C4E3;
 
   --color-streak:       #e76f51;
   --color-streak-light: #fdf0ec;

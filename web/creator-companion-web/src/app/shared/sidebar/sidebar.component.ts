@@ -425,7 +425,7 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
     }
     .sidebar__streak-bar-fill {
       height: 100%;
-      background: linear-gradient(90deg, #0d9bb5, var(--color-accent));
+      background: var(--color-accent);
       border-radius: 3px;
       transition: width .35s ease;
     }
