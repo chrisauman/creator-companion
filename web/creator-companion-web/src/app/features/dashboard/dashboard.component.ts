@@ -830,9 +830,11 @@ import { ActivatedRoute } from '@angular/router';
       cursor: pointer;
       transition: border-color .15s, box-shadow .15s, transform .15s;
     }
+    /* Hover highlight tinted brand cyan instead of grey — keeps
+       hover and active states feeling like the same family. */
     .entry-row:hover {
-      border-color: var(--color-text-3);
-      box-shadow: 0 6px 20px -10px rgba(0,0,0,.08);
+      border-color: rgba(18,196,227,.45);
+      box-shadow: 0 6px 20px -10px rgba(18,196,227,.25);
     }
     .entry-row--active {
       border-color: var(--color-accent);
@@ -858,9 +860,12 @@ import { ActivatedRoute } from '@angular/router';
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: .12em;
-      color: var(--color-accent-dark);
+      color: var(--color-accent);
     }
+    /* Mood pushed to the right edge of the meta row so the entry
+       reads as: date · ─ · mood. */
     .entry-row__mood {
+      margin-left: auto;
       display: inline-flex;
       align-items: center;
       gap: .375rem;

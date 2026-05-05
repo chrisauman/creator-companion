@@ -56,7 +56,9 @@ import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
           </div>
 
           <!-- Actions — clicks here should NOT toggle the box expansion. -->
-          <div class="spark-hero__actions" (click)="$event.stopPropagation()">
+          <div class="spark-hero__actions"
+               [class.spark-hero__actions--has-more]="hasMoreToShow()"
+               (click)="$event.stopPropagation()">
             <button class="spark-action spark-action--primary" type="button"
                     (click)="composeFromSpark.emit()">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -81,15 +83,15 @@ import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
               </button>
             }
 
+            <!-- Read more link sits to the right of the actions, vertically
+                 centred with the Start writing button. -->
+            @if (hasMoreToShow()) {
+              <button class="spark-hero__readmore" type="button"
+                      (click)="toggleSparkExpanded(); $event.stopPropagation()">
+                {{ sparkExpanded() ? 'Show less' : 'Read more' }} →
+              </button>
+            }
           </div>
-
-          <!-- "Read more" link in the bottom-right corner of the box. -->
-          @if (hasMoreToShow()) {
-            <button class="spark-hero__readmore" type="button"
-                    (click)="toggleSparkExpanded(); $event.stopPropagation()">
-              {{ sparkExpanded() ? 'Show less' : 'Read more' }} →
-            </button>
-          }
         </div>
       }
 
@@ -241,14 +243,14 @@ import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
       background: linear-gradient(180deg, #fefcf6 0%, #faf5ea 60%, #f4eedb 100%);
     }
 
-    /* Bottom-right "Read more / Show less" link */
+    /* "Read more / Show less" link — sits inline at the right edge
+       of the actions row so it's vertically centred with the Start
+       writing button instead of stranded at the card's bottom edge. */
     .spark-hero__readmore {
-      position: absolute;
-      right: 1.25rem;
-      bottom: 1rem;
+      margin-left: auto;
       background: none;
       border: none;
-      color: var(--color-accent-dark);
+      color: var(--color-accent);
       font-size: .75rem;
       font-weight: 700;
       text-transform: uppercase;
@@ -257,14 +259,11 @@ import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
       cursor: pointer;
       font-family: inherit;
       transition: color .15s, transform .15s;
-      z-index: 1;
     }
     .spark-hero__readmore:hover {
       color: #0c0e13;
       transform: translateX(2px);
     }
-    /* Make room at the bottom of the box for the absolutely-positioned link. */
-    .spark-hero { padding-bottom: 2.75rem; }
 
     /* Top-right expand chevron */
     .spark-hero__expand {
