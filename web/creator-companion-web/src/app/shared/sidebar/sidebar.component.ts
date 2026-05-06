@@ -34,12 +34,20 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
            that clicking will expand the sidebar back. -->
       <div class="sidebar__top" [class.sidebar__top--collapsed]="collapsed()">
         @if (!collapsed()) {
-          <a class="sidebar__logo-wrap"
-             routerLink="/dashboard"
-             (click)="goHome()">
+          <!-- Logo icon doubles as the collapse trigger — clicking it
+               folds the sidebar. The wordmark next to it stays as the
+               brand label (not a link); "go home" duty belongs to the
+               Journal nav item below. The earlier hover-revealed
+               panel-toggle button was too hidden to be discoverable
+               so it's gone — the icon itself is now the affordance. -->
+          <button class="sidebar__logo-btn"
+                  type="button"
+                  (click)="toggleCollapsed()"
+                  title="Collapse sidebar"
+                  aria-label="Collapse sidebar">
             <img src="logo-icon.png" alt="" class="sidebar__logo-icon">
-            <span class="sidebar__logo-text">Creator Companion</span>
-          </a>
+          </button>
+          <span class="sidebar__logo-text">Creator Companion</span>
           <!-- Mobile: explicit close (X) button. Hidden on desktop. -->
           <button class="sidebar__close-mobile"
                   type="button"
@@ -50,17 +58,6 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
                  stroke-width="2" stroke-linecap="round">
               <line x1="18" y1="6" x2="6" y2="18"/>
               <line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
-          <!-- Desktop: collapse-panel button, hidden until top-row hover. -->
-          <button class="sidebar__panel-toggle"
-                  (click)="toggleCollapsed()"
-                  title="Close sidebar"
-                  aria-label="Close sidebar">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="4" width="18" height="16" rx="2"/>
-              <line x1="9" y1="4" x2="9" y2="20"/>
             </svg>
           </button>
         } @else {
@@ -326,13 +323,30 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
       padding: 0 .5rem;
       justify-content: center;
     }
-    .sidebar__logo-wrap {
-      display: flex; align-items: center; gap: .5rem;
-      text-decoration: none;
-      min-width: 0;
-      flex: 1;
+    /* Logo-icon button: clickable wrapper around the brand mark that
+       collapses the sidebar. Transparent so the icon's own black
+       background reads as the brand mark, not as a button chrome.
+       Subtle hover halo signals interactivity. */
+    .sidebar__logo-btn {
+      background: transparent;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      flex-shrink: 0;
+      transition: background .15s, transform .15s;
     }
-    .sidebar__logo-icon { height: 28px; width: auto; flex-shrink: 0; }
+    .sidebar__logo-btn:hover { background: rgba(255,255,255,.06); }
+    .sidebar__logo-btn:active { transform: scale(.96); }
+    .sidebar__logo-btn:focus-visible {
+      outline: 2px solid var(--color-accent);
+      outline-offset: 2px;
+    }
+    /* Brand mark — left untouched (no filter). Reads correctly as
+       cyan-on-black against the dark sidebar. */
+    .sidebar__logo-icon { height: 28px; width: auto; display: block; }
     /* Brand wordmark rendered as live text in Fraunces (the same
        display face used on the marketing site). Live text scales
        crisply at every DPI, recolors with CSS, and is accessible to
@@ -347,32 +361,10 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-    }
-
-    /* Expanded-state collapse button. Hidden until the user hovers
-       anywhere on the top row (matches the ChatGPT pattern). */
-    .sidebar__panel-toggle {
-      width: 28px; height: 28px;
-      background: transparent;
-      border: none;
-      border-radius: 6px;
-      color: rgba(255,255,255,.55);
-      cursor: pointer;
-      display: grid; place-items: center;
-      flex-shrink: 0;
-      opacity: 0;
-      transition: opacity .15s, color .15s, background .15s;
-    }
-    .sidebar__top:hover .sidebar__panel-toggle { opacity: 1; }
-    .sidebar__panel-toggle:hover {
-      color: #fff;
-      background: rgba(255,255,255,.08);
-    }
-    /* Always visible when keyboard-focused, even before a mouse hover. */
-    .sidebar__panel-toggle:focus-visible {
-      opacity: 1;
-      outline: 2px solid var(--color-accent);
-      outline-offset: 2px;
+      /* Sits between the logo button and trailing controls (mobile X)
+         and pushes them to the right edge. */
+      flex: 1;
+      margin-left: .5rem;
     }
 
     /* Collapsed-state expand button. Logo icon visible by default;
