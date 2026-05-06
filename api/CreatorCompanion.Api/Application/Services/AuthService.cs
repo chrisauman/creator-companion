@@ -87,16 +87,26 @@ public class AuthService(AppDbContext db, IConfiguration config, IEmailService e
         };
         db.Journals.Add(journal);
 
-        // Create default noon reminder for all users
-        var defaultReminder = new Reminder
+        // Pre-create five reminder slots — all noon, all disabled. The
+        // notifications page renders these as five fixed slots; the
+        // user toggles individual ones on. When push is first enabled
+        // the frontend calls auto-enable-first to flip slot #1 on so
+        // they get at least one active reminder out of the box.
+        // Sequential CreatedAt offsets give a stable slot ordering.
+        var reminderNow = DateTime.UtcNow;
+        for (var i = 0; i < 5; i++)
         {
-            UserId    = user.Id,
-            Time      = new TimeOnly(12, 0),
-            Message   = null,   // null = use the system default message
-            IsEnabled = true,
-            IsDefault = true
-        };
-        db.Reminders.Add(defaultReminder);
+            db.Reminders.Add(new Reminder
+            {
+                UserId    = user.Id,
+                Time      = new TimeOnly(12, 0),
+                Message   = null,
+                IsEnabled = false,
+                IsDefault = false,
+                CreatedAt = reminderNow.AddMilliseconds(i),
+                UpdatedAt = reminderNow.AddMilliseconds(i)
+            });
+        }
 
         await db.SaveChangesAsync();
 

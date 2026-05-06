@@ -13,36 +13,49 @@ namespace CreatorCompanion.Api.Api.Controllers;
 [Authorize]
 public class RemindersController(AppDbContext db) : ControllerBase
 {
+    /// <summary>How many reminder slots every user is normalised to.</summary>
+    private const int SlotCount = 5;
+
     private Guid UserId => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)
         ?? User.FindFirstValue("sub")!);
 
     private bool IsPaid => User.HasClaim("tier", "Paid");
 
     // ── GET /v1/reminders ────────────────────────────────────────────────────
-    // Lazy-creates the default noon reminder if it doesn't exist yet (handles
-    // accounts created before this feature shipped).
+    // Reminders are now a fixed set of five slots per user. This endpoint
+    // lazy-creates disabled noon slots up to that count whenever the user's
+    // total is short — idempotent, only adds, never removes. Existing
+    // default + custom reminders count toward the five and are returned
+    // alongside any new ones. Sorted by CreatedAt so "slot #1" is stable.
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
-        // Ensure every account has a default reminder
-        var hasDefault = await db.Reminders.AnyAsync(r => r.UserId == UserId && r.IsDefault);
-        if (!hasDefault)
+        var existingCount = await db.Reminders
+            .Where(r => r.UserId == UserId)
+            .CountAsync();
+
+        if (existingCount < SlotCount)
         {
-            db.Reminders.Add(new Reminder
+            var now = DateTime.UtcNow;
+            for (var i = existingCount; i < SlotCount; i++)
             {
-                UserId    = UserId,
-                Time      = new TimeOnly(12, 0),
-                Message   = null,
-                IsEnabled = true,
-                IsDefault = true
-            });
+                db.Reminders.Add(new Reminder
+                {
+                    UserId    = UserId,
+                    Time      = new TimeOnly(12, 0),
+                    Message   = null,
+                    IsEnabled = false,
+                    IsDefault = false,
+                    CreatedAt = now.AddMilliseconds(i),
+                    UpdatedAt = now.AddMilliseconds(i)
+                });
+            }
             await db.SaveChangesAsync();
         }
 
         var reminders = await db.Reminders
             .Where(r => r.UserId == UserId)
-            .OrderByDescending(r => r.IsDefault)   // default reminder first
-            .ThenBy(r => r.Time)
+            .OrderBy(r => r.CreatedAt)
             .Select(r => new ReminderResponse(
                 r.Id,
                 r.Time.ToString("HH:mm"),
@@ -95,51 +108,58 @@ public class RemindersController(AppDbContext db) : ControllerBase
     }
 
     // ── PUT /v1/reminders/{id} ───────────────────────────────────────────────
-    // All users: can update IsEnabled on any of their reminders.
-    // Paid users: can also update Time and Message on any reminder (incl. default).
-    // Free users: time/message are ignored (they can only toggle the default on/off).
+    // Update a slot — all five behave identically. Anyone can edit time,
+    // message, and on/off state on any reminder they own. Tier-gating
+    // and the default/custom split removed; the previous SyncDefault
+    // side-effect is gone so toggling one slot never silently flips
+    // another. Slots are conceptually independent now.
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateReminderRequest request)
     {
         var reminder = await db.Reminders.FirstOrDefaultAsync(r => r.Id == id && r.UserId == UserId);
         if (reminder is null) return NotFound();
 
-        if (IsPaid && !reminder.IsDefault)
-        {
-            // Custom reminder: paid users can update time and message
-            if (!TimeOnly.TryParseExact(request.Time, "HH:mm", out var time))
-                return BadRequest(new { error = "Invalid time format. Use HH:mm (e.g. '08:30')." });
+        if (!TimeOnly.TryParseExact(request.Time, "HH:mm", out var time))
+            return BadRequest(new { error = "Invalid time format. Use HH:mm (e.g. '08:30')." });
 
-            reminder.Time    = time;
-            reminder.Message = string.IsNullOrWhiteSpace(request.Message) ? null : request.Message.Trim();
-        }
-        else if (IsPaid && reminder.IsDefault)
-        {
-            // Default reminder for paid users: allow time and message edits
-            if (!TimeOnly.TryParseExact(request.Time, "HH:mm", out var time))
-                return BadRequest(new { error = "Invalid time format. Use HH:mm (e.g. '08:30')." });
-
-            reminder.Time    = time;
-            reminder.Message = string.IsNullOrWhiteSpace(request.Message) ? null : request.Message.Trim();
-        }
-
+        reminder.Time      = time;
+        reminder.Message   = string.IsNullOrWhiteSpace(request.Message) ? null : request.Message.Trim();
         reminder.IsEnabled = request.IsEnabled;
         reminder.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync();
 
-        // When a CUSTOM reminder's enabled state changes, sync the default
-        if (!reminder.IsDefault)
-            await SyncDefaultReminderAsync();
-
-        // Re-read the reminder so the response reflects any sync changes
-        var updated = await db.Reminders.FindAsync(id);
         return Ok(new ReminderResponse(
-            updated!.Id,
-            updated.Time.ToString("HH:mm"),
-            updated.Message,
-            updated.IsEnabled,
-            updated.IsDefault,
-            updated.CreatedAt));
+            reminder.Id,
+            reminder.Time.ToString("HH:mm"),
+            reminder.Message,
+            reminder.IsEnabled,
+            reminder.IsDefault,
+            reminder.CreatedAt));
+    }
+
+    // ── POST /v1/reminders/auto-enable-first ─────────────────────────────────
+    // Called once when the user first enables push notifications and no
+    // reminders are currently on. Flips slot #1 (the oldest by CreatedAt)
+    // to enabled so they immediately have one active reminder. No-op if
+    // any reminder is already enabled, so it's safe to call repeatedly
+    // and safe across re-enables.
+    [HttpPost("auto-enable-first")]
+    public async Task<IActionResult> AutoEnableFirst()
+    {
+        var anyEnabled = await db.Reminders.AnyAsync(r => r.UserId == UserId && r.IsEnabled);
+        if (anyEnabled) return NoContent();
+
+        var first = await db.Reminders
+            .Where(r => r.UserId == UserId)
+            .OrderBy(r => r.CreatedAt)
+            .FirstOrDefaultAsync();
+
+        if (first is null) return NoContent();
+
+        first.IsEnabled = true;
+        first.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync();
+        return NoContent();
     }
 
     // ── DELETE /v1/reminders/{id} ────────────────────────────────────────────

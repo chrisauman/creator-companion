@@ -177,6 +177,10 @@ export class ApiService {
   }
 
   // ── Reminders ───────────────────────────────────────────────────────────
+  // Reminders are now five fixed slots per user (lazy-created server-side
+  // on first GET). createReminder / deleteReminder are kept for backwards
+  // compatibility but the UI no longer calls them — slots are always
+  // there to be edited.
   getReminders(): Observable<any[]> {
     return this.http.get<any[]>(`${this.base}/reminders`);
   }
@@ -191,6 +195,14 @@ export class ApiService {
 
   deleteReminder(id: string): Observable<void> {
     return this.http.delete<void>(`${this.base}/reminders/${id}`);
+  }
+
+  /** Called once when the user first enables push notifications and no
+   *  reminders are currently active — the server flips slot #1 on so
+   *  they immediately get one active reminder. No-op server-side if any
+   *  reminder is already enabled, so it's safe to call repeatedly. */
+  autoEnableFirstReminder(): Observable<void> {
+    return this.http.post<void>(`${this.base}/reminders/auto-enable-first`, {});
   }
 
   // ── Push ────────────────────────────────────────────────────────────────

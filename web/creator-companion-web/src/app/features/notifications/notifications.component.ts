@@ -82,129 +82,48 @@ const DEFAULT_REMINDER_MESSAGE = 'Remember to log an entry to keep your streak a
             }
           </section>
 
-          <!-- Reminders -->
+          <!-- Reminders — five fixed slots, all rendered identically.
+               Users edit time / message / on-off on each. Slots are
+               server-side lazy-created and never deleted — the UI
+               doesn't expose add or delete. -->
           <section class="block">
             <h2 class="block__title">Reminder times</h2>
 
             @if (remindersLoading()) {
               <p class="block__body">Loading…</p>
-            }
-
-            <!-- FREE TIER -->
-            @if (!remindersLoading() && user()?.tier === 'Free') {
-              <!-- Highlighted "default reminder" surface — uses the
-                   warm cream gradient from the Daily Spark hero. -->
-              <div class="reminder-tile reminder-tile--accent">
-                <div class="reminder-tile__main">
-                  <p class="reminder-tile__time">Daily at 12:00 PM</p>
-                  <p class="reminder-tile__sub">"{{ defaultReminderMessage }}"</p>
-                </div>
-                @if (defaultReminder()) {
-                  <label class="toggle-switch">
-                    <input type="checkbox" [checked]="defaultReminder()!.isEnabled"
-                           [disabled]="reminderWorking()" (change)="toggleReminder(defaultReminder()!)" />
-                    <span class="toggle-track"><span class="toggle-thumb"></span></span>
-                  </label>
+            } @else {
+              <div class="reminders-list">
+                @for (r of reminders(); track r.id) {
+                  <div class="reminder-tile">
+                    <div class="reminder-tile__fields">
+                      <div class="field-group">
+                        <label class="field-label">Time</label>
+                        <input type="time" class="time-input"
+                               [ngModel]="drafts[r.id]?.time ?? r.time"
+                               (ngModelChange)="draftChange(r.id, 'time', $event)" />
+                      </div>
+                      <div class="field-group reminder-msg-group">
+                        <label class="field-label">Message <span class="optional">(optional)</span></label>
+                        <input type="text" class="text-input"
+                               [placeholder]="defaultReminderMessage"
+                               maxlength="200"
+                               [ngModel]="drafts[r.id]?.message ?? (r.message ?? '')"
+                               (ngModelChange)="draftChange(r.id, 'message', $event)" />
+                      </div>
+                    </div>
+                    <div class="reminder-tile__actions">
+                      <label class="toggle-switch">
+                        <input type="checkbox" [checked]="r.isEnabled"
+                               [disabled]="reminderWorking()" (change)="toggleReminder(r)" />
+                        <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                      </label>
+                      <button class="save-btn"
+                              [disabled]="reminderWorking() || !hasDraftChanges(r)"
+                              (click)="saveReminder(r)">Save</button>
+                    </div>
+                  </div>
                 }
               </div>
-              <p class="block__body block__body--note">
-                Upgrade to Paid to set custom reminder times and add up to 5 additional reminders.
-              </p>
-            }
-
-            <!-- PAID TIER -->
-            @if (!remindersLoading() && user()?.tier === 'Paid') {
-
-              <!-- Default reminder — accent (cream-gradient) tile -->
-              @if (defaultReminder(); as dr) {
-                <div class="reminder-tile reminder-tile--accent">
-                  <div class="reminder-tile__head">
-                    <span class="default-badge">Default reminder</span>
-                    @if (customReminders().length > 0 && !dr.isEnabled) {
-                      <span class="reminder-tile__sub">Off — your custom reminders are active</span>
-                    }
-                  </div>
-                  <div class="reminder-tile__fields">
-                    <div class="field-group">
-                      <label class="field-label">Time</label>
-                      <input type="time" class="time-input"
-                             [ngModel]="drafts[dr.id]?.time ?? dr.time"
-                             (ngModelChange)="draftChange(dr.id, 'time', $event)" />
-                    </div>
-                    <div class="field-group reminder-msg-group">
-                      <label class="field-label">Message <span class="optional">(optional)</span></label>
-                      <input type="text" class="text-input"
-                             [placeholder]="defaultReminderMessage"
-                             maxlength="200"
-                             [ngModel]="drafts[dr.id]?.message ?? (dr.message ?? '')"
-                             (ngModelChange)="draftChange(dr.id, 'message', $event)" />
-                    </div>
-                  </div>
-                  <div class="reminder-tile__actions">
-                    <label class="toggle-switch">
-                      <input type="checkbox" [checked]="dr.isEnabled"
-                             [disabled]="reminderWorking()" (change)="toggleReminder(dr)" />
-                      <span class="toggle-track"><span class="toggle-thumb"></span></span>
-                    </label>
-                    <button class="save-btn"
-                            [disabled]="reminderWorking() || !hasDraftChanges(dr)"
-                            (click)="saveReminder(dr)">Save</button>
-                  </div>
-                </div>
-              }
-
-              <!-- Custom reminders -->
-              @if (customReminders().length > 0) {
-                <div class="reminders-section-label">Custom reminders</div>
-                <div class="reminders-list">
-                  @for (r of customReminders(); track r.id) {
-                    <div class="reminder-tile">
-                      <div class="reminder-tile__fields">
-                        <div class="field-group">
-                          <label class="field-label">Time</label>
-                          <input type="time" class="time-input"
-                                 [ngModel]="drafts[r.id]?.time ?? r.time"
-                                 (ngModelChange)="draftChange(r.id, 'time', $event)" />
-                        </div>
-                        <div class="field-group reminder-msg-group">
-                          <label class="field-label">Message <span class="optional">(optional)</span></label>
-                          <input type="text" class="text-input"
-                                 [placeholder]="defaultReminderMessage"
-                                 maxlength="200"
-                                 [ngModel]="drafts[r.id]?.message ?? (r.message ?? '')"
-                                 (ngModelChange)="draftChange(r.id, 'message', $event)" />
-                        </div>
-                      </div>
-                      <div class="reminder-tile__actions">
-                        <label class="toggle-switch">
-                          <input type="checkbox" [checked]="r.isEnabled"
-                                 [disabled]="reminderWorking()" (change)="toggleReminder(r)" />
-                          <span class="toggle-track"><span class="toggle-thumb"></span></span>
-                        </label>
-                        <!-- Delete · Save (Save aligned right, both
-                             matching the dark-ink Edit-button style). -->
-                        <button class="link-btn link-btn--danger"
-                                [disabled]="reminderWorking()" (click)="deleteReminder(r)">Delete</button>
-                        <button class="save-btn"
-                                [disabled]="reminderWorking() || !hasDraftChanges(r)"
-                                (click)="saveReminder(r)">Save</button>
-                      </div>
-                    </div>
-                  }
-                </div>
-              }
-
-              @if (customReminders().length < 5) {
-                <button class="action-btn action-btn--add"
-                        [disabled]="reminderWorking()" (click)="addReminder()">
-                  + Add custom reminder
-                </button>
-                @if (customReminders().length === 0) {
-                  <p class="block__body block__body--note">
-                    Adding a custom reminder will turn off the default noon reminder.
-                  </p>
-                }
-              }
             }
 
             @if (reminderError()) {
@@ -618,7 +537,22 @@ export class NotificationsComponent implements OnInit {
     this.pushDenied.set(false);
     const granted = await this.push.subscribe();
     if (!granted && Notification.permission === 'denied') this.pushDenied.set(true);
-    this.pushEnabled.set(await this.push.isSubscribed());
+    const subscribed = await this.push.isSubscribed();
+    this.pushEnabled.set(subscribed);
+
+    // First-time enable: if every slot is currently off, ask the
+    // server to flip slot #1 on so the user gets at least one
+    // active reminder out of the box. Server enforces "no-op when
+    // any are already enabled" so this is safe to call repeatedly.
+    if (subscribed) {
+      const anyEnabled = this.reminders().some(r => r.isEnabled);
+      if (!anyEnabled) {
+        this.api.autoEnableFirstReminder().subscribe({
+          next: () => this.loadReminders(),
+          error: () => { /* silent — push is on regardless */ }
+        });
+      }
+    }
     this.pushWorking.set(false);
   }
 
