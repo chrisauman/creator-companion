@@ -87,7 +87,15 @@ const DEFAULT_REMINDER_MESSAGE = 'Remember to log an entry to keep your streak a
                server-side lazy-created and never deleted — the UI
                doesn't expose add or delete. -->
           <section class="block">
-            <h2 class="block__title">Reminder times</h2>
+            <div class="block__head">
+              <h2 class="block__title">Reminder times</h2>
+              <button class="link-btn"
+                      type="button"
+                      [disabled]="reminderWorking()"
+                      (click)="resetReminders()">
+                Reset all
+              </button>
+            </div>
 
             @if (remindersLoading()) {
               <p class="block__body">Loading…</p>
@@ -259,6 +267,15 @@ const DEFAULT_REMINDER_MESSAGE = 'Remember to log an entry to keep your streak a
       color: var(--color-text);
       margin: 0 0 .875rem;
     }
+    /* Title row that holds the eyebrow + a trailing action (Reset). */
+    .block__head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: .875rem;
+    }
+    .block__head .block__title { margin: 0; }
     .block__body {
       font-size: .9375rem;
       line-height: 1.5;
@@ -431,6 +448,9 @@ const DEFAULT_REMINDER_MESSAGE = 'Remember to log an entry to keep your streak a
        link-btn   : ghost-text button for "Disable" / "Delete".
        action-btn : neutral pill for "Enable notifications" /
                     "+ Add custom reminder". */
+    /* Stays solid black even when disabled — matches the entry-reader
+       Edit button. Uses cursor + a subtle hover-suppression to signal
+       non-interactive state instead of fading the colour. */
     .save-btn {
       margin-left: auto;
       display: inline-flex; align-items: center; gap: .375rem;
@@ -444,7 +464,7 @@ const DEFAULT_REMINDER_MESSAGE = 'Remember to log an entry to keep your streak a
     .save-btn:hover:not(:disabled) {
       background: var(--color-accent); color: #0c0e13;
     }
-    .save-btn:disabled { opacity: .5; cursor: not-allowed; }
+    .save-btn:disabled { cursor: not-allowed; }
 
     .link-btn {
       background: transparent; border: none;
@@ -607,6 +627,26 @@ export class NotificationsComponent implements OnInit {
     this.api.updateReminder(r.id, r.time, r.message ?? undefined, !r.isEnabled).subscribe({
       next: () => { this.loadReminders(); this.reminderWorking.set(false); },
       error: () => this.reminderWorking.set(false)
+    });
+  }
+
+  /** Wipe all reminders and recreate five disabled noon slots. Confirms
+   *  first because it's destructive (any custom times / messages the
+   *  user had set on existing slots are gone). */
+  resetReminders(): void {
+    if (!confirm('Reset all reminders? This wipes any custom times or messages you have set and gives you five fresh disabled slots.')) return;
+    this.reminderWorking.set(true);
+    this.reminderError.set('');
+    this.drafts = {};
+    this.api.resetReminders().subscribe({
+      next: list => {
+        this.reminders.set(list as Reminder[]);
+        this.reminderWorking.set(false);
+      },
+      error: err => {
+        this.reminderError.set(err?.error?.error ?? 'Could not reset reminders.');
+        this.reminderWorking.set(false);
+      }
     });
   }
 

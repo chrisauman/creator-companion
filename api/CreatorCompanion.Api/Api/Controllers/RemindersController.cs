@@ -162,6 +162,52 @@ public class RemindersController(AppDbContext db) : ControllerBase
         return NoContent();
     }
 
+    // ── POST /v1/reminders/reset ────────────────────────────────────────────
+    // Wipes every reminder for the current user and recreates exactly five
+    // disabled noon slots. User-initiated only — there's a Reset button on
+    // the notifications page that hits this endpoint after a confirmation
+    // prompt. Useful for clearing legacy state (e.g. an account ending up
+    // with 6 reminders after migration drift) and for testing the
+    // push-enable auto-flip flow from a clean baseline.
+    [HttpPost("reset")]
+    public async Task<IActionResult> Reset()
+    {
+        var existing = await db.Reminders
+            .Where(r => r.UserId == UserId)
+            .ToListAsync();
+        db.Reminders.RemoveRange(existing);
+
+        var now = DateTime.UtcNow;
+        for (var i = 0; i < SlotCount; i++)
+        {
+            db.Reminders.Add(new Reminder
+            {
+                UserId    = UserId,
+                Time      = new TimeOnly(12, 0),
+                Message   = null,
+                IsEnabled = false,
+                IsDefault = false,
+                CreatedAt = now.AddMilliseconds(i),
+                UpdatedAt = now.AddMilliseconds(i)
+            });
+        }
+        await db.SaveChangesAsync();
+
+        var reminders = await db.Reminders
+            .Where(r => r.UserId == UserId)
+            .OrderBy(r => r.CreatedAt)
+            .Select(r => new ReminderResponse(
+                r.Id,
+                r.Time.ToString("HH:mm"),
+                r.Message,
+                r.IsEnabled,
+                r.IsDefault,
+                r.CreatedAt))
+            .ToListAsync();
+
+        return Ok(reminders);
+    }
+
     // ── DELETE /v1/reminders/{id} ────────────────────────────────────────────
     // The default reminder cannot be deleted — users turn it off via the toggle.
     // Custom reminders (paid users only) can be deleted.

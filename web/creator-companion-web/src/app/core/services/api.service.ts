@@ -205,6 +205,13 @@ export class ApiService {
     return this.http.post<void>(`${this.base}/reminders/auto-enable-first`, {});
   }
 
+  /** Wipes the user's reminders and recreates exactly five disabled noon
+   *  slots. Triggered by the Reset button on the notifications page —
+   *  destructive, so the UI confirms first. Returns the fresh five. */
+  resetReminders(): Observable<any[]> {
+    return this.http.post<any[]>(`${this.base}/reminders/reset`, {});
+  }
+
   // ── Push ────────────────────────────────────────────────────────────────
   getPushVapidKey(): Observable<{ publicKey: string }> {
     return this.http.get<{ publicKey: string }>(`${this.base}/push/vapid-public-key`);
