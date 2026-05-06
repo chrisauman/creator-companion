@@ -324,22 +324,26 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
       justify-content: center;
     }
     /* Logo-icon button: clickable wrapper around the brand mark that
-       collapses the sidebar. Transparent so the icon's own black
-       background reads as the brand mark, not as a button chrome.
-       Subtle hover halo signals interactivity. */
+       collapses the sidebar. Transparent by default so the icon's
+       own black background reads as the brand mark, not as button
+       chrome. Visible hover halo + scale-down on click so the
+       affordance is obvious. */
     .sidebar__logo-btn {
       background: transparent;
       border: none;
-      padding: 0;
+      padding: 4px;
       cursor: pointer;
-      display: grid;
-      place-items: center;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       border-radius: 8px;
       flex-shrink: 0;
-      transition: background .15s, transform .15s;
+      transition: background .15s ease, transform .1s ease;
+      position: relative;
+      z-index: 1;
     }
-    .sidebar__logo-btn:hover { background: rgba(255,255,255,.06); }
-    .sidebar__logo-btn:active { transform: scale(.96); }
+    .sidebar__logo-btn:hover { background: rgba(255,255,255,.14); }
+    .sidebar__logo-btn:active { transform: scale(.92); background: rgba(255,255,255,.20); }
     .sidebar__logo-btn:focus-visible {
       outline: 2px solid var(--color-accent);
       outline-offset: 2px;
