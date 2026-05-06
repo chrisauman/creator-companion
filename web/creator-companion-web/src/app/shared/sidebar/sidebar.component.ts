@@ -25,41 +25,62 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
            [class.sidebar--collapsed]="collapsed()"
            [class.sidebar--mobile-open]="mobileOpen()">
 
-      <!-- Logo + collapse toggle (desktop) / close button (mobile).
-           Clicking the logo behaves like the "Today" pill in the right
-           column: navigate to /dashboard AND ask the dashboard to
-           reset to today mode (clears selected entry / closes compose/
-           edit). -->
-      <div class="sidebar__top">
-        <a class="sidebar__logo-wrap"
-           routerLink="/dashboard"
-           (click)="goHome()">
-          <img src="logo-icon.png" alt="" class="sidebar__logo-icon">
-          <span class="sidebar__logo-text">Creator Companion</span>
-        </a>
-        <!-- Mobile: explicit close (X) button. Hidden on desktop. -->
-        <button class="sidebar__close-mobile"
-                type="button"
-                (click)="closeMobile()"
-                title="Close menu"
-                aria-label="Close menu">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-               stroke-width="2" stroke-linecap="round">
-            <line x1="18" y1="6" x2="6" y2="18"/>
-            <line x1="6" y1="6" x2="18" y2="18"/>
-          </svg>
-        </button>
-        <!-- Desktop: collapse chevron. Hidden on mobile. -->
-        <button class="sidebar__collapse"
-                (click)="toggleCollapsed()"
-                [title]="collapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
-                [attr.aria-label]="collapsed() ? 'Expand sidebar' : 'Collapse sidebar'">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-               stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-               [style.transform]="collapsed() ? 'rotate(180deg)' : 'rotate(0deg)'">
-            <polyline points="15 18 9 12 15 6"/>
-          </svg>
-        </button>
+      <!-- Top of sidebar.
+           Expanded: logo + wordmark on the left (clicking still goes
+           home), with a panel-toggle button on the right that's
+           hidden until the user hovers anywhere on the top row.
+           Collapsed: a single button shows the logo icon by default
+           and swaps to the panel-toggle icon on hover, signaling
+           that clicking will expand the sidebar back. -->
+      <div class="sidebar__top" [class.sidebar__top--collapsed]="collapsed()">
+        @if (!collapsed()) {
+          <a class="sidebar__logo-wrap"
+             routerLink="/dashboard"
+             (click)="goHome()">
+            <img src="logo-icon.png" alt="" class="sidebar__logo-icon">
+            <span class="sidebar__logo-text">Creator Companion</span>
+          </a>
+          <!-- Mobile: explicit close (X) button. Hidden on desktop. -->
+          <button class="sidebar__close-mobile"
+                  type="button"
+                  (click)="closeMobile()"
+                  title="Close menu"
+                  aria-label="Close menu">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+          <!-- Desktop: collapse-panel button, hidden until top-row hover. -->
+          <button class="sidebar__panel-toggle"
+                  (click)="toggleCollapsed()"
+                  title="Close sidebar"
+                  aria-label="Close sidebar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="16" rx="2"/>
+              <line x1="9" y1="4" x2="9" y2="20"/>
+            </svg>
+          </button>
+        } @else {
+          <!-- Collapsed: single button with hover-swap. Logo icon by
+               default; panel-toggle SVG on hover to signal expand. -->
+          <button class="sidebar__expand-toggle"
+                  type="button"
+                  (click)="toggleCollapsed()"
+                  title="Open sidebar"
+                  aria-label="Open sidebar">
+            <img src="logo-icon.png" alt="Creator Companion"
+                 class="sidebar__expand-toggle-default">
+            <svg class="sidebar__expand-toggle-hover"
+                 width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="16" rx="2"/>
+              <line x1="9" y1="4" x2="9" y2="20"/>
+            </svg>
+          </button>
+        }
       </div>
 
       <!-- New Entry button (cyan; full pill expanded, just + icon collapsed) -->
@@ -80,6 +101,7 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
         <a class="sidebar__nav-item"
            [class.sidebar__nav-item--active]="active === 'dashboard'"
            routerLink="/dashboard"
+           (click)="goHome()"
            [title]="collapsed() ? 'Journal' : null">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
           <span class="sidebar__nav-label">Journal</span>
@@ -236,9 +258,10 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
       from { opacity: 0; }
       to { opacity: 1; }
     }
-    /* Don't show drawer-mode collapse chevron on mobile — irrelevant. */
+    /* Don't show desktop panel-toggle on mobile — irrelevant. */
     @media (max-width: 767px) {
-      .sidebar__collapse { display: none; }
+      .sidebar__panel-toggle { display: none; }
+      .sidebar__expand-toggle { display: none; }
       .sidebar--collapsed {
         /* ignore desktop collapsed state on mobile */
         width: 280px;
@@ -297,10 +320,11 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
       padding: 0 .875rem;
       margin-bottom: 1rem;
     }
-    .sidebar--collapsed .sidebar__top {
+    /* Collapsed state: the top row holds just the single
+       expand-toggle button, centred. */
+    .sidebar__top--collapsed {
       padding: 0 .5rem;
-      flex-direction: column;
-      gap: .75rem;
+      justify-content: center;
     }
     .sidebar__logo-wrap {
       display: flex; align-items: center; gap: .5rem;
@@ -317,27 +341,69 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    .sidebar--collapsed .sidebar__logo-text { display: none; }
 
-    .sidebar__collapse {
-      width: 26px; height: 26px;
+    /* Expanded-state collapse button. Hidden until the user hovers
+       anywhere on the top row (matches the ChatGPT pattern). */
+    .sidebar__panel-toggle {
+      width: 28px; height: 28px;
       background: transparent;
       border: none;
       border-radius: 6px;
-      color: rgba(255,255,255,.4);
+      color: rgba(255,255,255,.55);
       cursor: pointer;
       display: grid; place-items: center;
       flex-shrink: 0;
-      transition: color .15s, background .15s;
+      opacity: 0;
+      transition: opacity .15s, color .15s, background .15s;
     }
-    .sidebar__collapse:hover {
+    .sidebar__top:hover .sidebar__panel-toggle { opacity: 1; }
+    .sidebar__panel-toggle:hover {
+      color: #fff;
+      background: rgba(255,255,255,.08);
+    }
+    /* Always visible when keyboard-focused, even before a mouse hover. */
+    .sidebar__panel-toggle:focus-visible {
+      opacity: 1;
+      outline: 2px solid var(--color-accent);
+      outline-offset: 2px;
+    }
+
+    /* Collapsed-state expand button. Logo icon visible by default;
+       on hover the logo fades out and the panel-toggle SVG fades in,
+       hinting that clicking will reopen the sidebar. */
+    .sidebar__expand-toggle {
+      position: relative;
+      width: 40px; height: 40px;
+      background: transparent;
+      border: none;
+      border-radius: 8px;
       color: rgba(255,255,255,.85);
-      background: rgba(255,255,255,.05);
+      cursor: pointer;
+      display: grid; place-items: center;
+      transition: background .15s;
     }
-    .sidebar__collapse svg { transition: transform .25s ease; }
+    .sidebar__expand-toggle:hover { background: rgba(255,255,255,.06); }
+    .sidebar__expand-toggle:focus-visible {
+      outline: 2px solid var(--color-accent);
+      outline-offset: 2px;
+    }
+    .sidebar__expand-toggle-default {
+      width: 28px; height: 28px;
+      transition: opacity .15s;
+    }
+    .sidebar__expand-toggle-hover {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      opacity: 0;
+      transition: opacity .15s;
+      pointer-events: none;
+    }
+    .sidebar__expand-toggle:hover .sidebar__expand-toggle-default { opacity: 0; }
+    .sidebar__expand-toggle:hover .sidebar__expand-toggle-hover { opacity: 1; }
 
     /* Mobile-only X close button — shown in the drawer top-right.
-       Hidden on desktop where the collapse chevron handles toggling. */
+       Hidden on desktop where the panel-toggle handles toggling. */
     .sidebar__close-mobile { display: none; }
     @media (max-width: 767px) {
       .sidebar__close-mobile {
@@ -356,7 +422,8 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
         background: rgba(255,255,255,.12);
         border-color: rgba(255,255,255,.25);
       }
-      .sidebar__collapse { display: none !important; }
+      .sidebar__panel-toggle,
+      .sidebar__expand-toggle { display: none !important; }
     }
 
     /* ── Streak module (Variant A — compact inline header) ────────
