@@ -395,7 +395,11 @@ const DEFAULT_REMINDER_MESSAGE = 'Remember to log an entry to keep your streak a
 
     /* Time + text inputs share the rounded-pill look; time gets a
        roomier min-width so "12:00 PM" never gets clipped on the
-       narrow embedded column. */
+       narrow embedded column. accent-color overrides the OS / browser
+       blue highlight in Chrome's native time-picker dropdown so the
+       selected hour / minute / AM-PM cell renders in brand-ink instead
+       of the macOS system blue. Supported in Chrome 93+, Edge 93+,
+       Safari 15.4+, Firefox 92+. */
     .time-input,
     .text-input {
       width: 100%; padding: .5rem 1rem; font-size: .875rem;
@@ -403,6 +407,7 @@ const DEFAULT_REMINDER_MESSAGE = 'Remember to log an entry to keep your streak a
       background: #fff; color: var(--color-text);
       font-family: var(--font-sans); box-sizing: border-box;
       transition: border-color .15s, background .15s;
+      accent-color: #0c0e13;
     }
     .time-input { min-width: 140px; }
     .time-input:focus,
