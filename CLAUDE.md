@@ -1,0 +1,278 @@
+# Creator Companion — Project Briefing
+
+Auto-loaded by Claude Code every session. Keep lean — every token costs context.
+Update when decisions land. Don't put transient state here.
+
+---
+
+## What this is
+
+This app is your digital creator companion. It will give you the daily support,reminders, motivation, inspiration, advice, organization, encouragement that you need to maintain a daily, creative practice indefinitely. 
+
+
+## Features (product surface)
+
+Brief inventory so I can reason about the product without grepping.
+
+- **Daily journal** — text + photos + mood. Streak-gamified ("don't
+  break the chain"). Entries searchable, sortable, taggable, favoritable.
+- **Tag library** — user-built and maintainable. Drives entry filtering.
+- **Reminders** — up to 5 custom push notifications/day. User sets time
+  and message. General-purpose (not just journal nags). See dedicated
+  section below.
+- **To-do list** — simple checklist for daily-recurring items or one-offs.
+- **Streak system** — daily counter, milestone reward badges, longest-
+  streak always shown. 48h backlog grace; 10-day pause for life events.
+- **Daily Spark** — short piece of advice on the dashboard, expandable
+  to full content. ~300–400 sparks built in. Favorable.
+- **Prompt library** — large library of journal prompts that auto-rotate
+  on the dashboard; user can also click through to find one they like.
+- **Mood-as-entry-starter** — clicking a mood icon opens a new entry
+  with that mood pre-set.
+- **Trash & restore** — soft-deleted entries are recoverable for 48h
+  before hard-delete.
+- **Image compression** — uploads are downscaled + recompressed via
+  ImageSharp before storage (R2). Keeps user storage / bandwidth sane.
+- **Preferences** — toggle Daily Spark, toggle reminders globally, etc.
+- **FAQ + support** — self-serve help content; user can also delete
+  account and export data from the account page.
+- **Admin** — separate `/admin` area: stats dashboard, user management,
+  email/notification template editing, Spark + prompt content
+  management, FAQ editing.
+- **Mobile + desktop** — single PWA, responsive. Mobile gets a slide-in
+  drawer + bottom nav; desktop gets the persistent sidebar.
+
+## Limits & abuse controls
+
+Server-enforced caps to prevent abuse and runaway costs:
+
+- **Word count per entry** — capped (see `EntryLimitsConfig`).
+- **Image count + total size per entry** — capped.
+- **Allowed file types** — image MIME types only.
+- **Rate limiting** — auth endpoints (login/register/forgot/reset),
+  POST/PUT/DELETE/PATCH globally. Configured in `Program.cs` via
+  `AspNetCoreRateLimit`. Uses real client IP via `ForwardedHeaders`.
+- **Trash retention** — 48h before hard-delete (acts as user safety
+  net AND prevents indefinite soft-deleted bloat).
+
+## Tone & design philosophy
+
+- **Voice:** cheerful, calm, empathetic cheerleader. Patient. Never
+  drill-sergeant. Marketing leans literary; in-app copy stays warm.
+- **Failure framing:** never name the loss. Streak breaks are "chapters
+  ending," not failures. Reframe forward, lower the bar to restart.
+- **Permission to be imperfect** is what keeps users coming back. Loss
+  aversion drives daily return; shame drives quitting.
+
+
+## Repo layout
+
+```
+api/                              .NET 10 backend
+  CreatorCompanion.Api/           the service
+  CreatorCompanion.Tests/         xunit tests
+web/creator-companion-web/        Angular 17+ PWA (frontend)
+  src/app/features/               feature components (one folder per route)
+  src/app/shared/                 shared components (sidebar, mobile-nav)
+  src/app/core/                   services, interceptors, models
+  public/                         static assets (logos, manifest, sw.js)
+marketing/                        static HTML/CSS/JS marketing site
+.claude/                          editor + tool config
+```
+
+## Infrastructure / hosting
+
+- **GitHub** — source of truth for all code. Pushing to `main` triggers
+  the auto-deploys below.
+- **Railway** — hosts the **backend API** (the .NET server). Long-running
+  process, handles auth, DB queries, push delivery, the reminder worker.
+  Postgres also runs on Railway.
+- **Vercel** — *(role to confirm — see TODO at bottom of this file)*
+- **Cloudflare R2** — object storage for user media (avatars, future
+  attachments). S3-compatible API.
+- **Resend** — transactional email.
+- **Stripe** — payments.
+
+## Architecture
+
+- **Frontend:** Angular 17+ standalone components, signals everywhere,
+  styles inline in `styles: [\`...\`]` per component. No ngModule. PWA
+  with `public/manifest.webmanifest` + `public/sw.js`.
+- **Backend:** .NET 10, EF Core, JWT bearer auth, controllers under
+  `api/CreatorCompanion.Api/Api/Controllers/`, services in
+  `Application/Services/`, models in `Domain/Models/`.
+- **Storage:** Cloudflare R2 (S3-compatible) for user media; local FS
+  in dev. Switch in `Program.cs` based on environment.
+- **Image processing:** SixLabors.ImageSharp via `IImageProcessor`,
+  used for avatar uploads (downscale + recompress).
+- **Push:** Web Push w/ VAPID. `IPushSender` → `WebPushSender`.
+  `ReminderBackgroundService` is a hosted service, 60s loop.
+- **Email:** Resend.
+- **Payments:** Stripe (`IStripeService`).
+
+## Auth
+
+- JWT bearer. **Access token in memory** (`TokenService`), **refresh
+  token in HttpOnly cookie** (`SameSite=None; Secure`).
+- `authInterceptor` attaches `Authorization: Bearer …` to every call.
+  On 401, calls `auth.refreshToken()`, retries with new token. Shared
+  `_refresh$` observable de-dupes concurrent refresh attempts.
+- `ClockSkew = TimeSpan.Zero` in `Program.cs` — be careful with clock
+  drift between client and Railway. Symptom: instant 401s after fresh
+  login. Don't tighten further.
+
+## Brand
+
+- **Accent:** `#12C4E3` (the only blue/cyan in the app). Hover variant:
+  `#0bd2f0`. **Never darker teal.**
+- **Ink:** `#0c0e13` / `#1a1d24`.
+- **Cream gradient:** `#fdfaf2` → `#f6f1e6`.
+- **Primary CTAs:** black bg + white text default; brighter cyan
+  (`#0bd2f0`) + white text on hover.
+- **Exception:** sidebar **New Entry** button stays brand cyan (black
+  on dark sidebar would disappear). One deliberate inversion.
+- **Fonts:**
+  - `--font-sans`: Inter (default UI)
+  - `--font-brand`: Fraunces 700/800/900 (brand wordmark, hero quotes)
+  - `--font-serif`: Georgia (rarely used; reserved)
+- **Brand wordmark** = live text in Fraunces 800, NOT a PNG. The
+  `logo-icon.png` (cyan-on-black square) is fine to use as the icon.
+- **Logo files:** `logo-icon.png` (square brand mark), `logo-full.png`
+  (dark wordmark designed for light backgrounds — use invert filter
+  for dark contexts, OR prefer live Fraunces text).
+
+## Streak rules
+
+- **48-hour backlog grace:** if a user misses a day, they can still
+  write that day's entry within 48h to save the streak. Make this
+  loud and discoverable — historically it was silent.
+- **Pause feature:** users can pause their streak proactively for
+  **up to 10 days** per pause (vacation, life emergency). Server
+  enforces the limit. `Pauses` table.
+- **Milestone badges:** users earn badges at streak milestones (see
+  `getMilestoneProgress` and `core/constants/milestones.ts`). The
+  current and longest streaks are always surfaced on the dashboard.
+- **Reset:** breaks past the 48h window reset the counter to 0.
+  Longest-streak is *banked*, not erased.
+- **Future direction:** restart-after-break needs a Welcome Back
+  experience that frames past streak as "banked," not lost. Design
+  thread already started — three states (threatened → broken →
+  rebuilding), cheerful tone, surface lifetime stats. See separate
+  design doc when implemented.
+
+## Reminders (recent refactor — important)
+
+- **5 fixed slots per user.** Lazy-created on first GET. UI never
+  exposes add/delete; users edit time/message/on-off per slot.
+- **General-purpose.** Fire unconditionally on schedule. Use them for
+  anything (journal, hydration, walks).
+- **Do NOT reintroduce:**
+  - "Skip if already journaled today" (broke contract for non-journal
+    reminders — was removed deliberately)
+  - "Skip if streak paused" (same reason)
+  - Tiered messages by days-since-last-entry (`SelectMessage` is gone)
+- **Worker matching:** `userNow >= scheduledToday AND !alreadySentToday`.
+  NOT exact-minute match (60s loop drifts; redeploys land mid-minute).
+- **Edit clears `LastSentAt`** so changing a slot's time treats it as a
+  fresh schedule (so the user can test by setting "5 minutes from now").
+- **User-facing label:** "Reminders." Internal route still
+  `/notifications`, internal type literals still `'notifications'`
+  (URLs and identifiers preserved for bookmarks / refactor cost).
+
+## Profile model
+
+- **FirstName + LastName.** Username was removed — historical refactor.
+- **Profile picture** uploaded to R2, compressed via ImageSharp.
+- **TimeZoneId** captured at registration via
+  `Intl.DateTimeFormat().resolvedOptions().timeZone`. Default for
+  legacy accounts: `"UTC"` (means a 9am reminder fires at 9am UTC for
+  them — surface this if reminder timing seems wrong).
+
+## Coding conventions
+
+- **Comments matter.** Explain *why*, not *what*. Future-Claude (and
+  future-Chris) needs the reasoning, not the literal behavior.
+- **Heavy inline comments preferred** over external docs that drift.
+- **Use Edit, not Write,** for existing files. Diffs are easier to
+  review than full rewrites.
+- **No emojis in code** unless explicitly requested.
+- **Standalone Angular components** only. Signals for state. Inline
+  styles in `styles: [\`...\`]`.
+- **Backend services scoped/singleton appropriately** — see
+  `Program.cs` for the pattern.
+- **EF Core migrations** are append-only. **NEVER write a destructive
+  migration** (DELETE + bulk INSERT). One did this for reminders and
+  it broke login on deploy. Backwards-compatible only.
+
+## Build & deploy
+
+- **Frontend build:** `cd web/creator-companion-web && npx ng build --configuration=production`
+- **Backend build:** `cd api && dotnet build CreatorCompanion.Api/CreatorCompanion.Api.csproj`
+- **Frontend deploy:** *(host TBC — likely Vercel)*, auto-deploy on push to `main`.
+- **Backend deploy:** Railway, auto-deploy on push to `main`.
+- **Marketing deploy:** *(host TBC — likely Vercel)*, auto-deploy on push to `main`.
+- **Always build locally before committing** — don't push uncompiled.
+
+## Commit conventions
+
+- Only commit when the user **explicitly asks** ("deploy", "commit",
+  "push"). Never auto-commit after editing.
+- Commit messages explain *why* in 1–2 sentences. Use HEREDOC for
+  multi-line. Sign with `Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>`.
+- **Never `--no-verify`** unless the user explicitly says so.
+- **Never amend.** Always new commits.
+- **Don't push to remote** unless asked.
+
+## Gotchas (real ones we've hit)
+
+- **Service worker** (`public/sw.js`) intercepts only navigation
+  requests. JS bundles are NOT cached by SW — but Cloudflare can
+  cache `index.html`. Hard reload (Cmd+Shift+R) when changes don't
+  show.
+- **Push notification icon paths** must match exactly: filenames are
+  `icon-192x192.png` etc., NOT `icon-192.png`. Earlier mismatch made
+  notifications icon-less.
+- **Reminder worker drift:** `process + Task.Delay(60s)` loop drifts
+  past minute boundaries. Use time-passed match, not exact-minute.
+- **Native macOS notification icon position** can't be controlled
+  from web push — install as PWA to get app-icon-on-left rendering.
+- **Component style budgets** in `angular.json` are 12kB. Heavy
+  components (dashboard, edit-entry) exceed this; warnings only,
+  not errors. Don't bloat them further unless necessary.
+
+## Things to never do
+
+1. Reintroduce entry-based gating in reminders.
+2. Write a destructive EF migration.
+3. Auto-commit without explicit user instruction.
+4. Use `--no-verify` or `--no-gpg-sign` to bypass hooks.
+5. Replace the brand cyan `#12C4E3` with a darker teal.
+6. Replace the live Fraunces wordmark with a PNG raster.
+7. Mass-rename routes/files without explicit instruction (URL bookmarks).
+
+## TODO / open questions
+
+- **Vercel's exact role.** Confirm whether Vercel hosts the frontend
+  PWA, the marketing site, both, or something else. Update the
+  Infrastructure and Build & deploy sections accordingly, then remove
+  this TODO.
+- **Pricing model decision.** Considering moving from "free + paid"
+  to "10-day free trial → single paid plan (monthly or yearly)."
+  Affects: signup flow, paywall placement, tier-gated features
+  (currently very few — `IsPaid` claim, custom-reminder cap), trial
+  countdown UI, expiration handling, billing copy on the marketing
+  site. When committed, document the new flow here and remove this.
+- **Encryption verification.** User notes: "all data is encrypted —
+  need to check on this again." Audit at-rest encryption (Postgres
+  on Railway, R2 buckets) and in-transit (HTTPS everywhere). Document
+  what *is* encrypted and what isn't, plus any remaining gaps.
+- **Welcome Back / streak-restart experience** (see Streak rules).
+  Design discussed; not yet built. When implemented, document the
+  three states (threatened, just-broke, rebuilding) and the copy
+  patterns we settle on.
+
+## How to update this file
+
+Tell me "add X to CLAUDE.md" and I'll edit it. Or edit directly.
+Keep additions terse — bullet form, ≤2 lines per item. If a section
+grows past ~30 lines, link out to a `docs/` file instead.
