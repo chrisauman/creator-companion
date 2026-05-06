@@ -42,7 +42,7 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
                so it's gone — the icon itself is now the affordance. -->
           <button class="sidebar__logo-btn"
                   type="button"
-                  (click)="toggleCollapsed()"
+                  (click)="onLogoClick()"
                   title="Collapse sidebar"
                   aria-label="Collapse sidebar">
             <img src="logo-icon.png" alt="" class="sidebar__logo-icon">
@@ -824,6 +824,26 @@ export class SidebarComponent implements OnInit {
       localStorage.setItem(COLLAPSE_KEY, next ? '1' : '0');
     } catch {
       // Ignore quota / privacy-mode errors — state stays in memory for the session.
+    }
+  }
+
+  /**
+   * Logo-icon click handler. The icon is the unified collapse affordance,
+   * but "collapse" means different things across viewports:
+   *
+   *  - Desktop (>= 768px): toggle the sidebar between full and rail width.
+   *  - Mobile (< 768px): close the slide-in drawer (the rail-width
+   *    collapsed state doesn't exist on mobile, where the desktop
+   *    `collapsed` computed is force-overridden to false).
+   *
+   * Without this branch, mobile taps would call toggleCollapsed and flip
+   * a localStorage flag that has no visual effect — the icon looks dead.
+   */
+  onLogoClick(): void {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      this.closeMobile();
+    } else {
+      this.toggleCollapsed();
     }
   }
 
