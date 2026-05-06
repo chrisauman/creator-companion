@@ -177,24 +177,20 @@ export class ApiService {
   }
 
   // ── Reminders ───────────────────────────────────────────────────────────
-  /** Returns the user's five fixed reminder slots (auto-creates them on
-   *  first call for legacy accounts). Slots are ordered by CreatedAt. */
   getReminders(): Observable<any[]> {
     return this.http.get<any[]>(`${this.base}/reminders`);
   }
 
-  /** Update a single slot — time, message, and on/off. Slots can never
-   *  be added or deleted; users only edit the five they already have. */
+  createReminder(time: string, message?: string): Observable<any> {
+    return this.http.post<any>(`${this.base}/reminders`, { time, message });
+  }
+
   updateReminder(id: string, time: string, message: string | undefined, isEnabled: boolean): Observable<any> {
     return this.http.put<any>(`${this.base}/reminders/${id}`, { time, message, isEnabled });
   }
 
-  /** Called once when the user first enables push notifications and no
-   *  reminders are currently active — flips slot #1 to enabled so they
-   *  get at least one active reminder out of the box. No-op server-side
-   *  if any reminder is already on. */
-  autoEnableFirstReminder(): Observable<void> {
-    return this.http.post<void>(`${this.base}/reminders/auto-enable-first`, {});
+  deleteReminder(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/reminders/${id}`);
   }
 
   // ── Push ────────────────────────────────────────────────────────────────
