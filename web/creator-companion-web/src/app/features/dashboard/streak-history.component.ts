@@ -232,12 +232,15 @@ import { StreakHistoryItem, StreakStats } from '../../core/models/models';
     }
     .lifetime__cell:last-child { border-right: none; }
     .lifetime__num {
-      font-family: var(--font-brand);
+      /* Bold sans for stat numbers — keeps the brand serif reserved
+         for true display moments (titles, hero quotes) and gives the
+         digits a more grounded, easy-to-read presence at this size. */
+      font-family: var(--font-sans);
       font-size: 2.25rem;
       font-weight: 800;
       line-height: 1;
       color: var(--color-text);
-      letter-spacing: -.02em;
+      letter-spacing: -.03em;
       margin-bottom: .375rem;
     }
     .lifetime__label {
@@ -311,10 +314,10 @@ import { StreakHistoryItem, StreakStats } from '../../core/models/models';
       gap: .375rem;
     }
     .chapter__days {
-      font-family: var(--font-brand);
+      font-family: var(--font-sans);
       font-weight: 800;
       font-size: 1.5rem;
-      letter-spacing: -.02em;
+      letter-spacing: -.03em;
       color: var(--color-text);
       line-height: 1;
     }
