@@ -353,16 +353,19 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
        screen readers — no PNG raster, no invert() filter. */
     .sidebar__logo-text {
       font-family: var(--font-brand);
-      font-size: 1.0625rem;
+      /* Fraunces 800 runs wide — at 1.0625rem the wordmark was
+         clipping with an ellipsis ("Creator Compani…") inside the
+         sidebar's ~240px column. Drop to .9375rem and tighten the
+         tracking so "Creator Companion" sits comfortably alongside
+         the 28px icon plus its margin and the row's outer padding. */
+      font-size: .9375rem;
       font-weight: 800;
       color: #fff;
-      letter-spacing: -.02em;
+      letter-spacing: -.03em;
       line-height: 1;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      /* Sits between the logo button and trailing controls (mobile X)
-         and pushes them to the right edge. */
       flex: 1;
       margin-left: .5rem;
     }
