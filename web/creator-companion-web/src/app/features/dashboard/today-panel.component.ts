@@ -201,20 +201,19 @@ import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
       0%, 100% { opacity: 1; }
       50% { opacity: .4; }
     }
-    /* Display size + weight matching the entry-reader title — these
-       are inspirational quotes meant to land as the hero of the
-       column. Pairs with the Daily Prompt quote which uses the
-       identical type ramp. Slightly looser line-height than the
-       reader title since these are full sentences, not short titles. */
+    /* Mid-size display weight — sits between the column-2 list
+       title (1.0625rem / 700) and the column-3 reading title
+       (1.625rem / 700). Quoted content reads "feature" without
+       competing with the actual entry title for visual primacy. */
     .spark-hero__quote {
       font-family: var(--font-sans);
-      font-size: 1.625rem;
-      line-height: 1.3;
+      font-size: 1.25rem;
+      line-height: 1.4;
       font-weight: 700;
       color: var(--color-text);
       position: relative;
       margin: 0 0 1.25rem;
-      letter-spacing: -.02em;
+      letter-spacing: -.01em;
     }
     .spark-hero__author {
       font-size: .8125rem;
@@ -386,19 +385,17 @@ import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
       margin-bottom: .875rem;
       position: relative;
     }
-    /* Matches .spark-hero__quote and .reading__title — column 3
-       gets a unified display ramp (1.625rem / 700) for hero quotes
-       and entry titles. Looser line-height than the reader title
-       to handle full-sentence prompts and mood blurbs gracefully. */
+    /* Matches .spark-hero__quote — mid-size display sitting between
+       the column-2 list title and the column-3 reading title. */
     .hero-card__quote {
       font-family: var(--font-sans);
-      font-size: 1.625rem;
-      line-height: 1.3;
+      font-size: 1.25rem;
+      line-height: 1.4;
       font-weight: 700;
       color: var(--color-text);
       position: relative;
       margin: 0 0 1.25rem;
-      letter-spacing: -.02em;
+      letter-spacing: -.01em;
     }
     .hero-card__sub {
       font-size: .8125rem;
