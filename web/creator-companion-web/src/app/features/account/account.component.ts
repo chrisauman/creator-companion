@@ -1114,39 +1114,9 @@ export class AccountComponent implements OnInit {
     });
   }
 
-  addReminder(): void {
-    this.reminderWorking.set(true);
-    this.reminderError.set('');
-    const isFirst = this.customReminders().length === 0;
-    this.api.createReminder('12:00').subscribe({
-      next: () => {
-        // Reload all reminders so the auto-disabled default is reflected
-        this.loadReminders();
-        this.reminderWorking.set(false);
-      },
-      error: err => {
-        this.reminderError.set(err?.error?.error ?? 'Could not add reminder.');
-        this.reminderWorking.set(false);
-      }
-    });
-  }
-
-  deleteReminder(r: Reminder): void {
-    if (!confirm('Delete this reminder?')) return;
-    this.reminderWorking.set(true);
-    this.api.deleteReminder(r.id).subscribe({
-      next: () => {
-        delete this.drafts[r.id];
-        // Reload so the default reminder re-enables itself if this was the last custom one
-        this.loadReminders();
-        this.reminderWorking.set(false);
-      },
-      error: err => {
-        this.reminderError.set(err?.error?.error ?? 'Could not delete reminder.');
-        this.reminderWorking.set(false);
-      }
-    });
-  }
+  // Reminder add/delete removed — reminders are now five fixed
+  // slots managed entirely on the /notifications page. See
+  // RemindersController in the API.
 
   private loadTags(): void {
     this.tagsLoading.set(true);
