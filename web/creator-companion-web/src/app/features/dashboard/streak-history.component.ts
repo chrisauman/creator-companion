@@ -89,12 +89,12 @@ import { StreakHistoryItem, StreakStats } from '../../core/models/models';
             <div class="chapters-head">
               <h2 class="chapters-title">Your chapters</h2>
               <p class="chapters-sub">
-                Every streak is a chapter. They end, and another begins.
+                Every streak is a chapter. They may end, but another will begin.
               </p>
             </div>
 
             <ul class="chapters">
-              @for (item of history(); track item.startDate + '-' + item.endDate) {
+              @for (item of orderedHistory(); track item.startDate + '-' + item.endDate) {
                 <li class="chapter"
                     [class.chapter--best]="item.isPersonalBest">
                   <div class="chapter__head">
@@ -417,6 +417,25 @@ export class StreakHistoryComponent implements OnInit {
   /** Number of completed chapters — derived from history length, used in
    *  the lifetime stats row. */
   chapterCount = computed(() => this.history().length);
+
+  /**
+   * History reordered for display: personal best is pinned to the top,
+   * the rest stay in their existing most-recent-first order. The "best"
+   * card is the emotional anchor of the page — putting it on top makes
+   * the user's high-water mark the first thing they read. The remaining
+   * chapters then read like a timeline from now backwards.
+   *
+   * If the personal best is already first (e.g. the most recent chapter
+   * happens to be the longest), no reordering needed.
+   */
+  orderedHistory = computed(() => {
+    const list = this.history();
+    const bestIdx = list.findIndex(c => c.isPersonalBest);
+    if (bestIdx <= 0) return list;
+    const best = list[bestIdx];
+    const rest = list.filter((_, i) => i !== bestIdx);
+    return [best, ...rest];
+  });
 
   /** "Best" pulled from the demo data when in demo mode (so the lifetime
    *  numbers tell a coherent story alongside the chapter cards), or
