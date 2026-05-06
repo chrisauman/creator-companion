@@ -144,8 +144,8 @@ marketing/                        static HTML/CSS/JS marketing site
 ## Streak rules
 
 - **48-hour backlog grace:** if a user misses a day, they can still
-  write that day's entry within 48h to save the streak. Make this
-  loud and discoverable — historically it was silent.
+  write that day's entry within 48h to save the streak. The
+  ThreatenedBanner surfaces this; previously it was silent.
 - **Pause feature:** users can pause their streak proactively for
   **up to 10 days** per pause (vacation, life emergency). Server
   enforces the limit. `Pauses` table.
@@ -154,11 +154,36 @@ marketing/                        static HTML/CSS/JS marketing site
   current and longest streaks are always surfaced on the dashboard.
 - **Reset:** breaks past the 48h window reset the counter to 0.
   Longest-streak is *banked*, not erased.
-- **Future direction:** restart-after-break needs a Welcome Back
-  experience that frames past streak as "banked," not lost. Design
-  thread already started — three states (threatened → broken →
-  rebuilding), cheerful tone, surface lifetime stats. See separate
-  design doc when implemented.
+
+## Streak restart system (built)
+
+Three surfaces handle the streak-break emotional arc; all live in
+`features/dashboard/`. Tone: cheerful, never names the loss.
+
+- **`StreakHistoryComponent`** — `?section=streak-history`. Past
+  chapters in column 3, personal-best pinned to top. Demo data
+  via `?demo=streaks`. Endpoint: `GET /v1/entries/streak/history`
+  (also `IStreakService.GetHistoryAsync`).
+- **`ThreatenedBannerComponent`** — auto-renders at top of dashboard
+  when `currentStreak > 0 && lastEntryDate is exactly 2 days back`.
+  "Write yesterday's entry" → `composeDate` → `NewEntryComponent
+  [initialDate]` pre-fills the missed day.
+- **`WelcomeBackComponent`** — full-takeover after a break. Shows
+  when `currentStreak === 0 && longestStreak > 0` and not already
+  dismissed (key: `cc_welcome_back_seen_<userId>_<lastEntryDate>`
+  in localStorage — re-fires on each new break).
+
+## Preview infrastructure (admin-only)
+
+`/admin` has a "Preview surfaces" section linking to:
+- `?section=streak-history&demo=streaks` — sample chapters
+- `?preview=welcome-back` — Welcome Back overlay
+- `?preview=threatened` — threatened banner
+
+Dashboard reads `?preview=` in `applySectionQueryParam` and ONLY
+honors it for admins (`tokens.isAdmin()`). All previews are read-only
+— no API writes, no streak changes. `dismissPreview()` clears the
+signal AND strips the URL param.
 
 ## Reminders (recent refactor — important)
 
@@ -266,10 +291,6 @@ marketing/                        static HTML/CSS/JS marketing site
   need to check on this again." Audit at-rest encryption (Postgres
   on Railway, R2 buckets) and in-transit (HTTPS everywhere). Document
   what *is* encrypted and what isn't, plus any remaining gaps.
-- **Welcome Back / streak-restart experience** (see Streak rules).
-  Design discussed; not yet built. When implemented, document the
-  three states (threatened, just-broke, rebuilding) and the copy
-  patterns we settle on.
 
 ## How to update this file
 
