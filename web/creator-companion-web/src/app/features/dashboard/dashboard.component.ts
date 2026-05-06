@@ -875,27 +875,24 @@ import { ActivatedRoute } from '@angular/router';
       color: var(--color-text-2);
     }
     .entry-row__mood app-mood-icon { color: var(--color-text-3); }
-    /* Title weight matches the right-column hero (spark quote) at
-       500 so the two columns read as the same typographic system. */
+    /* Body-paragraph size for entry titles — matches the spark and
+       prompt hero quotes (1rem / 500) so the two columns read as one
+       calm typographic system rather than two competing display
+       sizes. Less hierarchy from the date eyebrow above by design;
+       the title behaves like a quoted line of text. */
     .entry-row__title {
       font-family: var(--font-sans);
-      font-size: 1.25rem;
+      font-size: 1rem;
       font-weight: 500;
-      line-height: 1.3;
+      line-height: 1.45;
       color: var(--color-text);
       margin: 0;
-      letter-spacing: -.01em;
+      letter-spacing: 0;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
       word-break: break-word;
-    }
-    /* Slightly larger title on wider viewports for visual hierarchy. */
-    @media (min-width: 768px) {
-      .entry-row__title {
-        font-size: 1.3125rem;
-      }
     }
 
     /* Photo: full-width, capped max-height. Vertical photos show their

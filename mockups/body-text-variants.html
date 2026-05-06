@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Body text variants — entries, spark, prompt</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500&family=Fraunces:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --ink: #0c0e13;
+    --cyan: #12C4E3;
+    --cyan-deep: #0d9bb5;
+    --paper: #ffffff;
+    --cream-1: #fdfaf2;
+    --cream-2: #f6f1e6;
+    --gold-border: rgba(190,170,130,.22);
+    --line: #ebe7df;
+    --text: #1a1d24;
+    --text-2: #5d6470;
+    --text-3: #9099a5;
+  }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: #ebe7df;
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    padding: 2rem 1rem 4rem;
+  }
+
+  .lab-header { max-width: 1240px; margin: 0 auto 1.5rem; }
+  .lab-header h1 { font-size: 1.75rem; font-weight: 800; letter-spacing: -.01em; margin-bottom: .375rem; }
+  .lab-header p { color: var(--text-2); line-height: 1.6; max-width: 740px; }
+  .lab-legend {
+    max-width: 1240px;
+    margin: 0 auto 2rem;
+    background: rgba(255,255,255,.6);
+    border: 1px solid rgba(0,0,0,.06);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    font-size: .8125rem;
+    line-height: 1.55;
+    color: var(--text-2);
+  }
+  .lab-legend strong { color: var(--text); font-weight: 600; }
+
+  .variants {
+    max-width: 1240px;
+    margin: 0 auto;
+    display: flex; flex-direction: column;
+    gap: 2.25rem;
+  }
+
+  .variant {
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 18px 40px -20px rgba(0,0,0,.18);
+  }
+  .variant__header {
+    display: flex; justify-content: space-between; align-items: baseline;
+    gap: 1rem;
+    padding: .875rem 1.25rem;
+    background: rgba(0,0,0,.03);
+    border-bottom: 1px solid rgba(0,0,0,.06);
+  }
+  .variant__title { font-size: .9375rem; font-weight: 700; }
+  .variant__metrics {
+    font-size: .75rem;
+    color: var(--text-3);
+    font-family: 'SF Mono', ui-monospace, monospace;
+  }
+
+  /* Two-column comparison: entry list (left, paper bg) and right
+     column hero cards (right, paper bg). */
+  .variant__body {
+    display: grid;
+    grid-template-columns: minmax(360px, 420px) 1fr;
+    gap: 0;
+    padding: 1.25rem;
+    background: #f7f7f5;
+  }
+
+  /* ── Mock entry card ──────────────────────────────────────── */
+  .mock-list {
+    padding-right: 1.25rem;
+  }
+  .mock-list-label {
+    font-size: .6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .14em;
+    color: var(--text-3);
+    margin-bottom: .5rem;
+  }
+  .mock-entry {
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 1rem 1.25rem .875rem;
+    margin-bottom: .5rem;
+  }
+  .mock-entry__meta {
+    display: flex; align-items: center; margin-bottom: .5rem;
+  }
+  .mock-entry__date {
+    font-size: .6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .14em;
+    color: var(--cyan);
+  }
+  .mock-entry__mood {
+    margin-left: auto;
+    font-size: .75rem; color: var(--text-2);
+  }
+
+  /* ── Mock hero cards (cream gradient) ───────────────────── */
+  .mock-right {
+    padding-left: 1.25rem;
+  }
+  .mock-hero {
+    background: linear-gradient(180deg, var(--cream-1) 0%, var(--cream-2) 100%);
+    border: 1px solid var(--gold-border);
+    border-radius: 18px;
+    padding: 1.25rem 1.25rem 1rem;
+    margin-bottom: .75rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .mock-hero::before {
+    content: ''; position: absolute;
+    top: -30%; right: -20%;
+    width: 220px; height: 220px;
+    background: radial-gradient(circle, rgba(18,196,227,.4) 0%, transparent 65%);
+    opacity: .35;
+    pointer-events: none;
+  }
+  .mock-hero__eyebrow {
+    display: inline-flex; align-items: center; gap: .375rem;
+    font-size: .625rem; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .14em;
+    color: var(--cyan-deep);
+    margin-bottom: .625rem;
+    position: relative;
+  }
+  .mock-hero__eyebrow::before {
+    content: ''; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--cyan);
+  }
+  .mock-hero__btn {
+    display: inline-flex; align-items: center; gap: .375rem;
+    background: var(--ink); color: #fff;
+    padding: .5rem .875rem; border: none;
+    border-radius: 999px; font-family: inherit;
+    font-size: .8125rem; font-weight: 600;
+    margin-top: .5rem;
+    position: relative;
+  }
+
+  /* ── BODY-TYPE STYLES ────────────────────────────────────────
+     This is the only thing that changes per variant. .body--*
+     classes live on .mock-entry__title and .mock-hero__quote so
+     each variant pair renders identically except for type. */
+
+  /* Current (what's shipped today) */
+  .body--current {
+    font-family: var(--font-sans, 'Inter', sans-serif);
+    font-size: 1.3125rem;
+    font-weight: 500;
+    line-height: 1.3;
+    letter-spacing: -.01em;
+    color: var(--text);
+  }
+  .mock-hero .body--current {
+    font-size: 1.25rem;
+    line-height: 1.45;
+    letter-spacing: -.005em;
+  }
+
+  /* A · Bolder (700) at the same size */
+  .body--bold {
+    font-family: 'Inter', sans-serif;
+    font-size: 1.3125rem;
+    font-weight: 700;
+    line-height: 1.3;
+    letter-spacing: -.015em;
+    color: var(--text);
+  }
+  .mock-hero .body--bold {
+    font-size: 1.25rem;
+    line-height: 1.4;
+  }
+
+  /* B · Heavier still (800) — display weight */
+  .body--display {
+    font-family: 'Inter', sans-serif;
+    font-size: 1.3125rem;
+    font-weight: 800;
+    line-height: 1.25;
+    letter-spacing: -.02em;
+    color: var(--text);
+  }
+  .mock-hero .body--display {
+    font-size: 1.25rem;
+    line-height: 1.35;
+  }
+
+  /* C · Smaller, same weight (500) — current type, smaller size */
+  .body--smaller {
+    font-family: 'Inter', sans-serif;
+    font-size: 1.0625rem;
+    font-weight: 500;
+    line-height: 1.4;
+    letter-spacing: -.005em;
+    color: var(--text);
+  }
+  .mock-hero .body--smaller {
+    font-size: 1.0625rem;
+    line-height: 1.5;
+    letter-spacing: 0;
+  }
+
+  /* D · Smaller + bolder (600) — compact, more presence */
+  .body--small-bold {
+    font-family: 'Inter', sans-serif;
+    font-size: 1.0625rem;
+    font-weight: 600;
+    line-height: 1.4;
+    letter-spacing: -.01em;
+    color: var(--text);
+  }
+  .mock-hero .body--small-bold {
+    font-size: 1.0625rem;
+    line-height: 1.5;
+  }
+
+  /* E · Body-paragraph size (1rem / 16px) at 500 — smallest, calm */
+  .body--paragraph {
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1.45;
+    letter-spacing: 0;
+    color: var(--text);
+  }
+  .mock-hero .body--paragraph {
+    font-size: 1rem;
+    line-height: 1.55;
+  }
+
+  /* F · Bigger but lighter (400) — opposite direction, airy */
+  .body--big-light {
+    font-family: 'Inter', sans-serif;
+    font-size: 1.4375rem;
+    font-weight: 400;
+    line-height: 1.3;
+    letter-spacing: -.015em;
+    color: var(--text);
+  }
+  .mock-hero .body--big-light {
+    font-size: 1.375rem;
+    line-height: 1.4;
+  }
+
+  /* G · Serif (Fraunces) at current size + weight — editorial */
+  .body--serif {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 1.3125rem;
+    font-weight: 500;
+    line-height: 1.3;
+    letter-spacing: -.01em;
+    color: var(--text);
+  }
+  .mock-hero .body--serif {
+    font-size: 1.25rem;
+    line-height: 1.4;
+  }
+
+  /* H · Italic-quote (spark cards only get italic; entries stay roman) */
+  .body--italic-quote {
+    font-family: 'Inter', sans-serif;
+    font-size: 1.0625rem;
+    font-weight: 500;
+    line-height: 1.45;
+    letter-spacing: -.005em;
+    color: var(--text);
+  }
+  .mock-hero .body--italic-quote {
+    font-size: 1.125rem;
+    font-weight: 500;
+    font-style: italic;
+    line-height: 1.5;
+  }
+
+  .variant__notes {
+    padding: .875rem 1.25rem;
+    background: rgba(0,0,0,.02);
+    border-top: 1px solid rgba(0,0,0,.06);
+    font-size: .8125rem;
+    color: var(--text-2);
+    line-height: 1.55;
+  }
+  .variant__notes strong { color: var(--text); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div class="lab-header">
+  <h1>Body text variants — entries · spark · prompt</h1>
+  <p>The shipped style (variant 0) puts the entry-row title, spark quote, and prompt quote at <strong>~1.25–1.3125rem at weight 500</strong>. Each option below shows the same three pieces of content under one swap to font-size, font-weight, family, or style. Pick the one that reads "right" — bolder / smaller / lighter / different — and I'll wire it in.</p>
+</div>
+
+<div class="lab-legend">
+  <strong>Current shipped style for reference:</strong> Inter, weight 500 (medium), 1.3125rem (21px) for entry titles, 1.25rem (20px) for spark/prompt quotes, line-height 1.3–1.45, slight negative letter-spacing (-.005 to -.01em).
+</div>
+
+<div class="variants">
+
+  <!-- ── 0 · Current (what's shipped today) ────────────────── -->
+  <div class="variant">
+    <div class="variant__header">
+      <span class="variant__title">0 · Current (shipped)</span>
+      <span class="variant__metrics">Inter · 500 · 1.3125rem / 1.25rem</span>
+    </div>
+    <div class="variant__body">
+      <div class="mock-list">
+        <div class="mock-list-label">Entry list</div>
+        <div class="mock-entry">
+          <div class="mock-entry__meta">
+            <span class="mock-entry__date">MONDAY, MAY 4, 2026</span>
+            <span class="mock-entry__mood">😐 Focused</span>
+          </div>
+          <p class="body--current">Testing with no photo and this is this and that is that what is this for.</p>
+        </div>
+        <div class="mock-entry">
+          <div class="mock-entry__meta">
+            <span class="mock-entry__date">SUNDAY, MAY 3, 2026</span>
+            <span class="mock-entry__mood">😊 Energized</span>
+          </div>
+          <p class="body--current">A morning at the studio</p>
+        </div>
+      </div>
+      <div class="mock-right">
+        <div class="mock-list-label">Right column</div>
+        <div class="mock-hero">
+          <span class="mock-hero__eyebrow">Your Daily Spark</span>
+          <p class="body--current">Doubt becomes dangerous when it turns into permanent silence.</p>
+          <button class="mock-hero__btn">✏ Start writing</button>
+        </div>
+        <div class="mock-hero">
+          <span class="mock-hero__eyebrow">Your Daily Prompt</span>
+          <p class="body--current">What is actually working in your work that you might be overlooking?</p>
+          <button class="mock-hero__btn">✏ Start writing</button>
+        </div>
+      </div>
+    </div>
+    <div class="variant__notes"><strong>What you have today.</strong> Reads as a magazine pull-quote — medium weight, slightly tightened, larger than body copy. Compare every variant below against this one.</div>
+  </div>
+
+  <!-- ── A · Bolder (700) ──────────────────────────────────── -->
+  <div class="variant">
+    <div class="variant__header">
+      <span class="variant__title">A · Bolder (weight 700)</span>
+      <span class="variant__metrics">Inter · 700 · 1.3125rem / 1.25rem</span>
+    </div>
+    <div class="variant__body">
+      <div class="mock-list">
+        <div class="mock-list-label">Entry list</div>
+        <div class="mock-entry">
+          <div class="mock-entry__meta">
+            <span class="mock-entry__date">MONDAY, MAY 4, 2026</span>
+            <span class="mock-entry__mood">😐 Focused</span>
+          </div>
+          <p class="body--bold">Testing with no photo and this is this and that is that what is this for.</p>
+        </div>
+        <div class="mock-entry">
+          <div class="mock-entry__meta">
+            <span class="mock-entry__date">SUNDAY, MAY 3, 2026</span>
+            <span class="mock-entry__mood">😊 Energized</span>
+          </div>
+          <p class="body--bold">A morning at the studio</p>
+        </div>
+      </div>
+      <div class="mock-right">
+        <div class="mock-list-label">Right column</div>
+        <div class="mock-hero">
+          <span class="mock-hero__eyebrow">Your Daily Spark</span>
+          <p class="body--bold">Doubt becomes dangerous when it turns into permanent silence.</p>
+          <button class="mock-hero__btn">✏ Start writing</button>
+        </div>
+        <div class="mock-hero">
+          <span class="mock-hero__eyebrow">Your Daily Prompt</span>
+          <p class="body--bold">What is actually working in your work that you might be overlooking?</p>
+          <button class="mock-hero__btn">✏ Start writing</button>
+        </div>
+      </div>
+    </div>
+    <div class="variant__notes"><strong>Same size, weight 700.</strong> Reads as "headline" rather than "pull-quote". Most visible at a glance. Pulls the eye to titles before everything else on the screen.</div>
+  </div>
+
+  <!-- ── B · Display 800 ───────────────────────────────────── -->
+  <div class="variant">
+    <div class="variant__header">
+      <span class="variant__title">B · Display weight (800)</span>
+      <span class="variant__metrics">Inter · 800 · 1.3125rem / 1.25rem</span>
+    </div>
+    <div class="variant__body">
+      <div class="mock-list">
+        <div class="mock-list-label">Entry list</div>
+        <div class="mock-entry">
+          <div class="mock-entry__meta">
+            <span class="mock-entry__date">MONDAY, MAY 4, 2026</span>
+            <span class="mock-entry__mood">😐 Focused</span>
+          </div>
+          <p class="body--display">Testing with no photo and this is this and that is that what is this for.</p>
+        </div>
+        <div class="mock-entry">
+          <div class="mock-entry__meta">
+            <span class="mock-entry__date">SUNDAY, MAY 3, 2026</span>
+            <span class="mock-entry__mood">😊 Energized</span>
+          </div>
+          <p class="body--display">A morning at the studio</p>
+        </div>
+      </div>
+      <div class="mock-right">
+        <div class="mock-list-label">Right column</div>
+        <div class="mock-hero">
+          <span class="mock-hero__eyebrow">Your Daily Spark</span>
+          <p class="body--display">Doubt becomes dangerous when it turns into permanent silence.</p>
+          <button class="mock-hero__btn">✏ Start writing</button>
+        </div>
+        <div class="mock-hero">
+          <span class="mock-hero__eyebrow">Your Daily Prompt</span>
+          <p class="body--display">What is actually working in your work that you might be overlooking?</p>
+          <button class="mock-hero__btn">✏ Start writing</button>
+        </div>
+      </div>
+    </div>
+    <div class="variant__notes"><strong>Heaviest weight.</strong> Most aggressive presence. Probably too loud for journaling — feels like a news app or a sports site headline.</div>
+  </div>
+
+  <!-- ── C · Smaller, same weight ──────────────────────────── -->
+  <div class="variant">
+    <div class="variant__header">
+      <span class="variant__title">C · Smaller, same weight</span>
+      <span class="variant__metrics">Inter · 500 · 1.0625rem (17px)</span>
+    </div>
+    <div class="variant__body">
+      <div class="mock-list">
+        <div class="mock-list-label">Entry list</div>
+        <div class="mock-entry">
+          <div class="mock-entry__meta">
+            <span class="mock-entry__date">MONDAY, MAY 4, 2026</span>
+            <span class="mock-entry__mood">😐 Focused</span>
+          </div>
+          <p class="body--smaller">Testing with no photo and this is this and that is that what is this for.</p>
+        </div>
+        <div class="mock-entry">
+          <div class="mock-entry__meta">
+            <span class="mock-entry__date">SUNDAY, MAY 3, 2026</span>
+            <span class="mock-entry__mood">😊 Energized</span>
+          </div>
+          <p class="body--smaller">A morning at the studio</p>
+        </div>
+      </div>
+      <div class="mock-right">
+        <div class="mock-list-label">Right column</div>
+        <div class="mock-hero">
+          <span class="mock-hero__eyebrow">Your Daily Spark</span>
+          <p class="body--smaller">Doubt becomes dangerous when it turns into permanent silence.</p>
+          <button class="mock-hero__btn">✏ Start writing</button>
+        </div>
+        <div class="mock-hero">
+          <span class="mock-hero__eyebrow">Your Daily Prompt</span>
+          <p class="body--smaller">What is actually working in your work that you might be overlooking?</p>
+          <button class="mock-hero__btn">✏ Start writing</button>
+        </div>
+      </div>
+    </div>
+    <div class="variant__notes"><strong>Same weight you have now, but smaller.</strong> Reads as body copy rather than display copy. Spark and prompt feel like quoted text, not pull-quote. Most "calm". Risk: entry titles lose their visual hierarchy from the date eyebrow above them.</div>
+  </div>
+
+  <!-- ── D · Smaller + bolder (600) ────────────────────────── -->
+  <div class="variant">
+    <div class="variant__header">
+      <span class="variant__title">D · Smaller + bolder (600)</span>
+      <span class="variant__metrics">Inter · 600 · 1.0625rem</span>
+    </div>
+    <div class="variant__body">
+      <div class="mock-list">
+        <div class="mock-list-label">Entry list</div>
+        <div class="mock-entry">
+          <div class="mock-entry__meta">
+            <span class="mock-entry__date">MONDAY, MAY 4, 2026</span>
+            <span class="mock-entry__mood">😐 Focused</span>
+          </div>
+          <p class="body--small-bold">Testing with no photo and this is this and that is that what is this for.</p>
+        </div>
+        <div class="mock-entry">
+          <div class="mock-entry__meta">
+            <span class="mock-entry__date">SUNDAY, MAY 3, 2026</span>
+            <span class="mock-entry__mood">😊 Energized</span>
+          </div>
+          <p class="body--small-bold">A morning at the studio</p>
+        </div>
+      </div>
+      <div class="mock-right">
+        <div class="mock-list-label">Right column</div>
+        <div class="mock-hero">
+          <span class="mock-hero__eyebrow">Your Daily Spark</span>
+          <p class="body--small-bold">Doubt becomes dangerous when it turns into permanent silence.</p>
+          <button class="mock-hero__btn">✏ Start writing</button>
+        </div>
+        <div class="mock-hero">
+          <span class="mock-hero__eyebrow">Your Daily Prompt</span>
+          <p class="body--small-bold">What is actually working in your work that you might be overlooking?</p>
+          <button class="mock-hero__btn">✏ Start writing</button>
+        </div>
+      </div>
+    </div>
+    <div class="variant__notes"><strong>Smaller AND a touch bolder.</strong> Compact but anchors the eye. Probably the best balance if you find C reads "too thin". Reminiscent of Notion / Linear list rows.</div>
+  </div>
+
+  <!-- ── E · Body-paragraph 1rem / 500 ─────────────────────── -->
+  <div class="variant">
+    <div class="variant__header">
+      <span class="variant__title">E · Paragraph size (1rem / 16px)</span>
+      <span class="variant__metrics">Inter · 500 · 1rem</span>
+    </div>
+    <div class="variant__body">
+      <div class="mock-list">
+        <div class="mock-list-label">Entry list</div>
+        <div class="mock-entry">
+          <div class="mock-entry__meta">
+            <span class="mock-entry__date">MONDAY, MAY 4, 2026</span>
+            <span class="mock-entry__mood">😐 Focused</span>
+          </div>
+          <p class="body--paragraph">Testing with no photo and this is this and that is that what is this for.</p>
+        </div>
+        <div class="mock-entry">
+          <div class="mock-entry__meta">
+            <span class="mock-entry__date">SUNDAY, MAY 3, 2026</span>
+            <span class="mock-entry__mood">😊 Energized</span>
+          </div>
+          <p class="body--paragraph">A morning at the studio</p>
+        </div>
+      </div>
+      <div class="mock-right">
+        <div class="mock-list-label">Right column</div>
+        <div class="mock-hero">
+          <span class="mock-hero__eyebrow">Your Daily Spark</span>
+          <p class="body--paragraph">Doubt becomes dangerous when it turns into permanent silence.</p>
+          <button class="mock-hero__btn">✏ Start writing</button>
+        </div>
+        <div class="mock-hero">
+          <span class="mock-hero__eyebrow">Your Daily Prompt</span>
+          <p class="body--paragraph">What is actually working in your work that you might be overlooking?</p>
+          <button class="mock-hero__btn">✏ Start writing</button>
+        </div>
+      </div>
+    </div>
+    <div class="variant__notes"><strong>Standard body-copy size.</strong> Smallest of the set. Would make the eyebrow + date labels the dominant elements. Reads as "the title is just another line of text." Probably too quiet for the spark hero.</div>
+  </div>
+
+  <!-- ── F · Bigger but lighter ────────────────────────────── -->
+  <div class="variant">
+    <div class="variant__header">
+      <span class="variant__title">F · Bigger but lighter (400)</span>
+      <span class="variant__metrics">Inter · 400 · 1.4375rem (23px)</span>
+    </div>
+    <div class="variant__body">
+      <div class="mock-list">
+        <div class="mock-list-label">Entry list</div>
+        <div class="mock-entry">
+          <div class="mock-entry__meta">
+            <span class="mock-entry__date">MONDAY, MAY 4, 2026</span>
+            <span class="mock-entry__mood">😐 Focused</span>
+          </div>
+          <p class="body--big-light">Testing with no photo and this is this and that is that what is this for.</p>
+        </div>
+        <div class="mock-entry">
+          <div class="mock-entry__meta">
+            <span class="mock-entry__date">SUNDAY, MAY 3, 2026</span>
+            <span class="mock-entry__mood">😊 Energized</span>
+          </div>
+          <p class="body--big-light">A morning at the studio</p>
+        </div>
+      </div>
+      <div class="mock-right">
+        <div class="mock-list-label">Right column</div>
+        <div class="mock-hero">
+          <span class="mock-hero__eyebrow">Your Daily Spark</span>
+          <p class="body--big-light">Doubt becomes dangerous when it turns into permanent silence.</p>
+          <button class="mock-hero__btn">✏ Start writing</button>
+        </div>
+        <div class="mock-hero">
+          <span class="mock-hero__eyebrow">Your Daily Prompt</span>
+          <p class="body--big-light">What is actually working in your work that you might be overlooking?</p>
+          <button class="mock-hero__btn">✏ Start writing</button>
+        </div>
+      </div>
+    </div>
+    <div class="variant__notes"><strong>Bigger size, lighter weight.</strong> Opposite direction — the strokes feel airy / printerly. Reads as serene, quoted. Risk: lighter weights at this size can feel "demo / placeholder" on lower-DPI screens.</div>
+  </div>
+
+  <!-- ── G · Serif (Fraunces) ──────────────────────────────── -->
+  <div class="variant">
+    <div class="variant__header">
+      <span class="variant__title">G · Serif (Fraunces)</span>
+      <span class="variant__metrics">Fraunces · 500 · 1.3125rem / 1.25rem</span>
+    </div>
+    <div class="variant__body">
+      <div class="mock-list">
+        <div class="mock-list-label">Entry list</div>
+        <div class="mock-entry">
+          <div class="mock-entry__meta">
+            <span class="mock-entry__date">MONDAY, MAY 4, 2026</span>
+            <span class="mock-entry__mood">😐 Focused</span>
+          </div>
+          <p class="body--serif">Testing with no photo and this is this and that is that what is this for.</p>
+        </div>
+        <div class="mock-entry">
+          <div class="mock-entry__meta">
+            <span class="mock-entry__date">SUNDAY, MAY 3, 2026</span>
+            <span class="mock-entry__mood">😊 Energized</span>
+          </div>
+          <p class="body--serif">A morning at the studio</p>
+        </div>
+      </div>
+      <div class="mock-right">
+        <div class="mock-list-label">Right column</div>
+        <div class="mock-hero">
+          <span class="mock-hero__eyebrow">Your Daily Spark</span>
+          <p class="body--serif">Doubt becomes dangerous when it turns into permanent silence.</p>
+          <button class="mock-hero__btn">✏ Start writing</button>
+        </div>
+        <div class="mock-hero">
+          <span class="mock-hero__eyebrow">Your Daily Prompt</span>
+          <p class="body--serif">What is actually working in your work that you might be overlooking?</p>
+          <button class="mock-hero__btn">✏ Start writing</button>
+        </div>
+      </div>
+    </div>
+    <div class="variant__notes"><strong>Serif via Fraunces (the typeface you removed earlier).</strong> Most "literary journaling" of all the options. Same size + weight as today, just a different family. Reframes everything as "something written / quoted" instead of "interface text".</div>
+  </div>
+
+  <!-- ── H · Italic quote on hero only ─────────────────────── -->
+  <div class="variant">
+    <div class="variant__header">
+      <span class="variant__title">H · Italic on hero · roman entries</span>
+      <span class="variant__metrics">Inter · 500 italic on hero · 1.125rem</span>
+    </div>
+    <div class="variant__body">
+      <div class="mock-list">
+        <div class="mock-list-label">Entry list</div>
+        <div class="mock-entry">
+          <div class="mock-entry__meta">
+            <span class="mock-entry__date">MONDAY, MAY 4, 2026</span>
+            <span class="mock-entry__mood">😐 Focused</span>
+          </div>
+          <p class="body--italic-quote">Testing with no photo and this is this and that is that what is this for.</p>
+        </div>
+        <div class="mock-entry">
+          <div class="mock-entry__meta">
+            <span class="mock-entry__date">SUNDAY, MAY 3, 2026</span>
+            <span class="mock-entry__mood">😊 Energized</span>
+          </div>
+          <p class="body--italic-quote">A morning at the studio</p>
+        </div>
+      </div>
+      <div class="mock-right">
+        <div class="mock-list-label">Right column</div>
+        <div class="mock-hero">
+          <span class="mock-hero__eyebrow">Your Daily Spark</span>
+          <p class="body--italic-quote">Doubt becomes dangerous when it turns into permanent silence.</p>
+          <button class="mock-hero__btn">✏ Start writing</button>
+        </div>
+        <div class="mock-hero">
+          <span class="mock-hero__eyebrow">Your Daily Prompt</span>
+          <p class="body--italic-quote">What is actually working in your work that you might be overlooking?</p>
+          <button class="mock-hero__btn">✏ Start writing</button>
+        </div>
+      </div>
+    </div>
+    <div class="variant__notes"><strong>Hybrid approach: spark + prompt go italic, entry titles stay roman.</strong> Visually separates "quoted content the app gives you" from "your own writing." Smaller (1.0625rem / 1.125rem) so neither side dominates.</div>
+  </div>
+
+</div>
+
+</body>
+</html>

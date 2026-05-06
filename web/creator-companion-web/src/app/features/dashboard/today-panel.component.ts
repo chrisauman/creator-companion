@@ -201,15 +201,18 @@ import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
       0%, 100% { opacity: 1; }
       50% { opacity: .4; }
     }
+    /* Body-paragraph size (1rem) matches the entry-list title and
+       Daily Prompt quote so the dashboard reads as one calm
+       typographic voice, not three competing display sizes. */
     .spark-hero__quote {
       font-family: var(--font-sans);
-      font-size: 1.25rem;
-      line-height: 1.45;
+      font-size: 1rem;
+      line-height: 1.55;
       font-weight: 500;
       color: var(--color-text);
       position: relative;
       margin: 0 0 1.25rem;
-      letter-spacing: -.005em;
+      letter-spacing: 0;
     }
     .spark-hero__author {
       font-size: .8125rem;
@@ -381,15 +384,18 @@ import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
       margin-bottom: .875rem;
       position: relative;
     }
+    /* Matches .spark-hero__quote and .entry-row__title at 1rem / 500
+       so the Daily Prompt + Mood cards share the same calm body-
+       paragraph type as the rest of the dashboard. */
     .hero-card__quote {
       font-family: var(--font-sans);
-      font-size: 1.25rem;
-      line-height: 1.45;
+      font-size: 1rem;
+      line-height: 1.55;
       font-weight: 500;
       color: var(--color-text);
       position: relative;
       margin: 0 0 1.25rem;
-      letter-spacing: -.005em;
+      letter-spacing: 0;
     }
     .hero-card__sub {
       font-size: .8125rem;
