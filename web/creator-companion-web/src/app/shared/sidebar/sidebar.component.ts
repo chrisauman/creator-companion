@@ -40,14 +40,17 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
                Journal nav item below. The earlier hover-revealed
                panel-toggle button was too hidden to be discoverable
                so it's gone — the icon itself is now the affordance. -->
+          <!-- Whole logo (icon + wordmark) is one button — clicking
+               either part collapses the sidebar, hovering either part
+               reveals the tooltip + halo. -->
           <button class="sidebar__logo-btn"
                   type="button"
                   (click)="onLogoClick()"
                   title="Collapse sidebar"
                   aria-label="Collapse sidebar">
             <img src="logo-icon.png" alt="" class="sidebar__logo-icon">
+            <span class="sidebar__logo-text">Creator Companion</span>
           </button>
-          <span class="sidebar__logo-text">Creator Companion</span>
           <!-- Mobile: explicit close (X) button. Hidden on desktop. -->
           <button class="sidebar__close-mobile"
                   type="button"
@@ -323,27 +326,28 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
       padding: 0 .5rem;
       justify-content: center;
     }
-    /* Logo-icon button: clickable wrapper around the brand mark that
-       collapses the sidebar. Transparent by default so the icon's
-       own black background reads as the brand mark, not as button
-       chrome. Visible hover halo + scale-down on click so the
-       affordance is obvious. */
+    /* Logo button: wraps the brand mark + wordmark as one clickable
+       unit that collapses the sidebar. Transparent by default so the
+       icon's own black background reads as the brand mark, not as
+       button chrome. Hover applies to the whole unit (icon + text)
+       so the affordance is obvious from anywhere on the logo. */
     .sidebar__logo-btn {
       background: transparent;
       border: none;
-      padding: 4px;
+      padding: 4px 8px;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
-      justify-content: center;
+      gap: .5rem;
       border-radius: 8px;
-      flex-shrink: 0;
+      flex: 1;
+      min-width: 0;
       transition: background .15s ease, transform .1s ease;
       position: relative;
       z-index: 1;
     }
     .sidebar__logo-btn:hover { background: rgba(255,255,255,.14); }
-    .sidebar__logo-btn:active { transform: scale(.92); background: rgba(255,255,255,.20); }
+    .sidebar__logo-btn:active { transform: scale(.98); background: rgba(255,255,255,.20); }
     .sidebar__logo-btn:focus-visible {
       outline: 2px solid var(--color-accent);
       outline-offset: 2px;
@@ -370,8 +374,10 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      flex: 1;
-      margin-left: .5rem;
+      /* Inside the logo button — gap on the parent handles spacing,
+         so no margin needed here. min-width: 0 lets the ellipsis
+         clamp engage when the column is too narrow. */
+      min-width: 0;
     }
 
     /* Collapsed-state expand button. Logo icon visible by default;
@@ -840,20 +846,10 @@ export class SidebarComponent implements OnInit {
    * a localStorage flag that has no visual effect — the icon looks dead.
    */
   onLogoClick(): void {
-    // DIAGNOSTIC: temporary logging until the user-reported "collapse
-    // doesn't work" issue is identified. Logs the click, the viewport
-    // width that determines which path runs, the pref before/after,
-    // and the resulting computed collapsed state. Will be removed
-    // once we have a green confirmation.
-    const w = typeof window !== 'undefined' ? window.innerWidth : -1;
-    const beforePref = this.collapsedPref();
-    console.log('[CC] onLogoClick fired. width=', w, 'collapsedPref(before)=', beforePref, 'collapsed()=', this.collapsed());
-    if (w < 768) {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
       this.closeMobile();
-      console.log('[CC] -> closeMobile() (mobile branch)');
     } else {
       this.toggleCollapsed();
-      console.log('[CC] -> toggleCollapsed() (desktop branch). collapsedPref(after)=', this.collapsedPref(), 'collapsed()=', this.collapsed());
     }
   }
 
