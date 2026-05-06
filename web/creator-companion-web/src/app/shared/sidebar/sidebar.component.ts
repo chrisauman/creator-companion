@@ -532,9 +532,9 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
       .sidebar__streak-foot { font-size: .75rem; }
     }
 
-    /* ── New Entry button (matches the entry-reader Edit button's
-       metrics — .5rem/1rem padding, .8125rem font, weight 600 — so
-       primary CTAs are consistent across the app). ── */
+    /* ── New Entry button — matches the canonical primary CTA
+       across the app: black ink with white text; brand cyan on
+       hover, still with white text. ── */
     .sidebar__compose {
       display: inline-flex;
       align-items: center;
@@ -542,8 +542,8 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
       gap: .5rem;
       margin: 0 .875rem 1rem;
       padding: .5rem 1rem;
-      background: var(--color-accent);
-      color: #0c0e13;
+      background: #0c0e13;
+      color: #fff;
       border: none;
       border-radius: 999px;
       font-family: inherit;
@@ -554,7 +554,8 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
       transition: background .15s, transform .15s;
     }
     .sidebar__compose:hover {
-      background: #0bd2f0;
+      background: var(--color-accent);
+      color: #fff;
       text-decoration: none;
       transform: translateY(-1px);
     }

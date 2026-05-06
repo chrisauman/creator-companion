@@ -219,11 +219,14 @@ import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
     }
 
     /* ── Page header ─────────────────────────────────────────────── */
+    /* Matches the Daily Spark hero quote / Notifications page-title
+       so all column-3 surfaces share the same display ramp. */
     .page-header { margin-bottom: 1.5rem; }
     .page-title {
       font-family: var(--font-sans);
-      font-size: 1.3125rem; font-weight: 500;
+      font-size: 1.25rem; font-weight: 700;
       letter-spacing: -.01em;
+      line-height: 1.3;
       color: var(--color-text);
       margin: 0 0 .25rem;
     }

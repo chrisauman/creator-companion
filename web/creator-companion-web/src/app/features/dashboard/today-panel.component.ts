@@ -328,7 +328,7 @@ import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
     .spark-action--primary:hover {
       background: #12C4E3;
       border-color: #12C4E3;
-      color: #0c0e13;
+      color: #fff;
     }
     .spark-action--icon { width: 36px; padding: 0; }
     .spark-action--fav-active {

@@ -540,13 +540,15 @@ import { ActivatedRoute } from '@angular/router';
     @media (max-width: 360px) {
       .mobile-header__logo-name { display: none; }
     }
+    /* Matches the canonical primary CTA across the app — black ink
+       with white text; brand cyan + white text on hover. */
     .mobile-header__compose {
       flex-shrink: 0;
       display: inline-flex;
       align-items: center;
       gap: .375rem;
-      background: var(--color-accent);
-      color: #0c0e13;
+      background: #0c0e13;
+      color: #fff;
       border: none;
       border-radius: 999px;
       padding: .5rem .875rem;
@@ -557,7 +559,8 @@ import { ActivatedRoute } from '@angular/router';
       transition: background .15s, transform .15s;
     }
     .mobile-header__compose:hover {
-      background: #0bd2f0;
+      background: var(--color-accent);
+      color: #fff;
       transform: translateY(-1px);
     }
 
@@ -660,11 +663,14 @@ import { ActivatedRoute } from '@angular/router';
     .embedded-section__body > *:first-child { margin-top: .75rem; }
     .embedded-section__body > *:last-child { margin-bottom: 2rem; }
     .embedded-section__body .page-header { margin-bottom: 1rem; }
+    /* Match the right-column display ramp — same as the Daily Spark
+       hero quote and the Notifications page-title. */
     .embedded-section__body .page-title {
       font-family: var(--font-sans);
-      font-size: 1.3125rem;
-      font-weight: 500;
+      font-size: 1.25rem;
+      font-weight: 700;
       letter-spacing: -.01em;
+      line-height: 1.3;
       color: var(--color-text);
       margin: 0 0 .25rem;
     }

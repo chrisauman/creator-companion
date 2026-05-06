@@ -49,22 +49,14 @@ interface PendingImage {
         <div class="reader-top__breadcrumb">
           New entry · <strong>{{ selectedDateLabel() }}</strong>
         </div>
+        <!-- Save moved to the bottom of the form. Top toolbar carries
+             only the auto-save indicator now. -->
         <div class="reader-top__actions">
           <div class="save-indicator-mini" [class]="'save-indicator--' + saveState()">
             <span *ngIf="saveState() === 'saving'">Saving…</span>
             <span *ngIf="saveState() === 'saved'">Draft saved</span>
             <span *ngIf="saveState() === 'error'">Save failed</span>
           </div>
-          <button class="save-btn" type="button"
-                  (click)="submit()"
-                  [disabled]="submitting() || wordCount() < 10 || wordCount() > maxWords()">
-            @if (submitting()) {
-              @if (uploadProgress()) { {{ uploadProgress() }} }
-              @else { Saving… }
-            } @else {
-              Save
-            }
-          </button>
         </div>
       </div>
 
@@ -275,8 +267,9 @@ interface PendingImage {
             }
           </div>
 
-          <!-- Word count — Save moved up to the reader-style top bar.
-               Drafts auto-save in the background. -->
+          <!-- Footer: word count on the left, hint about minimum
+               words above the right-aligned Save button. Drafts
+               auto-save in the background regardless of Save state. -->
           <div class="editor-footer">
             <div class="footer-meta">
               <span class="word-count"
@@ -289,14 +282,27 @@ interface PendingImage {
               }
             </div>
 
+            <div class="footer-actions">
+              @if (wordCount() < 10) {
+                <span class="footer-hint">Write at least 10 words to save your entry.</span>
+              } @else if (wordCount() > maxWords()) {
+                <span class="footer-hint footer-hint--warn">Trim to {{ maxWords() }} words or fewer to save.</span>
+              }
+              <button class="save-btn save-btn--bottom" type="button"
+                      (click)="submit()"
+                      [disabled]="submitting() || wordCount() < 10 || wordCount() > maxWords()">
+                @if (submitting()) {
+                  @if (uploadProgress()) { {{ uploadProgress() }} }
+                  @else { Saving… }
+                } @else {
+                  Save
+                }
+              </button>
+            </div>
           </div>
 
           @if (submitError()) {
             <div class="alert alert--error" style="margin-top:1rem">{{ submitError() }}</div>
-          }
-
-          @if (wordCount() < 10 && wordCount() > 0) {
-            <div class="hint">Write at least 10 words to publish your entry.</div>
           }
 
         </div>
@@ -380,8 +386,6 @@ interface PendingImage {
     }
     @media (min-width: 768px) {
       .editor-main .container {
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-lg);
         padding: 2rem 1.75rem;
       }
     }
@@ -444,6 +448,10 @@ interface PendingImage {
       &.save-indicator--saved  { color: #16a34a; }
       &.save-indicator--error  { color: var(--color-danger); }
     }
+    /* Canonical primary CTA — matches sidebar __compose, edit-btn,
+       save-btn (notifications, edit-entry). Stays solid black on
+       disabled (no opacity fade) so the button still reads as black
+       when there's no draft to save. */
     .save-btn {
       display: inline-flex;
       align-items: center;
@@ -461,12 +469,22 @@ interface PendingImage {
     }
     .save-btn:hover:not(:disabled) {
       background: var(--color-accent);
-      color: #0c0e13;
+      color: #fff;
     }
-    .save-btn:disabled {
-      opacity: .5;
-      cursor: not-allowed;
+    .save-btn:disabled { cursor: not-allowed; }
+
+    /* Bottom-aligned save row: hint to the left, button to the right. */
+    .footer-actions {
+      display: flex;
+      align-items: center;
+      gap: .875rem;
+      margin-left: auto;
     }
+    .footer-hint {
+      font-size: .8125rem;
+      color: var(--color-text-2);
+    }
+    .footer-hint--warn { color: var(--color-streak); }
 
     /* ── Entry date row (above title) ─────────────────────────── */
     .date-row {

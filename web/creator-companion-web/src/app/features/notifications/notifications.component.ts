@@ -238,11 +238,16 @@ const DEFAULT_REMINDER_MESSAGE = 'Remember to log an entry to keep your streak a
     .page--embedded .body-inner { padding-top: 1rem; }
 
     /* ── Page header ─────────────────────────────────────────────── */
+    /* Page titles in the right column (Notifications, Todos,
+       Favorites) match the Daily Spark hero quote style — same
+       size, weight, and tracking — so all column-3 surfaces share
+       one consistent display ramp. */
     .page-header { margin-bottom: 1.5rem; }
     .page-title {
       font-family: var(--font-sans);
-      font-size: 1.3125rem; font-weight: 500;
+      font-size: 1.25rem; font-weight: 700;
       letter-spacing: -.01em;
+      line-height: 1.3;
       color: var(--color-text);
       margin: 0 0 .25rem;
     }
@@ -467,7 +472,7 @@ const DEFAULT_REMINDER_MESSAGE = 'Remember to log an entry to keep your streak a
       transition: background .15s, color .15s;
     }
     .save-btn:hover:not(:disabled) {
-      background: var(--color-accent); color: #0c0e13;
+      background: var(--color-accent); color: #fff;
     }
     .save-btn:disabled { cursor: not-allowed; }
 

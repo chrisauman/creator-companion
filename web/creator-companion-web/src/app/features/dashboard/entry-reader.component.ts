@@ -252,7 +252,7 @@ import { MoodIconComponent } from '../../shared/mood-icon/mood-icon.component';
     }
     .edit-btn:hover {
       background: var(--color-accent);
-      color: #0c0e13;
+      color: #fff;
     }
 
     /* ── Loading / error states ─────────────────────────────── */

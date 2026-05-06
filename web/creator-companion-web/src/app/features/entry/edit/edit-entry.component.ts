@@ -571,7 +571,7 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
     }
     .save-btn:hover:not(:disabled) {
       background: var(--color-accent);
-      color: #0c0e13;
+      color: #fff;
     }
     .save-btn:disabled {
       opacity: .5;
