@@ -20,14 +20,30 @@ import { NotificationsComponent } from '../notifications/notifications.component
 import { FavoriteSparksComponent } from '../favorite-sparks/favorite-sparks.component';
 import { ActionItemsCardComponent } from './action-items-card.component';
 import { StreakHistoryComponent } from './streak-history.component';
+import { WelcomeBackComponent } from './welcome-back.component';
 import { ActivatedRoute } from '@angular/router';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, SidebarComponent, MoodIconComponent, TodayPanelComponent, EntryReaderComponent, NewEntryComponent, EditEntryComponent, NotificationsComponent, FavoriteSparksComponent, ActionItemsCardComponent, StreakHistoryComponent],
+  imports: [CommonModule, RouterLink, FormsModule, SidebarComponent, MoodIconComponent, TodayPanelComponent, EntryReaderComponent, NewEntryComponent, EditEntryComponent, NotificationsComponent, FavoriteSparksComponent, ActionItemsCardComponent, StreakHistoryComponent, WelcomeBackComponent],
   template: `
     <div class="dashboard">
+
+      <!-- Welcome Back full-takeover overlay. Renders ABOVE everything
+           else (z-index in component) so it functions as a moment, not
+           a panel. Two trigger paths:
+             - Admin preview (?preview=welcome-back)
+             - Organic: streak just broke and user hasn't dismissed yet.
+           Hides when the user picks any of the three escape paths
+           (write, skip, view dashboard). -->
+      @if (welcomeBackVisible()) {
+        <app-welcome-back
+          [preview]="previewMode() === 'welcome-back'"
+          (writeOneSentence)="onWelcomeBackWrite()"
+          (dismissed)="onWelcomeBackDismiss()"
+        ></app-welcome-back>
+      }
 
       <!-- Achievement celebration overlay -->
       @if (showCelebration() && isPaid()) {
@@ -1020,6 +1036,46 @@ export class DashboardComponent implements OnInit {
    * read-only: no API writes, no streak/data changes.
    */
   previewMode = signal<'none' | 'welcome-back' | 'threatened'>('none');
+
+  /**
+   * Per-session dismissal flag for the Welcome Back overlay. Once the
+   * user picks any escape path (write / skip / view dashboard) we set
+   * this to true so the overlay doesn't pop back when streak data
+   * refreshes. Persistent dismissal across sessions is keyed in
+   * localStorage by the last entry date (see welcomeBackVisible).
+   */
+  private welcomeBackDismissed = signal(false);
+
+  /**
+   * Whether the Welcome Back overlay should currently render. Two paths
+   * lead here:
+   *   1. Preview — admin loaded `?preview=welcome-back` and hasn't
+   *      dismissed in-session.
+   *   2. Organic — currentStreak is 0, the user has at least one
+   *      previous streak (longestStreak > 0), and they haven't
+   *      already dismissed this specific break (key = lastEntryDate).
+   */
+  welcomeBackVisible = computed<boolean>(() => {
+    if (this.welcomeBackDismissed()) return false;
+    if (this.previewMode() === 'welcome-back') return true;
+
+    const s = this.streak();
+    if (!s) return false;
+    if (s.currentStreak !== 0) return false;       // streak alive — nothing to welcome back from
+    if ((s.longestStreak ?? 0) <= 0) return false; // no past chapter to celebrate
+
+    // Persistent dismissal key — user shouldn't see Welcome Back twice
+    // for the same break. lastEntryDate is the end-day of the chapter
+    // that just ended; it changes when a new break occurs.
+    const userId = this.tokens.getUserId() ?? 'anon';
+    const stamp  = s.lastEntryDate ?? 'none';
+    try {
+      const key = `cc_welcome_back_seen_${userId}_${stamp}`;
+      if (localStorage.getItem(key) === '1') return false;
+    } catch { /* private mode / quota — fall through, just show it again */ }
+
+    return true;
+  });
   selectedEntryId      = signal<string | null>(null);
   selectedEntry        = signal<Entry | null>(null);
   selectedEntryLoading = signal<boolean>(false);
@@ -1335,6 +1391,39 @@ export class DashboardComponent implements OnInit {
   dismissPreview(): void {
     this.previewMode.set('none');
     this.router.navigate(['/dashboard'], { queryParams: { preview: null }, queryParamsHandling: 'merge' });
+  }
+
+  /** Welcome Back primary CTA — open the entry composer in the right
+   *  column. We don't enforce "one sentence" — that's framing copy.
+   *  Same composer as everywhere else, no special mode. */
+  onWelcomeBackWrite(): void {
+    this.markWelcomeBackSeen();
+    this.welcomeBackDismissed.set(true);
+    if (this.previewMode() === 'welcome-back') this.dismissPreview();
+    this.openCompose({});
+  }
+
+  /** Welcome Back skip / view dashboard — hide the overlay, persist
+   *  the dismissal so it doesn't return for this break. Both copy
+   *  links route here for parity. */
+  onWelcomeBackDismiss(): void {
+    this.markWelcomeBackSeen();
+    this.welcomeBackDismissed.set(true);
+    if (this.previewMode() === 'welcome-back') this.dismissPreview();
+  }
+
+  /** Persists "user has seen Welcome Back for this break" in localStorage
+   *  keyed by lastEntryDate, so future loads of the same break don't
+   *  re-trigger it. Skipped in preview mode (we want preview to be
+   *  re-runnable). */
+  private markWelcomeBackSeen(): void {
+    if (this.previewMode() === 'welcome-back') return;
+    const s = this.streak();
+    if (!s?.lastEntryDate) return;
+    const userId = this.tokens.getUserId() ?? 'anon';
+    try {
+      localStorage.setItem(`cc_welcome_back_seen_${userId}_${s.lastEntryDate}`, '1');
+    } catch { /* private mode / quota — silently skip */ }
   }
 
   editSelectedEntry(): void {
