@@ -306,14 +306,16 @@ import { MoodIconComponent } from '../../shared/mood-icon/mood-icon.component';
     }
     .reading__mood app-mood-icon { color: var(--color-text-3); }
 
-    /* Title matches the entry-list row title and the right-column
-       spark quote — same font-size, same weight (500). */
+    /* Larger display title — bigger than the column-2 list title
+       (1.0625rem) at the same weight (700). The bigger size makes
+       the strokes feel relatively lighter while still bold. Matches
+       the spark + prompt hero quotes for a unified column-3 voice. */
     .reading__title {
       font-family: var(--font-sans);
-      font-size: 1.3125rem;
-      font-weight: 500;
-      line-height: 1.3;
-      letter-spacing: -.01em;
+      font-size: 1.625rem;
+      font-weight: 700;
+      line-height: 1.2;
+      letter-spacing: -.02em;
       color: var(--color-text);
       margin: 0 0 1rem;
       word-break: break-word;

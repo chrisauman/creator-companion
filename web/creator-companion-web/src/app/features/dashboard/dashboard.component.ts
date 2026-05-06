@@ -875,19 +875,18 @@ import { ActivatedRoute } from '@angular/router';
       color: var(--color-text-2);
     }
     .entry-row__mood app-mood-icon { color: var(--color-text-3); }
-    /* Body-paragraph size for entry titles — matches the spark and
-       prompt hero quotes (1rem / 500) so the two columns read as one
-       calm typographic system rather than two competing display
-       sizes. Less hierarchy from the date eyebrow above by design;
-       the title behaves like a quoted line of text. */
+    /* Compact bold list title — small enough to scan a vertical
+       stack of entries quickly, weighty enough to anchor the eye
+       below the cyan date eyebrow. Pairs with the larger 1.625rem
+       reading title in column 3 (same weight, bigger size). */
     .entry-row__title {
       font-family: var(--font-sans);
-      font-size: 1rem;
-      font-weight: 500;
-      line-height: 1.45;
+      font-size: 1.0625rem;
+      font-weight: 700;
+      line-height: 1.35;
       color: var(--color-text);
       margin: 0;
-      letter-spacing: 0;
+      letter-spacing: -.01em;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
