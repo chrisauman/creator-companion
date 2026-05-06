@@ -89,13 +89,28 @@ const DEFAULT_REMINDER_MESSAGE = 'Remember to log an entry to keep your streak a
           <section class="block">
             <div class="block__head">
               <h2 class="block__title">Reminder times</h2>
-              <button class="link-btn"
-                      type="button"
-                      [disabled]="reminderWorking()"
-                      (click)="resetReminders()">
-                Reset all
-              </button>
+              <div class="block__head-actions">
+                <button class="link-btn"
+                        type="button"
+                        [disabled]="testWorking()"
+                        (click)="sendTestPush()">
+                  {{ testWorking() ? 'Sending…' : 'Send test' }}
+                </button>
+                <button class="link-btn"
+                        type="button"
+                        [disabled]="reminderWorking()"
+                        (click)="resetReminders()">
+                  Reset all
+                </button>
+              </div>
             </div>
+            @if (testResult(); as r) {
+              <p class="test-result"
+                 [class.test-result--ok]="r.sent > 0"
+                 [class.test-result--err]="r.sent === 0">
+                {{ r.message }}
+              </p>
+            }
 
             @if (remindersLoading()) {
               <p class="block__body">Loading…</p>
@@ -281,6 +296,20 @@ const DEFAULT_REMINDER_MESSAGE = 'Remember to log an entry to keep your streak a
       margin-bottom: .875rem;
     }
     .block__head .block__title { margin: 0; }
+    .block__head-actions { display: flex; gap: .25rem; }
+    /* "Send test" status line — appears under the section header for a
+       few seconds after the user clicks Send test, so they get clear
+       feedback on whether push delivery actually works. Green for sent,
+       red when zero subscriptions or all failed. */
+    .test-result {
+      font-size: .8125rem;
+      line-height: 1.4;
+      padding: .5rem .75rem;
+      border-radius: .375rem;
+      margin: 0 0 .875rem;
+    }
+    .test-result--ok  { background: rgba(34,197,94,.12); color: #166534; }
+    .test-result--err { background: rgba(225,29,72,.10); color: #b91c1c; }
     .block__body {
       font-size: .9375rem;
       line-height: 1.5;
@@ -545,6 +574,12 @@ export class NotificationsComponent implements OnInit {
   reminderError    = signal('');
   drafts: Record<string, { time: string; message: string }> = {};
 
+  // "Send test" — fires a notification immediately to all current device
+  // subscriptions. The result message stays on screen until the user clicks
+  // again or reloads, so they can read the per-device status.
+  testWorking = signal(false);
+  testResult  = signal<{ sent: number; total: number; expired: number; errors: string[] | null; message: string } | null>(null);
+
   defaultReminder = computed(() => this.reminders().find(r => r.isDefault) ?? null);
   customReminders = computed(() => this.reminders().filter(r => !r.isDefault));
 
@@ -656,6 +691,27 @@ export class NotificationsComponent implements OnInit {
       error: err => {
         this.reminderError.set(err?.error?.error ?? 'Could not reset reminders.');
         this.reminderWorking.set(false);
+      }
+    });
+  }
+
+  /**
+   * Sends a test notification to every push subscription registered for
+   * this account, immediately. Lets users (and us) verify push delivery
+   * end-to-end without waiting for a scheduled reminder. The server
+   * returns a structured result so we can surface specific failures
+   * (no subscription, expired subscription, VAPID misconfigured, etc).
+   */
+  sendTestPush(): void {
+    this.testWorking.set(true);
+    this.api.sendTestPush().subscribe({
+      next: result => { this.testResult.set(result); this.testWorking.set(false); },
+      error: err => {
+        this.testResult.set({
+          sent: 0, total: 0, expired: 0, errors: null,
+          message: err?.error?.error ?? 'Test failed. Check your connection and try again.'
+        });
+        this.testWorking.set(false);
       }
     });
   }

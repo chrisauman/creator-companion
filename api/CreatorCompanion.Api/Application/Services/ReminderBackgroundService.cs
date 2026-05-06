@@ -66,14 +66,27 @@ public class ReminderBackgroundService(
         var userTime = TimeOnly.FromDateTime(userNow);
         var today    = DateOnly.FromDateTime(userNow);
 
-        logger.LogDebug(
-            "ReminderCheck: reminder={ReminderId} set={Set} userNow={UserNow} tz={Tz} match={Match}",
-            reminder.Id, reminder.Time.ToString("HH:mm"), userTime.ToString("HH:mm"),
-            reminder.User.TimeZoneId, userTime.Hour == reminder.Time.Hour && userTime.Minute == reminder.Time.Minute);
-
         // ── Time match ───────────────────────────────────────────────────────
-        if (userTime.Hour != reminder.Time.Hour || userTime.Minute != reminder.Time.Minute)
-            return;
+        // Fire when the scheduled time has arrived today AND we haven't already
+        // sent today. The earlier exact-minute match (`Hour == X && Minute == Y`)
+        // was fragile: the worker loop is `processWork + Task.Delay(60s)`, so it
+        // drifts a few seconds each iteration, and Railway redeploys/restarts
+        // routinely land mid-minute. Either case meant the target minute was
+        // skipped and the reminder simply never fired that day.
+        //
+        // The "already sent today" guard is enforced below via reminder.LastSentAt
+        // so a single tick after the scheduled time triggers exactly one send.
+        var scheduledToday = today.ToDateTime(reminder.Time);
+        var alreadySentToday = reminder.LastSentAt.HasValue &&
+            DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(reminder.LastSentAt.Value, userTz)) == today;
+
+        logger.LogDebug(
+            "ReminderCheck: reminder={ReminderId} set={Set} userNow={UserNow} tz={Tz} due={Due} sent={Sent}",
+            reminder.Id, reminder.Time.ToString("HH:mm"), userTime.ToString("HH:mm"),
+            reminder.User.TimeZoneId, userNow >= scheduledToday, alreadySentToday);
+
+        if (userNow < scheduledToday) return;
+        if (alreadySentToday) { logger.LogDebug("ReminderSkip: {ReminderId} — already sent today.", reminder.Id); return; }
 
         // ── Skip if streak is paused ─────────────────────────────────────────
         var isPaused = await db.Pauses.AnyAsync(p =>
@@ -121,19 +134,8 @@ public class ReminderBackgroundService(
                 }
             }
         }
-        else
-        {
-            // Custom reminder: still prevent duplicate sends on the same day
-            if (reminder.LastSentAt.HasValue)
-            {
-                var lastSentLocal = TimeZoneInfo.ConvertTimeFromUtc(reminder.LastSentAt.Value, userTz);
-                if (DateOnly.FromDateTime(lastSentLocal) == today)
-                {
-                    logger.LogDebug("ReminderSkip: {ReminderId} — already sent today.", reminder.Id);
-                    return;
-                }
-            }
-        }
+        // Custom reminder: same-day duplicate guard already enforced at the
+        // top of this method (alreadySentToday check), so nothing more to do.
 
         // ── Select message ───────────────────────────────────────────────────
         var body = reminder.Message ?? SelectMessage(config, daysSinceLastEntry);

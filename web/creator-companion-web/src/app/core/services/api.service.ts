@@ -225,6 +225,15 @@ export class ApiService {
     return this.http.delete<void>(`${this.base}/push/subscribe`, { body: { endpoint } });
   }
 
+  /** Fires a test notification to every registered subscription for the
+   *  current user, immediately. Used by the "Send test" button on the
+   *  notifications settings page so users can verify push delivery
+   *  independently of the daily reminder schedule. */
+  sendTestPush(): Observable<{ sent: number; total: number; expired: number; errors: string[] | null; message: string }> {
+    return this.http.post<{ sent: number; total: number; expired: number; errors: string[] | null; message: string }>(
+      `${this.base}/push/test`, {});
+  }
+
   // ── Motivation ──────────────────────────────────────────────────────────
   getTodayMotivation(): Observable<MotivationEntry | null> {
     return this.http.get<MotivationEntry | null>(`${this.base}/motivation/today`);
