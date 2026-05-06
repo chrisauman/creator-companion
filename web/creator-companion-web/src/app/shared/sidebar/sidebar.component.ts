@@ -340,6 +340,10 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
       width: auto;
       display: block;
       flex-shrink: 0;
+      /* Source PNG is dark-on-light (designed for the marketing site's
+         white nav). Invert it for the dark sidebar so the wordmark
+         reads as white. Marketing's footer uses the same trick. */
+      filter: brightness(0) invert(1);
     }
 
     /* Expanded-state collapse button. Hidden until the user hovers
