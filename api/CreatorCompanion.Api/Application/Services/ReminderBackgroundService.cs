@@ -88,57 +88,20 @@ public class ReminderBackgroundService(
         if (userNow < scheduledToday) return;
         if (alreadySentToday) { logger.LogDebug("ReminderSkip: {ReminderId} — already sent today.", reminder.Id); return; }
 
-        // ── Skip if streak is paused ─────────────────────────────────────────
-        var isPaused = await db.Pauses.AnyAsync(p =>
-            p.UserId == reminder.UserId &&
-            p.Status == Domain.Enums.PauseStatus.Active &&
-            p.StartDate <= today &&
-            p.EndDate >= today);
-        if (isPaused) { logger.LogDebug("ReminderSkip: {ReminderId} — streak paused.", reminder.Id); return; }
-
-        // ── Skip if user already logged today ────────────────────────────────
-        var alreadyLogged = await db.Entries.AnyAsync(e =>
-            e.UserId == reminder.UserId &&
-            e.EntryDate == today &&
-            e.DeletedAt == null);
-        if (alreadyLogged) { logger.LogDebug("ReminderSkip: {ReminderId} — already logged today.", reminder.Id); return; }
-
-        // ── Days since last entry ────────────────────────────────────────────
-        var lastEntryDate = await db.Entries
-            .Where(e => e.UserId == reminder.UserId && e.DeletedAt == null)
-            .OrderByDescending(e => e.EntryDate)
-            .Select(e => (DateOnly?)e.EntryDate)
-            .FirstOrDefaultAsync();
-
-        var daysSinceLastEntry = lastEntryDate.HasValue
-            ? today.DayNumber - lastEntryDate.Value.DayNumber
-            : int.MaxValue;
-
-        // ── Frequency throttling (default reminders only) ────────────────────
-        // Custom (non-default) reminders always fire on their set schedule.
-        if (reminder.IsDefault)
-        {
-            var requiredInterval = daysSinceLastEntry <= config.DailyUpToDays      ? 1
-                                 : daysSinceLastEntry <= config.Every2DaysUpToDays ? 2
-                                 : daysSinceLastEntry <= config.Every3DaysUpToDays ? 3
-                                 : 7;
-
-            if (reminder.LastSentAt.HasValue)
-            {
-                var lastSentLocal    = TimeZoneInfo.ConvertTimeFromUtc(reminder.LastSentAt.Value, userTz);
-                var daysSinceLastSent = today.DayNumber - DateOnly.FromDateTime(lastSentLocal).DayNumber;
-                if (daysSinceLastSent < requiredInterval)
-                {
-                    logger.LogDebug("ReminderSkip: {ReminderId} — throttled (lastSent={Days}d ago, required={Req}d).", reminder.Id, daysSinceLastSent, requiredInterval);
-                    return;
-                }
-            }
-        }
-        // Custom reminder: same-day duplicate guard already enforced at the
-        // top of this method (alreadySentToday check), so nothing more to do.
+        // No entry-based gating — reminders are general-purpose. People
+        // set them for any cue they care about (post a thought, walk the
+        // dog, hydrate). Skipping when the user already journaled, or
+        // when their streak is paused, broke that contract: a 4pm "drink
+        // water" reminder shouldn't disappear just because they wrote
+        // an entry at noon. The dedupe guard at the top of this method
+        // (alreadySentToday) prevents double-fires; that's enough.
 
         // ── Select message ───────────────────────────────────────────────────
-        var body = reminder.Message ?? SelectMessage(config, daysSinceLastEntry);
+        // User-supplied message takes priority. Fall back to the generic
+        // active-streak copy as a sensible default — the previous tiered
+        // selection (just-broke / short-lapse / long-absence) was
+        // entry-based and no longer applies.
+        var body = reminder.Message ?? config.MessageActiveStreak;
 
         // ── Send to all subscriptions ────────────────────────────────────────
         var subscriptions = await db.PushSubscriptions
@@ -176,17 +139,8 @@ public class ReminderBackgroundService(
         reminder.LastSentAt = utcNow;
 
         logger.LogInformation(
-            "Sent reminder to user {UserId} ({Count} device(s), interval={Interval}d, daysSinceLast={Days})",
+            "Sent reminder to user {UserId} ({Count} device(s))",
             reminder.UserId,
-            subscriptions.Count - expiredEndpoints.Count,
-            reminder.IsDefault ? "throttled" : "1",
-            daysSinceLastEntry == int.MaxValue ? "∞" : daysSinceLastEntry.ToString());
+            subscriptions.Count - expiredEndpoints.Count);
     }
-
-    private static string SelectMessage(ReminderConfig config, int daysSinceLastEntry) =>
-        daysSinceLastEntry <= 1                          ? config.MessageActiveStreak
-        : daysSinceLastEntry <= 2                        ? config.MessageJustBroke
-        : daysSinceLastEntry <= config.Every2DaysUpToDays ? config.MessageShortLapse
-        : daysSinceLastEntry <= config.Every3DaysUpToDays ? config.MessageMediumLapse
-        : config.MessageLongAbsence;
 }

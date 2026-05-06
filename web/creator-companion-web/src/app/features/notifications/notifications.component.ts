@@ -112,16 +112,16 @@ const DEFAULT_REMINDER_MESSAGE = 'Remember to log an entry to keep your streak a
               </p>
             }
 
-            <!-- Set expectations on the schedule. Two silent-skip paths
-                 confuse users testing reminders: (1) we deliberately
-                 don't nag once you've journaled today, and (2) each
-                 slot fires at most once per day. Editing a time clears
-                 the once-per-day guard so the new schedule can fire. -->
+            <!-- Reminders fire unconditionally on schedule — no
+                 entry-based gating, no streak-pause skip. Set them for
+                 anything: a journal nudge, hydration, a walk break.
+                 The only built-in guard is "at most once per day per
+                 slot" so a 9am reminder doesn't double-fire. -->
             <p class="reminder-hint">
-              Reminders only fire on days you haven't journaled yet —
-              once your entry is logged, the rest of the day's slots
-              are skipped. Each slot fires at most once per day.
-              Use <strong>Send test</strong> above to verify delivery.
+              Each slot fires once per day at the time you set,
+              regardless of whether you've journaled. Set them for
+              anything you want a daily nudge on. Use
+              <strong>Send test</strong> above to verify delivery.
             </p>
 
             @if (remindersLoading()) {
