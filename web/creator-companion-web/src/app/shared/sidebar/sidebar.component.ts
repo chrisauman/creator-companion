@@ -41,8 +41,9 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
                panel-toggle button was too hidden to be discoverable
                so it's gone — the icon itself is now the affordance. -->
           <!-- Whole logo (icon + wordmark) is one button — clicking
-               either part collapses the sidebar, hovering either part
-               reveals the tooltip + halo. -->
+               anywhere on it collapses the sidebar. Hover reveals a
+               small panel-toggle SVG on the right edge as the visual
+               affordance; no background fill / pill hover. -->
           <button class="sidebar__logo-btn"
                   type="button"
                   (click)="onLogoClick()"
@@ -50,6 +51,13 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
                   aria-label="Collapse sidebar">
             <img src="logo-icon.png" alt="" class="sidebar__logo-icon">
             <span class="sidebar__logo-text">Creator Companion</span>
+            <svg class="sidebar__logo-toggle"
+                 width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                 aria-hidden="true">
+              <rect x="3" y="4" width="18" height="16" rx="2"/>
+              <line x1="9" y1="4" x2="9" y2="20"/>
+            </svg>
           </button>
           <!-- Mobile: explicit close (X) button. Hidden on desktop. -->
           <button class="sidebar__close-mobile"
@@ -326,28 +334,44 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
       padding: 0 .5rem;
       justify-content: center;
     }
-    /* Logo button: wraps the brand mark + wordmark as one clickable
-       unit that collapses the sidebar. Transparent by default so the
-       icon's own black background reads as the brand mark, not as
-       button chrome. Hover applies to the whole unit (icon + text)
-       so the affordance is obvious from anywhere on the logo. */
+    /* Logo button: wraps the brand mark + wordmark + (hidden by
+       default) panel-toggle SVG. Clicking anywhere collapses the
+       sidebar. Hover does NOT add a background fill — the visual
+       affordance is the toggle SVG fading in on the right edge,
+       matching the ChatGPT pattern but anchored to the logo unit. */
     .sidebar__logo-btn {
       background: transparent;
       border: none;
-      padding: 4px 8px;
+      padding: 0;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       gap: .5rem;
-      border-radius: 8px;
       flex: 1;
       min-width: 0;
-      transition: background .15s ease, transform .1s ease;
       position: relative;
-      z-index: 1;
     }
-    .sidebar__logo-btn:hover { background: rgba(255,255,255,.14); }
-    .sidebar__logo-btn:active { transform: scale(.98); background: rgba(255,255,255,.20); }
+    .sidebar__logo-btn:focus-visible {
+      outline: 2px solid var(--color-accent);
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+    /* Panel-toggle SVG: invisible until the user hovers the logo
+       row (or focuses the button via keyboard). Sits flush with
+       the right edge so the wordmark still gets the full width
+       it needs to fit the column. */
+    .sidebar__logo-toggle {
+      flex-shrink: 0;
+      color: rgba(255,255,255,.55);
+      opacity: 0;
+      transition: opacity .15s ease, color .15s ease;
+      pointer-events: none;
+    }
+    .sidebar__logo-btn:hover .sidebar__logo-toggle,
+    .sidebar__logo-btn:focus-visible .sidebar__logo-toggle {
+      opacity: 1;
+      color: #fff;
+    }
     .sidebar__logo-btn:focus-visible {
       outline: 2px solid var(--color-accent);
       outline-offset: 2px;
