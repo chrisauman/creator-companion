@@ -42,6 +42,10 @@
   --font-sans:    'Inter', system-ui, -apple-system, sans-serif;
   --font-display: 'Inter', system-ui, -apple-system, sans-serif;
   --font-serif:   'Georgia', 'Times New Roman', serif;
+  /* Brand wordmark face — matches the marketing site. Used for the
+     Creator Companion logotype in the sidebar (and available for any
+     future brand-serif moments inside the app). */
+  --font-brand:   'Fraunces', Georgia, serif;
 
   --max-w:      680px;
   --nav-h:      60px;

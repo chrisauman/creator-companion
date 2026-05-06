@@ -37,7 +37,8 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
           <a class="sidebar__logo-wrap"
              routerLink="/dashboard"
              (click)="goHome()">
-            <img src="logo-full.png" alt="Creator Companion" class="sidebar__logo-full">
+            <img src="logo-icon.png" alt="" class="sidebar__logo-icon">
+            <span class="sidebar__logo-text">Creator Companion</span>
           </a>
           <!-- Mobile: explicit close (X) button. Hidden on desktop. -->
           <button class="sidebar__close-mobile"
@@ -332,18 +333,20 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
       flex: 1;
     }
     .sidebar__logo-icon { height: 28px; width: auto; flex-shrink: 0; }
-    /* Full brand wordmark (designed in the official typeface).
-       Using the rendered image keeps the logo on-brand without
-       shipping the display font as a webfont. */
-    .sidebar__logo-full {
-      height: 28px;
-      width: auto;
-      display: block;
-      flex-shrink: 0;
-      /* Source PNG is dark-on-light (designed for the marketing site's
-         white nav). Invert it for the dark sidebar so the wordmark
-         reads as white. Marketing's footer uses the same trick. */
-      filter: brightness(0) invert(1);
+    /* Brand wordmark rendered as live text in Fraunces (the same
+       display face used on the marketing site). Live text scales
+       crisply at every DPI, recolors with CSS, and is accessible to
+       screen readers — no PNG raster, no invert() filter. */
+    .sidebar__logo-text {
+      font-family: var(--font-brand);
+      font-size: 1.0625rem;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -.02em;
+      line-height: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     /* Expanded-state collapse button. Hidden until the user hovers
