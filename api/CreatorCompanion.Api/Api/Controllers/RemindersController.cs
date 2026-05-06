@@ -122,10 +122,20 @@ public class RemindersController(AppDbContext db) : ControllerBase
         if (!TimeOnly.TryParseExact(request.Time, "HH:mm", out var time))
             return BadRequest(new { error = "Invalid time format. Use HH:mm (e.g. '08:30')." });
 
+        // Clear LastSentAt whenever the slot is edited. The worker uses
+        // LastSentAt to enforce "fire at most once per day," but if the
+        // user changes the time (typically to set up an immediate test),
+        // that guard would silently block the *new* schedule for the
+        // rest of the day. Treat any edit as "fresh schedule, reset the
+        // dedupe clock" — natural user expectation, no spam risk
+        // (the time-passed match still fires only once per day).
+        var timeChanged = reminder.Time != time;
+
         reminder.Time      = time;
         reminder.Message   = string.IsNullOrWhiteSpace(request.Message) ? null : request.Message.Trim();
         reminder.IsEnabled = request.IsEnabled;
         reminder.UpdatedAt = DateTime.UtcNow;
+        if (timeChanged) reminder.LastSentAt = null;
         await db.SaveChangesAsync();
 
         return Ok(new ReminderResponse(

@@ -112,6 +112,18 @@ const DEFAULT_REMINDER_MESSAGE = 'Remember to log an entry to keep your streak a
               </p>
             }
 
+            <!-- Set expectations on the schedule. Two silent-skip paths
+                 confuse users testing reminders: (1) we deliberately
+                 don't nag once you've journaled today, and (2) each
+                 slot fires at most once per day. Editing a time clears
+                 the once-per-day guard so the new schedule can fire. -->
+            <p class="reminder-hint">
+              Reminders only fire on days you haven't journaled yet —
+              once your entry is logged, the rest of the day's slots
+              are skipped. Each slot fires at most once per day.
+              Use <strong>Send test</strong> above to verify delivery.
+            </p>
+
             @if (remindersLoading()) {
               <p class="block__body">Loading…</p>
             } @else {
@@ -310,6 +322,19 @@ const DEFAULT_REMINDER_MESSAGE = 'Remember to log an entry to keep your streak a
     }
     .test-result--ok  { background: rgba(34,197,94,.12); color: #166534; }
     .test-result--err { background: rgba(225,29,72,.10); color: #b91c1c; }
+    /* Schedule-rule hint that explains the two silent-skip paths
+       (already journaled today + once per day per slot). Same look as
+       .block__body but with a slight indent and muted tone. */
+    .reminder-hint {
+      font-size: .8125rem;
+      line-height: 1.5;
+      color: var(--color-text-muted);
+      margin: 0 0 1rem;
+      padding: .5rem .75rem;
+      background: var(--color-surface-2);
+      border-radius: .375rem;
+    }
+    .reminder-hint strong { color: var(--color-text); font-weight: 600; }
     .block__body {
       font-size: .9375rem;
       line-height: 1.5;
