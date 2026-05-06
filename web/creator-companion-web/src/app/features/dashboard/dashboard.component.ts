@@ -21,12 +21,13 @@ import { FavoriteSparksComponent } from '../favorite-sparks/favorite-sparks.comp
 import { ActionItemsCardComponent } from './action-items-card.component';
 import { StreakHistoryComponent } from './streak-history.component';
 import { WelcomeBackComponent } from './welcome-back.component';
+import { ThreatenedBannerComponent } from './threatened-banner.component';
 import { ActivatedRoute } from '@angular/router';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, SidebarComponent, MoodIconComponent, TodayPanelComponent, EntryReaderComponent, NewEntryComponent, EditEntryComponent, NotificationsComponent, FavoriteSparksComponent, ActionItemsCardComponent, StreakHistoryComponent, WelcomeBackComponent],
+  imports: [CommonModule, RouterLink, FormsModule, SidebarComponent, MoodIconComponent, TodayPanelComponent, EntryReaderComponent, NewEntryComponent, EditEntryComponent, NotificationsComponent, FavoriteSparksComponent, ActionItemsCardComponent, StreakHistoryComponent, WelcomeBackComponent, ThreatenedBannerComponent],
   template: `
     <div class="dashboard">
 
@@ -90,6 +91,17 @@ import { ActivatedRoute } from '@angular/router';
              desktop has it pinned just below the logo; mobile shows it
              at the top of the slide-out drawer when the user opens it. -->
 
+
+        <!-- Streak threatened banner. The component decides on its
+             own whether to render based on real streak state (or the
+             ?preview=threatened flag for admin QA), so this slot is
+             always safe to leave in the template — invisible 99% of
+             the time, loud + warm during the 48h backlog window. -->
+        <app-threatened-banner
+          [preview]="previewMode() === 'threatened'"
+          (backlogYesterday)="onBacklogYesterday($event)"
+          (writeToday)="onThreatenedWriteToday()"
+        ></app-threatened-banner>
 
         <!-- Daily Motivation card (mobile only — desktop shows it inside the Today panel as the Spark hero) -->
         @if (motivation()) {
@@ -278,6 +290,7 @@ import { ActivatedRoute } from '@angular/router';
                 [initialMood]="composeMood()"
                 [initialPrompt]="composePrompt()"
                 [initialSpark]="composeSpark()"
+                [initialDate]="composeDate()"
                 (saved)="onComposeSaved()"
                 (canceled)="returnToToday()"
               ></app-new-entry>
@@ -1085,6 +1098,11 @@ export class DashboardComponent implements OnInit {
   composeMood   = signal<string | null>(null);
   composePrompt = signal<string | null>(null);
   composeSpark  = signal<string | null>(null);
+  /** ISO date (yyyy-MM-dd) the composer should pre-select. Set to
+   *  yesterday by the threatened banner's "Write yesterday's entry"
+   *  CTA so the user can backlog the missed day. Cleared on compose
+   *  return / save like the other compose-context signals. */
+  composeDate   = signal<string | null>(null);
 
   // Search & sort
   searchQuery = signal('');
@@ -1344,6 +1362,7 @@ export class DashboardComponent implements OnInit {
     this.composeMood.set(null);
     this.composePrompt.set(null);
     this.composeSpark.set(null);
+    this.composeDate.set(null);
     // Strip the ?section= query param if present so the URL reflects state.
     if (this.route.snapshot.queryParamMap.has('section')) {
       this.router.navigate(['/dashboard'], { queryParams: { section: null }, queryParamsHandling: 'merge' });
@@ -1477,20 +1496,40 @@ export class DashboardComponent implements OnInit {
    * navigate to /entry/new with query params until Phase H wires inline
    * compose into the mobile layout.
    */
-  private openCompose(ctx: { mood?: string; prompt?: string; spark?: string | null }): void {
+  private openCompose(ctx: { mood?: string; prompt?: string; spark?: string | null; date?: string | null }): void {
     const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
     if (isDesktop) {
       this.composeMood.set(ctx.mood ?? null);
       this.composePrompt.set(ctx.prompt ?? null);
       this.composeSpark.set(ctx.spark ?? null);
+      this.composeDate.set(ctx.date ?? null);
       this.rightColumnMode.set('composing');
     } else {
       const queryParams: Record<string, string> = {};
       if (ctx.mood)   queryParams['mood']   = ctx.mood;
       if (ctx.prompt) queryParams['prompt'] = ctx.prompt;
       if (ctx.spark)  queryParams['spark']  = ctx.spark;
+      if (ctx.date)   queryParams['date']   = ctx.date;
       this.router.navigate(['/entry/new'], { queryParams });
     }
+  }
+
+  /**
+   * Threatened-banner CTA: "Write yesterday's entry." Opens the inline
+   * composer with the missed-day date pre-set so the user can backlog
+   * in one step. The banner emits the ISO date; we just forward it.
+   * In preview mode, also clear the preview overlay and URL param.
+   */
+  onBacklogYesterday(yesterdayIso: string): void {
+    if (this.previewMode() === 'threatened') this.dismissPreview();
+    this.openCompose({ date: yesterdayIso });
+  }
+
+  /** Threatened-banner secondary CTA: "Write today instead." Same as
+   *  composeBlank but also dismisses preview if active. */
+  onThreatenedWriteToday(): void {
+    if (this.previewMode() === 'threatened') this.dismissPreview();
+    this.openCompose({});
   }
 
   /**

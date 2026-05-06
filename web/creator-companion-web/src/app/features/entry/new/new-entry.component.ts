@@ -779,6 +779,13 @@ export class NewEntryComponent implements OnInit, AfterViewInit, OnDestroy {
    *  the Today panel's Spark CTA). Otherwise read from ?spark=. */
   @Input() initialSpark: string | null = null;
 
+  /** Pre-fill the entry date (yyyy-MM-dd). Used by the streak-threatened
+   *  banner's "Write yesterday's entry" CTA so the composer opens already
+   *  pointed at yesterday. Null → defaults to today as before. The user
+   *  can still change the date inside the composer; this is a starting
+   *  position, not a lock. */
+  @Input() initialDate: string | null = null;
+
   /** Emitted when the entry was saved successfully. The dashboard listens for
    *  this to switch the right column back to Today and refresh the list. */
   @Output() saved = new EventEmitter<void>();
@@ -837,6 +844,14 @@ export class NewEntryComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly MAX_BYTES = 20 * 1024 * 1024;
 
   ngOnInit(): void {
+    // Apply initialDate first so any subsequent draft fetches use the
+    // correct date. Used by the streak-threatened banner to backlog
+    // yesterday's entry — opens the composer already pointed at the
+    // missed day. Tier-gated server-side (canBackfill capability).
+    if (this.initialDate) {
+      this.selectedDate.set(this.initialDate);
+    }
+
     // Read prompt-context query params handed off from the dashboard's
     // Today panel (Spark CTA, prompt card, mood tile). Used to pre-fill
     // mood and show a context banner.
