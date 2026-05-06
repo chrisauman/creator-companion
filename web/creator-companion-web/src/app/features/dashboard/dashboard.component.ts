@@ -1009,6 +1009,17 @@ export class DashboardComponent implements OnInit {
   // ── Right column state (desktop): Today / Reading / Composing / Editing /
   //                                   Notifications / Todos / Favorites
   rightColumnMode      = signal<'today' | 'reading' | 'composing' | 'editing' | 'notifications' | 'todos' | 'favorites' | 'streak-history'>('today');
+
+  /**
+   * Admin-only preview state. Set via `?preview=welcome-back` or
+   * `?preview=threatened` query params on /dashboard. Drives temporary
+   * UI overlays for QA — Welcome Back full-takeover and the streak-
+   * threatened banner — so we can review those surfaces without
+   * actually breaking a real streak. NEVER fires for non-admin users
+   * (the admin gate is checked in applyPreviewQueryParam below). Always
+   * read-only: no API writes, no streak/data changes.
+   */
+  previewMode = signal<'none' | 'welcome-back' | 'threatened'>('none');
   selectedEntryId      = signal<string | null>(null);
   selectedEntry        = signal<Entry | null>(null);
   selectedEntryLoading = signal<boolean>(false);
@@ -1308,6 +1319,22 @@ export class DashboardComponent implements OnInit {
     else if (section === 'favorites')      this.rightColumnMode.set('favorites');
     else if (section === 'streak-history') this.rightColumnMode.set('streak-history');
     else if (!section)                     { /* no-op; keep current mode */ }
+
+    // Preview mode: admin-only escape hatch for previewing emotional
+    // UI overlays without breaking a real streak. Silently ignored for
+    // non-admin users so it never leaks to regular accounts.
+    const preview = params.get('preview');
+    if (preview && this.tokens.isAdmin()) {
+      if (preview === 'welcome-back')  this.previewMode.set('welcome-back');
+      else if (preview === 'threatened') this.previewMode.set('threatened');
+    }
+  }
+
+  /** Dismiss the active preview overlay and clear the URL param so a
+   *  refresh / share / back-button doesn't re-trigger it. */
+  dismissPreview(): void {
+    this.previewMode.set('none');
+    this.router.navigate(['/dashboard'], { queryParams: { preview: null }, queryParamsHandling: 'merge' });
   }
 
   editSelectedEntry(): void {

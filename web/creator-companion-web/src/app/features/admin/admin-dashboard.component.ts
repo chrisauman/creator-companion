@@ -74,6 +74,40 @@ import { ApiService } from '../../core/services/api.service';
       @if (error()) {
         <div class="alert alert--error">{{ error() }}</div>
       }
+
+      <!-- Preview surfaces — admin-only links into the dashboard with
+           preview/demo query params set. Lets us QA emotional UI
+           moments (Welcome Back, threatened banner, history demo)
+           without affecting any real data. All previews are READ-ONLY:
+           no API writes, no streak changes, no cross-user impact. -->
+      <section class="preview-section">
+        <h2 class="preview-section__title">Preview surfaces</h2>
+        <p class="preview-section__sub">
+          Visit any of these to see emotional UI states without affecting your real data.
+          Read-only — nothing is saved.
+        </p>
+        <ul class="preview-list">
+          <li>
+            <a routerLink="/dashboard"
+               [queryParams]="{ section: 'streak-history', demo: 'streaks' }">
+              <strong>Streak history (with demo chapters)</strong>
+              <span>Five sample chapters injected into the history view.</span>
+            </a>
+          </li>
+          <li>
+            <a routerLink="/dashboard" [queryParams]="{ preview: 'welcome-back' }">
+              <strong>Welcome Back screen</strong>
+              <span>Full-takeover restart experience after a streak break.</span>
+            </a>
+          </li>
+          <li>
+            <a routerLink="/dashboard" [queryParams]="{ preview: 'threatened' }">
+              <strong>Streak threatened banner</strong>
+              <span>"Yesterday slipped by" prompt during the 48h backlog window.</span>
+            </a>
+          </li>
+        </ul>
+      </section>
     </div>
   `,
   styles: [`
@@ -146,6 +180,62 @@ import { ApiService } from '../../core/services/api.service';
       text-transform: uppercase;
       letter-spacing: .1em;
       font-weight: 600;
+    }
+
+    /* Preview surfaces — quiet card list at the bottom of the admin
+       overview. Distinct from the stats grid above so it reads as a
+       separate "tools" section, not data. */
+    .preview-section {
+      margin-top: 3rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--color-border);
+    }
+    .preview-section__title {
+      font-family: var(--font-sans);
+      font-size: 1.125rem;
+      font-weight: 700;
+      margin: 0 0 .375rem;
+      letter-spacing: -.01em;
+    }
+    .preview-section__sub {
+      color: var(--color-text-3);
+      font-size: .875rem;
+      margin: 0 0 1rem;
+    }
+    .preview-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: .75rem;
+    }
+    .preview-list li {}
+    .preview-list a {
+      display: block;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 1rem 1.125rem;
+      text-decoration: none;
+      transition: border-color .15s, transform .15s;
+    }
+    .preview-list a:hover {
+      border-color: var(--color-accent);
+      transform: translateY(-1px);
+    }
+    .preview-list a strong {
+      display: block;
+      color: var(--color-text);
+      font-size: .9375rem;
+      font-weight: 600;
+      margin-bottom: .25rem;
+    }
+    .preview-list a span {
+      display: block;
+      color: var(--color-text-3);
+      font-size: .8125rem;
+      line-height: 1.4;
     }
   `]
 })
