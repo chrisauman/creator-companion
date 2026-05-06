@@ -362,6 +362,11 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
        it needs to fit the column. */
     .sidebar__logo-toggle {
       flex-shrink: 0;
+      /* Push to the far right of the row regardless of how much
+         room the wordmark consumes. The text only takes its
+         intrinsic width, so without margin-left:auto the toggle
+         would sit right next to it instead of at the column edge. */
+      margin-left: auto;
       color: rgba(255,255,255,.55);
       opacity: 0;
       transition: opacity .15s ease, color .15s ease;
