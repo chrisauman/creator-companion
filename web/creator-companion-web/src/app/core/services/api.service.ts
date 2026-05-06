@@ -5,7 +5,7 @@ import { environment } from '../../../environments/environment';
 import { TokenService } from './token.service';
 import {
   AuthResponse, User, Journal, Entry, EntryListItem,
-  Draft, StreakStats, Capabilities, MediaItem, Tag, Pause, MotivationEntry,
+  Draft, StreakStats, StreakHistoryItem, Capabilities, MediaItem, Tag, Pause, MotivationEntry,
   ReminderConfigResponse, UpdateReminderConfigRequest, ActionItem, Faq, DailyPrompt
 } from '../models/models';
 
@@ -129,6 +129,13 @@ export class ApiService {
 
   getStreak(): Observable<StreakStats> {
     return this.http.get<StreakStats>(`${this.base}/entries/streak`);
+  }
+
+  /** Past completed streaks (chapters), most recent first. Excludes the
+   *  currently-ongoing streak. Powers the Streak History view in
+   *  column 3 of the dashboard. */
+  getStreakHistory(): Observable<StreakHistoryItem[]> {
+    return this.http.get<StreakHistoryItem[]>(`${this.base}/entries/streak/history`);
   }
 
   // ── Pauses ──────────────────────────────────────────────────────────────

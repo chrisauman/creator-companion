@@ -19,12 +19,13 @@ import { EditEntryComponent } from '../entry/edit/edit-entry.component';
 import { NotificationsComponent } from '../notifications/notifications.component';
 import { FavoriteSparksComponent } from '../favorite-sparks/favorite-sparks.component';
 import { ActionItemsCardComponent } from './action-items-card.component';
+import { StreakHistoryComponent } from './streak-history.component';
 import { ActivatedRoute } from '@angular/router';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, SidebarComponent, MoodIconComponent, TodayPanelComponent, EntryReaderComponent, NewEntryComponent, EditEntryComponent, NotificationsComponent, FavoriteSparksComponent, ActionItemsCardComponent],
+  imports: [CommonModule, RouterLink, FormsModule, SidebarComponent, MoodIconComponent, TodayPanelComponent, EntryReaderComponent, NewEntryComponent, EditEntryComponent, NotificationsComponent, FavoriteSparksComponent, ActionItemsCardComponent, StreakHistoryComponent],
   template: `
     <div class="dashboard">
 
@@ -285,6 +286,11 @@ import { ActivatedRoute } from '@angular/router';
                 [embedded]="true"
                 (returnToToday)="returnToToday()"
               ></app-favorite-sparks>
+            }
+            @case ('streak-history') {
+              <app-streak-history
+                (returnToToday)="returnToToday()"
+              ></app-streak-history>
             }
             @case ('todos') {
               <div class="embedded-section">
@@ -1002,7 +1008,7 @@ export class DashboardComponent implements OnInit {
 
   // ── Right column state (desktop): Today / Reading / Composing / Editing /
   //                                   Notifications / Todos / Favorites
-  rightColumnMode      = signal<'today' | 'reading' | 'composing' | 'editing' | 'notifications' | 'todos' | 'favorites'>('today');
+  rightColumnMode      = signal<'today' | 'reading' | 'composing' | 'editing' | 'notifications' | 'todos' | 'favorites' | 'streak-history'>('today');
   selectedEntryId      = signal<string | null>(null);
   selectedEntry        = signal<Entry | null>(null);
   selectedEntryLoading = signal<boolean>(false);
@@ -1297,10 +1303,11 @@ export class DashboardComponent implements OnInit {
       return;
     }
 
-    if (section === 'notifications') this.rightColumnMode.set('notifications');
-    else if (section === 'todos')    this.rightColumnMode.set('todos');
-    else if (section === 'favorites') this.rightColumnMode.set('favorites');
-    else if (!section)               { /* no-op; keep current mode */ }
+    if (section === 'notifications')       this.rightColumnMode.set('notifications');
+    else if (section === 'todos')          this.rightColumnMode.set('todos');
+    else if (section === 'favorites')      this.rightColumnMode.set('favorites');
+    else if (section === 'streak-history') this.rightColumnMode.set('streak-history');
+    else if (!section)                     { /* no-op; keep current mode */ }
   }
 
   editSelectedEntry(): void {

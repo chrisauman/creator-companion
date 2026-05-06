@@ -114,6 +114,17 @@ export interface StreakStats {
   pauseDaysUsedThisMonth: number;
 }
 
+/** One past completed streak (chapter). Returned by /entries/streak/history,
+ *  most-recent-first. The currently-ongoing streak is excluded — it's
+ *  already covered by StreakStats. */
+export interface StreakHistoryItem {
+  startDate: string;     // ISO date "yyyy-MM-dd"
+  endDate:   string;
+  days:      number;
+  entryCount: number;
+  isPersonalBest: boolean;
+}
+
 export interface Pause {
   id: string;
   startDate: string;

@@ -183,8 +183,21 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
             <span *ngIf="p.isAtTopTier" class="sidebar__streak-foot--top">
               Top tier — keep going
             </span>
-            <span *ngIf="streak()!.longestStreak > 0">
+            <span *ngIf="streak()!.longestStreak > 0" class="sidebar__streak-best">
               Best <strong>{{ streak()!.longestStreak }}</strong>
+              <!-- Quiet text link to the Streak History view in column 3.
+                   Pinned next to the personal-best number because that's
+                   the natural "I want to see more about my streaks"
+                   moment. Works on desktop (swaps column 3) and mobile
+                   (routes to the standalone notifications-style page —
+                   for now this falls back to the dashboard with the
+                   query param; future: dedicated /streaks route). -->
+              ·
+              <a [routerLink]="sectionLink('streak-history')"
+                 [queryParams]="sectionQueryParams('streak-history')"
+                 class="sidebar__streak-history-link">
+                History →
+              </a>
             </span>
           </div>
         </ng-container>
@@ -559,6 +572,25 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
       color: #d8b85f;
       font-weight: 600;
     }
+    /* "Best N · History →" cluster on the right of the streak footer.
+       The link is muted by default (matches surrounding muted text) and
+       brightens to brand cyan on hover so the affordance is clear
+       without being loud. */
+    .sidebar__streak-best {
+      display: inline-flex;
+      align-items: baseline;
+      gap: .375rem;
+      white-space: nowrap;
+    }
+    .sidebar__streak-history-link {
+      color: rgba(255,255,255,.5);
+      text-decoration: none;
+      font-weight: 500;
+      transition: color .15s ease;
+    }
+    .sidebar__streak-history-link:hover {
+      color: var(--color-accent);
+    }
 
     /* On the mobile drawer the streak gets a small bump in scale to
        match the larger nav items, but the layout stays identical. */
@@ -795,14 +827,18 @@ export class SidebarComponent implements OnInit {
    * inline. On mobile the right column is hidden, so we navigate to
    * the standalone /notifications, /todos, /favorites page instead.
    */
-  sectionLink(section: 'notifications' | 'todos' | 'favorites'): string[] {
+  sectionLink(section: 'notifications' | 'todos' | 'favorites' | 'streak-history'): string[] {
     const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
     if (isDesktop) return ['/dashboard'];
+    // streak-history has no standalone mobile page yet; route to dashboard
+    // and let the section query param drive column 3 there too.
+    if (section === 'streak-history') return ['/dashboard'];
     return ['/' + section];
   }
 
-  sectionQueryParams(section: 'notifications' | 'todos' | 'favorites'): Record<string, string> | null {
+  sectionQueryParams(section: 'notifications' | 'todos' | 'favorites' | 'streak-history'): Record<string, string> | null {
     const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
+    if (section === 'streak-history') return { section };
     return isDesktop ? { section } : null;
   }
 

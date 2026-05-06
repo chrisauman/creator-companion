@@ -113,6 +113,131 @@ public class StreakService(AppDbContext db) : IStreakService
         return streak;
     }
 
+    public async Task<List<StreakHistoryItem>> GetHistoryAsync(Guid userId)
+    {
+        // Mirrors the data-prep + grouping logic of ComputeLongestStreak,
+        // but instead of returning a single max it returns every completed
+        // streak with start/end/days/entryCount, and excludes the
+        // currently-ongoing streak so users don't see their live streak
+        // in the "past chapters" list.
+
+        var user = await db.Users.FindAsync(userId);
+        if (user is null) return [];
+
+        var userTz = TimeZoneInfo.FindSystemTimeZoneById(user.TimeZoneId);
+        var today  = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, userTz));
+
+        // Distinct entry dates (multiple entries on the same calendar day
+        // count as one day in the streak).
+        var validDates = await db.Entries
+            .Where(e => e.UserId == userId && e.DeletedAt == null)
+            .Select(e => e.EntryDate)
+            .Distinct()
+            .ToListAsync();
+
+        if (validDates.Count == 0) return [];
+
+        // Per-day entry counts so each streak card can show "n entries"
+        // (distinct from "n days" — useful when the user wrote multiple
+        // entries on a single day during a chapter).
+        var entriesPerDay = await db.Entries
+            .Where(e => e.UserId == userId && e.DeletedAt == null)
+            .GroupBy(e => e.EntryDate)
+            .Select(g => new { Date = g.Key, Count = g.Count() })
+            .ToListAsync();
+        var entryCountByDate = entriesPerDay.ToDictionary(x => x.Date, x => x.Count);
+
+        var pauses = await db.Pauses
+            .Where(p => p.UserId == userId && p.Status == PauseStatus.Active)
+            .Select(p => new { p.StartDate, p.EndDate })
+            .ToListAsync();
+
+        var pausedDates = new HashSet<DateOnly>();
+        foreach (var pause in pauses)
+            for (var d = pause.StartDate; d <= pause.EndDate; d = d.AddDays(1))
+                pausedDates.Add(d);
+
+        var entryDateSet = new HashSet<DateOnly>(validDates);
+        var sortedDates  = validDates.OrderBy(d => d).ToList();
+
+        // Walk forward, slicing into streak ranges. A new streak starts
+        // whenever the gap from the previous entry can't be bridged by
+        // active-pause days.
+        var ranges = new List<(DateOnly Start, DateOnly End, int Days, int Entries)>();
+        DateOnly? streakStart = null;
+        DateOnly? prev        = null;
+        var days    = 0;
+        var entries = 0;
+
+        foreach (var date in sortedDates)
+        {
+            if (prev is null)
+            {
+                streakStart = date;
+                days        = 1;
+                entries     = entryCountByDate[date];
+            }
+            else
+            {
+                var gap = date.DayNumber - prev.Value.DayNumber;
+                var bridged = true;
+                for (var i = 1; i < gap; i++)
+                {
+                    var between = prev.Value.AddDays(i);
+                    if (!pausedDates.Contains(between)) { bridged = false; break; }
+                }
+
+                if (gap == 1 || bridged)
+                {
+                    days++;
+                    entries += entryCountByDate[date];
+                }
+                else
+                {
+                    // Previous streak just ended — record it.
+                    ranges.Add((streakStart!.Value, prev.Value, days, entries));
+                    streakStart = date;
+                    days        = 1;
+                    entries     = entryCountByDate[date];
+                }
+            }
+            prev = date;
+        }
+        // Final accumulator (always non-null since we returned early on empty).
+        ranges.Add((streakStart!.Value, prev!.Value, days, entries));
+
+        // If the current streak is alive, the last range IS that ongoing
+        // streak — drop it so history only shows completed chapters.
+        var currentStreak = ComputeCurrentStreak(today, entryDateSet, pausedDates);
+        if (currentStreak > 0 && ranges.Count > 0)
+            ranges.RemoveAt(ranges.Count - 1);
+
+        if (ranges.Count == 0) return [];
+
+        // Personal-best flag: longest completed streak. Tie-break by
+        // recency (the most recent best wins) so users see their latest
+        // peak highlighted, not an older equivalent run.
+        var maxDays = ranges.Max(r => r.Days);
+
+        var result = ranges
+            .OrderByDescending(r => r.End)  // most recent chapter first
+            .Select((r, idx) => new StreakHistoryItem(
+                r.Start,
+                r.End,
+                r.Days,
+                r.Entries,
+                IsPersonalBest: false))
+            .ToList();
+
+        // Mark only the *first* (most recent) tied longest as best so the
+        // UI doesn't show two "personal best" badges side by side.
+        var bestIdx = result.FindIndex(r => r.Days == maxDays);
+        if (bestIdx >= 0)
+            result[bestIdx] = result[bestIdx] with { IsPersonalBest = true };
+
+        return result;
+    }
+
     private static int ComputeLongestStreak(
         HashSet<DateOnly> entryDates,
         HashSet<DateOnly> pausedDates)

@@ -9,7 +9,7 @@ namespace CreatorCompanion.Api.Api.Controllers;
 [ApiController]
 [Route("v1/entries")]
 [Authorize]
-public class EntriesController(IEntryService entryService) : ControllerBase
+public class EntriesController(IEntryService entryService, IStreakService streakService) : ControllerBase
 {
     private Guid UserId => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)
         ?? User.FindFirstValue("sub")!);
@@ -18,6 +18,18 @@ public class EntriesController(IEntryService entryService) : ControllerBase
     public async Task<IActionResult> GetStreak()
     {
         var result = await entryService.GetStreakAsync(UserId);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Past completed streaks (chapters), most recent first. Powers the
+    /// Streak History view in column 3 of the dashboard. Excludes the
+    /// currently-ongoing streak — that's already on /streak.
+    /// </summary>
+    [HttpGet("streak/history")]
+    public async Task<IActionResult> GetStreakHistory()
+    {
+        var result = await streakService.GetHistoryAsync(UserId);
         return Ok(result);
     }
 
