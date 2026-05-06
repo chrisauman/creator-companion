@@ -53,7 +53,7 @@ const DEFAULT_REMINDER_MESSAGE = 'Remember to log an entry to keep your streak a
         <div class="body-inner">
 
           <div class="page-header">
-            <h1 class="page-title">Notifications</h1>
+            <h1 class="page-title">Reminders</h1>
             <p class="page-sub">Manage how and when you receive reminders.</p>
           </div>
 
@@ -76,7 +76,7 @@ const DEFAULT_REMINDER_MESSAGE = 'Remember to log an entry to keep your streak a
             } @else {
               <div class="push-active">
                 <span class="push-dot"></span>
-                <span>Notifications enabled on this device</span>
+                <span>Reminders enabled on this device</span>
                 <button class="link-btn" (click)="disablePush()" [disabled]="pushWorking()">Disable</button>
               </div>
             }

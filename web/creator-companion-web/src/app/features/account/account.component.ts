@@ -113,7 +113,7 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log an entry to keep your streak a
           }
         </section>
 
-        <!-- Notifications link -->
+        <!-- Reminders link -->
         <section class="card notif-link-card" routerLink="/notifications">
           <div class="notif-link-inner">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -122,8 +122,8 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log an entry to keep your streak a
               <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
             </svg>
             <div>
-              <p class="notif-link-title">Notifications</p>
-              <p class="notif-link-sub">Manage reminders and push alerts</p>
+              <p class="notif-link-title">Reminders</p>
+              <p class="notif-link-sub">Set daily reminder times and messages</p>
             </div>
             <svg class="notif-link-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

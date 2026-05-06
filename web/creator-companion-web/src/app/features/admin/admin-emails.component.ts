@@ -23,7 +23,7 @@ const TEMPLATES = [
         <a routerLink="/admin" class="admin-nav__link">Overview</a>
         <a routerLink="/admin/users" class="admin-nav__link">Users</a>
         <a routerLink="/admin/motivation" class="admin-nav__link">Content Library</a>
-        <a routerLink="/admin/reminders" class="admin-nav__link">Notifications</a>
+        <a routerLink="/admin/reminders" class="admin-nav__link">Reminders</a>
         <span class="admin-nav__link admin-nav__link--active">Emails</span>
         <a routerLink="/admin/faq" class="admin-nav__link">FAQ</a>
         <a routerLink="/admin/prompts" class="admin-nav__link">Daily Prompts</a>
