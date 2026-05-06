@@ -840,10 +840,20 @@ export class SidebarComponent implements OnInit {
    * a localStorage flag that has no visual effect — the icon looks dead.
    */
   onLogoClick(): void {
-    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+    // DIAGNOSTIC: temporary logging until the user-reported "collapse
+    // doesn't work" issue is identified. Logs the click, the viewport
+    // width that determines which path runs, the pref before/after,
+    // and the resulting computed collapsed state. Will be removed
+    // once we have a green confirmation.
+    const w = typeof window !== 'undefined' ? window.innerWidth : -1;
+    const beforePref = this.collapsedPref();
+    console.log('[CC] onLogoClick fired. width=', w, 'collapsedPref(before)=', beforePref, 'collapsed()=', this.collapsed());
+    if (w < 768) {
       this.closeMobile();
+      console.log('[CC] -> closeMobile() (mobile branch)');
     } else {
       this.toggleCollapsed();
+      console.log('[CC] -> toggleCollapsed() (desktop branch). collapsedPref(after)=', this.collapsedPref(), 'collapsed()=', this.collapsed());
     }
   }
 
