@@ -330,7 +330,7 @@ interface PendingImage {
     .editor-page--embedded .editor-main .container {
       padding: 1.25rem 1.5rem;
       box-shadow: none;
-      border: 1px solid var(--color-border);
+      border: none;
     }
 
     .editor-nav {

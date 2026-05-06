@@ -37,8 +37,7 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
           <a class="sidebar__logo-wrap"
              routerLink="/dashboard"
              (click)="goHome()">
-            <img src="logo-icon.png" alt="" class="sidebar__logo-icon">
-            <span class="sidebar__logo-text">Creator Companion</span>
+            <img src="logo-full.png" alt="Creator Companion" class="sidebar__logo-full">
           </a>
           <!-- Mobile: explicit close (X) button. Hidden on desktop. -->
           <button class="sidebar__close-mobile"
@@ -333,13 +332,14 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
       flex: 1;
     }
     .sidebar__logo-icon { height: 28px; width: auto; flex-shrink: 0; }
-    .sidebar__logo-text {
-      font-family: var(--font-sans);
-      font-size: 1rem; font-weight: 700; color: #fff;
-      letter-spacing: 0; line-height: 1;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+    /* Full brand wordmark (designed in the official typeface).
+       Using the rendered image keeps the logo on-brand without
+       shipping the display font as a webfont. */
+    .sidebar__logo-full {
+      height: 28px;
+      width: auto;
+      display: block;
+      flex-shrink: 0;
     }
 
     /* Expanded-state collapse button. Hidden until the user hovers
@@ -532,9 +532,11 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
       .sidebar__streak-foot { font-size: .75rem; }
     }
 
-    /* ── New Entry button — matches the canonical primary CTA
-       across the app: black ink with white text; brand cyan on
-       hover, still with white text. ── */
+    /* ── New Entry button — exception to the global primary-CTA
+       pattern. Black-on-black would disappear on the dark sidebar,
+       so this one stays brand cyan with white text. Hover shifts
+       to a slightly brighter cyan (#0bd2f0) to give a subtle lift
+       without changing the colour identity. ── */
     .sidebar__compose {
       display: inline-flex;
       align-items: center;
@@ -542,7 +544,7 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
       gap: .5rem;
       margin: 0 .875rem 1rem;
       padding: .5rem 1rem;
-      background: #0c0e13;
+      background: var(--color-accent);
       color: #fff;
       border: none;
       border-radius: 999px;
@@ -554,7 +556,7 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
       transition: background .15s, transform .15s;
     }
     .sidebar__compose:hover {
-      background: var(--color-accent);
+      background: #0bd2f0;
       color: #fff;
       text-decoration: none;
       transform: translateY(-1px);
