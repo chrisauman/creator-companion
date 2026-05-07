@@ -121,7 +121,7 @@ import { StreakStats } from '../../core/models/models';
       font-family: var(--font-sans);
       font-size: 1.25rem;
       line-height: 1.4;
-      font-weight: 700;
+      font-weight: 600;
       color: var(--color-text);
       position: relative;
       margin: 0 0 1.25rem;

@@ -176,7 +176,9 @@ they read as a single family. Any new card in column 3 should match:
 - Radial cyan glow `::before` in top-right (low opacity, subtle).
 - Eyebrow in caps + pulsing dot (cyan for routine, red `#e11d48` for
   urgency moments).
-- Quote at `1.25rem / 700` letter-spacing `-.01em`, `var(--font-sans)`.
+- Quote at `1.25rem / 600` letter-spacing `-.01em`, `var(--font-sans)`.
+  (700 felt too heavy at this size inside the cream cards; 600 keeps
+  the "card as quote" feel without shouting.)
 - Primary CTA: dark-ink pill, brand cyan on hover.
 - All siblings inside today-panel's `.today` wrapper (`max-width:
   720px`, `padding: .75rem 1.5rem 3rem`, `margin-bottom: 1rem` per

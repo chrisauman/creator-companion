@@ -219,12 +219,15 @@ import { DailyReminderCardComponent } from './daily-reminder-card.component';
     /* Mid-size display weight — sits between the column-2 list
        title (1.0625rem / 700) and the column-3 reading title
        (1.625rem / 700). Quoted content reads "feature" without
-       competing with the actual entry title for visual primacy. */
+       competing with the actual entry title for visual primacy.
+       Weight is 600 (semi-bold) — 700 felt too heavy at this size
+       inside the soft cream cards; 600 keeps the card-as-quote feel
+       without shouting. */
     .spark-hero__quote {
       font-family: var(--font-sans);
       font-size: 1.25rem;
       line-height: 1.4;
-      font-weight: 700;
+      font-weight: 600;
       color: var(--color-text);
       position: relative;
       margin: 0 0 1.25rem;
@@ -441,7 +444,7 @@ import { DailyReminderCardComponent } from './daily-reminder-card.component';
       font-family: var(--font-sans);
       font-size: 1.25rem;
       line-height: 1.4;
-      font-weight: 700;
+      font-weight: 600;
       color: var(--color-text);
       position: relative;
       margin: 0 0 1.25rem;
