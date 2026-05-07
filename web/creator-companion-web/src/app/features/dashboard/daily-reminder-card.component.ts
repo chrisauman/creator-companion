@@ -44,7 +44,7 @@ import { StreakStats } from '../../core/models/models';
   template: `
     @if (visible()) {
       <div class="reminder-card" role="status">
-        <span class="reminder-card__eyebrow">Daily Reminder</span>
+        <span class="reminder-card__eyebrow">Your Daily Reminder</span>
         <p class="reminder-card__quote">
           Your goal is to do something with your creative practice every day.
         </p>

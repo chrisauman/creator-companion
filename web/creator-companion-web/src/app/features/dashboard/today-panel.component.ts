@@ -408,7 +408,9 @@ import { DailyReminderCardComponent } from './daily-reminder-card.component';
       pointer-events: none;
     }
     .hero-card__eyebrow {
-      display: block;
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
       font-size: .6875rem;
       font-weight: 700;
       text-transform: uppercase;
@@ -416,6 +418,22 @@ import { DailyReminderCardComponent } from './daily-reminder-card.component';
       color: var(--color-accent-dark);
       margin-bottom: .875rem;
       position: relative;
+    }
+    /* Pulsing cyan bullet — matches .spark-hero__eyebrow / threatened
+       so all the column-3 cards' eyebrows share the same affordance.
+       The mood card's prompt is a starter, not a "daily X" cue, so it
+       gets no dot (skip via :not modifier below). */
+    .hero-card:not(.hero-card--mood) .hero-card__eyebrow::before {
+      content: '';
+      width: 7px; height: 7px;
+      background: #12C4E3;
+      border-radius: 50%;
+      box-shadow: 0 0 10px rgba(18,196,227,.6);
+      animation: heroCardPulse 2.5s ease-in-out infinite;
+    }
+    @keyframes heroCardPulse {
+      0%, 100% { opacity: 1; }
+      50%      { opacity: .4; }
     }
     /* Matches .spark-hero__quote — mid-size display sitting between
        the column-2 list title and the column-3 reading title. */
