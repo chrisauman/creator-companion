@@ -96,12 +96,12 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
          [class.sidebar__compose--collapsed]="collapsed()"
          [routerLink]="['/dashboard']"
          [queryParams]="{compose: 1}"
-         [title]="collapsed() ? 'New Entry' : null">
+         [title]="collapsed() ? 'Log Today\\'s Progress' : null">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
              stroke-width="2.4" stroke-linecap="round">
           <path d="M12 5v14M5 12h14"/>
         </svg>
-        <span class="sidebar__compose-label" *ngIf="!collapsed()">New Entry</span>
+        <span class="sidebar__compose-label" *ngIf="!collapsed()">Log Today's Progress</span>
       </a>
 
       <!-- Nav -->
