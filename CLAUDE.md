@@ -59,6 +59,12 @@ Server-enforced caps to prevent abuse and runaway costs:
 
 - **Voice:** cheerful, calm, empathetic cheerleader. Patient. Never
   drill-sergeant. Marketing leans literary; in-app copy stays warm.
+- **Vocabulary:** the product frames daily activity as "logging a step
+  in your creative practice," not "writing." Avoid writing-specific
+  copy ("words", "lines", "sentences") in shared UI — works for visual
+  artists, musicians, filmmakers too. Entry composer can use writing
+  vocabulary; emotional shells (Welcome Back, threatened banner,
+  Welcome screens) should use "progress" / "step" framing.
 - **Failure framing:** never name the loss. Streak breaks are "chapters
   ending," not failures. Reframe forward, lower the bar to restart.
 - **Permission to be imperfect** is what keeps users coming back. Loss

@@ -24,15 +24,17 @@ import { StreakHistoryItem, StreakStats } from '../../core/models/models';
  *     localStorage). Loaded from /v1/entries/streak/history.
  *
  * Three escape paths:
- *  - Write one sentence → opens compose. Dashboard handles the route.
+ *  - Log today's progress → opens compose. Dashboard handles the route.
  *  - Skip → dismisses the screen for this break (persisted) and shows
  *    the regular dashboard. Same effect as "view dashboard."
  *  - View dashboard → identical to Skip; included as a second affordance
  *    because users skim the corners differently than the center.
  *
  * Tone is "cheerful + patient cheerleader." Never names the loss. Frames
- * forward. Lower-cases the bar to a single sentence — even one line is
- * enough to start a new chapter.
+ * forward. The product framing is "log a step in your creative practice"
+ * rather than "write" — copy here intentionally avoids "write/words/lines"
+ * vocabulary so it works for any creative discipline (visual art, music,
+ * film, etc), not just writing.
  */
 @Component({
   selector: 'app-welcome-back',
@@ -55,11 +57,11 @@ import { StreakHistoryItem, StreakStats } from '../../core/models/models';
         @if (lastChapter(); as c) {
           <p class="welcome-back__intro">
             Your last chapter was <strong>{{ c.days }}</strong> {{ c.days === 1 ? 'day' : 'days' }}.<br>
-            Every word you wrote is still here, waiting.
+            Every step you took is still here to reflect on.
           </p>
 
           <div class="welcome-back__divider">
-            <span>what you wrote</span>
+            <span>Your progress</span>
           </div>
 
           <div class="welcome-back__stats">
@@ -81,7 +83,7 @@ import { StreakHistoryItem, StreakStats } from '../../core/models/models';
         <button class="welcome-back__cta"
                 type="button"
                 (click)="onWriteOneSentence()">
-          Write one sentence
+          Log today's progress
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <line x1="5" y1="12" x2="19" y2="12"/>
@@ -90,7 +92,7 @@ import { StreakHistoryItem, StreakStats } from '../../core/models/models';
         </button>
 
         <p class="welcome-back__hint">
-          No pressure. Even one line counts.
+          Every step forward builds momentum!
         </p>
 
         <div class="welcome-back__skip">
