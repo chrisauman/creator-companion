@@ -4,6 +4,7 @@ import { MotivationEntry } from '../../core/models/models';
 import { ApiService } from '../../core/services/api.service';
 import { MoodIconComponent, SUPPORTED_MOOD_KEYS } from '../../shared/mood-icon/mood-icon.component';
 import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
+import { ThreatenedBannerComponent } from './threatened-banner.component';
 
 /**
  * The Today view that lives in the dashboard's right column when no entry
@@ -19,9 +20,20 @@ import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
 @Component({
   selector: 'app-today-panel',
   standalone: true,
-  imports: [CommonModule, MoodIconComponent],
+  imports: [CommonModule, MoodIconComponent, ThreatenedBannerComponent],
   template: `
     <div class="today">
+
+      <!-- Streak threatened banner — always rendered first so it sits
+           at the top of the Today column when active. The component
+           decides whether to render itself (organic detection or
+           preview prop). Inside this wrapper means it shares the same
+           padding + margin-bottom rules as the spark/hero cards
+           below, so spacing stays consistent. -->
+      <app-threatened-banner
+        [preview]="previewThreatened"
+        (backlogYesterday)="backlogYesterday.emit($event)"
+      ></app-threatened-banner>
 
       <!-- Spark hero — whole box is clickable to expand/collapse when there's more content. -->
       @if (motivation) {
@@ -510,12 +522,21 @@ export class TodayPanelComponent implements OnInit {
   @Input() motivation: MotivationEntry | null = null;
   @Input() canFavorite: boolean = false;
 
+  /** Forces the threatened banner to render with stub data — admin-only
+   *  preview mode (?preview=threatened on the dashboard URL). The banner
+   *  otherwise auto-detects state from the API and shows itself when the
+   *  user is mid-grace. */
+  @Input() previewThreatened: boolean = false;
+
   @Output() composeFromSpark = new EventEmitter<void>();
   @Output() composeFromPrompt = new EventEmitter<string>();
   @Output() composeFromMood = new EventEmitter<string>();
   @Output() composeBlank = new EventEmitter<void>();
   @Output() favoriteSpark = new EventEmitter<void>();
   @Output() expandSpark = new EventEmitter<void>();
+  /** Forwarded from the embedded threatened-banner — payload is
+   *  yesterday's ISO date so the dashboard can pre-fill the composer. */
+  @Output() backlogYesterday = new EventEmitter<string>();
 
   readonly moodKeys = SUPPORTED_MOOD_KEYS;
 
