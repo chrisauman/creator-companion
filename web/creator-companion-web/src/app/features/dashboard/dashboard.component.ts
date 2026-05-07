@@ -324,7 +324,7 @@ import { ActivatedRoute } from '@angular/router';
                       </svg>
                       Today
                     </button>
-                    <div class="reader-top__breadcrumb"><strong>To Do List</strong></div>
+                    <div class="reader-top__breadcrumb"></div>
                     <div class="reader-top__actions"></div>
                   </div>
                 </div>
