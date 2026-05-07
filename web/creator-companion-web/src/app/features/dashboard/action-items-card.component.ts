@@ -1,5 +1,5 @@
 import {
-  Component, inject, signal, computed, OnInit, HostListener
+  Component, inject, signal, computed, OnInit, HostListener, effect, ElementRef
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -109,17 +109,20 @@ import { ActionItem } from '../../core/models/models';
                 </svg>
               </button>
 
-              <!-- Text or inline-edit input -->
+              <!-- Text or inline-edit textarea. Textarea instead of
+                   input so long entries wrap naturally on multiple
+                   lines (matching how the .text span renders at rest)
+                   instead of horizontally scrolling on a single line.
+                   Auto-resizes via autoSize() on each input event. -->
               @if (editingId() === item.id) {
-                <input class="todo-list__edit-input"
-                       type="text"
-                       [(ngModel)]="editText"
-                       (keydown.enter)="commitEdit(item); $event.preventDefault()"
-                       (keydown.escape)="cancelEdit()"
-                       (blur)="commitEdit(item)"
-                       maxlength="150"
-                       #editInput
-                       autofocus>
+                <textarea class="todo-list__edit-input"
+                          [(ngModel)]="editText"
+                          (keydown.enter)="$event.preventDefault(); commitEdit(item)"
+                          (keydown.escape)="cancelEdit()"
+                          (blur)="commitEdit(item)"
+                          (input)="autoSize($event)"
+                          rows="1"
+                          maxlength="150"></textarea>
               } @else {
                 <span class="todo-list__text"
                       (click)="startEdit(item)">{{ item.text }}</span>
@@ -252,20 +255,30 @@ import { ActionItem } from '../../core/models/models';
     </div>
   `,
   styles: [`
-    /* ── Container ──────────────────────────────────────────────── */
-    .todo-list {
+    /* ── Host element ──────────────────────────────────────────── */
+    /* Bound to 720px and centred regardless of context (embedded in
+       column 3, or full-page on /todos). The wrapping page provides
+       outer breathing room; the list itself sits flush inside that. */
+    :host {
+      display: block;
       max-width: 720px;
       margin: 0 auto;
+      padding: 0 .25rem;
+    }
+    .todo-list {
+      width: 100%;
     }
 
     /* ── Add input ──────────────────────────────────────────────── */
     /* Inline + sign + text input, sitting in a soft underlined row.
-       Always-visible to remove the "click to reveal a form" friction. */
+       Always-visible to remove the "click to reveal a form" friction.
+       Horizontal padding matches the row items below so columns
+       stay visually aligned. */
     .todo-list__add {
       display: flex;
       align-items: center;
       gap: .625rem;
-      padding: .625rem 0;
+      padding: .625rem .75rem;
       border-bottom: 1px solid var(--color-border);
       margin-bottom: .25rem;
       transition: border-color .15s;
@@ -306,7 +319,7 @@ import { ActionItem } from '../../core/models/models';
     .todo-list__cap-note {
       font-size: .75rem;
       color: var(--color-text-3);
-      margin: .375rem 0 1rem;
+      margin: .375rem .75rem 1rem;
     }
 
     /* ── Item list ──────────────────────────────────────────────── */
@@ -316,27 +329,33 @@ import { ActionItem } from '../../core/models/models';
       margin: .25rem 0 0;
     }
 
-    /* Each row is a flex line. Position relative so the swipe-delete
-       tile can sit absolutely behind it. Overflow hidden so the tile
-       doesn't leak when the row is at rest. */
+    /* Each row is a flex line with comfortable horizontal padding so
+       the content doesn't crash into the container edges. Position
+       relative so the swipe-delete tile can sit absolutely behind it.
+       align-items: flex-start so the checkbox + handle stay pinned to
+       the top of multi-line text rather than floating in the vertical
+       middle of a tall row. */
     .todo-list__item {
       position: relative;
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       gap: .625rem;
-      padding: .625rem .25rem;
+      padding: .625rem .75rem;
       border-bottom: 1px solid var(--color-border);
-      background: var(--color-bg, #f7f7f5);
+      background: transparent;
       transition: transform .25s ease, background .15s;
       will-change: transform;
     }
     .todo-list__item:last-child { border-bottom: none; }
+    /* Subtle hover — barely-there darkening. The previous "white on
+       hover" against the cream page background was too stark; the
+       drag handle brightening + delete X appearing already signal
+       hoverability, so this is just a soft cue. */
     .todo-list__item:hover {
-      background: var(--color-surface, #fff);
+      background: rgba(0, 0, 0, .025);
     }
-    /* While editing, sit on the surface tone for clearer focus. */
     .todo-list__item--editing {
-      background: var(--color-surface, #fff);
+      background: rgba(0, 0, 0, .025);
     }
 
     /* CDK drag-preview / drop-placeholder treatment so reorder feels solid. */
@@ -353,10 +372,13 @@ import { ActionItem } from '../../core/models/models';
 
     /* ── Drag handle ────────────────────────────────────────────── */
     /* Always visible but very muted at rest; brightens on row hover.
-       Cursor: grab so the affordance reads as draggable. */
+       Cursor: grab so the affordance reads as draggable. Vertically
+       padded to match the first line of text (rows can span multiple
+       lines for long content + edit textareas). */
     .todo-list__handle {
       flex-shrink: 0;
       width: 14px;
+      height: 22px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -373,6 +395,10 @@ import { ActionItem } from '../../core/models/models';
     }
 
     /* ── Checkbox ───────────────────────────────────────────────── */
+    /* Fixed 22x22 box pinned to the top-of-content (via parent
+       align-items: flex-start). On multi-line text the box stays
+       aligned with the first line rather than centring vertically
+       across the whole row. */
     .todo-list__check {
       flex-shrink: 0;
       width: 22px; height: 22px;
@@ -409,7 +435,12 @@ import { ActionItem } from '../../core/models/models';
       text-decoration-color: var(--color-text-3);
     }
 
-    /* ── Inline edit input ──────────────────────────────────────── */
+    /* ── Inline edit textarea ───────────────────────────────────── */
+    /* Textarea instead of input so multi-line entries stay readable.
+       resize: none + overflow: hidden because we drive the height
+       imperatively via resizeTextarea(). The styling otherwise
+       matches the .todo-list__text span at rest so the row's visual
+       layout doesn't shift when toggling edit mode. */
     .todo-list__edit-input {
       flex: 1; min-width: 0;
       background: transparent;
@@ -420,9 +451,17 @@ import { ActionItem } from '../../core/models/models';
       line-height: 1.4;
       color: var(--color-text);
       padding: .125rem 0;
+      margin: 0;
+      resize: none;
+      overflow: hidden;
+      word-break: break-word;
+      display: block;
     }
 
     /* ── Desktop hover delete X ─────────────────────────────────── */
+    /* Pinned to the row's top-of-content (parent align-items:
+       flex-start) so on multi-line rows it stays next to the first
+       line, not floating mid-row. */
     .todo-list__delete {
       flex-shrink: 0;
       width: 28px; height: 28px;
@@ -430,6 +469,7 @@ import { ActionItem } from '../../core/models/models';
       background: transparent;
       border: none;
       padding: 0;
+      margin-top: -3px;
       cursor: pointer;
       color: var(--color-text-3);
       opacity: 0;
@@ -567,6 +607,28 @@ import { ActionItem } from '../../core/models/models';
 })
 export class ActionItemsCardComponent implements OnInit {
   private api = inject(ApiService);
+  private host: ElementRef<HTMLElement> = inject(ElementRef);
+
+  constructor() {
+    // When a row enters edit mode, focus its textarea + size it to
+    // its current content. Doing this in an effect (rather than
+    // ngAfterViewInit on a ViewChild) keeps the lifecycle simple and
+    // works seamlessly with @if blocks that re-render on edit/cancel.
+    effect(() => {
+      const id = this.editingId();
+      if (id === null) return;
+      // Schedule after the DOM updates for the new editing row.
+      queueMicrotask(() => {
+        const ta = this.host.nativeElement.querySelector<HTMLTextAreaElement>(
+          '.todo-list__item--editing .todo-list__edit-input'
+        );
+        if (!ta) return;
+        ta.focus();
+        ta.setSelectionRange(ta.value.length, ta.value.length);
+        this.resizeTextarea(ta);
+      });
+    });
+  }
 
   // ── Data ─────────────────────────────────────────────────────────
   private items = signal<ActionItem[]>([]);
@@ -826,6 +888,20 @@ export class ActionItemsCardComponent implements OnInit {
     if (!target.closest('.todo-list__item')) {
       this.closeSwipe();
     }
+  }
+
+  /**
+   * Auto-resizes the edit textarea to fit its content as the user
+   * types. Bound to (input) on the textarea. Single-line entries
+   * stay one line; longer text grows the textarea instead of
+   * horizontally scrolling.
+   */
+  autoSize(ev: Event): void {
+    this.resizeTextarea(ev.target as HTMLTextAreaElement);
+  }
+  private resizeTextarea(ta: HTMLTextAreaElement): void {
+    ta.style.height = 'auto';
+    ta.style.height = ta.scrollHeight + 'px';
   }
 
   // ── helpers ──────────────────────────────────────────────────────
