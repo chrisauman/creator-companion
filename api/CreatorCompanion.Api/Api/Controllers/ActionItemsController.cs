@@ -14,7 +14,7 @@ namespace CreatorCompanion.Api.Api.Controllers;
 [Authorize]
 public class ActionItemsController(AppDbContext db) : ControllerBase
 {
-    private const int MaxActiveItems = 20;
+    private const int MaxActiveItems = 100;
 
     private Guid UserId => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)
         ?? User.FindFirstValue("sub")!);
@@ -54,17 +54,20 @@ public class ActionItemsController(AppDbContext db) : ControllerBase
         if (activeCount >= MaxActiveItems)
             return BadRequest(new { error = $"You can have at most {MaxActiveItems} active items." });
 
-        // New item goes at the end of the active list
-        var maxOrder = await db.ActionItems
+        // New item goes at the TOP of the active list. Shift every
+        // existing active item's SortOrder up by 1, then create the
+        // new one at SortOrder = 0. Drag-reordering still works freely
+        // afterwards — this just sets the initial position.
+        var existingActive = await db.ActionItems
             .Where(a => a.UserId == UserId && !a.IsCompleted)
-            .Select(a => (int?)a.SortOrder)
-            .MaxAsync() ?? -1;
+            .ToListAsync();
+        foreach (var a in existingActive) a.SortOrder++;
 
         var item = new ActionItem
         {
             UserId = UserId,
             Text = request.Text.Trim(),
-            SortOrder = maxOrder + 1
+            SortOrder = 0
         };
 
         db.ActionItems.Add(item);
@@ -117,12 +120,15 @@ public class ActionItemsController(AppDbContext db) : ControllerBase
         }
         else
         {
-            // Restore to end of active list
-            var maxOrder = await db.ActionItems
-                .Where(a => a.UserId == UserId && !a.IsCompleted)
-                .Select(a => (int?)a.SortOrder)
-                .MaxAsync() ?? -1;
-            item.SortOrder = maxOrder + 1;
+            // Item is being uncompleted — pull back into the active list
+            // at the TOP, same convention as new items. User just took
+            // explicit action on this item; surfacing it at the top
+            // matches their attention. Shift existing active +1.
+            var existingActive = await db.ActionItems
+                .Where(a => a.UserId == UserId && !a.IsCompleted && a.Id != item.Id)
+                .ToListAsync();
+            foreach (var a in existingActive) a.SortOrder++;
+            item.SortOrder = 0;
         }
 
         await db.SaveChangesAsync();
