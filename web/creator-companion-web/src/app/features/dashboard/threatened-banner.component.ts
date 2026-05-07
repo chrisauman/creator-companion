@@ -41,7 +41,7 @@ import { StreakStats } from '../../core/models/models';
   template: `
     @if (visible()) {
       <div class="threatened-card" role="status">
-        <span class="threatened-card__eyebrow">Streak safe</span>
+        <span class="threatened-card__eyebrow">Streak threatened</span>
         <p class="threatened-card__quote">
           Yesterday slipped by — but you've got this.
         </p>

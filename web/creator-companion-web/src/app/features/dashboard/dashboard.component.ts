@@ -253,12 +253,20 @@ import { ActivatedRoute } from '@angular/router';
           <!-- Streak threatened banner — pinned at the top of column 3
                only when the user is in Today mode. Component decides
                on its own whether to render (organic detection or
-               ?preview=threatened); invisible 99% of the time. -->
+               ?preview=threatened); invisible 99% of the time.
+
+               Wrapped in .threatened-banner-wrap with the same padding
+               and max-width as today-panel's inner .today wrapper, so
+               the card aligns with the Daily Spark / hero cards
+               beneath it. Otherwise it goes edge-to-edge and looks
+               oversized next to its siblings. -->
           @if (rightColumnMode() === 'today') {
-            <app-threatened-banner
-              [preview]="previewMode() === 'threatened'"
-              (backlogYesterday)="onBacklogYesterday($event)"
-            ></app-threatened-banner>
+            <div class="threatened-banner-wrap">
+              <app-threatened-banner
+                [preview]="previewMode() === 'threatened'"
+                (backlogYesterday)="onBacklogYesterday($event)"
+              ></app-threatened-banner>
+            </div>
           }
 
           @switch (rightColumnMode()) {
@@ -500,6 +508,21 @@ import { ActivatedRoute } from '@angular/router';
         overflow-y: auto;
         background: var(--color-surface);
       }
+    }
+
+    /* Wraps the threatened-banner in column 3 with the same padding and
+       max-width as today-panel's inner .today wrapper. Without this the
+       banner goes edge-to-edge and looks oversized next to the sibling
+       Daily Spark / hero cards which all sit inside today-panel's
+       720px-capped column. Mobile gets no padding (matches today
+       panel's mobile override). */
+    .threatened-banner-wrap {
+      padding: .75rem 1.5rem 0;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+    @media (max-width: 767px) {
+      .threatened-banner-wrap { padding: 0; max-width: none; }
     }
 
     /* The old motivation card is fully replaced by the Today panel's
