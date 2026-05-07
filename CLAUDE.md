@@ -174,6 +174,12 @@ Three surfaces handle the streak-break emotional arc; all live in
   (Today mode only) when `currentStreak > 0 && lastEntryDate is
   exactly 2 days back`. "Log your progress" → `composeDate` →
   `NewEntryComponent [initialDate]` pre-fills the missed day.
+- **`DailyReminderCardComponent`** — soft "log today's progress"
+  prompt at the top of the Today column on any day no entry has
+  been logged. Self-deciding: hides when logged today AND when
+  threatened banner is showing (those states never overlap). Shown
+  for brand-new users with zero entries (onboarding nudge). Preview
+  via `?preview=daily-reminder`.
 - **Streak-threatened push** — `ReminderBackgroundService.
   ProcessThreatenedNotificationsAsync` mirrors the banner condition
   and fires one push per missed-day-event after 10am user-local.

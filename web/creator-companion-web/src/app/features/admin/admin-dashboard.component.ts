@@ -106,6 +106,12 @@ import { ApiService } from '../../core/services/api.service';
               <span>"Yesterday slipped by" prompt during the 48h backlog window.</span>
             </a>
           </li>
+          <li>
+            <a routerLink="/dashboard" [queryParams]="{ preview: 'daily-reminder' }">
+              <strong>Daily reminder card</strong>
+              <span>Soft "log today's progress" prompt shown when no entry today.</span>
+            </a>
+          </li>
         </ul>
       </section>
     </div>

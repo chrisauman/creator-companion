@@ -5,6 +5,7 @@ import { ApiService } from '../../core/services/api.service';
 import { MoodIconComponent, SUPPORTED_MOOD_KEYS } from '../../shared/mood-icon/mood-icon.component';
 import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
 import { ThreatenedBannerComponent } from './threatened-banner.component';
+import { DailyReminderCardComponent } from './daily-reminder-card.component';
 
 /**
  * The Today view that lives in the dashboard's right column when no entry
@@ -20,7 +21,7 @@ import { ThreatenedBannerComponent } from './threatened-banner.component';
 @Component({
   selector: 'app-today-panel',
   standalone: true,
-  imports: [CommonModule, MoodIconComponent, ThreatenedBannerComponent],
+  imports: [CommonModule, MoodIconComponent, ThreatenedBannerComponent, DailyReminderCardComponent],
   template: `
     <div class="today">
 
@@ -34,6 +35,15 @@ import { ThreatenedBannerComponent } from './threatened-banner.component';
         [preview]="previewThreatened"
         (backlogYesterday)="backlogYesterday.emit($event)"
       ></app-threatened-banner>
+
+      <!-- Daily reminder card — soft "did you log today's progress?"
+           prompt. Self-deciding visibility: hides when an entry has
+           been logged today, AND hides when the threatened banner
+           is showing (those states should never overlap). -->
+      <app-daily-reminder-card
+        [preview]="previewDailyReminder"
+        (writeToday)="composeBlank.emit()"
+      ></app-daily-reminder-card>
 
       <!-- Spark hero — whole box is clickable to expand/collapse when there's more content. -->
       @if (motivation) {
@@ -537,6 +547,12 @@ export class TodayPanelComponent implements OnInit {
    *  otherwise auto-detects state from the API and shows itself when the
    *  user is mid-grace. */
   @Input() previewThreatened: boolean = false;
+
+  /** Forces the daily-reminder card to render — admin-only preview
+   *  mode (?preview=daily-reminder). The card otherwise auto-detects
+   *  visibility from the API (shows when no entry today, hides when
+   *  the threatened banner is also showing). */
+  @Input() previewDailyReminder: boolean = false;
 
   @Output() composeFromPrompt = new EventEmitter<string>();
   @Output() composeFromMood = new EventEmitter<string>();

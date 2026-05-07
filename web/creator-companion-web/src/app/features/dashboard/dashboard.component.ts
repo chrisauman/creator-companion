@@ -154,6 +154,7 @@ import { ActivatedRoute } from '@angular/router';
               [motivation]="motivation()"
               [canFavorite]="isPaid()"
               [previewThreatened]="previewMode() === 'threatened'"
+              [previewDailyReminder]="previewMode() === 'daily-reminder'"
               (backlogYesterday)="onBacklogYesterday($event)"
               (composeFromPrompt)="composeFromPrompt($event)"
               (composeFromMood)="composeFromMood($event)"
@@ -256,8 +257,9 @@ import { ActivatedRoute } from '@angular/router';
                 [motivation]="motivation()"
                 [canFavorite]="isPaid()"
                 [previewThreatened]="previewMode() === 'threatened'"
+                [previewDailyReminder]="previewMode() === 'daily-reminder'"
                 (backlogYesterday)="onBacklogYesterday($event)"
-                  (composeFromPrompt)="composeFromPrompt($event)"
+                (composeFromPrompt)="composeFromPrompt($event)"
                 (composeFromMood)="composeFromMood($event)"
                 (composeBlank)="composeBlank()"
                 (favoriteSpark)="toggleSparkFavorite()"
@@ -1039,7 +1041,7 @@ export class DashboardComponent implements OnInit {
    * (the admin gate is checked in applyPreviewQueryParam below). Always
    * read-only: no API writes, no streak/data changes.
    */
-  previewMode = signal<'none' | 'welcome-back' | 'threatened'>('none');
+  previewMode = signal<'none' | 'welcome-back' | 'threatened' | 'daily-reminder'>('none');
 
   /**
    * Per-session dismissal flag for the Welcome Back overlay. Once the
@@ -1391,8 +1393,9 @@ export class DashboardComponent implements OnInit {
     // non-admin users so it never leaks to regular accounts.
     const preview = params.get('preview');
     if (preview && this.tokens.isAdmin()) {
-      if (preview === 'welcome-back')  this.previewMode.set('welcome-back');
-      else if (preview === 'threatened') this.previewMode.set('threatened');
+      if (preview === 'welcome-back')        this.previewMode.set('welcome-back');
+      else if (preview === 'threatened')     this.previewMode.set('threatened');
+      else if (preview === 'daily-reminder') this.previewMode.set('daily-reminder');
     }
   }
 
