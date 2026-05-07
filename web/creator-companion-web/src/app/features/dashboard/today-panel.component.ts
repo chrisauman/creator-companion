@@ -136,7 +136,7 @@ import { ThreatenedBannerComponent } from './threatened-banner.component';
         <!-- Mood-first start — same dark hero treatment, cyan icons -->
         <div class="hero-card hero-card--mood">
           <span class="hero-card__eyebrow">Begin with how you feel</span>
-          <p class="hero-card__sub">Tap a mood to start a new entry pre-tagged with how you're feeling.</p>
+          <p class="hero-card__sub">Tap a mood to start journaling about how you're feeling today.</p>
           <div class="mood-row">
             @for (key of moodKeys; track key) {
               <button class="mood" type="button"
