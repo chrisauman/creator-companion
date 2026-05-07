@@ -294,9 +294,12 @@ import { SidebarStateService } from '../../shared/sidebar/sidebar-state.service'
     .spark-actions {
       display: flex; align-items: center; gap: .25rem; flex-shrink: 0; margin-top: .1rem;
     }
+    /* Heart on a saved-spark row uses brand cyan rather than red.
+       Red is reserved for danger/urgency states (delete, threatened
+       streak); a saved item is a positive status, not a warning. */
     .spark-unfavorite {
       background: none; border: none; cursor: pointer;
-      color: #e11d48; padding: .1rem;
+      color: var(--color-accent); padding: .1rem;
       display: flex; align-items: center;
       transition: transform .1s, opacity .15s;
       &:hover { opacity: .7; transform: scale(1.15); }
