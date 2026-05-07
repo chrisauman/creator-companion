@@ -9,6 +9,7 @@ import { PushService } from '../../core/services/push.service';
 import { TokenService } from '../../core/services/token.service';
 import { User, Capabilities, Tag, StreakStats, Reminder } from '../../core/models/models';
 import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
+import { SidebarStateService } from '../../shared/sidebar/sidebar-state.service';
 const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your streak alive!";
 
 @Component({
@@ -23,6 +24,11 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
 
       <!-- Mobile top bar -->
       <header class="topbar">
+        <button class="topbar__menu" type="button"
+                (click)="sidebarState.openMobile()"
+                title="Open menu" aria-label="Open menu">
+          <span></span><span></span><span></span>
+        </button>
         <a class="topbar__brand" routerLink="/dashboard">
           <img src="logo-icon.png" alt="" class="topbar__brand-icon">
           <span class="topbar__brand-name">Creator Companion</span>
@@ -497,6 +503,32 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
     .topbar__brand { display: flex; align-items: center; gap: .5rem; text-decoration: none; }
     .topbar__brand-icon { height: 24px; width: auto; display: block; }
     .topbar__brand-name { font-family: var(--font-sans); font-size: .9375rem; font-weight: 700; color: #fff; }
+    /* Hamburger — light-on-dark mobile topbar variant. Same styling as
+       the matching button in the other standalone pages. */
+    .topbar__menu {
+      width: 36px; height: 36px;
+      flex-shrink: 0;
+      background: transparent;
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 10px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 3px;
+      padding: 0;
+      cursor: pointer;
+      margin-right: .5rem;
+      transition: background .15s, border-color .15s;
+    }
+    .topbar__menu:hover {
+      background: rgba(255,255,255,.06);
+      border-color: rgba(255,255,255,.2);
+    }
+    .topbar__menu span {
+      display: block;
+      width: 16px; height: 1.75px;
+      background: #fff;
+      border-radius: 2px;
+    }
 
     /* Column that holds main + sign-out as siblings, stays in page flex row */
     .content-col {
@@ -830,6 +862,8 @@ export class AccountComponent implements OnInit {
   private exporter = inject(ExportService);
   private push     = inject(PushService);
   private tokens   = inject(TokenService);
+  /** Mobile topbar hamburger → opens slide-in sidebar drawer. */
+  protected sidebarState = inject(SidebarStateService);
 
   // First / Last name edit
   firstNameInput   = '';
