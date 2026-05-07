@@ -264,6 +264,34 @@ honors it for admins (`tokens.isAdmin()`). All previews are read-only
 — no API writes, no streak changes. `dismissPreview()` clears the
 signal AND strips the URL param.
 
+## Pricing model (trial-only)
+
+- **10-day free trial** on signup. After expiration: locked out
+  unless subscribed.
+- **Single paid plan**: $5/month or $50/year (Stripe).
+- **Source of truth**: `EntitlementService.HasAccess(user)` =
+  `HasActiveSubscription(user) || IsInTrial(user)`.
+  Subscription is "active" iff `User.Tier == Paid` (Stripe webhook
+  flips this). Trial is active iff `User.TrialEndsAt > now`.
+- **Write block**: every write path eventually calls
+  `entitlements.EnforceAccess(user)`, which throws `NoAccessException`
+  → mapped to **HTTP 402 Payment Required** by the global handler.
+  Frontend interceptor catches 402 → invalidates capabilities →
+  paywall renders.
+- **Reads stay open** during trial expiration so users see their
+  existing data while deciding to subscribe.
+- **Trial lifecycle emails** fired by `ReminderBackgroundService.
+  ProcessTrialEmailsAsync`: 3-day reminder, 1-day reminder,
+  trial-ended notification. Each deduped via its own column on
+  `User` (`TrialReminder3dSentAt`, `TrialReminder1dSentAt`,
+  `TrialEndedEmailSentAt`).
+- **Frontend surfaces**: `<app-trial-banner>` at top of dashboard
+  during trial (red+urgent in final 2 days); `<app-paywall>` full-
+  takeover when access is lost.
+- **Stripe price IDs** are env-var driven (`Stripe:MonthlyPriceId`,
+  `Stripe:AnnualPriceId`) — when prices change, update Railway env
+  and create matching products in Stripe dashboard.
+
 ## Reminders (recent refactor — important)
 
 - **5 fixed slots per user.** Lazy-created on first GET. UI never

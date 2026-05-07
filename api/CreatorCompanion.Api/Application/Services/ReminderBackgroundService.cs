@@ -33,6 +33,13 @@ public class ReminderBackgroundService(
             try { await ProcessThreatenedNotificationsAsync(); }
             catch (Exception ex) { logger.LogError(ex, "Error processing streak-threatened notifications."); }
 
+            // Trial lifecycle emails (3-day reminder, 1-day reminder,
+            // expired notification). Each has its own dedupe column so
+            // a single user gets at most one email per cadence. Run
+            // every minute is overkill but cheap — one query per tick.
+            try { await ProcessTrialEmailsAsync(); }
+            catch (Exception ex) { logger.LogError(ex, "Error processing trial-lifecycle emails."); }
+
             await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
         }
     }
@@ -317,5 +324,111 @@ public class ReminderBackgroundService(
         logger.LogInformation(
             "Sent streak-threatened push to user {UserId} ({Count} device(s), missed {MissedDate})",
             user.Id, sentCount, missedDate);
+    }
+
+    // ── Trial lifecycle emails ─────────────────────────────────────────
+    /// <summary>
+    /// Fires the three trial-lifecycle emails:
+    ///   - 3-day reminder when TrialEndsAt is between 2 and 3 days out
+    ///   - 1-day reminder when TrialEndsAt is between 0 and 1 day out
+    ///   - Trial-ended when TrialEndsAt is in the past
+    ///
+    /// Each gated by its own dedupe column (TrialReminder3dSentAt,
+    /// TrialReminder1dSentAt, TrialEndedEmailSentAt) so a user gets
+    /// at most one of each. Users with an active subscription
+    /// (StripeSubscriptionId != null) are excluded — they don't need
+    /// trial nags. The 60s loop fires this method on every tick;
+    /// the dedupe flags + tight WHERE clauses keep DB cost trivial.
+    /// </summary>
+    private async Task ProcessTrialEmailsAsync()
+    {
+        using var scope = scopeFactory.CreateScope();
+        var db    = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var email = scope.ServiceProvider.GetRequiredService<IEmailService>();
+
+        var now    = DateTime.UtcNow;
+        var in3d   = now.AddDays(3);
+        var in1d   = now.AddDays(1);
+
+        // ── 3-day reminder ──────────────────────────────────────────────
+        // TrialEndsAt is between now+1d and now+3d (the 1-day reminder
+        // owns the 0-1d window). Hasn't been sent the 3-day reminder yet.
+        // No active subscription. Active account.
+        var threeDayCandidates = await db.Users
+            .Where(u => u.IsActive
+                     && u.StripeSubscriptionId == null
+                     && u.TrialEndsAt != null
+                     && u.TrialEndsAt > in1d
+                     && u.TrialEndsAt <= in3d
+                     && u.TrialReminder3dSentAt == null)
+            .ToListAsync();
+
+        foreach (var user in threeDayCandidates)
+        {
+            try
+            {
+                var daysLeft = (int)Math.Ceiling((user.TrialEndsAt!.Value - now).TotalDays);
+                await email.SendTrialEndingSoonAsync(user.Email, user.FirstName, daysLeft);
+                user.TrialReminder3dSentAt = now;
+                logger.LogInformation("Sent trial-3d reminder to {Email}", user.Email);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Failed to send trial-3d reminder to {Email}", user.Email);
+            }
+        }
+
+        // ── 1-day reminder ──────────────────────────────────────────────
+        // TrialEndsAt is between now and now+1d.
+        var oneDayCandidates = await db.Users
+            .Where(u => u.IsActive
+                     && u.StripeSubscriptionId == null
+                     && u.TrialEndsAt != null
+                     && u.TrialEndsAt > now
+                     && u.TrialEndsAt <= in1d
+                     && u.TrialReminder1dSentAt == null)
+            .ToListAsync();
+
+        foreach (var user in oneDayCandidates)
+        {
+            try
+            {
+                await email.SendTrialEndingSoonAsync(user.Email, user.FirstName, 1);
+                user.TrialReminder1dSentAt = now;
+                logger.LogInformation("Sent trial-1d reminder to {Email}", user.Email);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Failed to send trial-1d reminder to {Email}", user.Email);
+            }
+        }
+
+        // ── Trial-ended notification ────────────────────────────────────
+        // TrialEndsAt has passed (any time in the past). One per user
+        // ever — TrialEndedEmailSentAt being null is the gate.
+        var endedCandidates = await db.Users
+            .Where(u => u.IsActive
+                     && u.StripeSubscriptionId == null
+                     && u.TrialEndsAt != null
+                     && u.TrialEndsAt < now
+                     && u.TrialEndedEmailSentAt == null)
+            .ToListAsync();
+
+        foreach (var user in endedCandidates)
+        {
+            try
+            {
+                await email.SendTrialEndedAsync(user.Email, user.FirstName);
+                user.TrialEndedEmailSentAt = now;
+                logger.LogInformation("Sent trial-ended notification to {Email}", user.Email);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Failed to send trial-ended notification to {Email}", user.Email);
+            }
+        }
+
+        if (threeDayCandidates.Count + oneDayCandidates.Count + endedCandidates.Count > 0)
+            await db.SaveChangesAsync();
     }
 }

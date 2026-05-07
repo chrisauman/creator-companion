@@ -33,6 +33,28 @@ public class User
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? TrialEndsAt { get; set; }
+
+    /// <summary>
+    /// When the "3 days left in your trial" reminder email was sent.
+    /// Null until the worker fires it. Dedupe field — exactly one
+    /// such email per user per trial. (If a user re-subscribes after
+    /// canceling, they don't get a fresh trial, so this never resets.)
+    /// </summary>
+    public DateTime? TrialReminder3dSentAt { get; set; }
+
+    /// <summary>
+    /// When the "1 day left in your trial" reminder email was sent.
+    /// Same dedupe pattern as TrialReminder3dSentAt — one per user
+    /// per trial.
+    /// </summary>
+    public DateTime? TrialReminder1dSentAt { get; set; }
+
+    /// <summary>
+    /// When the "your trial has ended" email was sent. Fires the
+    /// moment the worker first detects an expired trial with no
+    /// active subscription. One per user per trial.
+    /// </summary>
+    public DateTime? TrialEndedEmailSentAt { get; set; }
     public bool IsActive { get; set; } = true;
     public bool IsAdmin { get; set; } = false;
     public bool EmailVerified { get; set; } = false;

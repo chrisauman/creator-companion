@@ -187,6 +187,98 @@ public class ResendEmailService(IResend resend, IConfiguration config, AppDbCont
         await resend.EmailSendAsync(message);
     }
 
+    public async Task SendTrialEndingSoonAsync(string toEmail, string displayName, int daysRemaining)
+    {
+        var fromEmail = config["Resend:FromEmail"] ?? "noreply@creatorcompanion.app";
+        var appName   = config["App:Name"] ?? "Creator Companion";
+
+        // Two cadence points:
+        //   3 days remaining → "heads up, you have a few days left"
+        //   1 day remaining  → "tomorrow your trial ends"
+        // Subject + opener change with urgency; rest of the body is shared.
+        var subject = daysRemaining == 1
+            ? $"Your {appName} trial ends tomorrow"
+            : $"{daysRemaining} days left in your {appName} trial";
+
+        var lead = daysRemaining == 1
+            ? "Your trial ends tomorrow."
+            : $"You have <strong>{daysRemaining} days</strong> left in your trial.";
+
+        var message = new EmailMessage
+        {
+            From    = $"{appName} <{fromEmail}>",
+            To      = { toEmail },
+            Subject = subject,
+            HtmlBody = $"""
+                <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:2rem">
+                  <h2 style="margin-bottom:.5rem">Hi {displayName},</h2>
+                  <p style="color:#555;font-size:1.05rem;line-height:1.5">{lead}</p>
+                  <p style="color:#555;line-height:1.6">
+                    Subscribe now to keep your streak alive, your entries safe, and your
+                    daily creative practice on track. Cancel anytime — your existing
+                    entries stay yours either way.
+                  </p>
+                  <div style="margin:1.75rem 0">
+                    <a href="https://app.creatorcompanionapp.com/dashboard"
+                       style="display:inline-block;padding:.75rem 1.5rem;
+                              background:#0c0e13;color:#fff;border-radius:8px;
+                              text-decoration:none;font-weight:600">
+                      Subscribe — $5/month or $50/year
+                    </a>
+                  </div>
+                  <p style="color:#999;font-size:.85rem">
+                    You're receiving this because your {appName} trial is approaching its end.
+                  </p>
+                </div>
+                """
+        };
+
+        await resend.EmailSendAsync(message);
+    }
+
+    public async Task SendTrialEndedAsync(string toEmail, string displayName)
+    {
+        var fromEmail = config["Resend:FromEmail"] ?? "noreply@creatorcompanion.app";
+        var appName   = config["App:Name"] ?? "Creator Companion";
+
+        var message = new EmailMessage
+        {
+            From    = $"{appName} <{fromEmail}>",
+            To      = { toEmail },
+            Subject = $"Your {appName} trial has ended",
+            HtmlBody = $"""
+                <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:2rem">
+                  <h2 style="margin-bottom:.5rem">Hi {displayName},</h2>
+                  <p style="color:#555;font-size:1.05rem;line-height:1.5">
+                    Your free trial has ended. We hope it sparked some good momentum.
+                  </p>
+                  <p style="color:#555;line-height:1.6">
+                    Your existing entries are still safe and viewable — but writing new
+                    ones is paused until you subscribe. Cancel anytime; your data stays
+                    yours either way.
+                  </p>
+                  <div style="margin:1.75rem 0">
+                    <a href="https://app.creatorcompanionapp.com/dashboard"
+                       style="display:inline-block;padding:.75rem 1.5rem;
+                              background:#0c0e13;color:#fff;border-radius:8px;
+                              text-decoration:none;font-weight:600">
+                      Subscribe — $5/month or $50/year
+                    </a>
+                  </div>
+                  <p style="color:#555;line-height:1.6">
+                    Not ready? That's OK. Sign back in any time — your account
+                    will be waiting.
+                  </p>
+                  <p style="color:#999;font-size:.85rem">
+                    You're receiving this because your {appName} trial expired today.
+                  </p>
+                </div>
+                """
+        };
+
+        await resend.EmailSendAsync(message);
+    }
+
     public async Task SendAccountDeletionConfirmationAsync(string toEmail, string displayName)
     {
         var fromEmail = config["Resend:FromEmail"] ?? "noreply@creatorcompanion.app";
