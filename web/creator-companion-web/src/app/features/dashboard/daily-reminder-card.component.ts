@@ -46,7 +46,7 @@ import { StreakStats } from '../../core/models/models';
       <div class="reminder-card" role="status">
         <span class="reminder-card__eyebrow">Your Daily Reminder</span>
         <p class="reminder-card__quote">
-          Your goal is to do something with your creative practice every day.
+          Your goal is to do something with your creative practice every day. Keep the streak alive!
         </p>
         <div class="reminder-card__actions">
           <button class="reminder-card__cta"
