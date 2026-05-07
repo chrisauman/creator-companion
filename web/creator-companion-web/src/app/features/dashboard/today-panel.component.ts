@@ -67,20 +67,18 @@ import { ThreatenedBannerComponent } from './threatened-banner.component';
             <p class="spark-hero__body">{{ motivation.fullContent }}</p>
           </div>
 
-          <!-- Actions — clicks here should NOT toggle the box expansion. -->
+          <!-- Actions row — clicks here should NOT toggle the box
+               expansion. The "Start writing" CTA was removed; users
+               start an entry from anywhere in the dashboard via the
+               sidebar's New Entry button or the mood/prompt rows
+               below. The Spark hero is read-only here: favorite or
+               expand/collapse, nothing else. The favorite heart is
+               left-aligned by default since it's the only left-side
+               control; "Read more" still pushes itself to the right
+               via margin-left: auto. -->
           <div class="spark-hero__actions"
                [class.spark-hero__actions--has-more]="hasMoreToShow()"
                (click)="$event.stopPropagation()">
-            <button class="spark-action spark-action--primary" type="button"
-                    (click)="composeFromSpark.emit()">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 20h9"/>
-                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/>
-              </svg>
-              Start writing
-            </button>
-
             @if (canFavorite) {
               <button class="spark-action spark-action--icon"
                       type="button"
@@ -95,8 +93,6 @@ import { ThreatenedBannerComponent } from './threatened-banner.component';
               </button>
             }
 
-            <!-- Read more link sits to the right of the actions, vertically
-                 centred with the Start writing button. -->
             @if (hasMoreToShow()) {
               <button class="spark-hero__readmore" type="button"
                       (click)="toggleSparkExpanded(); $event.stopPropagation()">
@@ -528,7 +524,6 @@ export class TodayPanelComponent implements OnInit {
    *  user is mid-grace. */
   @Input() previewThreatened: boolean = false;
 
-  @Output() composeFromSpark = new EventEmitter<void>();
   @Output() composeFromPrompt = new EventEmitter<string>();
   @Output() composeFromMood = new EventEmitter<string>();
   @Output() composeBlank = new EventEmitter<void>();

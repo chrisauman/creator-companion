@@ -155,7 +155,6 @@ import { ActivatedRoute } from '@angular/router';
               [canFavorite]="isPaid()"
               [previewThreatened]="previewMode() === 'threatened'"
               (backlogYesterday)="onBacklogYesterday($event)"
-              (composeFromSpark)="composeFromSpark()"
               (composeFromPrompt)="composeFromPrompt($event)"
               (composeFromMood)="composeFromMood($event)"
               (composeBlank)="composeBlank()"
@@ -258,8 +257,7 @@ import { ActivatedRoute } from '@angular/router';
                 [canFavorite]="isPaid()"
                 [previewThreatened]="previewMode() === 'threatened'"
                 (backlogYesterday)="onBacklogYesterday($event)"
-                (composeFromSpark)="composeFromSpark()"
-                (composeFromPrompt)="composeFromPrompt($event)"
+                  (composeFromPrompt)="composeFromPrompt($event)"
                 (composeFromMood)="composeFromMood($event)"
                 (composeBlank)="composeBlank()"
                 (favoriteSpark)="toggleSparkFavorite()"
@@ -1467,12 +1465,11 @@ export class DashboardComponent implements OnInit {
 
   // ── Today panel compose handlers ───────────────────────────────
   // On desktop, switch the right column into composing mode and pass
-  // the prompt/spark/mood context as inputs. On mobile, fall back to
-  // the dedicated /entry/new page (mobile inline compose lands later).
-  composeFromSpark(): void {
-    const m = this.motivation();
-    this.openCompose({ spark: m?.takeaway ?? null });
-  }
+  // the prompt/mood context as inputs. On mobile, fall back to the
+  // dedicated /entry/new page (mobile inline compose lands later).
+  // The spark CTA was removed from the spark hero — users start
+  // entries from the sidebar's New Entry button or the prompt/mood
+  // rows below the spark.
   composeFromPrompt(prompt: string): void {
     this.openCompose({ prompt });
   }
