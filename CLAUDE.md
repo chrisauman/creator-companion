@@ -185,6 +185,27 @@ they read as a single family. Any new card in column 3 should match:
   card) so spacing stays uniform — DON'T put them in separate
   wrappers in the dashboard template, that broke spacing once.
 
+## Favorites surface
+
+`/favorites` is a unified view of favorited Sparks AND favorited Journal
+entries, sorted by `favoritedAt DESC`. One component
+(`FavoriteSparksComponent` — internal class name kept) renders both,
+embedded in column 3 (desktop) or standalone (mobile).
+
+- Backend: `GET /v1/favorites?skip=&take=` returns
+  `{ items: [{type:'spark'|'entry', favoritedAt, spark?, entry?}], hasMore }`.
+  Default page size 25, max 100. Paid-tier gated. Soft-deleted entries
+  filtered out.
+- `Entry.FavoritedAt` (DateTime?) tracks per-entry favorite timestamp.
+  Set/cleared by `EntryService.ToggleFavoriteAsync`. Backfilled to
+  `UpdatedAt` for pre-existing favorites in migration `AddEntryFavoritedAt`.
+- Legacy `/v1/motivation/favorites` endpoint still exists for backwards
+  compat; favorites surface uses the new unified endpoint exclusively.
+- Sidebar / mobile-nav label: **"Favorites"** (was "Favorite Sparks").
+- Entry click → embedded mode emits `(openEntryRequest)` event for
+  dashboard to swap column 3 to reader; standalone mode navigates to
+  `/entry/:id`.
+
 ## Streak engagement card mutual exclusivity
 
 The three "did you log today?" cards in column 3 are mutually

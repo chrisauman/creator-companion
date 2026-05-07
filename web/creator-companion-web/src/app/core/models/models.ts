@@ -75,6 +75,23 @@ export interface EntryListItem {
   isFavorited: boolean;
 }
 
+/** One row in the unified Favorites view. Returned by GET /v1/favorites,
+ *  mixing favorited Sparks and favorited Journal entries sorted by
+ *  favoritedAt DESC. Exactly one of `spark` or `entry` is populated
+ *  based on `type`. */
+export interface FavoriteItem {
+  type: 'spark' | 'entry';
+  favoritedAt: string;
+  spark?: MotivationEntry;
+  entry?: EntryListItem;
+}
+
+/** Pagination wrapper for GET /v1/favorites. */
+export interface FavoritesPage {
+  items: FavoriteItem[];
+  hasMore: boolean;
+}
+
 export interface Tag {
   id: string;
   name: string;

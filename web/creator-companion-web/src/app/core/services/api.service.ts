@@ -6,6 +6,7 @@ import { TokenService } from './token.service';
 import {
   AuthResponse, User, Journal, Entry, EntryListItem,
   Draft, StreakStats, StreakHistoryItem, Capabilities, MediaItem, Tag, Pause, MotivationEntry,
+  FavoritesPage,
   ReminderConfigResponse, UpdateReminderConfigRequest, ActionItem, Faq, DailyPrompt
 } from '../models/models';
 
@@ -256,6 +257,15 @@ export class ApiService {
 
   getFavoriteSparks(): Observable<MotivationEntry[]> {
     return this.http.get<MotivationEntry[]>(`${this.base}/motivation/favorites`);
+  }
+
+  /** Unified Favorites endpoint — sparks + journal entries merged
+   *  and sorted by favoritedAt DESC. Powers the /favorites surface.
+   *  Page size is server-clamped (1..100); default 25 if take is
+   *  omitted. The hasMore flag drives the "Load more" CTA. */
+  getFavorites(skip: number = 0, take: number = 25): Observable<FavoritesPage> {
+    return this.http.get<FavoritesPage>(
+      `${this.base}/favorites?skip=${skip}&take=${take}`);
   }
 
   // ── Admin Motivation ─────────────────────────────────────────────────────

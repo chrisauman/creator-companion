@@ -1,14 +1,14 @@
 import { Component, EventEmitter, Input, OnInit, Output, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { CommonModule, DatePipe } from '@angular/common';
+import { Router, RouterLink } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
-import { MotivationEntry } from '../../core/models/models';
+import { FavoriteItem, EntryListItem, MotivationEntry } from '../../core/models/models';
 import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
 import { SidebarStateService } from '../../shared/sidebar/sidebar-state.service';
 @Component({
   selector: 'app-favorite-sparks',
   standalone: true,
-  imports: [CommonModule, RouterLink, SidebarComponent],
+  imports: [CommonModule, DatePipe, RouterLink, SidebarComponent],
   template: `
     <div class="page" [class.page--embedded]="embedded">
 
@@ -68,51 +68,105 @@ import { SidebarStateService } from '../../shared/sidebar/sidebar-state.service'
         }
 
         <!-- Empty -->
-        @if (!loading() && sparks().length === 0) {
+        @if (!loading() && items().length === 0) {
           <div class="empty-state">
-            <div class="empty-icon">🔥</div>
-            <p class="empty-text">No favorite sparks yet.</p>
-            <p class="empty-sub">Tap the heart on your Daily Spark to save it here.</p>
+            <div class="empty-icon">⭐</div>
+            <p class="empty-text">No favorites yet.</p>
+            <p class="empty-sub">
+              Tap the heart on a Spark or any entry to save it here.
+            </p>
           </div>
         }
 
-        <!-- Spark list -->
-        @if (!loading() && sparks().length > 0) {
-          <div class="sparks-list">
-            @for (spark of sparks(); track spark.id) {
-              <div class="spark-card" [class.spark-card--expanded]="expandedId() === spark.id">
-                <div class="spark-header" (click)="toggleExpand(spark.id)">
-                  <div class="spark-header__left">
-                    <span class="spark-label">Daily Spark</span>
-                    <p class="spark-takeaway">{{ spark.takeaway }}</p>
+        <!-- Unified list — sparks + journal entries, sorted by when
+             they were favorited. Eyebrow text differentiates the two:
+             "DAILY SPARK" vs "JOURNAL ENTRY". -->
+        @if (!loading() && items().length > 0) {
+          <div class="favorites-list">
+            @for (item of items(); track itemKey(item)) {
+
+              @if (item.type === 'spark' && item.spark; as spark) {
+                <!-- Spark card — same expandable design as before. -->
+                <div class="spark-card" [class.spark-card--expanded]="expandedId() === spark.id">
+                  <div class="spark-header" (click)="toggleExpand(spark.id)">
+                    <div class="spark-header__left">
+                      <span class="spark-label">Daily Spark</span>
+                      <p class="spark-takeaway">{{ spark.takeaway }}</p>
+                    </div>
+                    <div class="spark-actions" (click)="$event.stopPropagation()">
+                      <button class="spark-unfavorite"
+                        title="Remove from favorites"
+                        (click)="unfavoriteSpark(spark.id)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                          fill="currentColor" stroke="currentColor" stroke-width="2"
+                          stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                        </svg>
+                      </button>
+                      <button class="spark-toggle" [attr.aria-expanded]="expandedId() === spark.id">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                          fill="none" stroke="currentColor" stroke-width="2.5"
+                          stroke-linecap="round" stroke-linejoin="round"
+                          [style.transform]="expandedId() === spark.id ? 'rotate(180deg)' : 'rotate(0deg)'"
+                          style="transition:transform .25s ease">
+                          <polyline points="6 9 12 15 18 9"/>
+                        </svg>
+                      </button>
+                    </div>
                   </div>
-                  <div class="spark-actions" (click)="$event.stopPropagation()">
-                    <button class="spark-unfavorite"
-                      title="Remove from favorites"
-                      (click)="unfavorite(spark.id)">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                        fill="currentColor" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-                      </svg>
-                    </button>
-                    <button class="spark-toggle" [attr.aria-expanded]="expandedId() === spark.id">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                        fill="none" stroke="currentColor" stroke-width="2.5"
-                        stroke-linecap="round" stroke-linejoin="round"
-                        [style.transform]="expandedId() === spark.id ? 'rotate(180deg)' : 'rotate(0deg)'"
-                        style="transition:transform .25s ease">
-                        <polyline points="6 9 12 15 18 9"/>
-                      </svg>
-                    </button>
+                  <div class="spark-body">
+                    <p class="spark-content">{{ spark.fullContent }}</p>
                   </div>
                 </div>
-                <div class="spark-body">
-                  <p class="spark-content">{{ spark.fullContent }}</p>
+              }
+
+              @if (item.type === 'entry' && item.entry; as entry) {
+                <!-- Entry card — mirrors the column-2 journal entry-row
+                     visually (cyan eyebrow + bold title + first photo)
+                     so the user feels like they're seeing the same kind
+                     of card they recognise from the journal list. Click
+                     opens the entry in the reader (embedded) or the
+                     standalone /entry/:id route (mobile). -->
+                <div class="entry-card" (click)="openEntry(entry)">
+                  <div class="entry-card__body">
+                    <div class="entry-card__meta">
+                      <span class="entry-card__label">Journal Entry</span>
+                      <span class="entry-card__date">{{ entry.entryDate | date:'MMM d, y' }}</span>
+                      <button class="entry-card__heart"
+                              type="button"
+                              title="Remove from favorites"
+                              (click)="$event.stopPropagation(); unfavoriteEntry(entry.id)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                          fill="currentColor" stroke="currentColor" stroke-width="2"
+                          stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                        </svg>
+                      </button>
+                    </div>
+                    <p class="entry-card__title">{{ entryHeadline(entry) }}</p>
+                  </div>
+                  @if (entry.firstImageUrl) {
+                    <div class="entry-card__photo">
+                      <img [src]="entry.firstImageUrl" alt="" loading="lazy">
+                    </div>
+                  }
                 </div>
-              </div>
+              }
+
             }
           </div>
+
+          <!-- Load more -->
+          @if (hasMore()) {
+            <div class="load-more-wrap">
+              <button class="load-more-btn"
+                      type="button"
+                      [disabled]="loadingMore()"
+                      (click)="loadMore()">
+                {{ loadingMore() ? 'Loading…' : 'Load more' }}
+              </button>
+            </div>
+          }
         }
         </div><!-- /.body-inner -->
       </main>
@@ -263,8 +317,127 @@ import { SidebarStateService } from '../../shared/sidebar/sidebar-state.service'
     }
     .page-sub { font-size: .9375rem; color: var(--color-text); margin: 0; line-height: 1.5; }
 
-    /* ── Spark card ──────────────────────────────────────────────── */
+    /* ── Unified favorites list ──────────────────────────────────── */
+    /* Same wrapper used for both spark and entry cards so they share
+       gap rhythm. Order is FavoritedAt DESC — most recent first. */
+    .favorites-list { display: flex; flex-direction: column; gap: .75rem; }
+
+    /* Legacy alias kept so the loading skeleton (which still uses
+       .sparks-list) keeps working without a separate refactor. */
     .sparks-list { display: flex; flex-direction: column; gap: .75rem; }
+
+    /* ── Entry card ───────────────────────────────────────────────── */
+    /* Mirrors .entry-row on the journal column-2 list: rounded
+       container, cyan eyebrow + date, bold title, optional photo
+       below. Tweaks for this surface: explicit "Journal Entry"
+       eyebrow (the column-2 version uses just the date), heart
+       button on the right edge of the meta row to unfavorite, and
+       the whole card is clickable to open the entry. */
+    .entry-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      cursor: pointer;
+      transition: border-color .15s, box-shadow .15s, transform .15s;
+    }
+    .entry-card:hover {
+      border-color: rgba(18,196,227,.45);
+      box-shadow: 0 6px 20px -10px rgba(18,196,227,.25);
+    }
+    .entry-card__body {
+      padding: 1rem 1.25rem .875rem;
+    }
+    .entry-card__meta {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      margin-bottom: .5rem;
+    }
+    /* "JOURNAL ENTRY" eyebrow — same caps + tracking treatment as
+       the column-2 entry-row date eyebrow, in brand cyan. */
+    .entry-card__label {
+      font-size: .6875rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .14em;
+      color: var(--color-accent);
+      white-space: nowrap;
+    }
+    .entry-card__date {
+      font-size: .75rem;
+      color: var(--color-text-2);
+      flex: 1;
+    }
+    /* Heart on the right — brand cyan (same convention used elsewhere
+       for "this is yours" affordances). Click stops event propagation
+       so it doesn't also trigger the card's openEntry handler. */
+    .entry-card__heart {
+      background: none; border: none; cursor: pointer; padding: .1rem;
+      color: var(--color-accent);
+      display: flex; align-items: center;
+      transition: transform .1s, opacity .15s;
+    }
+    .entry-card__heart:hover { opacity: .7; transform: scale(1.15); }
+    /* Title: same scale + weight as journal entry-row title so the
+       two surfaces share typographic identity. Clamps to 2 lines on
+       very long titles. */
+    .entry-card__title {
+      font-family: var(--font-sans);
+      font-size: 1.0625rem;
+      font-weight: 700;
+      line-height: 1.35;
+      letter-spacing: -.01em;
+      color: var(--color-text);
+      margin: 0;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      word-break: break-word;
+    }
+    /* Photo: full-width, capped height. Bottom is clipped only for
+       very tall photos so cards stay reasonable in size. */
+    .entry-card__photo {
+      width: 100%;
+      max-height: 320px;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      background: var(--color-bg);
+    }
+    .entry-card__photo img {
+      width: 100%;
+      max-height: 320px;
+      object-fit: cover;
+      display: block;
+    }
+
+    /* ── Load-more ────────────────────────────────────────────────── */
+    .load-more-wrap {
+      display: flex; justify-content: center;
+      padding: 1.25rem 0 0;
+    }
+    .load-more-btn {
+      background: transparent;
+      border: 1px solid var(--color-border);
+      color: var(--color-text-2);
+      font-family: inherit;
+      font-size: .8125rem;
+      font-weight: 600;
+      padding: .5rem 1rem;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background .15s, color .15s, border-color .15s;
+    }
+    .load-more-btn:hover:not(:disabled) {
+      background: var(--color-surface-2);
+      color: var(--color-text);
+      border-color: var(--color-text-3);
+    }
+    .load-more-btn:disabled { opacity: .6; cursor: not-allowed; }
+
+    /* ── Spark card ──────────────────────────────────────────────── */
 
     .spark-card {
       background: var(--color-surface);
@@ -346,7 +519,8 @@ import { SidebarStateService } from '../../shared/sidebar/sidebar-state.service'
   `]
 })
 export class FavoriteSparksComponent implements OnInit {
-  private api = inject(ApiService);
+  private api    = inject(ApiService);
+  private router = inject(Router);
   /** Mobile topbar hamburger → opens slide-in sidebar drawer. */
   protected sidebarState = inject(SidebarStateService);
 
@@ -359,29 +533,99 @@ export class FavoriteSparksComponent implements OnInit {
   /** Emitted when the user clicks the Today pill in the embedded top bar. */
   @Output() returnToToday = new EventEmitter<void>();
 
-  sparks   = signal<MotivationEntry[]>([]);
-  loading  = signal(true);
-  expandedId = signal<string | null>(null);
+  /** Emitted when the user clicks a Journal Entry favorite. The dashboard
+   *  parent listens to this and swaps column 3 to the entry reader.
+   *  Standalone /favorites bypasses this and navigates to /entry/:id. */
+  @Output() openEntryRequest = new EventEmitter<string>();
+
+  // ── Page size (matches server default; server clamps to 1..100). ──
+  private readonly PAGE_SIZE = 25;
+
+  // ── State ─────────────────────────────────────────────────────────
+  /** Combined list of sparks + entries, sorted by favoritedAt DESC. */
+  items       = signal<FavoriteItem[]>([]);
+  loading     = signal(true);
+  loadingMore = signal(false);
+  hasMore     = signal(false);
+  /** ID of the currently-expanded spark card (only one open at a time). */
+  expandedId  = signal<string | null>(null);
 
   ngOnInit(): void {
-    this.api.getFavoriteSparks().subscribe({
-      next: sparks => { this.sparks.set(sparks); this.loading.set(false); },
-      error: ()    => { this.sparks.set([]);     this.loading.set(false); }
+    this.api.getFavorites(0, this.PAGE_SIZE).subscribe({
+      next: page => {
+        this.items.set(page.items);
+        this.hasMore.set(page.hasMore);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.items.set([]);
+        this.hasMore.set(false);
+        this.loading.set(false);
+      }
     });
+  }
+
+  loadMore(): void {
+    if (this.loadingMore() || !this.hasMore()) return;
+    this.loadingMore.set(true);
+    const skip = this.items().length;
+    this.api.getFavorites(skip, this.PAGE_SIZE).subscribe({
+      next: page => {
+        // Append; server returns the next chunk in correct order.
+        this.items.update(existing => [...existing, ...page.items]);
+        this.hasMore.set(page.hasMore);
+        this.loadingMore.set(false);
+      },
+      error: () => {
+        this.loadingMore.set(false);
+      }
+    });
+  }
+
+  /** Stable @for track key — sparks share an id space with entries
+   *  in the API but here we prefix to avoid any collision. */
+  itemKey(item: FavoriteItem): string {
+    return item.type + ':' + (item.spark?.id ?? item.entry?.id ?? '');
   }
 
   toggleExpand(id: string): void {
     this.expandedId.set(this.expandedId() === id ? null : id);
   }
 
-  unfavorite(id: string): void {
-    // Optimistic remove from list
-    this.sparks.update(list => list.filter(s => s.id !== id));
+  /** Click handler for an entry card. Embedded mode emits an event so
+   *  the parent dashboard can swap column 3 to the reader; standalone
+   *  mode navigates to the dedicated /entry/:id route. */
+  openEntry(entry: EntryListItem): void {
+    if (this.embedded) {
+      this.openEntryRequest.emit(entry.id);
+    } else {
+      this.router.navigate(['/entry', entry.id]);
+    }
+  }
+
+  /** Title shown on the entry card. Falls back to the content preview
+   *  when an entry has no explicit title (some entries are saved with
+   *  empty title and rely on the auto-generated preview). */
+  entryHeadline(entry: EntryListItem): string {
+    return entry.title?.trim() || entry.contentPreview || 'Untitled entry';
+  }
+
+  // ── Unfavorite handlers (one per type) ────────────────────────────
+
+  unfavoriteSpark(id: string): void {
+    // Optimistic remove
+    const previous = this.items();
+    this.items.update(list => list.filter(i => !(i.type === 'spark' && i.spark?.id === id)));
     this.api.toggleSparkFavorite(id).subscribe({
-      error: () => {
-        // On error, reload the list to restore correct state
-        this.api.getFavoriteSparks().subscribe({ next: s => this.sparks.set(s) });
-      }
+      error: () => this.items.set(previous)  // restore on failure
+    });
+  }
+
+  unfavoriteEntry(id: string): void {
+    const previous = this.items();
+    this.items.update(list => list.filter(i => !(i.type === 'entry' && i.entry?.id === id)));
+    this.api.toggleFavorite(id).subscribe({
+      error: () => this.items.set(previous)
     });
   }
 }

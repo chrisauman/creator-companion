@@ -307,6 +307,7 @@ import { ActivatedRoute } from '@angular/router';
               <app-favorite-sparks
                 [embedded]="true"
                 (returnToToday)="returnToToday()"
+                (openEntryRequest)="openEntryFromFavorites($event)"
               ></app-favorite-sparks>
             }
             @case ('streak-history') {
@@ -1031,7 +1032,7 @@ export class DashboardComponent implements OnInit {
   /**
    * Which sidebar nav item should show the active state. Derived from
    * `rightColumnMode()` so when the user clicks "To Do List" / "Reminders"
-   * / "Favorite Sparks" in the sidebar (which swaps column 3 without
+   * / "Favorites" in the sidebar (which swaps column 3 without
    * changing the route), the active highlight follows the visible
    * surface — not stuck on "Journal" forever. Streak-history isn't a
    * sidebar nav item itself, so it falls through to "dashboard" (the
@@ -1337,6 +1338,14 @@ export class DashboardComponent implements OnInit {
     } else {
       this.router.navigate(['/entry', entry.id]);
     }
+  }
+
+  /** Public bridge for the embedded Favorites view: when the user
+   *  clicks an entry card in column 3's Favorites list, swap the
+   *  column to the entry reader for that ID. Wraps the private
+   *  selectEntry so external callers don't need to reach in. */
+  openEntryFromFavorites(id: string): void {
+    this.selectEntry(id);
   }
 
   private selectEntry(id: string): void {

@@ -135,9 +135,9 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
            [class.sidebar__nav-item--active]="active === 'favorites'"
            [routerLink]="sectionLink('favorites')"
            [queryParams]="sectionQueryParams('favorites')"
-           [title]="collapsed() ? 'Favorite Sparks' : null">
+           [title]="collapsed() ? 'Favorites' : null">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-          <span class="sidebar__nav-label">Favorite Sparks</span>
+          <span class="sidebar__nav-label">Favorites</span>
         </a>
         <a *ngIf="isAdmin()"
            class="sidebar__nav-item"
@@ -950,10 +950,13 @@ export class SidebarComponent implements OnInit {
         totalMediaCount: 0, totalActiveDays: 0, isPaused: false, pauseDaysUsedThisMonth: 0 })
     });
 
-    // Show the Favorite Sparks link only if the user has saved at least one
-    this.api.getFavoriteSparks().subscribe({
-      next: sparks => this.hasFavoriteSparks.set(sparks.length > 0),
-      error: () => {}  // silently hide the link on error (e.g. free-tier 403)
+    // Show the Favorites link only if the user has saved at least one
+    // item — sparks OR entries. Uses the unified endpoint with take=1
+    // for a cheap visibility probe (we just need to know "any"). The
+    // signal name is preserved for backwards compat with consumers.
+    this.api.getFavorites(0, 1).subscribe({
+      next: page => this.hasFavoriteSparks.set(page.items.length > 0),
+      error: () => {}  // silently hide on error (e.g. free-tier 403)
     });
 
     // Close the mobile drawer whenever the user navigates somewhere — they
