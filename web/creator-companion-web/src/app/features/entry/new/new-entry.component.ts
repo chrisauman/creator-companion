@@ -504,12 +504,18 @@ interface PendingImage {
       color: var(--color-text-3);
     }
 
+    /* Title input scale matches the column-3 reader title (1.625rem /
+       700) so a draft and its eventual reading view share typographic
+       identity — the user sees the same "title" they'll see again
+       when reading later. Lighter placeholder weight (500) so the
+       hint reads as a hint, not a heavy title competing for the eye. */
     .title-input {
       width: 100%; border: none; outline: none; background: transparent;
       font-family: var(--font-sans);
-      font-size: 1.875rem; font-weight: 700; letter-spacing: -.015em;
-      line-height: 1.2; color: var(--color-text); padding: 0; margin-bottom: 1rem;
-      &::placeholder { color: var(--color-text-3); font-weight: 600; }
+      font-size: 1.625rem; font-weight: 700; letter-spacing: -.02em;
+      line-height: 1.25; color: var(--color-text); padding: 0;
+      margin-bottom: .75rem;
+      &::placeholder { color: var(--color-text-3); font-weight: 500; }
       &:disabled { opacity: .6; }
     }
 
@@ -546,15 +552,20 @@ interface PendingImage {
       border: 1px solid var(--color-border);
     }
 
-    /* TipTap editor container */
+    /* TipTap editor container.
+       Min-height was 300px which left a gaping empty area on a fresh
+       compose — the image-upload tile and the rest of the form got
+       pushed way below the fold. Dropped to ~7rem (4–5 lines) so the
+       editor feels approachable from the start; the textarea still
+       grows naturally as the user types. */
     .tiptap-wrapper {
-      min-height: 300px;
+      min-height: 7rem;
       cursor: text;
-      margin-bottom: 1rem;
+      margin-bottom: .75rem;
     }
 
     ::ng-deep .tiptap-wrapper .tiptap {
-      min-height: 300px;
+      min-height: 7rem;
       outline: none;
       font-family: var(--font-sans);
       font-size: 1.0625rem;
