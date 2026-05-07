@@ -270,6 +270,9 @@ public class EntryService(
             ?? throw new InvalidOperationException("Entry not found.");
 
         entry.IsFavorited = !entry.IsFavorited;
+        // Track when the favorite was set so the unified Favorites view
+        // can sort entries alongside Sparks by "when I favorited this".
+        entry.FavoritedAt = entry.IsFavorited ? DateTime.UtcNow : null;
         await db.SaveChangesAsync();
 
         return entry.IsFavorited;

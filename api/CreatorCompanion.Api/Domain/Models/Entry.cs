@@ -19,6 +19,15 @@ public class Entry
     public string ContentText { get; set; } = string.Empty;
     public string? Mood { get; set; }
     public bool IsFavorited { get; set; } = false;
+
+    /// <summary>
+    /// When the user last favorited this entry. Null when not currently
+    /// favorited. Used by the unified Favorites view to sort entries
+    /// alongside favorited Sparks (which have their own CreatedAt on
+    /// the join row) by "when I favorited this." Set whenever
+    /// IsFavorited flips true; cleared when it flips back to false.
+    /// </summary>
+    public DateTime? FavoritedAt { get; set; }
     public string ContentType { get; set; } = "text/plain";
     public EntrySource EntrySource { get; set; } = EntrySource.Direct;
     public Visibility Visibility { get; set; } = Visibility.Private;
