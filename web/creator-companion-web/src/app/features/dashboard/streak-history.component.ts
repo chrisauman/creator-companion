@@ -59,15 +59,15 @@ import { StreakHistoryItem, StreakStats } from '../../core/models/models';
             <section class="lifetime">
               <div class="lifetime__cell">
                 <div class="lifetime__num">{{ displayBest() }}</div>
-                <div class="lifetime__label">personal best</div>
+                <div class="lifetime__label">Best Streak</div>
               </div>
               <div class="lifetime__cell">
                 <div class="lifetime__num">{{ chapterCount() }}</div>
-                <div class="lifetime__label">{{ chapterCount() === 1 ? 'chapter' : 'chapters' }}</div>
+                <div class="lifetime__label">{{ chapterCount() === 1 ? 'Chapter' : 'Chapters' }}</div>
               </div>
               <div class="lifetime__cell">
                 <div class="lifetime__num">{{ displayActiveDays() }}</div>
-                <div class="lifetime__label">days journaled</div>
+                <div class="lifetime__label">Days Journaled</div>
               </div>
             </section>
           }
@@ -77,12 +77,12 @@ import { StreakHistoryItem, StreakStats } from '../../core/models/models';
             <p class="hint">Loading…</p>
           } @else if (history().length === 0) {
             <div class="empty">
-              <div class="empty__icon" aria-hidden="true">📖</div>
               <p class="empty__title">No completed chapters yet.</p>
               <p class="empty__body">
-                Your first finished chapter will appear here whenever
-                your current streak ends. Until then, keep going —
-                every day is part of the story.
+                You've kept your streak alive! If your streak breaks,
+                you've finished your first chapter, and it will appear
+                here so you can appreciate your accomplishment. Until
+                then, keep going!
               </p>
             </div>
           } @else {
@@ -103,11 +103,11 @@ import { StreakHistoryItem, StreakStats } from '../../core/models/models';
                       <span class="chapter__days-unit">{{ item.days === 1 ? 'day' : 'days' }}</span>
                     </div>
                     @if (item.isPersonalBest) {
-                      <span class="chapter__badge" title="Personal best">
+                      <span class="chapter__badge" title="Best Streak">
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                           <path d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2Z"/>
                         </svg>
-                        personal best
+                        Best Streak
                       </span>
                     }
                   </div>
@@ -130,11 +130,13 @@ import { StreakHistoryItem, StreakStats } from '../../core/models/models';
   `,
   styles: [`
     /* ── Layout chrome (matches favorite-sparks / entry-reader) ───── */
+    /* White background — was using --color-bg (cream) which felt off
+       against the light-blue stats card now sitting on top. */
     .embedded-section {
       display: flex;
       flex-direction: column;
       height: 100%;
-      background: var(--color-bg);
+      background: #fff;
     }
 
     .reader-top {
@@ -216,11 +218,15 @@ import { StreakHistoryItem, StreakStats } from '../../core/models/models';
     /* Reads as one unified surface, not three loose numbers. Subtle
        internal dividers separate cells without making it look like a
        data table. */
+    /* Light-cyan card behind the stat numbers so the totals card pops
+       off the white page surface and threads the brand color into the
+       page's hero moment. The internal cell dividers use a darker
+       cyan tint so they stay visible on the new tinted bg. */
     .lifetime {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
+      background: var(--color-accent-light, #e0f7fc);
+      border: 1px solid rgba(18,196,227,.25);
       border-radius: .625rem;
       padding: 1.25rem 1rem;
       margin-bottom: 1.75rem;
@@ -228,7 +234,7 @@ import { StreakHistoryItem, StreakStats } from '../../core/models/models';
     .lifetime__cell {
       text-align: center;
       padding: 0 .5rem;
-      border-right: 1px solid var(--color-border);
+      border-right: 1px solid rgba(18,196,227,.25);
     }
     .lifetime__cell:last-child { border-right: none; }
     .lifetime__num {
@@ -243,12 +249,14 @@ import { StreakHistoryItem, StreakStats } from '../../core/models/models';
       letter-spacing: -.03em;
       margin-bottom: .375rem;
     }
+    /* Labels render in title-case ("Best Streak", "Chapters",
+       "Days Journaled"). Letter-spacing kept; lowercase rule dropped
+       so the title-case strings render as authored. */
     .lifetime__label {
       font-size: .75rem;
-      color: var(--color-text-muted, var(--color-text-3));
-      text-transform: lowercase;
+      color: var(--color-accent-dark, var(--color-accent));
       letter-spacing: .03em;
-      font-weight: 500;
+      font-weight: 600;
     }
 
     /* ── Chapters section header ───────────────────────────────────── */
@@ -335,7 +343,6 @@ import { StreakHistoryItem, StreakStats } from '../../core/models/models';
       color: var(--color-accent);
       font-weight: 700;
       letter-spacing: .04em;
-      text-transform: lowercase;
       background: rgba(18,196,227,.08);
       border: 1px solid rgba(18,196,227,.2);
       padding: .25rem .5rem;
@@ -372,14 +379,12 @@ import { StreakHistoryItem, StreakStats } from '../../core/models/models';
       text-align: center;
       padding: 1.5rem 1rem 0;
     }
-    .empty__icon {
-      font-size: 2rem;
-      margin-bottom: .75rem;
-      opacity: .65;
-    }
+    /* Title in the system sans (matches the rest of the surface
+       typography) — was previously in Fraunces which felt out of
+       place for a small headline above body copy. */
     .empty__title {
-      font-family: var(--font-brand);
-      font-size: 1.125rem;
+      font-family: var(--font-sans);
+      font-size: 1.0625rem;
       font-weight: 700;
       color: var(--color-text);
       margin: 0 0 .5rem;
