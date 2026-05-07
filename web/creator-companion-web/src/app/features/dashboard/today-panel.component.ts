@@ -42,21 +42,40 @@ import { ThreatenedBannerComponent } from './threatened-banner.component';
              [class.spark-hero--clickable]="hasMoreToShow()"
              (click)="onBoxClick($event)">
 
-          <!-- Expand/collapse chevron — top-right corner. Only shown when
-               there's more to reveal than the takeaway. -->
-          @if (hasMoreToShow()) {
-            <button class="spark-hero__expand"
-                    type="button"
-                    [title]="sparkExpanded() ? 'Show less' : 'Read more'"
-                    [attr.aria-expanded]="sparkExpanded()"
-                    (click)="toggleSparkExpanded(); $event.stopPropagation()">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                   [style.transform]="sparkExpanded() ? 'rotate(180deg)' : 'rotate(0deg)'">
-                <polyline points="6 9 12 15 18 9"/>
-              </svg>
-            </button>
-          }
+          <!-- Top-right corner controls. Heart sits to the left of the
+               expand chevron so all card-level "tools" group together
+               in one cluster, freeing the bottom of the card for the
+               read-more text link only. Both buttons share the same
+               circular pill treatment for visual unity. -->
+          <div class="spark-hero__corner-actions"
+               (click)="$event.stopPropagation()">
+            @if (canFavorite) {
+              <button class="spark-hero__corner-btn"
+                      type="button"
+                      [class.spark-hero__corner-btn--fav-active]="motivation.isFavorited"
+                      [title]="motivation.isFavorited ? 'Remove from favorites' : 'Add to favorites'"
+                      (click)="favoriteSpark.emit()">
+                <svg width="14" height="14" viewBox="0 0 24 24"
+                     [attr.fill]="motivation.isFavorited ? 'currentColor' : 'none'"
+                     stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                </svg>
+              </button>
+            }
+            @if (hasMoreToShow()) {
+              <button class="spark-hero__corner-btn spark-hero__corner-btn--expand"
+                      type="button"
+                      [title]="sparkExpanded() ? 'Show less' : 'Read more'"
+                      [attr.aria-expanded]="sparkExpanded()"
+                      (click)="toggleSparkExpanded()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                     [style.transform]="sparkExpanded() ? 'rotate(180deg)' : 'rotate(0deg)'">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </button>
+            }
+          </div>
 
           <span class="spark-hero__eyebrow">Your Daily Spark</span>
           <p class="spark-hero__quote">{{ motivation.takeaway }}</p>
@@ -67,39 +86,17 @@ import { ThreatenedBannerComponent } from './threatened-banner.component';
             <p class="spark-hero__body">{{ motivation.fullContent }}</p>
           </div>
 
-          <!-- Actions row — clicks here should NOT toggle the box
-               expansion. The "Start writing" CTA was removed; users
-               start an entry from anywhere in the dashboard via the
-               sidebar's New Entry button or the mood/prompt rows
-               below. The Spark hero is read-only here: favorite or
-               expand/collapse, nothing else. The favorite heart is
-               left-aligned by default since it's the only left-side
-               control; "Read more" still pushes itself to the right
-               via margin-left: auto. -->
-          <div class="spark-hero__actions"
-               [class.spark-hero__actions--has-more]="hasMoreToShow()"
-               (click)="$event.stopPropagation()">
-            @if (canFavorite) {
-              <button class="spark-action spark-action--icon"
-                      type="button"
-                      [class.spark-action--fav-active]="motivation.isFavorited"
-                      [title]="motivation.isFavorited ? 'Remove from favorites' : 'Add to favorites'"
-                      (click)="favoriteSpark.emit()">
-                <svg width="14" height="14" viewBox="0 0 24 24"
-                     [attr.fill]="motivation.isFavorited ? 'currentColor' : 'none'"
-                     stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-                </svg>
-              </button>
-            }
-
-            @if (hasMoreToShow()) {
+          <!-- Bottom row holds only the inline "Read more / Show less"
+               text link — heart + chevron moved up to the corner. -->
+          @if (hasMoreToShow()) {
+            <div class="spark-hero__actions"
+                 (click)="$event.stopPropagation()">
               <button class="spark-hero__readmore" type="button"
-                      (click)="toggleSparkExpanded(); $event.stopPropagation()">
+                      (click)="toggleSparkExpanded()">
                 {{ sparkExpanded() ? 'Show less' : 'Read more' }} →
               </button>
-            }
-          </div>
+            </div>
+          }
         </div>
       }
 
@@ -277,11 +274,21 @@ import { ThreatenedBannerComponent } from './threatened-banner.component';
       transform: translateX(2px);
     }
 
-    /* Top-right expand chevron */
-    .spark-hero__expand {
+    /* Top-right corner cluster — heart + expand chevron live here as
+       a unified group. Absolutely positioned so it floats over the
+       eyebrow/body without affecting their layout. */
+    .spark-hero__corner-actions {
       position: absolute;
       top: .875rem;
       right: .875rem;
+      display: flex;
+      align-items: center;
+      gap: .375rem;
+      z-index: 1;
+    }
+    /* Shared circular pill button — same look for the heart and the
+       expand chevron so the cluster reads as one tool group. */
+    .spark-hero__corner-btn {
       width: 32px; height: 32px;
       display: grid; place-items: center;
       background: rgba(255,255,255,.7);
@@ -290,15 +297,28 @@ import { ThreatenedBannerComponent } from './threatened-banner.component';
       color: var(--color-text-2);
       cursor: pointer;
       font-family: inherit;
-      transition: background .15s, border-color .15s, transform .15s;
-      z-index: 1;
+      transition: background .15s, border-color .15s, color .15s;
     }
-    .spark-hero__expand:hover {
+    .spark-hero__corner-btn:hover {
       background: rgba(18,196,227,.12);
       border-color: rgba(18,196,227,.35);
       color: var(--color-accent-dark);
     }
-    .spark-hero__expand svg { transition: transform .25s ease; }
+    /* Active-favorite state — soft rose like the old spark-action
+       --fav-active treatment, scoped to the corner button. */
+    .spark-hero__corner-btn--fav-active {
+      color: #e11d48;
+      border-color: rgba(225,29,72,.3);
+      background: rgba(225,29,72,.08);
+    }
+    .spark-hero__corner-btn--fav-active:hover {
+      color: #be123c;
+      border-color: rgba(225,29,72,.5);
+      background: rgba(225,29,72,.14);
+    }
+    /* Smooth chevron rotation when expanding/collapsing. */
+    .spark-hero__corner-btn--expand svg { transition: transform .25s ease; }
+
     .spark-hero__actions {
       display: flex;
       gap: .5rem;
@@ -337,12 +357,6 @@ import { ThreatenedBannerComponent } from './threatened-banner.component';
       background: #12C4E3;
       border-color: #12C4E3;
       color: #fff;
-    }
-    .spark-action--icon { width: 36px; padding: 0; }
-    .spark-action--fav-active {
-      color: #e11d48;
-      border-color: rgba(225,29,72,.3);
-      background: rgba(225,29,72,.06);
     }
 
     /* ── Or, begin somewhere else ────────────────────────────── */
