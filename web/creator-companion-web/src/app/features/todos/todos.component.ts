@@ -28,9 +28,8 @@ import { ActionItemsCardComponent } from '../dashboard/action-items-card.compone
 <main class="main-content">
         <div class="page-header">
           <h1 class="page-title">To Do List</h1>
-          <p class="page-sub">Your daily reminders and next actions.</p>
         </div>
-        <app-action-items-card [startExpanded]="true" [collapsible]="false" />
+        <app-action-items-card />
       </main>
     </div>
   `,

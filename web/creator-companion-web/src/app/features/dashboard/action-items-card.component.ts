@@ -1,5 +1,5 @@
 import {
-  Component, inject, signal, computed, OnInit, Input
+  Component, inject, signal, computed, OnInit, HostListener
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -7,774 +7,829 @@ import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-
 import { ApiService } from '../../core/services/api.service';
 import { ActionItem } from '../../core/models/models';
 
+/**
+ * To-Do List — clean, minimal, modern. Lives in column 3 of the dashboard
+ * (when the user clicks the sidebar's "To Do List" link) and on the
+ * standalone /todos page on mobile.
+ *
+ * Design contracts:
+ *
+ *  - Persistent "+ Add an item" input at the top (no reveal-form click).
+ *  - New items appear at the TOP of the list (server enforces this in
+ *    POST /v1/action-items by setting SortOrder=0 + shifting +1).
+ *  - Always-visible muted drag handle on the LEFT for reorder. Brightens
+ *    on hover. Drag-and-drop via Angular CDK; works on mouse + touch.
+ *  - Round checkbox to mark complete; cyan-filled with checkmark when
+ *    done.
+ *  - Click anywhere on the text → enter inline edit (single click, no
+ *    pencil icon). cursor: text on hover signals interactivity.
+ *  - Edit mechanic: Enter saves, Esc cancels (restores original), blur
+ *    saves. Empty text on blur cancels rather than deleting. No Save /
+ *    Cancel buttons.
+ *  - Delete affordance:
+ *      Desktop: hover-X on the right edge of the row (faint at rest,
+ *      full opacity on hover).
+ *      Mobile:  swipe-left to reveal a red Delete tile, tap to confirm
+ *      (Apple Mail pattern).
+ *  - Done section collapsed by default at the bottom; same row template
+ *    minus the drag handle + with strikethrough.
+ *
+ * Cap: 100 active items (server-enforced). When at cap, the add input
+ * is disabled with a quiet helper line; existing items can still be
+ * completed/edited/deleted normally.
+ *
+ * Always renders fully expanded — the previous "collapsible widget"
+ * mode (showing a one-line summary) is gone; this list is now only
+ * accessible by clicking the sidebar nav item, never inline on the
+ * main dashboard.
+ */
 @Component({
   selector: 'app-action-items-card',
   standalone: true,
   imports: [CommonModule, FormsModule, DragDropModule],
   template: `
-    <div class="ai-card" [class.ai-card--expanded]="expanded()" [class.ai-card--always-open]="!collapsible">
+    <div class="todo-list">
 
-      <!-- ── Header (only shown when collapsible) ──────────────── -->
-      @if (collapsible) {
-        <div class="ai-header" (click)="toggleExpanded()">
-          <div class="ai-header__left">
-            @if (!expanded()) {
-              <p class="ai-summary">
-                @if (allCaughtUp()) {
-                  All caught up!
-                } @else if (activeItems().length === 0) {
-                  Add your first reminder
-                } @else {
-                  {{ activeItems()[0].text }}
-                }
-              </p>
-            }
-          </div>
-          <button class="ai-toggle" [attr.aria-expanded]="expanded()">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-              fill="none" stroke="currentColor" stroke-width="2.5"
-              stroke-linecap="round" stroke-linejoin="round"
-              [style.transform]="expanded() ? 'rotate(180deg)' : 'rotate(0deg)'"
-              style="transition:transform .25s ease">
-              <polyline points="6 9 12 15 18 9"/>
-            </svg>
-          </button>
+      <!-- Persistent add input. Always visible at the top so users can
+           jot something without ceremony. Disabled at the cap. -->
+      <div class="todo-list__add" [class.todo-list__add--disabled]="atCap()">
+        <span class="todo-list__add-plus" aria-hidden="true">+</span>
+        <input class="todo-list__add-input"
+               type="text"
+               [(ngModel)]="newText"
+               (keydown.enter)="submitAdd()"
+               (keydown.escape)="cancelAdd()"
+               [placeholder]="atCap() ? 'List is full' : 'Add an item'"
+               [disabled]="atCap() || saving()"
+               maxlength="150">
+        @if (newText.length > 0 && newText.length >= 120) {
+          <span class="todo-list__char-count">{{ 150 - newText.length }}</span>
+        }
+      </div>
+      @if (atCap()) {
+        <p class="todo-list__cap-note">
+          Complete or delete some items to add more.
+        </p>
+      }
+
+      <!-- Active list -->
+      @if (activeItems().length > 0) {
+        <ul class="todo-list__items"
+            cdkDropList
+            (cdkDropListDropped)="onDrop($event)">
+          @for (item of activeItems(); track item.id) {
+            <li class="todo-list__item"
+                [class.todo-list__item--editing]="editingId() === item.id"
+                [class.todo-list__item--swipe-revealed]="revealedItemId() === item.id"
+                [style.transform]="rowTransform(item.id)"
+                cdkDrag
+                (touchstart)="onTouchStart(item.id, $event)"
+                (touchmove)="onTouchMove($event)"
+                (touchend)="onTouchEnd(item.id)"
+                (touchcancel)="onTouchCancel(item.id)">
+
+              <!-- Drag handle — always visible but muted at rest. -->
+              <span class="todo-list__handle" cdkDragHandle title="Drag to reorder">
+                <svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor"
+                     aria-hidden="true">
+                  <circle cx="3" cy="2"  r="1.2"/><circle cx="7" cy="2"  r="1.2"/>
+                  <circle cx="3" cy="7"  r="1.2"/><circle cx="7" cy="7"  r="1.2"/>
+                  <circle cx="3" cy="12" r="1.2"/><circle cx="7" cy="12" r="1.2"/>
+                </svg>
+              </span>
+
+              <!-- Round checkbox -->
+              <button class="todo-list__check"
+                      type="button"
+                      (click)="toggle(item)"
+                      title="Mark complete"
+                      aria-label="Mark complete">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+                  <circle cx="9" cy="9" r="8" stroke="currentColor" stroke-width="1.5"/>
+                </svg>
+              </button>
+
+              <!-- Text or inline-edit input -->
+              @if (editingId() === item.id) {
+                <input class="todo-list__edit-input"
+                       type="text"
+                       [(ngModel)]="editText"
+                       (keydown.enter)="commitEdit(item); $event.preventDefault()"
+                       (keydown.escape)="cancelEdit()"
+                       (blur)="commitEdit(item)"
+                       maxlength="150"
+                       #editInput
+                       autofocus>
+              } @else {
+                <span class="todo-list__text"
+                      (click)="startEdit(item)">{{ item.text }}</span>
+              }
+
+              <!-- Desktop: hover-X delete (right edge). -->
+              <button class="todo-list__delete"
+                      type="button"
+                      (click)="deleteItem(item)"
+                      title="Delete"
+                      aria-label="Delete item">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <line x1="18" y1="6" x2="6" y2="18"/>
+                  <line x1="6"  y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+
+              <!-- Mobile: swipe-revealed Delete tile (sits behind the row,
+                   visible only when swiped left). -->
+              <button class="todo-list__swipe-delete"
+                      type="button"
+                      (click)="deleteItem(item)"
+                      [attr.aria-hidden]="revealedItemId() !== item.id"
+                      [attr.tabindex]="revealedItemId() === item.id ? 0 : -1">
+                Delete
+              </button>
+            </li>
+          }
+        </ul>
+      }
+
+      <!-- Empty state -->
+      @if (activeItems().length === 0 && completedItems().length === 0 && !loading()) {
+        <div class="todo-list__empty">
+          <p class="todo-list__empty-title">Nothing on your list yet.</p>
+          <p class="todo-list__empty-body">
+            Daily reminders, next actions, anything you want off your mind.
+          </p>
         </div>
       }
 
-      <!-- ── Expanded Body ───────────────────────────────────────── -->
-      <div class="ai-body">
+      <!-- All caught up (completed but no active) -->
+      @if (activeItems().length === 0 && completedItems().length > 0) {
+        <p class="todo-list__caught-up">All clear.</p>
+      }
 
-        <!-- Empty state -->
-        @if (activeItems().length === 0 && completedItems().length === 0 && !showAddForm()) {
-          <div class="ai-empty">
-            <p class="ai-empty__text">
-              Use Daily Reminders to track your to-dos, next actions, or anything you want to get done. Add up to 20 active items.
-            </p>
-            <button class="ai-add-link" (click)="startAdd()">+ Add item</button>
-          </div>
-        }
+      @if (error()) {
+        <p class="todo-list__error">{{ error() }}</p>
+      }
 
-        <!-- All caught up (active=0 but have completed items) -->
-        @if (allCaughtUp() && !showAddForm()) {
-          <div class="ai-caught-up">
-            <p>🎉 All caught up!</p>
-            <button class="ai-add-link" (click)="startAdd()">+ Add item</button>
-          </div>
-        }
+      <!-- Done section -->
+      @if (completedItems().length > 0) {
+        <div class="todo-list__done">
+          <button class="todo-list__done-toggle"
+                  type="button"
+                  (click)="doneExpanded.set(!doneExpanded())"
+                  [attr.aria-expanded]="doneExpanded()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2.5"
+                 stroke-linecap="round" stroke-linejoin="round"
+                 [style.transform]="doneExpanded() ? 'rotate(90deg)' : 'rotate(0deg)'"
+                 style="transition: transform .2s ease" aria-hidden="true">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+            Done ({{ completedItems().length }})
+          </button>
 
-        <!-- Add link (top, only when active items exist so it doesn't duplicate the caught-up/empty buttons) -->
-        @if (!showAddForm() && activeItems().length > 0) {
-          <div class="ai-add-bar">
-            @if (activeItems().length < 20) {
-              <button class="ai-add-link" (click)="startAdd()">+ Add item</button>
-            } @else {
-              <span class="ai-limit-note">20 active item limit reached</span>
-            }
-          </div>
-        }
+          @if (doneExpanded()) {
+            <ul class="todo-list__items todo-list__items--done">
+              @for (item of completedItems(); track item.id) {
+                <li class="todo-list__item todo-list__item--completed"
+                    [class.todo-list__item--swipe-revealed]="revealedItemId() === item.id"
+                    [style.transform]="rowTransform(item.id)"
+                    (touchstart)="onTouchStart(item.id, $event)"
+                    (touchmove)="onTouchMove($event)"
+                    (touchend)="onTouchEnd(item.id)"
+                    (touchcancel)="onTouchCancel(item.id)">
 
-        <!-- Active list -->
-        @if (activeItems().length > 0) {
-          <ul class="ai-list"
-              cdkDropList
-              (cdkDropListDropped)="onDrop($event)">
-            @for (item of activeItems(); track item.id) {
-              <li class="ai-item" cdkDrag>
+                  <!-- Spacer to keep checkbox + text aligned with active rows -->
+                  <span class="todo-list__handle todo-list__handle--placeholder" aria-hidden="true"></span>
 
-                <!-- Drag handle (desktop) -->
-                <span class="ai-drag-handle" cdkDragHandle title="Drag to reorder">
-                  <svg width="12" height="14" viewBox="0 0 12 14" fill="none"
-                    xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="4" cy="2" r="1.5" fill="currentColor"/>
-                    <circle cx="8" cy="2" r="1.5" fill="currentColor"/>
-                    <circle cx="4" cy="7" r="1.5" fill="currentColor"/>
-                    <circle cx="8" cy="7" r="1.5" fill="currentColor"/>
-                    <circle cx="4" cy="12" r="1.5" fill="currentColor"/>
-                    <circle cx="8" cy="12" r="1.5" fill="currentColor"/>
-                  </svg>
-                </span>
-
-                <!-- Checkbox -->
-                <button class="ai-check" (click)="toggle(item)" title="Mark complete">
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
-                    xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/>
-                  </svg>
-                </button>
-
-                <!-- Text / Edit -->
-                @if (editingId() === item.id) {
-                  <div class="ai-edit-row">
-                    <input class="ai-input"
-                      [(ngModel)]="editText"
-                      (keydown.enter)="saveEdit(item)"
-                      (keydown.escape)="cancelEdit()"
-                      maxlength="150"
-                      autofocus>
-                    <span class="ai-char-count">{{ 150 - editText.length }}</span>
-                    <button class="ai-action-btn ai-action-btn--save"
-                      (click)="saveEdit(item)">Save</button>
-                    <button class="ai-action-btn ai-action-btn--cancel"
-                      (click)="cancelEdit()">Cancel</button>
-                  </div>
-                } @else {
-                  <span class="ai-text" (dblclick)="startEdit(item)">{{ item.text }}</span>
-
-                  <!-- Desktop: hover-reveal controls -->
-                  <div class="ai-item-actions">
-                    <button class="ai-arrow" title="Move up"
-                      [disabled]="$index === 0"
-                      (click)="moveUp($index)">▲</button>
-                    <button class="ai-arrow" title="Move down"
-                      [disabled]="$index === activeItems().length - 1"
-                      (click)="moveDown($index)">▼</button>
-                    <button class="ai-action-btn ai-action-btn--edit"
-                      (click)="startEdit(item)" title="Edit">✎</button>
-                    <button class="ai-action-btn ai-action-btn--delete"
-                      (click)="deleteItem(item)" title="Delete">✕</button>
-                  </div>
-
-                  <!-- Mobile: single ··· button -->
-                  <button class="ai-menu-btn"
-                    [class.ai-menu-btn--open]="openMenuId() === item.id"
-                    (click)="toggleMenu(item.id)"
-                    title="Actions">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                      <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
+                  <button class="todo-list__check todo-list__check--done"
+                          type="button"
+                          (click)="toggle(item)"
+                          title="Restore"
+                          aria-label="Restore item">
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+                      <circle cx="9" cy="9" r="8" fill="var(--color-accent)" stroke="var(--color-accent)" stroke-width="1.5"/>
+                      <polyline points="5.5,9 8,11.5 12.5,7" stroke="white" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round" fill="none"/>
                     </svg>
                   </button>
-                }
 
-                <!-- Mobile inline action row (below item text) -->
-                @if (openMenuId() === item.id && editingId() !== item.id) {
-                  <div class="ai-inline-menu">
-                    <button class="ai-inline-btn ai-inline-btn--edit"
-                      (click)="startEdit(item); closeMenu()">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                      </svg>
-                      Edit
-                    </button>
-                    <button class="ai-inline-btn ai-inline-btn--delete"
-                      (click)="deleteItem(item); closeMenu()">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-                        <path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
-                      </svg>
-                      Delete
-                    </button>
-                  </div>
-                }
+                  <span class="todo-list__text todo-list__text--done">{{ item.text }}</span>
 
-              </li>
-            }
-          </ul>
-        }
+                  <button class="todo-list__delete"
+                          type="button"
+                          (click)="deleteItem(item)"
+                          title="Delete"
+                          aria-label="Delete item">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2"
+                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <line x1="18" y1="6" x2="6" y2="18"/>
+                      <line x1="6"  y1="6" x2="18" y2="18"/>
+                    </svg>
+                  </button>
 
-        <!-- Add form -->
-        @if (showAddForm()) {
-          <div class="ai-add-row">
-            <input class="ai-input"
-              [(ngModel)]="newText"
-              (keydown.enter)="submitAdd()"
-              (keydown.escape)="cancelAdd()"
-              placeholder="What do you need to do?"
-              maxlength="150"
-              autofocus>
-            <span class="ai-char-count">{{ 150 - newText.length }}</span>
-            <button class="ai-action-btn ai-action-btn--save"
-              [disabled]="!newText.trim() || saving()"
-              (click)="submitAdd()">
-              {{ saving() ? '…' : 'Add' }}
+                  <button class="todo-list__swipe-delete"
+                          type="button"
+                          (click)="deleteItem(item)"
+                          [attr.aria-hidden]="revealedItemId() !== item.id"
+                          [attr.tabindex]="revealedItemId() === item.id ? 0 : -1">
+                    Delete
+                  </button>
+                </li>
+              }
+            </ul>
+
+            <button class="todo-list__clear-done"
+                    type="button"
+                    (click)="clearCompleted()">
+              Clear all done
             </button>
-            <button class="ai-action-btn ai-action-btn--cancel"
-              (click)="cancelAdd()">Cancel</button>
-          </div>
-        }
-
-
-        <!-- Error -->
-        @if (error()) {
-          <p class="ai-error">{{ error() }}</p>
-        }
-
-        <!-- Completed section -->
-        @if (completedItems().length > 0) {
-          <div class="ai-completed-section">
-            <button class="ai-completed-toggle"
-              (click)="completedExpanded.set(!completedExpanded())">
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24"
-                fill="none" stroke="currentColor" stroke-width="2.5"
-                stroke-linecap="round" stroke-linejoin="round"
-                [style.transform]="completedExpanded() ? 'rotate(90deg)' : 'rotate(0deg)'"
-                style="transition:transform .2s ease">
-                <polyline points="9 18 15 12 9 6"/>
-              </svg>
-              Completed ({{ completedItems().length }})
-            </button>
-
-            @if (completedExpanded()) {
-              <ul class="ai-list ai-list--completed">
-                @for (item of completedItems(); track item.id) {
-                  <li class="ai-item ai-item--done">
-                    <button class="ai-check ai-check--done" (click)="toggle(item)" title="Uncheck">
-                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
-                        xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="8" cy="8" r="7" fill="var(--color-accent)" stroke="var(--color-accent)" stroke-width="1.5"/>
-                        <polyline points="5,8 7,10.5 11,6" stroke="white" stroke-width="1.75"
-                          stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-                      </svg>
-                    </button>
-                    <span class="ai-text ai-text--done">{{ item.text }}</span>
-                    <button class="ai-action-btn ai-action-btn--delete"
-                      (click)="deleteItem(item)" title="Delete">✕</button>
-                  </li>
-                }
-              </ul>
-
-              <button class="ai-clear-link" (click)="clearCompleted()">
-                Clear completed
-              </button>
-            }
-          </div>
-        }
-
-      </div>
+          }
+        </div>
+      }
     </div>
   `,
   styles: [`
-    /* ── Card shell ─────────────────────────────────────────────── */
-    .ai-card {
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-lg);
-      overflow: hidden;
-      margin-bottom: 1.25rem;
-      transition: border-color .15s, box-shadow .15s;
-      &:hover { border-color: var(--color-accent); box-shadow: var(--shadow-md); }
+    /* ── Container ──────────────────────────────────────────────── */
+    .todo-list {
+      max-width: 720px;
+      margin: 0 auto;
     }
 
-    /* ── Header ─────────────────────────────────────────────────── */
-    .ai-header {
+    /* ── Add input ──────────────────────────────────────────────── */
+    /* Inline + sign + text input, sitting in a soft underlined row.
+       Always-visible to remove the "click to reveal a form" friction. */
+    .todo-list__add {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      padding: 1rem 1.25rem;
-      cursor: pointer;
-      user-select: none;
-      gap: 1rem;
+      gap: .625rem;
+      padding: .625rem 0;
+      border-bottom: 1px solid var(--color-border);
+      margin-bottom: .25rem;
+      transition: border-color .15s;
     }
-    .ai-header__left { flex: 1; min-width: 0; }
-    .ai-label {
-      display: block;
-      font-size: .6875rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .07em;
-      color: var(--color-accent-dark);
-      margin-bottom: .3rem;
+    .todo-list__add:focus-within {
+      border-color: var(--color-accent);
     }
-    .ai-summary {
-      margin: 0;
+    .todo-list__add--disabled { opacity: .55; }
+    .todo-list__add-plus {
+      flex-shrink: 0;
+      font-size: 1.25rem;
+      font-weight: 300;
+      color: var(--color-text-3);
+      width: 18px;
+      text-align: center;
+      line-height: 1;
+    }
+    .todo-list__add:focus-within .todo-list__add-plus { color: var(--color-accent); }
+    .todo-list__add-input {
+      flex: 1; min-width: 0;
+      background: transparent;
+      border: none;
+      outline: none;
+      font-family: inherit;
       font-size: .9375rem;
-      font-weight: 400;
       color: var(--color-text);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      padding: .375rem 0;
     }
-    .ai-toggle {
-      flex-shrink: 0;
-      background: none; border: none;
+    .todo-list__add-input::placeholder {
       color: var(--color-text-3);
-      cursor: pointer; padding: .25rem;
-      display: flex; align-items: center;
-      &:hover { color: var(--color-text); }
+    }
+    .todo-list__char-count {
+      flex-shrink: 0;
+      font-size: .6875rem;
+      color: var(--color-text-3);
+      font-variant-numeric: tabular-nums;
+    }
+    .todo-list__cap-note {
+      font-size: .75rem;
+      color: var(--color-text-3);
+      margin: .375rem 0 1rem;
     }
 
-    /* ── Body (hidden unless expanded) ──────────────────────────── */
-    .ai-body {
-      display: none;
-      padding: 0 1.25rem 1.25rem;
-    }
-    .ai-card--expanded .ai-body { display: block; padding-top: 1rem; }
-    /* When expanded, collapse the header to zero height and float the
-       toggle button in the top-right corner so it doesn't push content down */
-    .ai-card { position: relative; }
-    .ai-card--expanded .ai-header { padding: 0; height: 0; overflow: visible; }
-    .ai-card--expanded .ai-toggle { position: absolute; top: .625rem; right: .875rem; }
-
-    /* Always-open mode (no collapse) */
-    .ai-card--always-open {
-      .ai-body { display: block; padding-top: 1rem; }
-      &:hover { border-color: var(--color-border); box-shadow: none; }
-    }
-
-    /* ── Empty / caught-up states ────────────────────────────────── */
-    .ai-empty {
-      padding: .5rem .25rem 0;
-      display: flex;
-      flex-direction: column;
-      gap: .75rem;
-      align-items: flex-start;
-    }
-    .ai-empty__text {
-      margin: 0;
-      font-size: .8125rem;
-      color: var(--color-text-2);
-      line-height: 1.55;
-    }
-    .ai-caught-up {
-      padding: .5rem .25rem;
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      p { margin: 0; font-size: .9375rem; font-weight: 500; color: var(--color-text-2); }
-    }
-
-    /* ── List ────────────────────────────────────────────────────── */
-    .ai-list {
+    /* ── Item list ──────────────────────────────────────────────── */
+    .todo-list__items {
       list-style: none;
-      margin: .125rem 0 0;
       padding: 0;
+      margin: .25rem 0 0;
     }
-    .ai-item {
-      display: flex;
-      align-items: flex-start;
-      flex-wrap: wrap;
-      gap: .5rem;
-      padding: .3rem 0;
-      border-radius: var(--radius-sm);
+
+    /* Each row is a flex line. Position relative so the swipe-delete
+       tile can sit absolutely behind it. Overflow hidden so the tile
+       doesn't leak when the row is at rest. */
+    .todo-list__item {
       position: relative;
-      &:hover { background: var(--color-surface-2); }
-      &:hover .ai-item-actions { opacity: 1; }
-      &:hover .ai-drag-handle { opacity: 1; }
-    }
-
-    /* ── Drag handle ─────────────────────────────────────────────── */
-    .ai-drag-handle {
-      cursor: grab;
-      color: var(--color-text-3);
-      opacity: 0;
-      flex-shrink: 0;
-      padding: .1rem;
-      margin-top: .15rem;
-      display: flex; align-items: center;
-      transition: opacity .15s;
-      &:hover { color: var(--color-text-2); }
-    }
-
-    /* CDK drag preview */
-    .cdk-drag-preview {
-      background: var(--color-surface);
-      border: 1px solid var(--color-accent);
-      border-radius: var(--radius-sm);
-      padding: .45rem .25rem;
-      box-shadow: 0 4px 16px rgba(0,0,0,.15);
       display: flex;
       align-items: center;
-      gap: .5rem;
+      gap: .625rem;
+      padding: .625rem .25rem;
+      border-bottom: 1px solid var(--color-border);
+      background: var(--color-bg, #f7f7f5);
+      transition: transform .25s ease, background .15s;
+      will-change: transform;
+    }
+    .todo-list__item:last-child { border-bottom: none; }
+    .todo-list__item:hover {
+      background: var(--color-surface, #fff);
+    }
+    /* While editing, sit on the surface tone for clearer focus. */
+    .todo-list__item--editing {
+      background: var(--color-surface, #fff);
+    }
+
+    /* CDK drag-preview / drop-placeholder treatment so reorder feels solid. */
+    .cdk-drag-preview {
+      box-shadow: var(--shadow-md, 0 4px 12px rgba(0,0,0,.08));
+      border-radius: 8px;
+      background: #fff;
     }
     .cdk-drag-placeholder { opacity: 0; }
-    .cdk-drag-animating { transition: transform .25s cubic-bezier(.25,.8,.25,1); }
-    .cdk-drop-list-dragging .ai-item:not(.cdk-drag-placeholder) {
-      transition: transform .25s cubic-bezier(.25,.8,.25,1);
+    .cdk-drag-animating { transition: transform 250ms cubic-bezier(0,0,0.2,1); }
+    .todo-list__items.cdk-drop-list-dragging .todo-list__item:not(.cdk-drag-placeholder) {
+      transition: transform 250ms cubic-bezier(0,0,0.2,1);
     }
 
-    /* ── Checkbox button ─────────────────────────────────────────── */
-    .ai-check {
+    /* ── Drag handle ────────────────────────────────────────────── */
+    /* Always visible but very muted at rest; brightens on row hover.
+       Cursor: grab so the affordance reads as draggable. */
+    .todo-list__handle {
       flex-shrink: 0;
-      background: none; border: none;
-      padding: 0; cursor: pointer;
-      margin-top: .15rem;
-      color: var(--color-text-3);
-      display: flex; align-items: center;
-      transition: color .15s;
-      &:hover { color: var(--color-accent); }
-    }
-    .ai-check--done { color: var(--color-accent); }
-
-    /* ── Item text ───────────────────────────────────────────────── */
-    .ai-text {
-      flex: 1;
-      font-size: .875rem;
-      color: var(--color-text);
-      cursor: default;
-      word-break: break-word;
-      line-height: 1.45;
-    }
-    .ai-text--done {
-      text-decoration: line-through;
-      color: var(--color-text-3);
-    }
-
-    /* ── Item action buttons ─────────────────────────────────────── */
-    .ai-item-actions {
-      display: flex; align-items: center; gap: .15rem;
-      opacity: 0;
-      transition: opacity .15s;
-      flex-shrink: 0;
-    }
-    .ai-action-btn {
-      background: none; border: none;
-      font-size: .875rem; cursor: pointer;
-      /* 44px minimum touch target */
-      min-width: 2.75rem; min-height: 2.75rem;
-      display: flex; align-items: center; justify-content: center;
-      border-radius: var(--radius-sm);
-      font-family: var(--font-sans);
-      transition: background .12s, color .12s;
-    }
-    .ai-action-btn--edit {
-      color: var(--color-text-3);
-      &:hover { background: var(--color-surface-2); color: var(--color-text); }
-    }
-    .ai-action-btn--delete {
-      color: var(--color-text-3);
-      &:hover { background: #fee2e2; color: #dc2626; }
-    }
-    .ai-action-btn--save {
-      color: white; background: var(--color-accent);
-      border-radius: var(--radius-sm);
-      font-weight: 600; font-size: .8125rem;
-      min-width: auto; padding: 0 .75rem;
-      &:hover { background: var(--color-accent-dark); }
-      &:disabled { opacity: .5; cursor: default; }
-    }
-    .ai-action-btn--cancel {
-      color: var(--color-text-2);
-      min-width: auto; padding: 0 .5rem;
-      &:hover { background: var(--color-surface-2); }
-    }
-
-    /* ── Up/Down arrows (reorder) ────────────────────────────────── */
-    .ai-arrow {
-      background: none; border: none;
-      font-size: .75rem; cursor: pointer;
-      /* 44px minimum touch target */
-      min-width: 2.75rem; min-height: 2.75rem;
-      display: flex; align-items: center; justify-content: center;
-      color: var(--color-text-3);
-      border-radius: var(--radius-sm);
-      &:hover:not([disabled]) { background: var(--color-surface-2); color: var(--color-text); }
-      &[disabled] { opacity: .25; cursor: default; }
-    }
-
-    /* ── Mobile ··· menu button ─────────────────────────────────── */
-    .ai-menu-btn {
-      display: none;          /* hidden on desktop */
-      flex-shrink: 0;
-      background: none; border: none;
-      padding: .2rem .3rem;
-      border-radius: var(--radius-sm);
-      color: var(--color-text-3);
-      cursor: pointer;
-      align-items: center; justify-content: center;
-      transition: color .15s, background .15s;
-      &:hover, &.ai-menu-btn--open {
-        color: var(--color-accent);
-        background: var(--color-surface-2);
-      }
-    }
-
-    /* ── Mobile inline action row ────────────────────────────────── */
-    .ai-inline-menu {
-      display: flex;
-      width: 100%;
-      gap: .5rem;
-      padding: .25rem 0 .375rem 1.75rem; /* indent past checkbox */
-    }
-    .ai-inline-btn {
-      display: flex; align-items: center; gap: .35rem;
-      background: none; border: 1px solid var(--color-border);
-      border-radius: var(--radius-sm);
-      font-size: .8125rem; font-family: var(--font-sans);
-      padding: .3rem .7rem;
-      cursor: pointer;
-      transition: background .12s, color .12s, border-color .12s;
-    }
-    .ai-inline-btn--edit {
-      color: var(--color-text-2);
-      &:hover { background: var(--color-surface-2); color: var(--color-text); border-color: var(--color-text-3); }
-    }
-    .ai-inline-btn--delete {
-      color: #dc2626; border-color: #fca5a5;
-      &:hover { background: #fee2e2; border-color: #dc2626; }
-    }
-
-    /* ── Narrow viewports + touch: swap hover controls for ··· menu  */
-    @media (max-width: 639px), (pointer: coarse) {
-      .ai-item-actions { display: none !important; }
-      .ai-menu-btn { display: flex; }
-      .ai-drag-handle { opacity: 1; }
-      .ai-item--done .ai-action-btn--delete { opacity: 1; }
-    }
-
-    /* ── Add/Edit input row ──────────────────────────────────────── */
-    .ai-add-row, .ai-edit-row {
-      display: flex;
+      width: 14px;
+      display: inline-flex;
       align-items: center;
-      gap: .4rem;
-      margin-top: .625rem;
-      flex-wrap: wrap;
+      justify-content: center;
+      color: var(--color-text-3);
+      opacity: .35;
+      cursor: grab;
+      transition: opacity .15s, color .15s;
     }
-    .ai-input {
+    .todo-list__handle:active { cursor: grabbing; }
+    .todo-list__item:hover .todo-list__handle { opacity: .75; }
+    .todo-list__handle--placeholder {
+      cursor: default;
+      opacity: 0;
+    }
+
+    /* ── Checkbox ───────────────────────────────────────────────── */
+    .todo-list__check {
+      flex-shrink: 0;
+      width: 22px; height: 22px;
+      display: grid; place-items: center;
+      background: transparent;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      color: var(--color-text-3);
+      transition: color .15s, transform .1s;
+    }
+    .todo-list__check:hover { color: var(--color-accent); }
+    .todo-list__check:active { transform: scale(.92); }
+    .todo-list__check--done { color: var(--color-accent); }
+
+    /* ── Text ───────────────────────────────────────────────────── */
+    /* Click anywhere on the text to enter edit mode. cursor: text
+       hints at it without needing a pencil icon. */
+    .todo-list__text {
       flex: 1;
       min-width: 0;
-      font-size: .875rem;
-      padding: .4rem .6rem;
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-sm);
-      background: var(--color-surface);
+      font-size: .9375rem;
+      line-height: 1.4;
       color: var(--color-text);
-      font-family: var(--font-sans);
+      cursor: text;
+      padding: .125rem 0;
+      word-break: break-word;
+      user-select: none;
+    }
+    .todo-list__text--done {
+      color: var(--color-text-3);
+      text-decoration: line-through;
+      text-decoration-thickness: 1px;
+      text-decoration-color: var(--color-text-3);
+    }
+
+    /* ── Inline edit input ──────────────────────────────────────── */
+    .todo-list__edit-input {
+      flex: 1; min-width: 0;
+      background: transparent;
+      border: none;
       outline: none;
-      &:focus { border-color: var(--color-accent); box-shadow: 0 0 0 2px rgba(108,99,255,.15); }
+      font-family: inherit;
+      font-size: .9375rem;
+      line-height: 1.4;
+      color: var(--color-text);
+      padding: .125rem 0;
     }
-    .ai-char-count {
-      font-size: .7rem;
-      color: var(--color-text-3);
+
+    /* ── Desktop hover delete X ─────────────────────────────────── */
+    .todo-list__delete {
       flex-shrink: 0;
-    }
-
-    /* ── Add bar (top of list) ───────────────────────────────────── */
-    .ai-add-bar {
-      margin-bottom: .25rem;
-      display: flex; align-items: center;
-    }
-    .ai-add-link {
-      background: none; border: none;
-      font-family: var(--font-sans);
-      font-size: .9rem;
-      color: var(--color-text-3);
-      cursor: pointer;
-      padding: .25rem 0;
-      display: flex; align-items: center; gap: .4rem;
-      transition: color .12s;
-      &:hover { color: var(--color-accent-dark); }
-    }
-    .ai-limit-note {
-      font-size: .75rem;
-      color: var(--color-text-3);
-      padding: .25rem 0;
-    }
-
-    /* ── Error ───────────────────────────────────────────────────── */
-    .ai-error {
-      font-size: .8125rem;
-      color: #dc2626;
-      margin: .5rem 0 0;
-    }
-
-    /* ── Completed section ───────────────────────────────────────── */
-    .ai-completed-section {
-      margin-top: .75rem;
-      border-top: 1px solid var(--color-border);
-      padding-top: .5rem;
-    }
-    .ai-completed-toggle {
-      background: none; border: none;
-      font-size: .8rem; cursor: pointer;
-      color: var(--color-text-2);
-      font-family: var(--font-sans);
-      display: flex; align-items: center; gap: .35rem;
-      padding: .2rem 0;
-      &:hover { color: var(--color-text); }
-    }
-    .ai-list--completed {
-      margin-top: .25rem;
-    }
-    .ai-item--done {
-      &:hover .ai-action-btn--delete { opacity: 1; }
-      .ai-action-btn--delete { opacity: 0; transition: opacity .15s; }
-      &:hover { background: var(--color-surface-2); }
-    }
-    .ai-clear-link {
-      background: none; border: none;
-      margin-top: .5rem;
-      font-size: .75rem;
-      font-family: var(--font-sans);
-      color: var(--color-text-3);
-      cursor: pointer;
+      width: 28px; height: 28px;
+      display: grid; place-items: center;
+      background: transparent;
+      border: none;
       padding: 0;
-      text-decoration: underline;
-      text-underline-offset: 2px;
-      &:hover { color: #dc2626; }
+      cursor: pointer;
+      color: var(--color-text-3);
+      opacity: 0;
+      transition: opacity .15s, color .15s, background .15s;
+      border-radius: 50%;
+    }
+    .todo-list__item:hover .todo-list__delete { opacity: .55; }
+    .todo-list__delete:hover {
+      opacity: 1 !important;
+      color: var(--color-danger, #e11d48);
+      background: rgba(225,29,72,.08);
+    }
+    /* While editing, suppress the delete to avoid accidental clicks. */
+    .todo-list__item--editing .todo-list__delete {
+      visibility: hidden;
+    }
+
+    /* On touch devices the hover-only delete is unreachable; hide it
+       there and rely on swipe-to-delete instead. */
+    @media (hover: none) and (pointer: coarse) {
+      .todo-list__delete { display: none; }
+    }
+
+    /* ── Swipe-to-delete (mobile) ───────────────────────────────── */
+    /* The Delete tile sits absolutely positioned to the right of the
+       row's natural width; visible only when the row is translated
+       left (--swipe-revealed). Pointer events disabled at rest to
+       prevent accidental taps when not revealed. */
+    .todo-list__swipe-delete {
+      position: absolute;
+      top: 0; right: 0;
+      transform: translateX(100%);
+      height: 100%;
+      width: 80px;
+      background: var(--color-danger, #e11d48);
+      color: #fff;
+      border: none;
+      font-family: inherit;
+      font-size: .8125rem;
+      font-weight: 700;
+      letter-spacing: .02em;
+      cursor: pointer;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .15s;
+    }
+    .todo-list__item--swipe-revealed .todo-list__swipe-delete {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .todo-list__item--swipe-revealed {
+      /* The transform is applied inline via [style.transform] from
+         rowTransform() so live-drag tracking works smoothly. The
+         class only controls the swipe-delete tile visibility. */
+    }
+    /* Hide the swipe affordance entirely on devices with hover (= desktop) */
+    @media (hover: hover) and (pointer: fine) {
+      .todo-list__swipe-delete { display: none; }
+    }
+
+    /* ── Empty / caught-up ──────────────────────────────────────── */
+    .todo-list__empty {
+      padding: 2rem 1rem 1rem;
+      text-align: center;
+    }
+    .todo-list__empty-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--color-text);
+      margin: 0 0 .375rem;
+    }
+    .todo-list__empty-body {
+      font-size: .875rem;
+      color: var(--color-text-3);
+      margin: 0;
+      line-height: 1.5;
+      max-width: 36ch;
+      margin-inline: auto;
+    }
+    .todo-list__caught-up {
+      padding: 1.5rem 1rem .5rem;
+      text-align: center;
+      font-size: .9375rem;
+      color: var(--color-text-3);
+      margin: 0;
+    }
+    .todo-list__error {
+      font-size: .8125rem;
+      color: var(--color-danger, #e11d48);
+      margin: .5rem 0;
+    }
+
+    /* ── Done section ────────────────────────────────────────────── */
+    .todo-list__done {
+      margin-top: 1.5rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--color-border);
+    }
+    .todo-list__done-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: .375rem;
+      background: transparent;
+      border: none;
+      padding: .25rem 0;
+      font-family: inherit;
+      font-size: .8125rem;
+      font-weight: 600;
+      color: var(--color-text-2);
+      cursor: pointer;
+    }
+    .todo-list__done-toggle:hover { color: var(--color-text); }
+
+    .todo-list__items--done .todo-list__item {
+      background: transparent;
+    }
+    .todo-list__items--done .todo-list__item:hover {
+      background: var(--color-surface, #fff);
+    }
+
+    .todo-list__clear-done {
+      background: transparent;
+      border: none;
+      color: var(--color-text-3);
+      font-family: inherit;
+      font-size: .75rem;
+      cursor: pointer;
+      padding: .5rem 0;
+      margin-top: .5rem;
+    }
+    .todo-list__clear-done:hover {
+      color: var(--color-danger, #e11d48);
     }
   `]
 })
 export class ActionItemsCardComponent implements OnInit {
-  @Input() startExpanded = false;
-  @Input() collapsible   = true;
-
   private api = inject(ApiService);
 
-  items         = signal<ActionItem[]>([]);
-  expanded      = signal(false);
-  completedExpanded = signal(false);
-  showAddForm   = signal(false);
-  editingId     = signal<number | null>(null);
-  openMenuId    = signal<number | null>(null);
-  saving        = signal(false);
-  error         = signal('');
-
-  newText  = '';
-  editText = '';
+  // ── Data ─────────────────────────────────────────────────────────
+  private items = signal<ActionItem[]>([]);
+  loading = signal(true);
+  saving  = signal(false);
+  error   = signal('');
 
   activeItems    = computed(() => this.items().filter(i => !i.isCompleted));
   completedItems = computed(() => this.items().filter(i => i.isCompleted));
-  allCaughtUp    = computed(() =>
-    this.activeItems().length === 0 && this.completedItems().length > 0
-  );
+  atCap          = computed(() => this.activeItems().length >= 100);
+
+  // ── UI state ─────────────────────────────────────────────────────
+  doneExpanded   = signal(false);
+  editingId      = signal<number | null>(null);
+  /** ID of the row currently showing the swipe-revealed Delete tile. */
+  revealedItemId = signal<number | null>(null);
+
+  /** Two-way bound to the add input. */
+  newText  = '';
+  /** Two-way bound to the inline edit input. */
+  editText = '';
+  /** Original text snapshot for restoring on Esc / empty-blur. */
+  private editOriginal = '';
+
+  // ── Swipe state (mobile) ──────────────────────────────────────────
+  private touchStartX  = 0;
+  private touchStartY  = 0;
+  private touchCurrentDelta = 0;
+  private swipingItemId: number | null = null;
+  /** Live transform offset by item id while a swipe is in progress.
+   *  Set to a negative number during touchmove; cleared on touchend. */
+  private liveSwipeOffset = signal<{ id: number; px: number } | null>(null);
 
   ngOnInit(): void {
-    if (this.startExpanded || !this.collapsible) this.expanded.set(true);
+    this.load();
+  }
+
+  // ── Loading ──────────────────────────────────────────────────────
+  private load(): void {
     this.api.getActionItems().subscribe({
-      next: items => this.items.set(items),
-      error: () => {}
+      next: items => { this.items.set(items); this.loading.set(false); },
+      error: err => {
+        this.error.set(this.errMsg(err) || 'Could not load to-do list.');
+        this.loading.set(false);
+      }
     });
   }
 
-  toggleExpanded(): void {
-    this.expanded.update(v => !v);
-  }
-
-  // ── Add ────────────────────────────────────────────────────────
-  startAdd(): void {
-    this.newText = '';
-    this.editingId.set(null);
-    this.showAddForm.set(true);
-    this.expanded.set(true);
-  }
-
-  cancelAdd(): void {
-    this.showAddForm.set(false);
-    this.newText = '';
-  }
-
+  // ── Add ───────────────────────────────────────────────────────────
   submitAdd(): void {
     const text = this.newText.trim();
-    if (!text || this.saving()) return;
+    if (!text || this.atCap()) return;
     this.saving.set(true);
     this.error.set('');
     this.api.createActionItem(text).subscribe({
       next: item => {
-        this.items.update(list => [...list, item]);
+        // New items always go to the top of the active list (server
+        // enforces SortOrder=0 and shifts existing +1). We mirror
+        // that locally by prepending to the active section so the UI
+        // updates instantly without waiting for a refetch.
+        this.items.update(list => [item, ...list.map(i =>
+          !i.isCompleted ? { ...i, sortOrder: i.sortOrder + 1 } : i
+        )]);
         this.newText = '';
-        this.showAddForm.set(false);
         this.saving.set(false);
       },
       error: err => {
-        this.error.set(err?.error?.error ?? 'Could not add item.');
+        this.error.set(this.errMsg(err) || 'Could not add item.');
         this.saving.set(false);
       }
     });
   }
 
-  // ── Mobile ··· menu ────────────────────────────────────────────
-  toggleMenu(id: number): void {
-    this.openMenuId.set(this.openMenuId() === id ? null : id);
+  cancelAdd(): void { this.newText = ''; }
+
+  // ── Toggle complete ──────────────────────────────────────────────
+  toggle(item: ActionItem): void {
+    this.error.set('');
+    this.api.toggleActionItem(item.id).subscribe({
+      next: updated => {
+        this.items.update(list => list.map(i => i.id === updated.id ? updated : i));
+      },
+      error: err => this.error.set(this.errMsg(err) || 'Could not update item.')
+    });
   }
 
-  closeMenu(): void {
-    this.openMenuId.set(null);
-  }
-
-  // ── Edit ───────────────────────────────────────────────────────
+  // ── Edit (click-to-edit) ─────────────────────────────────────────
   startEdit(item: ActionItem): void {
+    this.closeSwipe();
     this.editingId.set(item.id);
     this.editText = item.text;
-    this.showAddForm.set(false);
+    this.editOriginal = item.text;
+  }
+
+  /** Save on Enter or blur. Empty text = cancel (restore). */
+  commitEdit(item: ActionItem): void {
+    if (this.editingId() !== item.id) return;
+    const trimmed = this.editText.trim();
+    if (!trimmed) {
+      this.cancelEdit();
+      return;
+    }
+    if (trimmed === item.text) {
+      this.cancelEdit();
+      return;
+    }
+    const optimisticUpdated = { ...item, text: trimmed };
+    this.items.update(list => list.map(i => i.id === item.id ? optimisticUpdated : i));
+    this.editingId.set(null);
+    this.api.updateActionItem(item.id, trimmed).subscribe({
+      next: updated => {
+        this.items.update(list => list.map(i => i.id === updated.id ? updated : i));
+      },
+      error: err => {
+        // Revert on failure
+        this.items.update(list => list.map(i => i.id === item.id ? item : i));
+        this.error.set(this.errMsg(err) || 'Could not save edit.');
+      }
+    });
   }
 
   cancelEdit(): void {
     this.editingId.set(null);
     this.editText = '';
+    this.editOriginal = '';
   }
 
-  saveEdit(item: ActionItem): void {
-    const text = this.editText.trim();
-    if (!text) return;
-    this.error.set('');
-    this.api.updateActionItem(item.id, text).subscribe({
-      next: updated => {
-        this.items.update(list =>
-          list.map(i => i.id === updated.id ? updated : i)
-        );
-        this.editingId.set(null);
-      },
-      error: err => this.error.set(err?.error?.error ?? 'Could not update item.')
-    });
-  }
-
-  // ── Toggle complete ────────────────────────────────────────────
-  toggle(item: ActionItem): void {
-    this.api.toggleActionItem(item.id).subscribe({
-      next: updated => {
-        this.items.update(list =>
-          list.map(i => i.id === updated.id ? updated : i)
-        );
-      },
-      error: err => this.error.set(err?.error?.error ?? 'Could not update item.')
-    });
-  }
-
-  // ── Delete ─────────────────────────────────────────────────────
+  // ── Delete ───────────────────────────────────────────────────────
   deleteItem(item: ActionItem): void {
+    this.closeSwipe();
+    this.error.set('');
+    // Optimistic remove
+    const previous = this.items();
+    this.items.set(previous.filter(i => i.id !== item.id));
     this.api.deleteActionItem(item.id).subscribe({
-      next: () => this.items.update(list => list.filter(i => i.id !== item.id)),
-      error: err => this.error.set(err?.error?.error ?? 'Could not delete item.')
+      error: err => {
+        // Restore on failure
+        this.items.set(previous);
+        this.error.set(this.errMsg(err) || 'Could not delete item.');
+      }
     });
   }
 
-  // ── Clear completed ────────────────────────────────────────────
   clearCompleted(): void {
+    if (!confirm('Clear all completed items? This cannot be undone.')) return;
+    this.error.set('');
+    const previous = this.items();
+    this.items.update(list => list.filter(i => !i.isCompleted));
     this.api.clearCompletedActionItems().subscribe({
-      next: () => {
-        this.items.update(list => list.filter(i => !i.isCompleted));
-        this.completedExpanded.set(false);
-      },
-      error: err => this.error.set(err?.error?.error ?? 'Could not clear completed items.')
+      error: err => {
+        this.items.set(previous);
+        this.error.set(this.errMsg(err) || 'Could not clear completed.');
+      }
     });
   }
 
-  // ── Drag-and-drop reorder ──────────────────────────────────────
-  onDrop(event: CdkDragDrop<ActionItem[]>): void {
-    if (event.previousIndex === event.currentIndex) return;
-
+  // ── Drag & drop reorder ──────────────────────────────────────────
+  onDrop(ev: CdkDragDrop<ActionItem[]>): void {
+    if (ev.previousIndex === ev.currentIndex) return;
+    // Reorder locally first for responsiveness
     const active = [...this.activeItems()];
-    moveItemInArray(active, event.previousIndex, event.currentIndex);
+    moveItemInArray(active, ev.previousIndex, ev.currentIndex);
+    // Apply new sortOrder values
+    active.forEach((item, idx) => { item.sortOrder = idx; });
+    // Merge back with completed
+    this.items.update(list => [...active, ...list.filter(i => i.isCompleted)]);
 
-    // Merge back: updated active items + completed items
-    this.items.set([...active, ...this.completedItems()]);
-
-    const ids = active.map(i => i.id);
-    this.api.reorderActionItems(ids).subscribe({
-      error: () => this.error.set('Could not save new order.')
+    this.api.reorderActionItems(active.map(a => a.id)).subscribe({
+      error: err => {
+        this.error.set(this.errMsg(err) || 'Could not save new order.');
+        this.load(); // hard-refetch on failure
+      }
     });
   }
 
-  // ── Arrow-key reorder (mobile) ─────────────────────────────────
-  moveUp(index: number): void {
-    if (index === 0) return;
-    this.reorderAt(index, index - 1);
+  // ── Swipe-to-delete (mobile) ─────────────────────────────────────
+  /**
+   * Per-row inline transform string. Returns a negative-X transform
+   * during an active swipe, a fixed -80px when the Delete tile is
+   * revealed, and 'none' otherwise. Drives the live-drag visual.
+   */
+  rowTransform(itemId: number): string | null {
+    const live = this.liveSwipeOffset();
+    if (live && live.id === itemId) return `translateX(${live.px}px)`;
+    if (this.revealedItemId() === itemId) return 'translateX(-80px)';
+    return null;
   }
 
-  moveDown(index: number): void {
-    const active = this.activeItems();
-    if (index === active.length - 1) return;
-    this.reorderAt(index, index + 1);
+  onTouchStart(itemId: number, ev: TouchEvent): void {
+    // Don't engage swipe while editing this row.
+    if (this.editingId() === itemId) return;
+    // If a different row is currently revealed, close it first.
+    if (this.revealedItemId() !== null && this.revealedItemId() !== itemId) {
+      this.closeSwipe();
+    }
+    const t = ev.touches[0];
+    this.touchStartX = t.clientX;
+    this.touchStartY = t.clientY;
+    this.touchCurrentDelta = 0;
+    this.swipingItemId = itemId;
   }
 
-  private reorderAt(from: number, to: number): void {
-    const active = [...this.activeItems()];
-    moveItemInArray(active, from, to);
-    this.items.set([...active, ...this.completedItems()]);
-    const ids = active.map(i => i.id);
-    this.api.reorderActionItems(ids).subscribe({
-      error: () => this.error.set('Could not save new order.')
-    });
+  onTouchMove(ev: TouchEvent): void {
+    if (this.swipingItemId === null) return;
+    const t = ev.touches[0];
+    const dx = t.clientX - this.touchStartX;
+    const dy = t.clientY - this.touchStartY;
+    // If the user is mostly scrolling vertically, abort the swipe so
+    // the page can scroll naturally.
+    if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 8) {
+      this.swipingItemId = null;
+      this.liveSwipeOffset.set(null);
+      return;
+    }
+    // Only track leftward swipes; clamp to [-100, 0]. The starting
+    // position respects whether the row was already revealed.
+    const baseOffset = this.revealedItemId() === this.swipingItemId ? -80 : 0;
+    const px = Math.max(-100, Math.min(0, baseOffset + dx));
+    this.liveSwipeOffset.set({ id: this.swipingItemId, px });
+  }
+
+  onTouchEnd(itemId: number): void {
+    if (this.swipingItemId !== itemId) return;
+    const live = this.liveSwipeOffset();
+    const px = live?.px ?? 0;
+    // Threshold: revealed if the row is at < -50px past its rest position.
+    if (px < -40) {
+      this.revealedItemId.set(itemId);
+    } else {
+      this.revealedItemId.set(null);
+    }
+    this.swipingItemId = null;
+    this.liveSwipeOffset.set(null);
+  }
+
+  onTouchCancel(itemId: number): void {
+    if (this.swipingItemId !== itemId) return;
+    this.swipingItemId = null;
+    this.liveSwipeOffset.set(null);
+  }
+
+  /** Force-close any revealed swipe state (used when starting an edit
+   *  or clicking outside). */
+  private closeSwipe(): void {
+    this.revealedItemId.set(null);
+    this.liveSwipeOffset.set(null);
+    this.swipingItemId = null;
+  }
+
+  /** Tap outside any item closes the swipe-revealed state. Without
+   *  this, a revealed Delete tile would persist forever until the
+   *  user taps again on the row. */
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(ev: MouseEvent): void {
+    if (this.revealedItemId() === null) return;
+    const target = ev.target as HTMLElement;
+    if (!target.closest('.todo-list__item')) {
+      this.closeSwipe();
+    }
+  }
+
+  // ── helpers ──────────────────────────────────────────────────────
+  private errMsg(err: any): string | null {
+    return err?.error?.error ?? null;
   }
 }

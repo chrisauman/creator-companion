@@ -329,11 +329,7 @@ import { ActivatedRoute } from '@angular/router';
                   </div>
                 </div>
                 <div class="embedded-section__body">
-                  <div class="page-header">
-                    <h1 class="page-title">To Do List</h1>
-                    <p class="page-sub">Your daily reminders and next actions.</p>
-                  </div>
-                  <app-action-items-card [startExpanded]="true" [collapsible]="false"></app-action-items-card>
+                  <app-action-items-card></app-action-items-card>
                 </div>
               </div>
             }
