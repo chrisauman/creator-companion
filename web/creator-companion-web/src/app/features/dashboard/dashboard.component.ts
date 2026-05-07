@@ -21,12 +21,13 @@ import { FavoriteSparksComponent } from '../favorite-sparks/favorite-sparks.comp
 import { ActionItemsCardComponent } from './action-items-card.component';
 import { StreakHistoryComponent } from './streak-history.component';
 import { WelcomeBackComponent } from './welcome-back.component';
+import { TrialBannerComponent } from '../../shared/trial-banner/trial-banner.component';
 import { ActivatedRoute } from '@angular/router';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, SidebarComponent, MoodIconComponent, TodayPanelComponent, EntryReaderComponent, NewEntryComponent, EditEntryComponent, NotificationsComponent, FavoriteSparksComponent, ActionItemsCardComponent, StreakHistoryComponent, WelcomeBackComponent],
+  imports: [CommonModule, RouterLink, FormsModule, SidebarComponent, MoodIconComponent, TodayPanelComponent, EntryReaderComponent, NewEntryComponent, EditEntryComponent, NotificationsComponent, FavoriteSparksComponent, ActionItemsCardComponent, StreakHistoryComponent, WelcomeBackComponent, TrialBannerComponent],
   template: `
     <div class="dashboard">
 
@@ -64,6 +65,11 @@ import { ActivatedRoute } from '@angular/router';
       <!-- ── Mobile bottom nav ───────────────────────────────── -->
       <!-- ── Main content ────────────────────────────────────── -->
       <main class="main-content">
+
+        <!-- Trial countdown banner — visible only while the user is
+             inside their 10-day trial. Self-renders or hides based on
+             capabilities; safe to leave in template at all times. -->
+        <app-trial-banner></app-trial-banner>
 
         <!-- Mobile header — hamburger | logo | "Create Entry" pill.
              Greeting + date moved into the drawer to make room. -->

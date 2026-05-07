@@ -18,6 +18,18 @@ export const authInterceptor: HttpInterceptorFn = (
 
   return next(authReq).pipe(
     catchError((err: HttpErrorResponse) => {
+      // Trial-expired path. Server returns 402 Payment Required when a
+      // user with no access tries to write. Invalidate capabilities and
+      // re-fetch so the paywall takeover renders. We don't transform
+      // the response — the caller still sees the 402 and can show a
+      // local error toast if appropriate; the global paywall covers
+      // the long-term path.
+      if (err.status === 402) {
+        auth.invalidateCapabilities();
+        auth.loadCapabilities().subscribe({ error: () => {} });
+        return throwError(() => err);
+      }
+
       if (err.status !== 401) return throwError(() => err);
 
       // ── Race-condition guard ──────────────────────────────────────────────

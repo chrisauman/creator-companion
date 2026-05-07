@@ -224,4 +224,17 @@ export interface Capabilities {
   maxEntriesPerDay: number;
   maxTagsPerEntry: number;
   maxDiaries: number;
+  /** True when the user can write right now — either inside their
+   *  10-day trial or with an active Stripe subscription. Drives the
+   *  paywall takeover when false. */
+  hasAccess: boolean;
+  /** True when the user is currently inside the trial window. Drives
+   *  the trial countdown banner on dashboard. */
+  isInTrial: boolean;
+  /** True when the user has an active subscription. Drives the
+   *  "Manage subscription" link in account settings (vs "Subscribe"). */
+  hasActiveSubscription: boolean;
+  /** ISO timestamp when the trial expires (or expired). Null for
+   *  legacy accounts without a trial assigned. */
+  trialEndsAt?: string;
 }
