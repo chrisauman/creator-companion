@@ -43,7 +43,7 @@ import { StreakStats } from '../../core/models/models';
       <div class="threatened-card" role="status">
         <span class="threatened-card__eyebrow">Streak threatened</span>
         <p class="threatened-card__quote">
-          Yesterday slipped by — but you've got this.
+          2 days have slipped by — but you've got this.
         </p>
         <div class="threatened-card__actions">
           <button class="threatened-card__cta"
@@ -54,7 +54,7 @@ import { StreakStats } from '../../core/models/models';
               <path d="M12 20h9"/>
               <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/>
             </svg>
-            Log your progress
+            Log recent progress
           </button>
         </div>
       </div>

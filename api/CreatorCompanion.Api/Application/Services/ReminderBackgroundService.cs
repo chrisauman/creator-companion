@@ -280,7 +280,7 @@ public class ReminderBackgroundService(
         if (subs.Count == 0) return;
 
         const string Title = "Creator Companion";
-        const string Body  = "Yesterday slipped by — but you've got this. Log your progress.";
+        const string Body  = "2 days have slipped by — but you've got this. Log recent progress.";
 
         var expiredEndpoints = new List<string>();
         var sentCount = 0;
