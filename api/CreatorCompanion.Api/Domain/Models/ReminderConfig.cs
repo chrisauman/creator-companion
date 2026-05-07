@@ -21,8 +21,16 @@ public class ReminderConfig
     // Beyond Every3DaysUpToDays: send once a week.
 
     // ── Context-aware default messages ───────────────────────────────────────
+    /// <summary>
+    /// Default body sent when a reminder fires with no user-supplied
+    /// custom message. The "ActiveStreak" suffix is historical — the
+    /// tiered selection by days-since-last-entry was removed when
+    /// reminders went general-purpose, so this string is now the sole
+    /// fallback for every fire. Update via a migration to change the
+    /// already-seeded production row.
+    /// </summary>
     public string MessageActiveStreak { get; set; } =
-        "You're on a streak. Log today's entry and keep it going.";
+        "Remember to log today's progress to keep your streak alive!";
 
     public string MessageJustBroke { get; set; } =
         "Your streak ended — but every great streak is rebuilt one day at a time. Start today.";

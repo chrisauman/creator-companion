@@ -25,7 +25,7 @@ self.addEventListener('push', event => {
 
   const title   = data.title ?? 'Creator Companion';
   const options = {
-    body: data.body ?? "Remember to log an entry to keep your streak alive.",
+    body: data.body ?? "Remember to log today's progress to keep your streak alive!",
     // App icon shown next to the notification body. Filenames in
     // /public/icons follow the WIDTHxHEIGHT convention so the path
     // here must match exactly — earlier versions referenced

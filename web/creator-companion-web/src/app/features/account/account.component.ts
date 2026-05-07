@@ -9,7 +9,7 @@ import { PushService } from '../../core/services/push.service';
 import { TokenService } from '../../core/services/token.service';
 import { User, Capabilities, Tag, StreakStats, Reminder } from '../../core/models/models';
 import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
-const DEFAULT_REMINDER_MESSAGE = "Remember to log an entry to keep your streak alive.";
+const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your streak alive!";
 
 @Component({
   selector: 'app-account',
