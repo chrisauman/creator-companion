@@ -114,7 +114,28 @@ public class UsersController(AppDbContext db, IStorageService storage, IImagePro
         if (user is null) return NotFound();
 
         var limits = entitlements.GetLimits(user);
-        return Ok(limits);
+        // Frontend needs to know access state to render the trial
+        // countdown banner OR the paywall takeover. Returning these
+        // alongside the limits keeps the cap fetch unified.
+        return Ok(new
+        {
+            limits.MaxWordsPerEntry,
+            limits.MaxImagesPerEntry,
+            limits.MaxRemindersPerDay,
+            limits.CanUsePause,
+            limits.CanBackfill,
+            limits.CanRecoverDeleted,
+            limits.CanTrackMood,
+            limits.CanFavorite,
+            limits.CanFormatText,
+            limits.MaxEntriesPerDay,
+            limits.MaxTagsPerEntry,
+            limits.MaxDiaries,
+            HasAccess            = entitlements.HasAccess(user),
+            IsInTrial            = entitlements.IsInTrial(user),
+            HasActiveSubscription = entitlements.HasActiveSubscription(user),
+            TrialEndsAt          = user.TrialEndsAt
+        });
     }
 
     [HttpPatch("me/action-items-preference")]

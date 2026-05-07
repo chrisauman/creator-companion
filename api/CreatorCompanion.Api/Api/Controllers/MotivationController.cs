@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using CreatorCompanion.Api.Application.DTOs;
+using CreatorCompanion.Api.Application.Interfaces;
 using CreatorCompanion.Api.Domain.Enums;
 using CreatorCompanion.Api.Domain.Models;
 using CreatorCompanion.Api.Infrastructure.Data;
@@ -12,7 +13,7 @@ namespace CreatorCompanion.Api.Api.Controllers;
 [ApiController]
 [Route("v1/motivation")]
 [Authorize]
-public class MotivationController(AppDbContext db) : ControllerBase
+public class MotivationController(AppDbContext db, IEntitlementService entitlements) : ControllerBase
 {
     private Guid UserId => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)
         ?? User.FindFirstValue("sub")!);
@@ -29,8 +30,9 @@ public class MotivationController(AppDbContext db) : ControllerBase
         var user = await db.Users.FindAsync(UserId);
         if (user is null) return NotFound();
 
-        // Only paid users with the feature enabled
-        if (user.Tier != AccountTier.Paid || !user.ShowMotivation)
+        // Only users with access (trial or subscribed) AND the
+        // motivation feature enabled in their preferences.
+        if (!entitlements.HasAccess(user) || !user.ShowMotivation)
             return NoContent();
 
         // Total entries in library
@@ -114,7 +116,7 @@ public class MotivationController(AppDbContext db) : ControllerBase
     {
         var user = await db.Users.FindAsync(UserId);
         if (user is null) return NotFound();
-        if (user.Tier != AccountTier.Paid) return Forbid();
+        entitlements.EnforceAccess(user);  // throws → 402 Payment Required
 
         var entryExists = await db.MotivationEntries.AnyAsync(e => e.Id == id);
         if (!entryExists) return NotFound();
@@ -151,7 +153,7 @@ public class MotivationController(AppDbContext db) : ControllerBase
     {
         var user = await db.Users.FindAsync(UserId);
         if (user is null) return NotFound();
-        if (user.Tier != AccountTier.Paid) return Forbid();
+        // Read endpoint stays open during trial expiration.
 
         var favorites = await db.UserFavoritedMotivations
             .Where(f => f.UserId == UserId)

@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using CreatorCompanion.Api.Application.DTOs;
+using CreatorCompanion.Api.Application.Interfaces;
 using CreatorCompanion.Api.Domain.Enums;
 using CreatorCompanion.Api.Domain.Models;
 using CreatorCompanion.Api.Infrastructure.Data;
@@ -12,7 +13,7 @@ namespace CreatorCompanion.Api.Api.Controllers;
 [ApiController]
 [Route("v1/action-items")]
 [Authorize]
-public class ActionItemsController(AppDbContext db) : ControllerBase
+public class ActionItemsController(AppDbContext db, IEntitlementService entitlements) : ControllerBase
 {
     private const int MaxActiveItems = 100;
 
@@ -25,7 +26,9 @@ public class ActionItemsController(AppDbContext db) : ControllerBase
     {
         var user = await db.Users.FindAsync(UserId);
         if (user is null) return NotFound();
-        if (user.Tier != AccountTier.Paid) return Forbid();
+        // Read endpoint stays open during trial expiration so users
+        // can still see their list while deciding to subscribe. Writes
+        // gate on access below.
 
         var items = await db.ActionItems
             .Where(a => a.UserId == UserId)
@@ -46,7 +49,7 @@ public class ActionItemsController(AppDbContext db) : ControllerBase
     {
         var user = await db.Users.FindAsync(UserId);
         if (user is null) return NotFound();
-        if (user.Tier != AccountTier.Paid) return Forbid();
+        entitlements.EnforceAccess(user);  // throws → 402 Payment Required
 
         var activeCount = await db.ActionItems
             .CountAsync(a => a.UserId == UserId && !a.IsCompleted);

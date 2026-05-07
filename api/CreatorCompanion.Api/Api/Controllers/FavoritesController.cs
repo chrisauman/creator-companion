@@ -52,7 +52,8 @@ public class FavoritesController(
     {
         var user = await db.Users.FindAsync(UserId);
         if (user is null) return NotFound();
-        if (user.Tier != AccountTier.Paid) return Forbid();
+        // Read-only — open during trial expiration so users can see
+        // their saved favorites while deciding to subscribe.
 
         skip = Math.Max(0, skip);
         take = Math.Clamp(take, 1, MaxTake);

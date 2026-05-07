@@ -261,9 +261,10 @@ public class EntryService(
         var user = await db.Users.FindAsync(userId)
             ?? throw new InvalidOperationException("User not found.");
 
-        var limits = entitlements.GetLimits(user);
-        if (!limits.CanFavorite)
-            throw new InvalidOperationException("Favoriting entries requires a paid plan.");
+        // Favoriting is part of the standard feature set now (no longer
+        // tier-gated). Just enforce that the user has access — trial
+        // active or subscribed.
+        entitlements.EnforceAccess(user);
 
         var entry = await db.Entries
             .FirstOrDefaultAsync(e => e.Id == entryId && e.UserId == userId && e.DeletedAt == null)
@@ -312,9 +313,10 @@ public class EntryService(
         var user = await db.Users.FindAsync(userId)
             ?? throw new InvalidOperationException("User not found.");
 
-        var limits = entitlements.GetLimits(user);
-        if (!limits.CanRecoverDeleted)
-            throw new InvalidOperationException("Recovering deleted entries requires a paid plan.");
+        // Recovery is standard now. Just enforce active access (trial
+        // active or subscribed) — a locked-out user shouldn't be
+        // restoring entries.
+        entitlements.EnforceAccess(user);
 
         var entry = await db.Entries
             .Include(e => e.Media)

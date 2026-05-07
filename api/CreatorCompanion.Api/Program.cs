@@ -202,11 +202,29 @@ try
     if (app.Environment.IsDevelopment())
         app.MapOpenApi();
 
-    // Global exception handler — prevents stack traces leaking in production
+    // Global exception handler — translates known exception types to
+    // appropriate HTTP statuses, hides stack traces from clients in
+    // production. Currently maps NoAccessException → 402 Payment
+    // Required so the frontend can show the paywall when a user's
+    // trial expires mid-session. All other exceptions become 500.
     if (!app.Environment.IsDevelopment())
     {
         app.UseExceptionHandler(errApp => errApp.Run(async ctx =>
         {
+            var feat = ctx.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+            var ex   = feat?.Error;
+
+            if (ex is CreatorCompanion.Api.Application.Services.NoAccessException nae)
+            {
+                ctx.Response.StatusCode  = StatusCodes.Status402PaymentRequired;
+                ctx.Response.ContentType = "application/json";
+                await ctx.Response.WriteAsJsonAsync(new {
+                    error = nae.Message,
+                    code  = "trial_expired"
+                });
+                return;
+            }
+
             ctx.Response.StatusCode  = 500;
             ctx.Response.ContentType = "application/json";
             await ctx.Response.WriteAsJsonAsync(new { error = "An unexpected error occurred." });

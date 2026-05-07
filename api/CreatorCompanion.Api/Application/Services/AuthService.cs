@@ -63,7 +63,13 @@ public class AuthService(AppDbContext db, IConfiguration config, IEmailService e
             LastName  = request.LastName.Trim(),
             Email = request.Email.ToLower(),
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
-            TimeZoneId = request.TimeZoneId
+            TimeZoneId = request.TimeZoneId,
+            // 10-day free trial — full access during this window. After
+            // expiration, EntitlementService.HasAccess returns false and
+            // every write returns HTTP 402 until the user subscribes.
+            // No Stripe interaction at signup — that happens only when
+            // the user explicitly subscribes via /v1/stripe/checkout.
+            TrialEndsAt = DateTime.UtcNow.AddDays(10)
         };
 
         db.Users.Add(user);
