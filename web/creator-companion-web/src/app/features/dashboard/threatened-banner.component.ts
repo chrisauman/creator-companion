@@ -86,26 +86,28 @@ import { StreakStats } from '../../core/models/models';
       pointer-events: none;
     }
 
-    /* Eyebrow row — small caps with a pulsing cyan dot. Same animation
-       and treatment as spark-hero__eyebrow so the two cards feel
-       siblings. "Streak safe" is the calm framing — it's true (the
-       streak IS still safe), not "warning." */
+    /* Eyebrow row — same caps + pulsing-dot pattern as spark-hero so
+       the two cards read as siblings, but recolored red here to flag
+       urgency. "STREAK THREATENED" is the only red moment in column 3,
+       so it stands out from the cream/cyan background without needing
+       any extra weight. Color matches the global danger token used by
+       the favorited-heart and the .link-btn--danger pattern. */
     .threatened-card__eyebrow {
       display: inline-flex; align-items: center; gap: .5rem;
       font-size: .6875rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: .14em;
-      color: var(--color-accent-dark, var(--color-accent));
+      color: #e11d48;
       margin-bottom: 1.25rem;
       position: relative;
     }
     .threatened-card__eyebrow::before {
       content: '';
       width: 7px; height: 7px;
-      background: #12C4E3;
+      background: #e11d48;
       border-radius: 50%;
-      box-shadow: 0 0 10px rgba(18,196,227,.6);
+      box-shadow: 0 0 10px rgba(225,29,72,.6);
       animation: threatenedPulse 2.5s ease-in-out infinite;
     }
     @keyframes threatenedPulse {
