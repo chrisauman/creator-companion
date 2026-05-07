@@ -137,6 +137,10 @@ marketing/                        static HTML/CSS/JS marketing site
   (`#0bd2f0`) + white text on hover.
 - **Exception:** sidebar **New Entry** button stays brand cyan (black
   on dark sidebar would disappear). One deliberate inversion.
+- **Danger / urgency color:** `#e11d48` (rose-600). Used by the
+  favorited-heart, `.link-btn--danger`, and the red eyebrow + pulsing
+  dot on the threatened-banner / daily-reminder cards. The only red
+  in the app — reserve it for genuine urgency, not for general accent.
 - **Fonts:**
   - `--font-sans`: Inter (default UI)
   - `--font-brand`: Fraunces 700/800/900 (brand wordmark, hero quotes)
@@ -160,6 +164,42 @@ marketing/                        static HTML/CSS/JS marketing site
   current and longest streaks are always surfaced on the dashboard.
 - **Reset:** breaks past the 48h window reset the counter to 0.
   Longest-streak is *banked*, not erased.
+
+## Column-3 card visual identity
+
+The Today column's "engagement cards" (Daily Spark, Daily Prompt,
+Threatened Banner, Daily Reminder) all share one visual treatment so
+they read as a single family. Any new card in column 3 should match:
+
+- Cream gradient surface (`#fdfaf2` → `#f6f1e6`).
+- Soft warm border (`rgba(190,170,130,.22)`), 20px radius.
+- Radial cyan glow `::before` in top-right (low opacity, subtle).
+- Eyebrow in caps + pulsing dot (cyan for routine, red `#e11d48` for
+  urgency moments).
+- Quote at `1.25rem / 700` letter-spacing `-.01em`, `var(--font-sans)`.
+- Primary CTA: dark-ink pill, brand cyan on hover.
+- All siblings inside today-panel's `.today` wrapper (`max-width:
+  720px`, `padding: .75rem 1.5rem 3rem`, `margin-bottom: 1rem` per
+  card) so spacing stays uniform — DON'T put them in separate
+  wrappers in the dashboard template, that broke spacing once.
+
+## Streak engagement card mutual exclusivity
+
+The three "did you log today?" cards in column 3 are mutually
+exclusive — exactly one (or zero) of them ever shows. State table:
+
+| State                                       | Card visible      |
+|---------------------------------------------|-------------------|
+| Logged today                                | none              |
+| No entry today, streak alive (yest. logged) | Daily Reminder    |
+| Missed yesterday + today (48h grace)        | Threatened Banner |
+| Streak broken (>= 3 days back)              | Welcome Back (full-takeover) overlays everything |
+| Brand-new user, zero entries                | Daily Reminder (onboarding nudge) |
+
+If you add a fourth state-driven card, slot it into this table —
+overlapping urgency cues compete and dilute the moment. Each card's
+component owns its own visibility check; the dashboard never gates
+them based on each other.
 
 ## Streak restart system (built)
 
