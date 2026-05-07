@@ -272,13 +272,13 @@ import { ActionItem } from '../../core/models/models';
     /* ── Add input ──────────────────────────────────────────────── */
     /* Inline + sign + text input, sitting in a soft underlined row.
        Always-visible to remove the "click to reveal a form" friction.
-       Horizontal padding matches the row items below so columns
-       stay visually aligned. */
+       Padding matches the rows below so columns stay visually
+       aligned and the rhythm reads as one continuous list. */
     .todo-list__add {
       display: flex;
       align-items: center;
       gap: .625rem;
-      padding: .625rem .75rem;
+      padding: .875rem .875rem;
       border-bottom: 1px solid var(--color-border);
       margin-bottom: .25rem;
       transition: border-color .15s;
@@ -302,13 +302,17 @@ import { ActionItem } from '../../core/models/models';
       background: transparent;
       border: none;
       outline: none;
-      font-family: inherit;
-      font-size: .9375rem;
+      font-family: var(--font-sans);
+      font-size: 1.0625rem;
+      line-height: 1.35;
+      font-weight: 500;
+      letter-spacing: -.01em;
       color: var(--color-text);
       padding: .375rem 0;
     }
     .todo-list__add-input::placeholder {
       color: var(--color-text-3);
+      font-weight: 400;
     }
     .todo-list__char-count {
       flex-shrink: 0;
@@ -319,7 +323,7 @@ import { ActionItem } from '../../core/models/models';
     .todo-list__cap-note {
       font-size: .75rem;
       color: var(--color-text-3);
-      margin: .375rem .75rem 1rem;
+      margin: .375rem .875rem 1rem;
     }
 
     /* ── Item list ──────────────────────────────────────────────── */
@@ -329,18 +333,16 @@ import { ActionItem } from '../../core/models/models';
       margin: .25rem 0 0;
     }
 
-    /* Each row is a flex line with comfortable horizontal padding so
-       the content doesn't crash into the container edges. Position
-       relative so the swipe-delete tile can sit absolutely behind it.
-       align-items: flex-start so the checkbox + handle stay pinned to
-       the top of multi-line text rather than floating in the vertical
-       middle of a tall row. */
+    /* Row vertical padding scaled up to match the journal entry-row
+       breathing room (~1rem range) so to-do items and entries feel
+       like they live in the same typographic system. Horizontal
+       padding gives content room from the container edges. */
     .todo-list__item {
       position: relative;
       display: flex;
       align-items: flex-start;
       gap: .625rem;
-      padding: .625rem .75rem;
+      padding: .875rem .875rem;
       border-bottom: 1px solid var(--color-border);
       background: transparent;
       transition: transform .25s ease, background .15s;
@@ -415,13 +417,21 @@ import { ActionItem } from '../../core/models/models';
     .todo-list__check--done { color: var(--color-accent); }
 
     /* ── Text ───────────────────────────────────────────────────── */
-    /* Click anywhere on the text to enter edit mode. cursor: text
-       hints at it without needing a pencil icon. */
+    /* Sized to match the journal entry-row title (1.0625rem) so the
+       to-do list and entry list feel like they live in the same
+       typographic system. Weight is 500 (medium) rather than 700 so
+       a vertical stack of items doesn't read shouty — entries are
+       discrete cards with one bold title each, to-do items are a
+       sequence the user scans. Click anywhere on the text to enter
+       edit mode (cursor: text hints at it without a pencil icon). */
     .todo-list__text {
       flex: 1;
       min-width: 0;
-      font-size: .9375rem;
-      line-height: 1.4;
+      font-family: var(--font-sans);
+      font-size: 1.0625rem;
+      line-height: 1.35;
+      font-weight: 500;
+      letter-spacing: -.01em;
       color: var(--color-text);
       cursor: text;
       padding: .125rem 0;
@@ -436,19 +446,20 @@ import { ActionItem } from '../../core/models/models';
     }
 
     /* ── Inline edit textarea ───────────────────────────────────── */
-    /* Textarea instead of input so multi-line entries stay readable.
-       resize: none + overflow: hidden because we drive the height
-       imperatively via resizeTextarea(). The styling otherwise
-       matches the .todo-list__text span at rest so the row's visual
-       layout doesn't shift when toggling edit mode. */
+    /* Mirrors .todo-list__text exactly so the row's visual layout
+       doesn't shift on edit-mode toggle. resize: none + overflow:
+       hidden because we drive the height imperatively via
+       resizeTextarea() on the (input) event. */
     .todo-list__edit-input {
       flex: 1; min-width: 0;
       background: transparent;
       border: none;
       outline: none;
-      font-family: inherit;
-      font-size: .9375rem;
-      line-height: 1.4;
+      font-family: var(--font-sans);
+      font-size: 1.0625rem;
+      line-height: 1.35;
+      font-weight: 500;
+      letter-spacing: -.01em;
       color: var(--color-text);
       padding: .125rem 0;
       margin: 0;
