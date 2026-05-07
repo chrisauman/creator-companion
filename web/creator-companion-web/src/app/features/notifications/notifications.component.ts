@@ -58,10 +58,10 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
              so toolbars and content share the same horizontal edges. -->
         <div class="body-inner">
 
-          <div class="page-header">
-            <h1 class="page-title">Reminders</h1>
-            <p class="page-sub">Manage how and when you receive reminders.</p>
-          </div>
+          <!-- Page-level header removed: the sidebar's active nav item +
+               the column-3 reader-top breadcrumb (or the standalone
+               topbar) already tell the user which page they're on, so
+               an h1 here was redundant chrome. -->
 
           <!-- This device — flat section, no card chrome -->
           <section class="block">

@@ -44,17 +44,16 @@ import { SidebarStateService } from '../../shared/sidebar/sidebar-state.service'
                 </svg>
                 Today
               </button>
-              <div class="reader-top__breadcrumb"><strong>Favorite Sparks</strong></div>
+              <div class="reader-top__breadcrumb"></div>
               <div class="reader-top__actions"></div>
             </div>
           </div>
         }
 
         <div class="body-inner">
-          <div class="page-header">
-            <h1 class="page-title">Favorite Sparks</h1>
-            <p class="page-sub">Daily sparks you've saved.</p>
-          </div>
+          <!-- Page-level header removed: the sidebar's active nav item
+               (and the standalone topbar's brand) already tell the user
+               where they are. -->
 
         <!-- Loading -->
         @if (loading()) {

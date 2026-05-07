@@ -38,7 +38,7 @@ import { StreakHistoryItem, StreakStats } from '../../core/models/models';
             </svg>
             Today
           </button>
-          <div class="reader-top__breadcrumb"><strong>Streak history</strong></div>
+          <div class="reader-top__breadcrumb"></div>
           <div class="reader-top__actions"></div>
         </div>
       </div>

@@ -59,7 +59,7 @@ import { ActivatedRoute } from '@angular/router';
       }
 
       <!-- ── Desktop sidebar ─────────────────────────────────── -->
-      <app-sidebar active="dashboard" />
+      <app-sidebar [active]="sidebarActive()" />
 
       <!-- ── Mobile bottom nav ───────────────────────────────── -->
       <!-- ── Main content ────────────────────────────────────── -->
@@ -1027,6 +1027,23 @@ export class DashboardComponent implements OnInit {
   // ── Right column state (desktop): Today / Reading / Composing / Editing /
   //                                   Notifications / Todos / Favorites
   rightColumnMode      = signal<'today' | 'reading' | 'composing' | 'editing' | 'notifications' | 'todos' | 'favorites' | 'streak-history'>('today');
+
+  /**
+   * Which sidebar nav item should show the active state. Derived from
+   * `rightColumnMode()` so when the user clicks "To Do List" / "Reminders"
+   * / "Favorite Sparks" in the sidebar (which swaps column 3 without
+   * changing the route), the active highlight follows the visible
+   * surface — not stuck on "Journal" forever. Streak-history isn't a
+   * sidebar nav item itself, so it falls through to "dashboard" (the
+   * Journal item, which is the closest parent context).
+   */
+  sidebarActive = computed<'dashboard' | 'notifications' | 'todos' | 'favorites' | 'account' | 'admin'>(() => {
+    const mode = this.rightColumnMode();
+    if (mode === 'notifications') return 'notifications';
+    if (mode === 'todos')         return 'todos';
+    if (mode === 'favorites')     return 'favorites';
+    return 'dashboard';
+  });
 
   /**
    * Admin-only preview state. Set via `?preview=welcome-back` or
