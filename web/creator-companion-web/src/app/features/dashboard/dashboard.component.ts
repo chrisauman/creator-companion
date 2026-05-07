@@ -22,13 +22,19 @@ import { ActionItemsCardComponent } from './action-items-card.component';
 import { StreakHistoryComponent } from './streak-history.component';
 import { WelcomeBackComponent } from './welcome-back.component';
 import { TrialBannerComponent } from '../../shared/trial-banner/trial-banner.component';
+import { TourComponent } from '../../shared/tour/tour.component';
 import { ActivatedRoute } from '@angular/router';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, SidebarComponent, MoodIconComponent, TodayPanelComponent, EntryReaderComponent, NewEntryComponent, EditEntryComponent, NotificationsComponent, FavoriteSparksComponent, ActionItemsCardComponent, StreakHistoryComponent, WelcomeBackComponent, TrialBannerComponent],
+  imports: [CommonModule, RouterLink, FormsModule, SidebarComponent, MoodIconComponent, TodayPanelComponent, EntryReaderComponent, NewEntryComponent, EditEntryComponent, NotificationsComponent, FavoriteSparksComponent, ActionItemsCardComponent, StreakHistoryComponent, WelcomeBackComponent, TrialBannerComponent, TourComponent],
   template: `
+    <!-- First-run feature tour. Self-decides whether to render based
+         on the cc_tour_seen localStorage flag. Can be re-triggered
+         from the account page via TourComponent.reset() + reload. -->
+    <app-tour></app-tour>
+
     <div class="dashboard">
 
       <!-- Welcome Back full-takeover overlay. Renders ABOVE everything

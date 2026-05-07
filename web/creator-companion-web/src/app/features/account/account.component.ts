@@ -10,6 +10,7 @@ import { TokenService } from '../../core/services/token.service';
 import { User, Capabilities, Tag, StreakStats, Reminder } from '../../core/models/models';
 import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
 import { SidebarStateService } from '../../shared/sidebar/sidebar-state.service';
+import { TourComponent } from '../../shared/tour/tour.component';
 const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your streak alive!";
 
 @Component({
@@ -415,6 +416,18 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
               <p class="support-card__sub">Browse FAQs or get in touch with our team.</p>
             </div>
             <a routerLink="/support" class="btn btn--ghost btn--sm">Get Support →</a>
+          </div>
+        </section>
+
+        <!-- Replay onboarding tour. Clears the cc_tour_seen flag and
+             reloads to /dashboard so the tour fires again. -->
+        <section class="card support-card">
+          <div class="support-card__inner">
+            <div class="support-card__text">
+              <p class="support-card__title">Replay the welcome tour</p>
+              <p class="support-card__sub">Show the 5-step walkthrough again, in case you missed it.</p>
+            </div>
+            <button type="button" class="btn btn--ghost btn--sm" (click)="replayTour()">Show tour</button>
           </div>
         </section>
 
@@ -1347,6 +1360,15 @@ export class AccountComponent implements OnInit {
 
   logout(): void {
     this.auth.logout();
+  }
+
+  /** Clear the tour-seen flag and bounce to the dashboard so the
+   *  onboarding tour re-fires from step 1. Full-page navigation (not
+   *  router) so the dashboard component re-mounts cleanly and the tour
+   *  re-evaluates its localStorage gate. */
+  replayTour(): void {
+    TourComponent.reset();
+    window.location.href = '/dashboard';
   }
 
   startDelete(): void {
