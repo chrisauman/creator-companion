@@ -1,34 +1,37 @@
-import { Component, EventEmitter, Output, OnInit, OnDestroy, input, inject, signal, computed } from '@angular/core';
+import { Component, EventEmitter, Output, OnInit, input, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../core/services/api.service';
 import { StreakStats } from '../../core/models/models';
 
 /**
- * Streak-threatened banner. Shown at the top of the dashboard when the
- * user has missed yesterday but is still inside the 48-hour backlog
- * grace window. Today the app silently lets these moments slip — users
- * don't even know backlogging exists. This banner makes the save-the-
- * streak option loud, warm, and one-click.
+ * Streak-threatened banner. Shown at the top of column 3 (the right-hand
+ * Today panel column) when the user has missed yesterday but is still
+ * inside the 48-hour backlog grace window. The app silently lets these
+ * moments slip otherwise — users don't even know backlogging exists.
+ *
+ * Intentionally minimal: a single warm headline + a single CTA. Earlier
+ * iterations had a body paragraph, a countdown, and a secondary "Write
+ * today instead" link; user feedback was that the volume was too loud
+ * and the column-2 placement was wrong. Now it's a soft prompt at the
+ * top of the user's daily-engagement column with one obvious next step.
  *
  * Triggers two ways:
  *
- *  1. Preview (admin only) — `?preview=threatened`. Renders unconditionally,
- *     ignores real streak state, fakes a "safe for ~18h" countdown.
+ *  1. Preview (admin only) — `?preview=threatened`. Always renders,
+ *     ignores real streak state.
  *
  *  2. Organic — currentStreak > 0 AND lastEntryDate is exactly two
- *     calendar days behind today (= yesterday is the missed day, today
- *     is fresh). The component fetches StreakStats and decides on its
- *     own; the dashboard just renders <app-threatened-banner /> and
- *     listens to its events.
+ *     calendar days behind today (= yesterday is the missed day,
+ *     today is fresh). The component fetches StreakStats and decides
+ *     on its own; the dashboard just renders <app-threatened-banner />
+ *     and listens for the backlog event.
  *
- * Two CTAs:
- *  - Write yesterday's entry → emits backlogYesterday with the ISO date.
- *    Dashboard pipes that into NewEntryComponent's [initialDate].
- *  - Write today instead → emits writeToday. Dashboard opens the
- *    composer with no special date.
+ * One CTA: "Log your progress" → emits backlogYesterday with the ISO
+ * date for yesterday. Dashboard pipes that into NewEntryComponent's
+ * [initialDate] so the composer opens on the missed day.
  *
- * Tone: cheerful and calm. "You've got time." Never "act fast." Soft
- * cyan, not red. The countdown is informative, not panic-inducing.
+ * Tone: cheerful, brief, encouraging. "But you've got this." Vocabulary
+ * follows the global rule — "log progress," not "write."
  */
 @Component({
   selector: 'app-threatened-banner',
@@ -37,149 +40,73 @@ import { StreakStats } from '../../core/models/models';
   template: `
     @if (visible()) {
       <div class="threatened" role="status">
-        <div class="threatened__inner">
-          <div class="threatened__copy">
-            <p class="threatened__title">
-              Yesterday slipped by — but you've got time.
-            </p>
-            <p class="threatened__body">
-              Your <strong>{{ streakDays() }}-day streak</strong> is safe if you
-              write something for yesterday. Even one line counts.
-            </p>
-            @if (countdown(); as c) {
-              <p class="threatened__countdown">Streak safe for {{ c }}</p>
-            }
-          </div>
-          <div class="threatened__actions">
-            <button class="threatened__cta-primary"
-                    type="button"
-                    (click)="onBacklog()">
-              Write yesterday's entry
-            </button>
-            <button class="threatened__cta-secondary"
-                    type="button"
-                    (click)="onToday()">
-              Write today instead
-            </button>
-          </div>
-        </div>
+        <p class="threatened__title">
+          Yesterday slipped by — but you've got this.
+        </p>
+        <button class="threatened__cta"
+                type="button"
+                (click)="onBacklog()">
+          Log your progress
+        </button>
       </div>
     }
   `,
   styles: [`
-    /* Banner sits at the top of the dashboard's main content. Soft
-       cream surface with a brand-cyan left rule — warm + warm-toned,
-       not a warning. Margin matches the dashboard's column padding so
-       it aligns with the entry list below. */
+    /* Compact card — fits the narrow column-3 context. Cream surface
+       with a brand-cyan left rule keeps the brand consistent without
+       feeling alarmist. Vertical stack: headline on top, CTA below. */
     .threatened {
       background: linear-gradient(180deg, #fdfaf2 0%, #faf5e6 100%);
       border: 1px solid rgba(18,196,227,.25);
       border-left: 4px solid var(--color-accent);
       border-radius: .625rem;
-      padding: 1rem 1.25rem;
+      padding: 1rem 1.125rem;
       margin: 0 0 1rem;
     }
-    .threatened__inner {
-      display: flex;
-      align-items: flex-start;
-      gap: 1.25rem;
-      flex-wrap: wrap;
-    }
-    .threatened__copy { flex: 1 1 320px; min-width: 0; }
     .threatened__title {
       font-family: var(--font-brand);
-      font-size: 1.0625rem;
+      font-size: 1rem;
       font-weight: 700;
       letter-spacing: -.01em;
+      line-height: 1.35;
       color: #1a1d24;
-      margin: 0 0 .375rem;
+      margin: 0 0 .75rem;
     }
-    .threatened__body {
-      color: #2a2f3a;
-      font-size: .9375rem;
-      line-height: 1.5;
-      margin: 0 0 .5rem;
-    }
-    .threatened__body strong {
-      font-weight: 700;
-      color: var(--color-accent-dark, var(--color-accent));
-    }
-    .threatened__countdown {
-      font-size: .8125rem;
-      color: #6b7280;
-      margin: 0;
-      font-style: italic;
-    }
-
-    /* Actions stack on the right at desktop; wrap to full-width on
-       narrow viewports. Primary is solid cyan, secondary is a quiet
-       text link — keeps the hierarchy clear. */
-    .threatened__actions {
-      display: flex;
+    .threatened__cta {
+      display: inline-flex;
       align-items: center;
-      gap: .75rem;
-      flex-shrink: 0;
-    }
-    .threatened__cta-primary {
+      gap: .375rem;
       background: var(--color-accent);
       color: #fff;
       border: none;
-      padding: .625rem 1.125rem;
+      padding: .5rem 1rem;
       border-radius: 999px;
-      font-size: .875rem;
+      font-size: .8125rem;
       font-weight: 700;
+      letter-spacing: .01em;
       cursor: pointer;
       font-family: inherit;
       transition: background .15s, transform .1s;
     }
-    .threatened__cta-primary:hover {
+    .threatened__cta:hover {
       background: #0bd2f0;
       transform: translateY(-1px);
     }
-    .threatened__cta-secondary {
-      background: transparent;
-      color: #6b7280;
-      border: none;
-      padding: .625rem .25rem;
-      font-size: .875rem;
-      font-weight: 500;
-      cursor: pointer;
-      font-family: inherit;
-      transition: color .15s;
-    }
-    .threatened__cta-secondary:hover {
-      color: #1a1d24;
-      text-decoration: underline;
-    }
-
-    @media (max-width: 600px) {
-      .threatened__actions { width: 100%; }
-      .threatened__cta-primary,
-      .threatened__cta-secondary { flex: 1; text-align: center; }
-    }
   `]
 })
-export class ThreatenedBannerComponent implements OnInit, OnDestroy {
+export class ThreatenedBannerComponent implements OnInit {
   private api = inject(ApiService);
 
-  /** True when running under `?preview=threatened`. Forces visibility
-   *  with stub data and a fake countdown, ignoring real streak state. */
+  /** True when running under `?preview=threatened`. Forces visibility,
+   *  ignoring real streak state. */
   preview = input(false);
 
-  /** User clicked "Write yesterday's entry" — payload is the ISO date
-   *  the parent should pass to NewEntryComponent's initialDate. */
+  /** User clicked "Log your progress" — payload is the ISO date
+   *  (yesterday) the parent should pass to NewEntryComponent's
+   *  [initialDate] so the composer opens on the missed day. */
   @Output() backlogYesterday = new EventEmitter<string>();
 
-  /** User clicked "Write today instead" — open compose with no date
-   *  override. */
-  @Output() writeToday = new EventEmitter<void>();
-
   private stats = signal<StreakStats | null>(null);
-
-  // Re-tick the countdown every minute so it doesn't go stale while
-  // the user is sitting on the dashboard. Cleared on destroy.
-  private nowMs    = signal(Date.now());
-  private timerId: ReturnType<typeof setInterval> | null = null;
 
   /** Whether to render the banner. Preview always shows; organic shows
    *  when the user is mid-grace (missed yesterday, streak still alive). */
@@ -194,35 +121,11 @@ export class ThreatenedBannerComponent implements OnInit, OnDestroy {
     const lastIso  = s.lastEntryDate.slice(0, 10);
     // Threatened iff last entry was strictly before yesterday (= the
     // user missed yesterday). If lastEntryDate is yesterday or today,
-    // they're fine. If it's >= 2 days ago, they're past the grace
+    // they're fine. If it's >= 3 days ago, they're past the grace
     // window and the streak has already broken (Welcome Back territory).
     const lastDay  = this.toDayNumber(lastIso);
     const todayDay = this.toDayNumber(today);
     return todayDay - lastDay === 2;
-  });
-
-  /** Streak days to show in the banner copy. Real value or stub for
-   *  preview. */
-  streakDays = computed<number>(() => {
-    if (this.preview()) return 14;
-    return this.stats()?.currentStreak ?? 0;
-  });
-
-  /** Human-readable "safe for Xh Ym" countdown. The grace ends at
-   *  end-of-today (user's local time, but we approximate with browser
-   *  midnight which is close enough for a friendly hint). */
-  countdown = computed<string | null>(() => {
-    const now = this.nowMs();
-    const tonight = new Date();
-    tonight.setHours(23, 59, 0, 0);
-    const ms = tonight.getTime() - now;
-    if (ms <= 0) return null;
-
-    const totalMin = Math.floor(ms / 60000);
-    const h = Math.floor(totalMin / 60);
-    const m = totalMin % 60;
-    if (h <= 0) return `${m}m`;
-    return `${h}h ${m}m`;
   });
 
   ngOnInit(): void {
@@ -232,28 +135,16 @@ export class ThreatenedBannerComponent implements OnInit, OnDestroy {
         error: () => {}
       });
     }
-    // Tick countdown every 60s while mounted.
-    this.timerId = setInterval(() => this.nowMs.set(Date.now()), 60_000);
-  }
-
-  ngOnDestroy(): void {
-    if (this.timerId) clearInterval(this.timerId);
   }
 
   onBacklog(): void {
-    const yesterday = this.yesterdayIso();
-    this.backlogYesterday.emit(yesterday);
-  }
-
-  onToday(): void {
-    this.writeToday.emit();
+    this.backlogYesterday.emit(this.yesterdayIso());
   }
 
   // ── helpers ────────────────────────────────────────────────────────
 
   private todayIso(): string {
-    const d = new Date();
-    return this.formatIso(d);
+    return this.formatIso(new Date());
   }
   private yesterdayIso(): string {
     const d = new Date();
@@ -266,9 +157,7 @@ export class ThreatenedBannerComponent implements OnInit, OnDestroy {
     const dd = String(d.getDate()).padStart(2, '0');
     return `${y}-${m}-${dd}`;
   }
-  /** Days-since-epoch number for an ISO yyyy-MM-dd date. Used only for
-   *  computing "exactly N days apart" — we don't care about timezones
-   *  at the level of correctness this banner needs. */
+  /** Days-since-epoch number for an ISO yyyy-MM-dd date. */
   private toDayNumber(iso: string): number {
     const [y, m, d] = iso.split('-').map(Number);
     return Math.floor(Date.UTC(y, m - 1, d) / 86_400_000);

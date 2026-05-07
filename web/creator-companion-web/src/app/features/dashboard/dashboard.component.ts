@@ -92,17 +92,6 @@ import { ActivatedRoute } from '@angular/router';
              at the top of the slide-out drawer when the user opens it. -->
 
 
-        <!-- Streak threatened banner. The component decides on its
-             own whether to render based on real streak state (or the
-             ?preview=threatened flag for admin QA), so this slot is
-             always safe to leave in the template — invisible 99% of
-             the time, loud + warm during the 48h backlog window. -->
-        <app-threatened-banner
-          [preview]="previewMode() === 'threatened'"
-          (backlogYesterday)="onBacklogYesterday($event)"
-          (writeToday)="onThreatenedWriteToday()"
-        ></app-threatened-banner>
-
         <!-- Daily Motivation card (mobile only — desktop shows it inside the Today panel as the Spark hero) -->
         @if (motivation()) {
           <div class="motivation-card motivation-card--mobile" [class.motivation-card--expanded]="motivationExpanded()">
@@ -260,6 +249,18 @@ import { ActivatedRoute } from '@angular/router';
 
         <!-- Right column: Today / Reading / Composing / Editing (desktop only) -->
         <aside class="work__right-col">
+
+          <!-- Streak threatened banner — pinned at the top of column 3
+               only when the user is in Today mode. Component decides
+               on its own whether to render (organic detection or
+               ?preview=threatened); invisible 99% of the time. -->
+          @if (rightColumnMode() === 'today') {
+            <app-threatened-banner
+              [preview]="previewMode() === 'threatened'"
+              (backlogYesterday)="onBacklogYesterday($event)"
+            ></app-threatened-banner>
+          }
+
           @switch (rightColumnMode()) {
             @case ('today') {
               <app-today-panel
@@ -1515,21 +1516,14 @@ export class DashboardComponent implements OnInit {
   }
 
   /**
-   * Threatened-banner CTA: "Write yesterday's entry." Opens the inline
-   * composer with the missed-day date pre-set so the user can backlog
-   * in one step. The banner emits the ISO date; we just forward it.
-   * In preview mode, also clear the preview overlay and URL param.
+   * Threatened-banner CTA: "Log your progress." Opens the inline
+   * composer with yesterday's date pre-set so the user can backlog
+   * the missed day in one step. Banner emits the ISO date; we forward
+   * it. In preview mode, also clears the preview overlay + URL param.
    */
   onBacklogYesterday(yesterdayIso: string): void {
     if (this.previewMode() === 'threatened') this.dismissPreview();
     this.openCompose({ date: yesterdayIso });
-  }
-
-  /** Threatened-banner secondary CTA: "Write today instead." Same as
-   *  composeBlank but also dismisses preview if active. */
-  onThreatenedWriteToday(): void {
-    if (this.previewMode() === 'threatened') this.dismissPreview();
-    this.openCompose({});
   }
 
   /**
