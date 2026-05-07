@@ -1,5 +1,5 @@
 import {
-  Component, inject, signal, computed, OnInit, HostListener, effect, ElementRef
+  Component, inject, signal, computed, OnInit, HostListener, ElementRef
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -609,27 +609,6 @@ export class ActionItemsCardComponent implements OnInit {
   private api = inject(ApiService);
   private host: ElementRef<HTMLElement> = inject(ElementRef);
 
-  constructor() {
-    // When a row enters edit mode, focus its textarea + size it to
-    // its current content. Doing this in an effect (rather than
-    // ngAfterViewInit on a ViewChild) keeps the lifecycle simple and
-    // works seamlessly with @if blocks that re-render on edit/cancel.
-    effect(() => {
-      const id = this.editingId();
-      if (id === null) return;
-      // Schedule after the DOM updates for the new editing row.
-      queueMicrotask(() => {
-        const ta = this.host.nativeElement.querySelector<HTMLTextAreaElement>(
-          '.todo-list__item--editing .todo-list__edit-input'
-        );
-        if (!ta) return;
-        ta.focus();
-        ta.setSelectionRange(ta.value.length, ta.value.length);
-        this.resizeTextarea(ta);
-      });
-    });
-  }
-
   // ── Data ─────────────────────────────────────────────────────────
   private items = signal<ActionItem[]>([]);
   loading = signal(true);
@@ -718,9 +697,31 @@ export class ActionItemsCardComponent implements OnInit {
   // ── Edit (click-to-edit) ─────────────────────────────────────────
   startEdit(item: ActionItem): void {
     this.closeSwipe();
-    this.editingId.set(item.id);
     this.editText = item.text;
     this.editOriginal = item.text;
+    this.editingId.set(item.id);
+    // Wait for Angular to render the @if branch (replacing the .text
+    // span with the textarea), then focus, place caret at end, and
+    // size to fit content. setTimeout(0) is more reliable than
+    // queueMicrotask here because it waits past Angular's change-
+    // detection cycle, by which point the new textarea is in the
+    // DOM with its ngModel value bound. Without this, long entries
+    // were getting stuck at the textarea's intrinsic 1-row height.
+    setTimeout(() => this.focusEditTextarea(), 0);
+  }
+
+  /** Focuses the currently-active edit textarea, places the caret at
+   *  the end, and sizes the textarea to fit its content. Called once
+   *  on entering edit mode. Subsequent typing triggers autoSize() on
+   *  every input event. */
+  private focusEditTextarea(): void {
+    const ta = this.host.nativeElement.querySelector<HTMLTextAreaElement>(
+      '.todo-list__item--editing .todo-list__edit-input'
+    );
+    if (!ta) return;
+    ta.focus();
+    ta.setSelectionRange(ta.value.length, ta.value.length);
+    this.resizeTextarea(ta);
   }
 
   /** Save on Enter or blur. Empty text = cancel (restore). */
