@@ -347,15 +347,15 @@ import { ActionItem } from '../../core/models/models';
       will-change: transform;
     }
     .todo-list__item:last-child { border-bottom: none; }
-    /* Subtle hover — barely-there darkening. The previous "white on
-       hover" against the cream page background was too stark; the
-       drag handle brightening + delete X appearing already signal
-       hoverability, so this is just a soft cue. */
+    /* Subtle hover — soft brand-cyan tint instead of a neutral gray
+       so the highlight matches the rest of the app's hover language
+       (cyan corner buttons, cyan-tinted preview banners, etc).
+       Low-alpha so it reads as a tint, not a solid block. */
     .todo-list__item:hover {
-      background: rgba(0, 0, 0, .025);
+      background: rgba(18, 196, 227, .07);
     }
     .todo-list__item--editing {
-      background: rgba(0, 0, 0, .025);
+      background: rgba(18, 196, 227, .07);
     }
 
     /* CDK drag-preview / drop-placeholder treatment so reorder feels solid. */
