@@ -1,9 +1,9 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
 import { MotivationEntry } from '../../core/models/models';
+import { AdminShellComponent } from './admin-shell.component';
 
 type Category = string;
 const CATEGORIES: Category[] = [
@@ -51,23 +51,9 @@ const CATEGORY_LABELS: Record<string, string> = {
 @Component({
   selector: 'app-admin-motivation',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, AdminShellComponent],
   template: `
-    <div class="admin-page">
-      <header class="admin-header">
-        <h1>Daily Spark Library</h1>
-        <a routerLink="/dashboard" class="btn btn--ghost btn--sm">← Back to App</a>
-      </header>
-
-      <nav class="admin-nav">
-        <a routerLink="/admin" class="admin-nav__link">Overview</a>
-        <a routerLink="/admin/users" class="admin-nav__link">Users</a>
-        <a routerLink="/admin/motivation" class="admin-nav__link admin-nav__link--active">Content Library</a>
-        <a routerLink="/admin/reminders" class="admin-nav__link">Reminders</a>
-        <a routerLink="/admin/emails" class="admin-nav__link">Emails</a>
-        <a routerLink="/admin/faq" class="admin-nav__link">FAQ</a>
-        <a routerLink="/admin/prompts" class="admin-nav__link">Daily Prompts</a>
-      </nav>
+    <app-admin-shell active="motivation">
 
       <!-- Add / Edit form -->
       <div class="card form-card">
@@ -150,16 +136,9 @@ const CATEGORY_LABELS: Record<string, string> = {
           </div>
         }
       </div>
-    </div>
+    </app-admin-shell>
   `,
   styles: [`
-    .admin-page { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem; }
-    .admin-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
-    .admin-header h1 { font-size: 1.5rem; margin: 0; }
-    .admin-nav { display: flex; gap: .25rem; margin-bottom: 2rem; border-bottom: 1px solid var(--color-border); padding-bottom: .75rem; }
-    .admin-nav__link { padding: .4rem .9rem; border-radius: 6px; text-decoration: none; color: var(--color-text-muted); font-size: .875rem; }
-    .admin-nav__link:hover, .admin-nav__link--active { background: var(--color-surface); color: var(--color-text); }
-
     .form-card { padding: 1.5rem; margin-bottom: 2rem; }
     .form-title { font-size: 1rem; font-weight: 700; margin: 0 0 1.25rem; }
     .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .875rem; }

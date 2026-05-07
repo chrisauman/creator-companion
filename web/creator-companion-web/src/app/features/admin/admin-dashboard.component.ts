@@ -2,28 +2,14 @@ import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
+import { AdminShellComponent } from './admin-shell.component';
 
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [CommonModule, DecimalPipe, RouterLink],
+  imports: [CommonModule, DecimalPipe, RouterLink, AdminShellComponent],
   template: `
-    <div class="admin-page">
-      <header class="admin-header">
-        <h1>Admin Dashboard</h1>
-        <a routerLink="/dashboard" class="btn btn--ghost btn--sm">← Back to App</a>
-      </header>
-
-      <nav class="admin-nav">
-        <a routerLink="/admin" class="admin-nav__link admin-nav__link--active">Overview</a>
-        <a routerLink="/admin/users" class="admin-nav__link">Users</a>
-        <a routerLink="/admin/motivation" class="admin-nav__link">Content Library</a>
-        <a routerLink="/admin/reminders" class="admin-nav__link">Reminders</a>
-        <a routerLink="/admin/emails" class="admin-nav__link">Emails</a>
-        <a routerLink="/admin/faq" class="admin-nav__link">FAQ</a>
-        <a routerLink="/admin/prompts" class="admin-nav__link">Daily Prompts</a>
-      </nav>
-
+    <app-admin-shell active="overview">
       @if (loading()) {
         <p class="text-muted">Loading stats…</p>
       } @else if (stats()) {
@@ -114,43 +100,9 @@ import { ApiService } from '../../core/services/api.service';
           </li>
         </ul>
       </section>
-    </div>
+    </app-admin-shell>
   `,
   styles: [`
-    .admin-page { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem; }
-    .admin-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
-    .admin-header h1 {
-      font-family: var(--font-sans);
-      font-size: 1.75rem; font-weight: 700;
-      letter-spacing: -.01em; margin: 0;
-    }
-    .admin-header .btn--ghost {
-      background: transparent;
-      color: var(--color-text-2);
-      border: 1px solid var(--color-border);
-      border-radius: 999px;
-    }
-    .admin-header .btn--ghost:hover {
-      color: var(--color-text);
-      background: var(--color-surface-2);
-    }
-    .admin-nav {
-      display: flex; gap: .25rem; flex-wrap: wrap;
-      margin-bottom: 2rem; border-bottom: 1px solid var(--color-border);
-      padding-bottom: 1rem;
-    }
-    .admin-nav__link {
-      padding: .375rem .875rem; border-radius: var(--radius-sm);
-      font-size: .875rem; font-weight: 500; color: var(--color-text-2);
-      text-decoration: none; transition: background .15s, color .15s;
-    }
-    .admin-nav__link:hover { background: var(--color-surface-2); color: var(--color-text); }
-    .admin-nav__link--active {
-      background: var(--color-accent-light);
-      color: var(--color-accent-dark);
-      font-weight: 600;
-    }
-
     .stats-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));

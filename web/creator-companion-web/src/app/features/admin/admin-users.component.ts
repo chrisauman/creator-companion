@@ -3,27 +3,14 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
+import { AdminShellComponent } from './admin-shell.component';
 
 @Component({
   selector: 'app-admin-users',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule],
+  imports: [CommonModule, RouterLink, FormsModule, AdminShellComponent],
   template: `
-    <div class="admin-page">
-      <header class="admin-header">
-        <h1>Admin Dashboard</h1>
-        <a routerLink="/dashboard" class="btn btn--ghost btn--sm">← Back to App</a>
-      </header>
-
-      <nav class="admin-nav">
-        <a routerLink="/admin" class="admin-nav__link">Overview</a>
-        <a routerLink="/admin/users" class="admin-nav__link admin-nav__link--active">Users</a>
-        <a routerLink="/admin/motivation" class="admin-nav__link">Content Library</a>
-        <a routerLink="/admin/reminders" class="admin-nav__link">Reminders</a>
-        <a routerLink="/admin/emails" class="admin-nav__link">Emails</a>
-        <a routerLink="/admin/faq" class="admin-nav__link">FAQ</a>
-        <a routerLink="/admin/prompts" class="admin-nav__link">Daily Prompts</a>
-      </nav>
+    <app-admin-shell active="users">
 
       <div class="toolbar">
         <input
@@ -85,15 +72,9 @@ import { ApiService } from '../../core/services/api.service';
       @if (error()) {
         <div class="alert alert--error">{{ error() }}</div>
       }
-    </div>
+    </app-admin-shell>
   `,
   styles: [`
-    .admin-page { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem; }
-    .admin-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
-    .admin-header h1 { font-size: 1.5rem; margin: 0; }
-    .admin-nav { display: flex; gap: .25rem; margin-bottom: 2rem; border-bottom: 1px solid var(--color-border); padding-bottom: .75rem; }
-    .admin-nav__link { padding: .4rem .9rem; border-radius: 6px; text-decoration: none; color: var(--color-text-muted); font-size: .875rem; }
-    .admin-nav__link:hover, .admin-nav__link--active { background: var(--color-surface); color: var(--color-text); }
     .toolbar { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
     .search-input { max-width: 320px; }
     .table-wrap { overflow-x: auto; padding: 0; }

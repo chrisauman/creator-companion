@@ -1,31 +1,17 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { ApiService } from '../../core/services/api.service';
 import { Faq } from '../../core/models/models';
+import { AdminShellComponent } from './admin-shell.component';
 
 @Component({
   selector: 'app-admin-faq',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, DragDropModule],
+  imports: [CommonModule, FormsModule, DragDropModule, AdminShellComponent],
   template: `
-    <div class="admin-page">
-      <header class="admin-header">
-        <h1>Admin Dashboard</h1>
-        <a routerLink="/dashboard" class="btn btn--ghost btn--sm">← Back to App</a>
-      </header>
-
-      <nav class="admin-nav">
-        <a routerLink="/admin" class="admin-nav__link">Overview</a>
-        <a routerLink="/admin/users" class="admin-nav__link">Users</a>
-        <a routerLink="/admin/motivation" class="admin-nav__link">Content Library</a>
-        <a routerLink="/admin/reminders" class="admin-nav__link">Reminders</a>
-        <a routerLink="/admin/emails" class="admin-nav__link">Emails</a>
-        <a routerLink="/admin/faq" class="admin-nav__link admin-nav__link--active">FAQ</a>
-      </nav>
-
+    <app-admin-shell active="faq">
       <div class="section-head">
         <h2>FAQ Management</h2>
         <button class="btn btn--primary btn--sm" (click)="startAdd()">+ Add FAQ</button>
@@ -139,23 +125,9 @@ import { Faq } from '../../core/models/models';
           }
         </ul>
       }
-    </div>
+    </app-admin-shell>
   `,
   styles: [`
-    .admin-page { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem; }
-    .admin-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
-    .admin-header h1 { font-size: 1.5rem; margin: 0; }
-    .admin-nav {
-      display: flex; gap: .25rem; flex-wrap: wrap;
-      margin-bottom: 2rem; border-bottom: 1px solid var(--color-border); padding-bottom: 1rem;
-    }
-    .admin-nav__link {
-      padding: .375rem .875rem; border-radius: var(--radius-sm);
-      font-size: .875rem; font-weight: 500; color: var(--color-text-2);
-      text-decoration: none; transition: background .15s, color .15s;
-      &:hover { background: var(--color-surface-2); color: var(--color-text); }
-      &--active { background: var(--color-accent-light); color: var(--color-accent-dark); font-weight: 600; }
-    }
 
     .section-head {
       display: flex; align-items: center; justify-content: space-between;

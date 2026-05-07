@@ -1,8 +1,8 @@
 import { Component, inject, signal, OnInit, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
+import { AdminShellComponent } from './admin-shell.component';
 
 const TEMPLATES = [
   { key: 'welcome', label: 'Welcome Email', description: 'Sent to new users immediately after registration.' }
@@ -11,24 +11,9 @@ const TEMPLATES = [
 @Component({
   selector: 'app-admin-emails',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule],
+  imports: [CommonModule, FormsModule, AdminShellComponent],
   template: `
-    <div class="admin-page">
-      <header class="admin-header">
-        <h1>Admin Dashboard</h1>
-        <a routerLink="/dashboard" class="btn btn--ghost btn--sm">← Back to App</a>
-      </header>
-
-      <nav class="admin-nav">
-        <a routerLink="/admin" class="admin-nav__link">Overview</a>
-        <a routerLink="/admin/users" class="admin-nav__link">Users</a>
-        <a routerLink="/admin/motivation" class="admin-nav__link">Content Library</a>
-        <a routerLink="/admin/reminders" class="admin-nav__link">Reminders</a>
-        <span class="admin-nav__link admin-nav__link--active">Emails</span>
-        <a routerLink="/admin/faq" class="admin-nav__link">FAQ</a>
-        <a routerLink="/admin/prompts" class="admin-nav__link">Daily Prompts</a>
-      </nav>
-
+    <app-admin-shell active="emails">
       <div class="emails-layout">
 
         <!-- Template list sidebar -->
@@ -96,15 +81,19 @@ const TEMPLATES = [
           }
         </div>
       </div>
-    </div>
+    </app-admin-shell>
   `,
   styles: [`
+    /* Two-column emails-layout. The shell already provides the page
+       container + padding, so this drops its own outer padding/
+       max-width to avoid double-spacing. */
     .emails-layout {
       display: grid;
       grid-template-columns: 240px 1fr;
       gap: 1.5rem;
-      padding: 1.5rem;
-      max-width: 1100px;
+    }
+    @media (max-width: 720px) {
+      .emails-layout { grid-template-columns: 1fr; }
     }
 
     .template-list {
