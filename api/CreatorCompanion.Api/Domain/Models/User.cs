@@ -55,6 +55,17 @@ public class User
     /// </summary>
     public string? ProfileImagePath { get; set; }
 
+    /// <summary>
+    /// Dedupe field for the streak-threatened push notification. Holds the
+    /// missed-day date (= yesterday relative to user-local "now") for which
+    /// we've already sent the "Yesterday slipped by — but you've got this"
+    /// push. The notifier only fires when this value differs from the
+    /// current missed-day, so each gap triggers at most one push. Cleared
+    /// implicitly when the user's lastEntryDate advances (because the
+    /// next missed-day, if any, will be a different date).
+    /// </summary>
+    public DateOnly? StreakThreatenedNotifiedFor { get; set; }
+
     public ICollection<Journal> Journals { get; set; } = new List<Journal>();
     public ICollection<Entry> Entries { get; set; } = new List<Entry>();
     public ICollection<Draft> Drafts { get; set; } = new List<Draft>();

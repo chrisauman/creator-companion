@@ -170,10 +170,14 @@ Three surfaces handle the streak-break emotional arc; all live in
   chapters in column 3, personal-best pinned to top. Demo data
   via `?demo=streaks`. Endpoint: `GET /v1/entries/streak/history`
   (also `IStreakService.GetHistoryAsync`).
-- **`ThreatenedBannerComponent`** — auto-renders at top of dashboard
-  when `currentStreak > 0 && lastEntryDate is exactly 2 days back`.
-  "Write yesterday's entry" → `composeDate` → `NewEntryComponent
-  [initialDate]` pre-fills the missed day.
+- **`ThreatenedBannerComponent`** — auto-renders at top of column 3
+  (Today mode only) when `currentStreak > 0 && lastEntryDate is
+  exactly 2 days back`. "Log your progress" → `composeDate` →
+  `NewEntryComponent [initialDate]` pre-fills the missed day.
+- **Streak-threatened push** — `ReminderBackgroundService.
+  ProcessThreatenedNotificationsAsync` mirrors the banner condition
+  and fires one push per missed-day-event after 10am user-local.
+  Deduped via `User.StreakThreatenedNotifiedFor` (DateOnly?).
 - **`WelcomeBackComponent`** — full-takeover after a break. Shows
   when `currentStreak === 0 && longestStreak > 0` and not already
   dismissed (key: `cc_welcome_back_seen_<userId>_<lastEntryDate>`
