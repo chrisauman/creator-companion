@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, effect, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, effect, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -261,7 +261,7 @@ import { ActivatedRoute } from '@angular/router';
         </section>
 
         <!-- Right column: Today / Reading / Composing / Editing (desktop only) -->
-        <aside class="work__right-col">
+        <aside class="work__right-col" #rightCol>
 
           @switch (rightColumnMode()) {
             @case ('today') {
@@ -1383,6 +1383,22 @@ export class DashboardComponent implements OnInit {
     });
   }
 
+  /** Right-column scroll container ref. Used to reset scroll-to-top
+   *  when the column's mode changes (e.g. after saving an entry, the
+   *  Today panel re-renders and could otherwise inherit the prior
+   *  scroll position from the composer/reader, leaving the user
+   *  mid-column instead of at the eyebrow). */
+  @ViewChild('rightCol') rightColRef?: ElementRef<HTMLElement>;
+
+  /** Reset right-column scroll. Defer one frame so the new mode's
+   *  template has rendered before we measure/set scrollTop. */
+  private scrollRightColumnToTop(): void {
+    queueMicrotask(() => {
+      const el = this.rightColRef?.nativeElement;
+      if (el) el.scrollTop = 0;
+    });
+  }
+
   returnToToday(): void {
     this.rightColumnMode.set('today');
     this.selectedEntryId.set(null);
@@ -1390,6 +1406,7 @@ export class DashboardComponent implements OnInit {
     this.composePrompt.set(null);
     this.composeSpark.set(null);
     this.composeDate.set(null);
+    this.scrollRightColumnToTop();
     // Strip the ?section= query param if present so the URL reflects state.
     if (this.route.snapshot.queryParamMap.has('section')) {
       this.router.navigate(['/dashboard'], { queryParams: { section: null }, queryParamsHandling: 'merge' });
@@ -1561,6 +1578,7 @@ export class DashboardComponent implements OnInit {
     this.composePrompt.set(null);
     this.composeSpark.set(null);
     this.rightColumnMode.set('today');
+    this.scrollRightColumnToTop();
     this.refreshEntries();
   }
 
@@ -1584,6 +1602,7 @@ export class DashboardComponent implements OnInit {
     this.selectedEntryId.set(null);
     this.selectedEntry.set(null);
     this.rightColumnMode.set('today');
+    this.scrollRightColumnToTop();
     this.refreshEntries();
   }
 
