@@ -384,7 +384,7 @@ import { SidebarStateService } from '../../shared/sidebar/sidebar-state.service'
        very long titles. */
     .entry-card__title {
       font-family: var(--font-sans);
-      font-size: 1.0625rem;
+      font-size: 1rem;
       font-weight: 700;
       line-height: 1.35;
       letter-spacing: -.01em;

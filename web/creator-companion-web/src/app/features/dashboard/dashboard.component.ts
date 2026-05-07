@@ -912,7 +912,7 @@ import { ActivatedRoute } from '@angular/router';
        reading title in column 3 (same weight, bigger size). */
     .entry-row__title {
       font-family: var(--font-sans);
-      font-size: 1.0625rem;
+      font-size: 1rem;
       font-weight: 700;
       line-height: 1.35;
       color: var(--color-text);
