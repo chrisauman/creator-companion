@@ -105,7 +105,7 @@ import { MobileHeaderComponent } from '../../shared/mobile-header/mobile-header.
       font-size: clamp(1.375rem, 5vw, 1.75rem);
       font-weight: 800; color: var(--color-text); margin: 0 0 .375rem;
     }
-    .support-sub { font-size: .9375rem; color: var(--color-text-2); margin: 0; }
+    .support-sub { font-size: 1rem; color: var(--color-text); margin: 0; line-height: 1.6; }
 
     /* ── States ──────────────────────────────────────────────────── */
     .loading-state, .empty-state {
@@ -147,12 +147,14 @@ import { MobileHeaderComponent } from '../../shared/mobile-header/mobile-header.
 
     .faq-answer {
       padding: 0 1.25rem 1.125rem;
+      /* Body copy standard — 1rem Inter, line-height 1.6, ink color.
+         Was --font-serif (Georgia) which CLAUDE.md flags as reserved. */
       p {
         margin: 0;
-        font-size: .9375rem;
+        font-size: 1rem;
         color: var(--color-text);
-        line-height: 1.7;
-        font-family: var(--font-serif);
+        line-height: 1.6;
+        font-family: var(--font-sans);
       }
     }
 
@@ -163,7 +165,7 @@ import { MobileHeaderComponent } from '../../shared/mobile-header/mobile-header.
       background: var(--color-surface-2);
       border: 1px solid var(--color-border);
       border-radius: var(--radius-lg);
-      p { margin: 0 0 .5rem; font-size: .9375rem; color: var(--color-text-2); }
+      p { margin: 0 0 .5rem; font-size: 1rem; color: var(--color-text); line-height: 1.6; }
     }
     .support-contact__link {
       font-size: .9375rem; font-weight: 600;

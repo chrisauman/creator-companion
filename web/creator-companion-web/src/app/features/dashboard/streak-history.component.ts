@@ -390,10 +390,11 @@ import { StreakHistoryItem, StreakStats } from '../../core/models/models';
       margin: 0 0 .5rem;
       letter-spacing: -.01em;
     }
+    /* Body copy standard. */
     .empty__body {
-      font-size: .875rem;
-      line-height: 1.55;
-      color: var(--color-text-muted, var(--color-text-3));
+      font-size: 1rem;
+      line-height: 1.6;
+      color: var(--color-text);
       margin: 0 auto;
       max-width: 38ch;
     }

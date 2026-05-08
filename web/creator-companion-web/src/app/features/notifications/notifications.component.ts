@@ -303,11 +303,12 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
       color: var(--color-text);
       margin: 0 0 .25rem;
     }
+    /* Body copy standard. */
     .page-sub {
-      font-size: .9375rem;
+      font-size: 1rem;
       color: var(--color-text);
       margin: 0;
-      line-height: 1.5;
+      line-height: 1.6;
     }
 
     /* ── Flat blocks — no card chrome, just typography + spacing ── */
@@ -360,9 +361,10 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
       border-radius: .375rem;
     }
     .reminder-hint strong { color: var(--color-text); font-weight: 600; }
+    /* Body copy standard. */
     .block__body {
-      font-size: .9375rem;
-      line-height: 1.5;
+      font-size: 1rem;
+      line-height: 1.6;
       color: var(--color-text);
       margin: 0;
     }

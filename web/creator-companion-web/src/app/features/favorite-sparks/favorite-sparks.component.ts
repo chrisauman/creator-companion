@@ -306,7 +306,8 @@ import { MobileHeaderComponent } from '../../shared/mobile-header/mobile-header.
       color: var(--color-text);
       margin: 0 0 .25rem;
     }
-    .page-sub { font-size: .9375rem; color: var(--color-text); margin: 0; line-height: 1.5; }
+    /* Body copy standard. */
+    .page-sub { font-size: 1rem; color: var(--color-text); margin: 0; line-height: 1.6; }
 
     /* ── Unified favorites list ──────────────────────────────────── */
     /* Same wrapper used for both spark and entry cards so they share
@@ -452,8 +453,9 @@ import { MobileHeaderComponent } from '../../shared/mobile-header/mobile-header.
       letter-spacing: .07em; color: var(--color-accent);
       display: block; margin-bottom: .3rem;
     }
+    /* Body copy standard. */
     .spark-takeaway {
-      font-size: .9375rem; color: var(--color-text); margin: 0; line-height: 1.7;
+      font-size: 1rem; color: var(--color-text); margin: 0; line-height: 1.6;
     }
     .spark-actions {
       display: flex; align-items: center; gap: .25rem; flex-shrink: 0; margin-top: .1rem;
@@ -480,8 +482,9 @@ import { MobileHeaderComponent } from '../../shared/mobile-header/mobile-header.
       padding: 0 1.25rem;
     }
     .spark-card--expanded .spark-body { max-height: 600px; padding: 0 1.25rem 1.25rem; }
+    /* Body copy standard. */
     .spark-content {
-      font-size: .9375rem; line-height: 1.7; color: var(--color-text);
+      font-size: 1rem; line-height: 1.6; color: var(--color-text);
       margin: 0; white-space: pre-wrap;
     }
 
@@ -506,7 +509,7 @@ import { MobileHeaderComponent } from '../../shared/mobile-header/mobile-header.
     .empty-text {
       font-size: 1rem; font-weight: 600; color: var(--color-text); margin: 0 0 .375rem;
     }
-    .empty-sub { font-size: .875rem; color: var(--color-text-2); margin: 0; }
+    .empty-sub { font-size: 1rem; color: var(--color-text); margin: 0; line-height: 1.6; }
   `]
 })
 export class FavoriteSparksComponent implements OnInit {

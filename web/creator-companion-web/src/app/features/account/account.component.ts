@@ -569,8 +569,9 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
     .support-card__title {
       font-size: .9375rem; font-weight: 600; color: var(--color-text); margin: 0 0 .2rem;
     }
+    /* Body copy standard. */
     .support-card__sub {
-      font-size: .8125rem; color: var(--color-text-2); margin: 0;
+      font-size: 1rem; color: var(--color-text); margin: 0; line-height: 1.6;
     }
     .section-head {
       display:flex; align-items:center; justify-content:space-between;
@@ -686,7 +687,7 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
       svg:first-child { color: var(--color-accent); flex-shrink: 0; }
     }
     .notif-link-title { font-size: .9375rem; font-weight: 600; margin: 0 0 .1rem; }
-    .notif-link-sub { font-size: .8125rem; color: var(--color-text); margin: 0; }
+    .notif-link-sub { font-size: 1rem; color: var(--color-text); margin: 0; line-height: 1.6; }
     .notif-link-chevron { margin-left: auto; color: var(--color-text-3); flex-shrink: 0; }
 
     /* Preferences */
