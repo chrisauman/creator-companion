@@ -372,6 +372,32 @@ signal AND strips the URL param.
   components (dashboard, edit-entry) exceed this; warnings only,
   not errors. Don't bloat them further unless necessary.
 
+## Typography standard
+
+One body-copy rule across the app. Don't deviate without a reason.
+
+- **Body copy** (descriptive paragraphs, sub-text inside cards):
+  `font-size: 1rem` (16px), `line-height: 1.6`,
+  `color: var(--color-text)`, `font-family: var(--font-sans)`.
+- **Entry body** (long-form reading): `font-size: 1.0625rem` (17px),
+  `line-height: 1.75`, same color + family.
+- **Featured quote** (Daily Spark takeaway, Daily Prompt question,
+  hero-card headlines): `font-size: 1.25rem`, `font-weight: 600`,
+  `letter-spacing: -.01em`, same color + family. Deliberate
+  hierarchy — quotes should read as larger than body.
+- **Eyebrows / labels**: caps `font-size: .8125rem` (13px),
+  `letter-spacing: .12em`, `font-weight: 700`, accent color.
+
+`var(--color-text-2)` and `var(--color-text-3)` are for genuinely
+tertiary microcopy only — timestamps, entry-counts, drag handles,
+metadata. NOT for body paragraphs. If you find yourself reaching
+for grey text on a paragraph, use `--color-text` and let visual
+hierarchy come from size + weight instead.
+
+When you add a new card or section, lift these values from this
+section rather than inventing fresh ones. If you genuinely need a
+different size, add a comment explaining why.
+
 ## Mobile + desktop parity (default assumption)
 
 Layout / UX changes apply to **both** breakpoints unless the user

@@ -245,9 +245,10 @@ import { DailyReminderCardComponent } from './daily-reminder-card.component';
       margin: 0 0 1rem;
       position: relative;
     }
+    /* Standard body copy — see CLAUDE.md "Typography standard". */
     .spark-hero__body {
-      font-size: .9375rem;
-      line-height: 1.7;
+      font-size: 1rem;
+      line-height: 1.6;
       color: var(--color-text);
       position: relative;
       margin: 0 0 1.25rem;
@@ -382,11 +383,12 @@ import { DailyReminderCardComponent } from './daily-reminder-card.component';
       margin: 0 0 .375rem;
       color: var(--color-text);
     }
+    /* Standard body copy — see CLAUDE.md "Typography standard". */
     .start-section__sub {
-      font-size: .875rem;
-      color: var(--color-text-2);
+      font-size: 1rem;
+      color: var(--color-text);
       margin: 0 0 1.25rem;
-      line-height: 1.5;
+      line-height: 1.6;
     }
 
     /* ── Hero card (Variant 3 — shared cream gradient, used by
@@ -450,12 +452,13 @@ import { DailyReminderCardComponent } from './daily-reminder-card.component';
       margin: 0 0 1.25rem;
       letter-spacing: -.01em;
     }
+    /* Standard body copy — see CLAUDE.md "Typography standard". */
     .hero-card__sub {
-      font-size: .8125rem;
-      color: var(--color-text-2);
+      font-size: 1rem;
+      color: var(--color-text);
       position: relative;
       margin: 0 0 1.25rem;
-      line-height: 1.5;
+      line-height: 1.6;
     }
     .hero-card__actions {
       display: flex;
@@ -542,9 +545,10 @@ import { DailyReminderCardComponent } from './daily-reminder-card.component';
       border-style: solid;
       background: var(--color-surface);
     }
+    /* Standard body copy — see CLAUDE.md "Typography standard". */
     .blank-card__text {
-      font-size: .875rem;
-      color: var(--color-text-2);
+      font-size: 1rem;
+      color: var(--color-text);
     }
     .blank-card__text strong {
       color: var(--color-text);
