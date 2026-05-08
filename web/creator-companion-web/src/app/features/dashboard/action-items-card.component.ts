@@ -83,6 +83,7 @@ import { ActionItem } from '../../core/models/models';
                 [class.todo-list__item--swipe-revealed]="revealedItemId() === item.id"
                 [style.transform]="rowTransform(item.id)"
                 cdkDrag
+                cdkDragLockAxis="y"
                 (touchstart)="onTouchStart(item.id, $event)"
                 (touchmove)="onTouchMove($event)"
                 (touchend)="onTouchEnd(item.id)"
@@ -388,12 +389,32 @@ import { ActionItem } from '../../core/models/models';
       opacity: .35;
       cursor: grab;
       transition: opacity .15s, color .15s;
+      /* CDK drag-drop on iOS Chrome: without touch-action: none the
+         browser claims the touch as a scroll gesture before CDK can
+         start tracking it, so drag never engages. This is required
+         on the actual drag-grip element (not just the cdkDrag root). */
+      touch-action: none;
+      -webkit-touch-callout: none;
+      user-select: none;
     }
     .todo-list__handle:active { cursor: grabbing; }
     .todo-list__item:hover .todo-list__handle { opacity: .75; }
     .todo-list__handle--placeholder {
       cursor: default;
       opacity: 0;
+      touch-action: auto;
+    }
+    /* On touch devices the dot grip alone is too small to hit reliably
+       (Apple HIG calls for ~44px). Widen the hit area and brighten the
+       glyph since "hover to discover" doesn't apply. The visible icon
+       stays the same size — only the tappable surface grows. */
+    @media (hover: none) and (pointer: coarse) {
+      .todo-list__handle {
+        width: 36px;
+        height: 32px;
+        opacity: .55;
+        margin-left: -6px; /* recoup the extra width so layout doesn't shift */
+      }
     }
 
     /* ── Checkbox ───────────────────────────────────────────────── */
@@ -832,6 +853,11 @@ export class ActionItemsCardComponent implements OnInit {
   onTouchStart(itemId: number, ev: TouchEvent): void {
     // Don't engage swipe while editing this row.
     if (this.editingId() === itemId) return;
+    // If the touch originated on the drag handle, hand off to CDK
+    // drag-drop entirely — swipe-to-delete and drag-to-reorder both
+    // hijack horizontal movement and would otherwise fight each other.
+    const target = ev.target as HTMLElement | null;
+    if (target?.closest('.todo-list__handle')) return;
     // If a different row is currently revealed, close it first.
     if (this.revealedItemId() !== null && this.revealedItemId() !== itemId) {
       this.closeSwipe();

@@ -76,6 +76,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/favorite-sparks/favorite-sparks.component').then(m => m.FavoriteSparksComponent)
   },
   {
+    path: 'streak-history',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/streak-history/streak-history-page.component').then(m => m.StreakHistoryPageComponent)
+  },
+  {
     path: 'trash',
     canActivate: [authGuard],
     loadComponent: () => import('./features/trash/trash.component').then(m => m.TrashComponent)

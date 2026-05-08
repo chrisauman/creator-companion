@@ -253,11 +253,19 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
       flex-direction: column;
       width: 280px;
       max-width: 85vw;
+      /* iOS Safari/Chrome's URL bar eats into 100vh, clipping the
+         bottom of the drawer (Sign Out, History link, etc.). dvh
+         tracks the *visible* viewport so the drawer ends where the
+         URL bar starts. Fallback to vh for older browsers. */
       height: 100vh;
+      height: 100dvh;
       background: #111318;
       overflow-y: auto;
       overflow-x: hidden;
-      padding: 1.25rem 0 1rem;
+      /* Bottom pad accounts for the home-indicator safe-area on
+         iOS notch / Dynamic Island devices so the last nav item
+         (or scroll target) clears it. */
+      padding: 1.25rem 0 calc(1rem + env(safe-area-inset-bottom, 0px));
       position: fixed;
       top: 0;
       left: 0;
@@ -265,6 +273,7 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
       transform: translateX(-100%);
       transition: transform .25s ease, width .25s ease, min-width .25s ease;
       box-shadow: 0 0 30px rgba(0,0,0,.4);
+      -webkit-overflow-scrolling: touch;
     }
     .sidebar--mobile-open { transform: translateX(0); }
 
@@ -829,16 +838,15 @@ export class SidebarComponent implements OnInit {
    */
   sectionLink(section: 'notifications' | 'todos' | 'favorites' | 'streak-history'): string[] {
     const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
+    // Desktop renders all of these inline in the dashboard's right column
+    // via the ?section= query param. Mobile has no right column, so each
+    // gets a dedicated standalone route instead.
     if (isDesktop) return ['/dashboard'];
-    // streak-history has no standalone mobile page yet; route to dashboard
-    // and let the section query param drive column 3 there too.
-    if (section === 'streak-history') return ['/dashboard'];
     return ['/' + section];
   }
 
   sectionQueryParams(section: 'notifications' | 'todos' | 'favorites' | 'streak-history'): Record<string, string> | null {
     const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
-    if (section === 'streak-history') return { section };
     return isDesktop ? { section } : null;
   }
 
