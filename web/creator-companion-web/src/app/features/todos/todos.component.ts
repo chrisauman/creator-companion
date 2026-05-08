@@ -73,7 +73,9 @@ import { ActionItemsCardComponent } from '../dashboard/action-items-card.compone
 
     .main-content {
       flex: 1; min-width: 0;
-      padding: 1.25rem 1rem calc(80px + env(safe-area-inset-bottom, 0px));
+      /* 1.5rem horizontal gutter matches the rest of the app's
+         standalone pages (today-panel, entry-card, support-wrap). */
+      padding: 1.25rem 1.5rem calc(80px + env(safe-area-inset-bottom, 0px));
       /* White (not cream) on mobile — the to-do list reads cleaner on
          pure white; the cream paper feel is reserved for the journaling
          surfaces (entries, sparks, prompts). */

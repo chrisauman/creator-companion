@@ -92,8 +92,10 @@ import { MobileHeaderComponent } from '../../shared/mobile-header/mobile-header.
     }
     @media (min-width: 768px) { .main-content { padding: 2rem 3rem 4rem; } }
 
+    /* 1.5rem horizontal gutter matches the rest of the app's
+       standalone pages (today-panel, entry-card, todos). */
     .support-wrap {
-      padding: 1.5rem 1.125rem 2rem;
+      padding: 1.5rem 1.5rem 2rem;
     }
     @media (min-width: 768px) {
       .support-wrap { max-width: 680px; margin: 0 auto; padding: 0; }

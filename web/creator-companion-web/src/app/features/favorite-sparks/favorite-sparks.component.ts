@@ -234,14 +234,18 @@ import { MobileHeaderComponent } from '../../shared/mobile-header/mobile-header.
     .reader-top__breadcrumb strong { color: var(--color-text); font-weight: 600; }
     .reader-top__actions { display: flex; gap: .5rem; flex-shrink: 0; min-width: 36px; }
 
-    /* Body bounded to 760px to match the reader/edit views. */
+    /* Body bounded to 760px to match the reader/edit views. 1.5rem
+       horizontal on mobile (app-wide gutter); 2.5rem on desktop. */
     .body-inner {
       width: 100%;
       max-width: 760px;
       margin: 0 auto;
-      padding: .75rem 2.5rem 3rem;
+      padding: .75rem 1.5rem 3rem;
       box-sizing: border-box;
       color: var(--color-text);
+    }
+    @media (min-width: 768px) {
+      .body-inner { padding: .75rem 2.5rem 3rem; }
     }
 
     /* ── Mobile top bar ──────────────────────────────────────────── */

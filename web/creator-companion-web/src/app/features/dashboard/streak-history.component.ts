@@ -194,12 +194,18 @@ import { StreakHistoryItem, StreakStats } from '../../core/models/models';
     /* ── Body container — bounded to 760px like the reader/edit views
        so type and cards line up with the rest of column 3. */
     .body { flex: 1; overflow-y: auto; }
+    /* 1.5rem horizontal on mobile to match the app-wide gutter;
+       2.5rem on desktop where the embedded right column has more
+       horizontal room. */
     .body-inner {
       width: 100%;
       max-width: 760px;
       margin: 0 auto;
-      padding: 1.5rem 2.5rem 3rem;
+      padding: 1.5rem 1.5rem 3rem;
       box-sizing: border-box;
+    }
+    @media (min-width: 768px) {
+      .body-inner { padding: 1.5rem 2.5rem 3rem; }
     }
 
     /* ── Demo-mode banner ──────────────────────────────────────────── */
@@ -399,10 +405,11 @@ import { StreakHistoryItem, StreakStats } from '../../core/models/models';
       max-width: 38ch;
     }
 
-    /* Narrow viewport polish */
+    /* Narrow viewport polish — keep the 1.5rem horizontal gutter
+       (app-wide standard); just tighten vertical and the type sizes. */
     @media (max-width: 600px) {
-      .reader-top__inner { padding: 0 1.25rem; }
-      .body-inner       { padding: 1.25rem 1.25rem 2rem; }
+      .reader-top__inner { padding: 0 1.5rem; }
+      .body-inner       { padding: 1.25rem 1.5rem 2rem; }
       .lifetime__num    { font-size: 1.75rem; }
       .chapter__days    { font-size: 1.25rem; }
     }

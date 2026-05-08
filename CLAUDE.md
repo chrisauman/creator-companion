@@ -398,6 +398,26 @@ When you add a new card or section, lift these values from this
 section rather than inventing fresh ones. If you genuinely need a
 different size, add a comment explaining why.
 
+## Spacing standard (gutters)
+
+App-wide horizontal gutter on standalone pages:
+- **Mobile** (`< 768px`): `1.5rem` (24px) inside the inner content
+  wrapper (`.body-inner`, `.support-wrap`, `.entry-card`, `.today`,
+  `.main-content` if it carries padding).
+- **Desktop** (`>= 768px`): `2.5rem` for column-3 / wide reading
+  surfaces (`.body-inner`); `2rem` for the entry-card; `3rem` for
+  full-width admin/account `.main-content`. Pick what fits the
+  surface, not a fresh number.
+- **Vertical**: pages set `padding-top: 0` and let the first child
+  (page header, eyebrow, hero card) own the breathing room from
+  the sticky mobile-header. Bottom padding includes
+  `env(safe-area-inset-bottom)` on mobile to clear the home
+  indicator.
+
+Don't reach for `1.125rem` or `1rem` horizontal on mobile — those
+were one-off mistakes; they always read as cramped next to the
+1.5rem standard everywhere else.
+
 ## Mobile + desktop parity (default assumption)
 
 Layout / UX changes apply to **both** breakpoints unless the user

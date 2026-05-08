@@ -279,13 +279,21 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
     @media (min-width: 768px) {
       .main-content { padding: 0 0 4rem; background: var(--color-surface); }
     }
+    /* Inner wrapper inside the standalone notifications page. 1.5rem
+       horizontal on mobile to match the app-wide gutter; 2.5rem on
+       desktop where the embedded view (in the dashboard right column)
+       has more horizontal room and benefits from extra breathing
+       space around the reminder tiles. */
     .body-inner {
       width: 100%;
       max-width: 760px;
       margin: 0 auto;
-      padding: .75rem 2.5rem 3rem;
+      padding: .75rem 1.5rem 3rem;
       box-sizing: border-box;
       color: var(--color-text);
+    }
+    @media (min-width: 768px) {
+      .body-inner { padding: .75rem 2.5rem 3rem; }
     }
     .page--embedded .body-inner { padding-top: 1rem; }
 
