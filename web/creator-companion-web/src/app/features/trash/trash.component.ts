@@ -53,7 +53,7 @@ import { MobileHeaderComponent } from '../../shared/mobile-header/mobile-header.
             <div class="trash-entry__actions">
               <button
                 *ngIf="caps()?.canRecoverDeleted"
-                class="btn btn--secondary btn--sm"
+                class="btn btn--primary btn--sm"
                 (click)="recover(entry)"
                 [disabled]="recovering() === entry.id"
               >
