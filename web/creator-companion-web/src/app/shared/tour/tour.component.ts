@@ -245,44 +245,63 @@ export class TourComponent implements OnInit, OnDestroy {
    *  again" link in account settings. */
   static readonly SEEN_KEY = 'cc_tour_seen';
 
+  /** True when the runtime viewport is mobile-width. Steps swap their
+   *  target selector accordingly so the spotlight always lands on a
+   *  visible element (the desktop sidebar is hidden offscreen on
+   *  mobile, which made the previous tour effectively invisible past
+   *  the centered intro). */
+  private isMobile(): boolean {
+    return typeof window !== 'undefined' && window.innerWidth < 768;
+  }
+
   /**
-   * Tour steps. Targets are CSS selectors against the dashboard's
-   * sidebar and main content. If a target isn't present in the DOM
-   * (e.g. an admin-only feature is hidden), the step falls back to
-   * a centered slide.
+   * Tour steps. Targets are CSS selectors. Each step picks a desktop
+   * vs. mobile selector at runtime so the spotlight lands on something
+   * the user can actually see at their breakpoint. Centered slides
+   * (target: null) are used for intro / outro and as a graceful
+   * fallback when a target isn't in the DOM.
    */
-  steps: TourStep[] = [
-    {
-      target: null,
-      title: "Welcome to Creator Companion",
-      body: "A quick 5-step tour of the things that matter most. You can skip anytime.",
-      placement: 'center'
-    },
-    {
-      target: '.sidebar__compose',
-      title: "Log today's progress",
-      body: "Tap here every day to log a step in your creative practice. Even one sentence counts.",
-      placement: 'right'
-    },
-    {
-      target: '.sidebar__streak',
-      title: "Your streak",
-      body: "Grows each day you log. Miss a day? You have 48 hours to backlog before it resets.",
-      placement: 'right'
-    },
-    {
-      target: '.sidebar__nav-item--reminders',
-      title: "Daily reminders",
-      body: "Set up to 5 push notifications a day for whatever helps your practice.",
-      placement: 'right'
-    },
-    {
-      target: null,
-      title: "You're all set.",
-      body: "You're on a 10-day free trial — full access to everything. Show this tour again anytime from your account settings.",
-      placement: 'center'
-    }
-  ];
+  get steps(): TourStep[] {
+    const m = this.isMobile();
+    return [
+      {
+        target: null,
+        title: "Welcome to Creator Companion",
+        body: "A quick 5-step tour of the things that matter most. You can skip anytime.",
+        placement: 'center'
+      },
+      {
+        // Mobile uses the always-visible compose circle in the top
+        // bar; desktop uses the sidebar's "Log Today's Progress" pill.
+        target: m ? '.mobile-header__compose' : '.sidebar__compose',
+        title: "Log today's progress",
+        body: "Tap here every day to log a step in your creative practice. Even one sentence counts.",
+        placement: m ? 'bottom' : 'right'
+      },
+      {
+        // Streak module — mobile gets a centered slide (the streak
+        // lives in the closed drawer on mobile, can't spotlight it
+        // without auto-opening which gets messy).
+        target: m ? null : '.sidebar__streak',
+        title: "Your streak",
+        body: "Grows each day you log. Miss a day? You have 48 hours to backlog before it resets. Open the menu (☰) anytime to see your current streak.",
+        placement: m ? 'center' : 'right'
+      },
+      {
+        // Reminders nav — same story; centered on mobile.
+        target: m ? null : '.sidebar__nav-item--reminders',
+        title: "Daily reminders",
+        body: "Set up to 5 push notifications a day for whatever helps your practice. Find them under Reminders in the menu.",
+        placement: m ? 'center' : 'right'
+      },
+      {
+        target: null,
+        title: "You're all set.",
+        body: "You're on a 10-day free trial — full access to everything. Show this tour again anytime from your account settings.",
+        placement: 'center'
+      }
+    ];
+  }
 
   visible    = signal(false);
   stepIndex  = signal(0);
@@ -337,10 +356,30 @@ export class TourComponent implements OnInit, OnDestroy {
   });
 
   ngOnInit(): void {
-    // Auto-start the tour the first time we land on the dashboard
-    // post-onboarding. The dashboard's view setup happens in
-    // ngOnInit; we delay the tour by a frame so target selectors
-    // resolve correctly.
+    // Two trigger paths:
+    //  1. ?tour=1 in the URL — explicit replay request from the
+    //     account page. Always fires the tour regardless of the seen
+    //     flag, then strips the param so a refresh doesn't loop.
+    //     This is more robust than relying on localStorage.removeItem
+    //     surviving a PWA reload (which has flaky behavior on iOS
+    //     when the page is served from the service worker cache).
+    //  2. cc_tour_seen flag absent — first-time auto-start.
+    // Delay by a frame so the dashboard's child components (sidebar,
+    // mobile-header) have rendered before we measure target rects.
+    const params = new URLSearchParams(window.location.search);
+    const forced = params.get('tour') === '1';
+    if (forced) {
+      // Clear the seen flag and strip the URL param so the next
+      // refresh doesn't get into a loop.
+      try { localStorage.removeItem(TourComponent.SEEN_KEY); } catch {}
+      params.delete('tour');
+      const cleanUrl = window.location.pathname +
+        (params.toString() ? '?' + params.toString() : '') +
+        window.location.hash;
+      window.history.replaceState({}, '', cleanUrl);
+      requestAnimationFrame(() => this.start());
+      return;
+    }
     if (!this.hasBeenSeen()) {
       requestAnimationFrame(() => this.start());
     }

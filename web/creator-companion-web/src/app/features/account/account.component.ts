@@ -1358,8 +1358,12 @@ export class AccountComponent implements OnInit {
    *  router) so the dashboard component re-mounts cleanly and the tour
    *  re-evaluates its localStorage gate. */
   replayTour(): void {
+    // Belt-and-suspenders: clear the localStorage flag AND set a URL
+    // param so the tour fires even if localStorage doesn't survive
+    // the reload (iOS PWA quirk). The tour component reads ?tour=1
+    // and force-starts regardless of the seen flag.
     TourComponent.reset();
-    window.location.href = '/dashboard';
+    window.location.href = '/dashboard?tour=1';
   }
 
   startDelete(): void {
