@@ -106,10 +106,18 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
 
       <!-- Nav -->
       <nav class="sidebar__nav">
+        <!-- Each nav link uses an explicit (click) handler that closes
+             the drawer AND programmatically navigates. The earlier
+             [routerLink] + (click)="closeMobile()" combo had a race
+             on iOS where the click sometimes fired but the navigation
+             didn't, leaving the user stuck on the same page with the
+             drawer half-closed. The explicit handler is the source of
+             truth — routerLink stays for the right-click "open in new
+             tab" affordance on desktop and active-state styling. -->
         <a class="sidebar__nav-item sidebar__nav-item--journal"
            [class.sidebar__nav-item--active]="active === 'dashboard'"
            routerLink="/dashboard"
-           (click)="goHome()"
+           (click)="goJournal($event)"
            [title]="collapsed() ? 'Journal' : null">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
           <span class="sidebar__nav-label">Journal</span>
@@ -118,7 +126,7 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
            [class.sidebar__nav-item--active]="active === 'notifications'"
            [routerLink]="sectionLink('notifications')"
            [queryParams]="sectionQueryParams('notifications')"
-           (click)="closeMobile()"
+           (click)="goSection('notifications', $event)"
            [title]="collapsed() ? 'Reminders' : null">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
           <span class="sidebar__nav-label">Reminders</span>
@@ -127,7 +135,7 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
            [class.sidebar__nav-item--active]="active === 'todos'"
            [routerLink]="sectionLink('todos')"
            [queryParams]="sectionQueryParams('todos')"
-           (click)="closeMobile()"
+           (click)="goSection('todos', $event)"
            [title]="collapsed() ? 'To Do List' : null">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
           <span class="sidebar__nav-label">To Do List</span>
@@ -137,7 +145,7 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
            [class.sidebar__nav-item--active]="active === 'favorites'"
            [routerLink]="sectionLink('favorites')"
            [queryParams]="sectionQueryParams('favorites')"
-           (click)="closeMobile()"
+           (click)="goSection('favorites', $event)"
            [title]="collapsed() ? 'Favorites' : null">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
           <span class="sidebar__nav-label">Favorites</span>
@@ -146,7 +154,7 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
            class="sidebar__nav-item"
            [class.sidebar__nav-item--active]="active === 'admin'"
            routerLink="/admin"
-           (click)="closeMobile()"
+           (click)="goAdmin($event)"
            [title]="collapsed() ? 'Admin' : null">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
           <span class="sidebar__nav-label">Admin</span>
@@ -200,7 +208,7 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
               <a [routerLink]="sectionLink('streak-history')"
                  [queryParams]="sectionQueryParams('streak-history')"
                  class="sidebar__streak-history-link"
-                 (click)="closeMobile()">
+                 (click)="goSection('streak-history', $event)">
                 History →
               </a>
             </span>
@@ -979,19 +987,48 @@ export class SidebarComponent implements OnInit {
    * dashboard react even when we're already on /dashboard (in which
    * case the router doesn't fire a navigation).
    */
-  goHome(): void {
-    // Always close the drawer — when the user is already on /dashboard,
-    // routerLink to /dashboard is a no-op, so NavigationEnd doesn't fire
-    // and the drawer's auto-close subscription never runs. Explicit
-    // close here covers the same-route case.
+  /**
+   * Single explicit nav handler used by the sidebar nav items.
+   * Closes the drawer and programmatically navigates — this is the
+   * source of truth for nav. The companion routerLink on the anchor
+   * is kept only so right-click "open in new tab" works on desktop
+   * and Angular's active-route styling lights up correctly.
+   *
+   * Why: on iOS Safari/Chrome the routerLink + (click) combo
+   * occasionally fires the click but skips the navigation, leaving
+   * the user stuck. preventDefault on the original anchor click +
+   * an explicit router.navigateByUrl below makes navigation reliable.
+   */
+  private navTo(commands: any[], queryParams: Record<string, string> | null, ev: Event): void {
+    ev.preventDefault();
     this.drawer.closeMobile();
-    // Tell the dashboard to reset its right column to "today" mode
-    // (relevant on desktop where the column might be in reading/
-    // composing/etc.).
+    this.router.navigate(commands, queryParams ? { queryParams } : {});
+  }
+
+  goJournal(ev: Event): void {
+    // Tap on Journal — explicit nav back to /dashboard. Also asks
+    // the dashboard to reset its right column to "today" mode and
+    // scrolls the page to the top so the user gets a clear visual
+    // confirmation of the tap (relevant when already on /dashboard).
+    this.navTo(['/dashboard'], null, ev);
     this.drawer.requestReturnToToday();
-    // On mobile, scroll the page to the top so the user sees the
-    // freshly-anchored Journal area instead of staying scrolled into
-    // wherever they were. Smooth so the motion confirms the tap.
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
+  goSection(section: 'notifications' | 'todos' | 'favorites' | 'streak-history', ev: Event): void {
+    this.navTo(this.sectionLink(section), this.sectionQueryParams(section), ev);
+  }
+
+  goAdmin(ev: Event): void {
+    this.navTo(['/admin'], null, ev);
+  }
+
+  /** Legacy entry point — kept in case anything else still calls it. */
+  goHome(): void {
+    this.drawer.closeMobile();
+    this.drawer.requestReturnToToday();
     if (typeof window !== 'undefined') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }

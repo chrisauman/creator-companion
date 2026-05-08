@@ -206,8 +206,10 @@ import { ActionItem } from '../../core/models/models';
                     (touchend)="onTouchEnd(item.id)"
                     (touchcancel)="onTouchCancel(item.id)">
 
-                  <!-- Spacer to keep checkbox + text aligned with active rows -->
-                  <span class="todo-list__handle todo-list__handle--placeholder" aria-hidden="true"></span>
+                  <!-- Completed rows skip the drag handle entirely so the
+                       checkbox + text start flush against the row's left
+                       edge — perfect alignment with active rows isn't
+                       worth the empty gutter on the completed side. -->
 
                   <button class="todo-list__check todo-list__check--done"
                           type="button"
