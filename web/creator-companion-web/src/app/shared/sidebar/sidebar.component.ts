@@ -654,6 +654,17 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
       border-radius: 50%;
     }
     .sidebar__compose-label { white-space: nowrap; }
+    /* Mobile drawer has plenty of horizontal room — bump the compose
+       button up to a more inviting size. Larger text, fatter padding,
+       bigger plus glyph. */
+    @media (max-width: 767px) {
+      .sidebar__compose {
+        font-size: 1.0625rem;
+        padding: .875rem 1.25rem;
+        margin: 0 1rem 1rem;
+      }
+      .sidebar__compose svg { width: 18px !important; height: 18px !important; }
+    }
 
     /* ── Nav ────────────────────────────────────────────────────── */
     .sidebar__nav {
@@ -671,16 +682,18 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
       text-decoration: none;
       transition: background .15s, color .15s;
     }
-    /* Bigger labels and tap targets on mobile drawer for readability. */
+    /* Bigger labels and tap targets on mobile drawer for readability.
+       The drawer has plenty of room and the previous 1rem felt small
+       relative to the size of the touch target around it. */
     @media (max-width: 767px) {
       .sidebar__nav-item {
-        font-size: 1rem;
+        font-size: 1.0625rem;
         font-weight: 600;
         gap: .875rem;
-        padding: .75rem 1rem;
+        padding: .875rem 1rem;
         color: rgba(255,255,255,.85);
       }
-      .sidebar__nav-item svg { width: 20px !important; height: 20px !important; opacity: .85 !important; }
+      .sidebar__nav-item svg { width: 22px !important; height: 22px !important; opacity: .85 !important; }
     }
     .sidebar__nav-item svg { flex-shrink: 0; opacity: .7; }
     .sidebar__nav-item:hover {
