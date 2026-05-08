@@ -114,10 +114,18 @@ import { MoodIconComponent } from '../../../shared/mood-icon/mood-icon.component
               </div>
             }
 
-            <!-- Footer -->
+            <!-- Footer — right-aligned primary Edit CTA. Black ink with
+                 white text matches the canonical primary-button treatment
+                 used everywhere else in the app (Save, Create Entry, etc.). -->
             <div class="entry-footer">
-              <a class="btn btn--secondary btn--sm" [routerLink]="['/entry', entryId, 'edit']">
-                ✏️ Edit entry
+              <a class="btn btn--primary btn--sm entry-footer__edit"
+                 [routerLink]="['/entry', entryId, 'edit']">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M12 20h9"/>
+                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/>
+                </svg>
+                Edit entry
               </a>
             </div>
 
@@ -258,14 +266,17 @@ import { MoodIconComponent } from '../../../shared/mood-icon/mood-icon.component
 
     /* ── Entry card ──────────────────────────────────────────────── */
     .entry-card {
-      /* Mobile: full-bleed, no card chrome */
-      padding: 1.5rem 1.125rem 3rem;
+      /* Mobile: full-bleed, no card chrome. Extra horizontal breathing
+         room on phones — 1.5rem feels noticeably airier than 1.125rem
+         and matches the 1.5rem gutter used inside hero cards in the
+         today panel. */
+      padding: 1.5rem 1.5rem 3rem;
     }
     @media (min-width: 768px) {
       .entry-card {
         max-width: 720px;
         margin: 0 auto;
-        padding: 2rem 1.5rem 3rem;
+        padding: 2rem 2rem 3rem;
       }
     }
 
@@ -337,7 +348,17 @@ import { MoodIconComponent } from '../../../shared/mood-icon/mood-icon.component
     }
 
     /* ── Footer ──────────────────────────────────────────────────── */
-    .entry-footer { padding-top: 1rem; border-top: 1px solid var(--color-border-light); }
+    .entry-footer {
+      padding-top: 1rem;
+      border-top: 1px solid var(--color-border-light);
+      display: flex;
+      justify-content: flex-end;
+    }
+    .entry-footer__edit {
+      display: inline-flex;
+      align-items: center;
+      gap: .375rem;
+    }
   `]
 })
 export class ViewEntryComponent implements OnInit {

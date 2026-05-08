@@ -833,19 +833,27 @@ import { ActivatedRoute } from '@angular/router';
     .search-results-count { font-size: .75rem; color: var(--color-text-3); margin: 0 0 .75rem; }
 
     /* ── Entry list ──────────────────────────────────────────────── */
+    /* Month divider above each calendar group (e.g. "MAY 2026").
+       Slightly larger on mobile where the eyebrow was getting visually
+       lost; same vertical spacing on both breakpoints so the rhythm
+       matches between phone and desktop. */
     .date-divider {
-      font-size: .6875rem;
+      font-size: .8125rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: .14em;
       color: var(--color-text-3);
       padding: 0 0 .5rem;
-      /* Breathing room above; a full rem of space below the rule
-         before the first entry starts. */
       margin: 1.75rem 0 1rem;
       border-bottom: 1px solid var(--color-border);
     }
-    .date-divider--first { margin-top: .5rem; }
+    .date-divider--first { margin-top: 1.75rem; }
+    @media (min-width: 768px) {
+      /* Desktop reverts to the smaller size — at the wider column the
+         11px caps eyebrow reads more elegantly; mobile needs more
+         visual weight to anchor the list. */
+      .date-divider { font-size: .6875rem; }
+    }
 
     /* ── Entry row (Variant B — meta · title · photo) ──────────── */
     .entry-row {
