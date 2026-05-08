@@ -69,6 +69,14 @@ import { ActivatedRoute } from '@angular/router';
       <!-- ── Desktop sidebar ─────────────────────────────────── -->
       <app-sidebar [active]="sidebarActive()" />
 
+      <!-- Mobile header — shared component used on every authed page
+           so chrome stays consistent. Sits OUTSIDE <main> so it spans
+           flush to the viewport edges, matching the placement on
+           todos / account / reminders / etc. (Inside <main> the
+           parent's horizontal padding inset the header on dashboard
+           only, breaking visual parity.) -->
+      <app-mobile-header />
+
       <!-- ── Mobile bottom nav ───────────────────────────────── -->
       <!-- ── Main content ────────────────────────────────────── -->
       <main class="main-content">
@@ -77,11 +85,6 @@ import { ActivatedRoute } from '@angular/router';
              inside their 10-day trial. Self-renders or hides based on
              capabilities; safe to leave in template at all times. -->
         <app-trial-banner></app-trial-banner>
-
-        <!-- Mobile header — shared component used on every authed page
-             so chrome stays consistent across Dashboard / Reminders /
-             To Do / Favorites / Entry view / etc. -->
-        <app-mobile-header />
 
         <!-- Streak module lives in the sidebar on every breakpoint —
              desktop has it pinned just below the logo; mobile shows it
