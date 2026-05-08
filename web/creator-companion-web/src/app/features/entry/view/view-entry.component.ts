@@ -37,6 +37,10 @@ import { MoodIconComponent } from '../../../shared/mood-icon/mood-icon.component
               {{ monthYearLabel() }} · <strong>{{ weekdayDayLabel() }}</strong>
             </div>
             <div class="reader-top__actions">
+              <!-- Top reader bar carries only the favorite toggle — Edit
+                   lives at the bottom of the entry to match the embedded
+                   reader's pattern on desktop. The two surfaces should
+                   feel identical. -->
               <button class="reader-icon-btn"
                 [class.reader-icon-btn--fav-active]="isFavorited()"
                 [title]="isFavorited() ? 'Remove from favorites' : 'Add to favorites'"
@@ -47,14 +51,6 @@ import { MoodIconComponent } from '../../../shared/mood-icon/mood-icon.component
                   <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
                 </svg>
               </button>
-              <a class="edit-btn" [routerLink]="['/entry', entryId, 'edit']">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M12 20h9"/>
-                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/>
-                </svg>
-                Edit
-              </a>
             </div>
           } @else {
             <div class="reader-top__breadcrumb"></div>
