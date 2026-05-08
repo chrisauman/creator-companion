@@ -40,7 +40,7 @@ import { ApiService } from '../../core/services/api.service';
                 <strong>{{ daysLeft() }} days</strong> left in your trial.
               }
               <span class="trial-banner__cta-prefix">
-                Subscribe to keep going.
+                Subscribe to keep your streak alive!
               </span>
             </span>
           </div>
