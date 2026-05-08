@@ -89,13 +89,15 @@ import { ActionItem } from '../../core/models/models';
                 (touchend)="onTouchEnd(item.id)"
                 (touchcancel)="onTouchCancel(item.id)">
 
-              <!-- Drag handle — always visible but muted at rest. -->
+              <!-- Drag handle — bigger glyph + brighter at rest so it's
+                   obviously interactive. The dots are 1.6r (was 1.2r)
+                   and the SVG is 14×18 (was 10×14). -->
               <span class="todo-list__handle" cdkDragHandle title="Drag to reorder">
-                <svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor"
+                <svg width="14" height="18" viewBox="0 0 14 18" fill="currentColor"
                      aria-hidden="true">
-                  <circle cx="3" cy="2"  r="1.2"/><circle cx="7" cy="2"  r="1.2"/>
-                  <circle cx="3" cy="7"  r="1.2"/><circle cx="7" cy="7"  r="1.2"/>
-                  <circle cx="3" cy="12" r="1.2"/><circle cx="7" cy="12" r="1.2"/>
+                  <circle cx="4"  cy="3"  r="1.6"/><circle cx="10" cy="3"  r="1.6"/>
+                  <circle cx="4"  cy="9"  r="1.6"/><circle cx="10" cy="9"  r="1.6"/>
+                  <circle cx="4"  cy="15" r="1.6"/><circle cx="10" cy="15" r="1.6"/>
                 </svg>
               </span>
 
@@ -378,17 +380,22 @@ import { ActionItem } from '../../core/models/models';
        Cursor: grab so the affordance reads as draggable. Vertically
        padded to match the first line of text (rows can span multiple
        lines for long content + edit textareas). */
+    /* Drag handle. Default state is now visibly interactive — the
+       previous .35 opacity made it feel decorative rather than
+       grabbable. Hover gets a soft pill background so it reads as
+       a button surface. */
     .todo-list__handle {
       flex-shrink: 0;
-      width: 14px;
-      height: 22px;
+      width: 22px;
+      height: 28px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       color: var(--color-text-3);
-      opacity: .35;
+      opacity: .65;
       cursor: grab;
-      transition: opacity .15s, color .15s;
+      border-radius: 6px;
+      transition: opacity .15s, color .15s, background .15s;
       /* CDK drag-drop on iOS Chrome: without touch-action: none the
          browser claims the touch as a scroll gesture before CDK can
          start tracking it, so drag never engages. This is required
@@ -397,23 +404,27 @@ import { ActionItem } from '../../core/models/models';
       -webkit-touch-callout: none;
       user-select: none;
     }
+    .todo-list__handle:hover {
+      opacity: 1;
+      color: var(--color-text);
+      background: rgba(18,196,227,.1);
+    }
     .todo-list__handle:active { cursor: grabbing; }
-    .todo-list__item:hover .todo-list__handle { opacity: .75; }
+    .todo-list__item:hover .todo-list__handle { opacity: .9; }
     .todo-list__handle--placeholder {
       cursor: default;
       opacity: 0;
       touch-action: auto;
     }
     /* On touch devices the dot grip alone is too small to hit reliably
-       (Apple HIG calls for ~44px). Widen the hit area and brighten the
-       glyph since "hover to discover" doesn't apply. The visible icon
-       stays the same size — only the tappable surface grows. */
+       (Apple HIG calls for ~44px). Widen the hit area and keep the
+       glyph fully visible since "hover to discover" doesn't apply. */
     @media (hover: none) and (pointer: coarse) {
       .todo-list__handle {
-        width: 36px;
-        height: 32px;
-        opacity: .55;
-        margin-left: -6px; /* recoup the extra width so layout doesn't shift */
+        width: 40px;
+        height: 36px;
+        opacity: .8;
+        margin-left: -8px; /* recoup the extra width so layout doesn't shift */
       }
     }
 
