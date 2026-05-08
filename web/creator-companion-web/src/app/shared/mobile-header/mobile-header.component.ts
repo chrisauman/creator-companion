@@ -95,10 +95,14 @@ import { SidebarStateService } from '../sidebar/sidebar-state.service';
       display: block;
     }
     .mobile-header__logo-name {
-      font-family: var(--font-sans);
-      font-size: .8125rem;
-      font-weight: 700;
-      letter-spacing: -.005em;
+      /* Brand wordmark — must be live Fraunces text to match the
+         desktop sidebar's wordmark (per CLAUDE.md brand rules). The
+         previous --font-sans value rendered as Inter on mobile,
+         which broke brand consistency. */
+      font-family: var(--font-brand);
+      font-size: 1rem;
+      font-weight: 800;
+      letter-spacing: -.01em;
       color: var(--color-text);
       overflow: hidden;
       text-overflow: ellipsis;
