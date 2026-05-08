@@ -11,6 +11,7 @@ import { MILESTONES, getMilestoneIndex, Milestone } from '../../core/constants/m
 import { PushService } from '../../core/services/push.service';
 import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
 import { SidebarStateService } from '../../shared/sidebar/sidebar-state.service';
+import { MobileHeaderComponent } from '../../shared/mobile-header/mobile-header.component';
 import { MoodIconComponent } from '../../shared/mood-icon/mood-icon.component';
 import { TodayPanelComponent } from './today-panel.component';
 import { EntryReaderComponent } from './entry-reader.component';
@@ -28,7 +29,7 @@ import { ActivatedRoute } from '@angular/router';
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, SidebarComponent, MoodIconComponent, TodayPanelComponent, EntryReaderComponent, NewEntryComponent, EditEntryComponent, NotificationsComponent, FavoriteSparksComponent, ActionItemsCardComponent, StreakHistoryComponent, WelcomeBackComponent, TrialBannerComponent, TourComponent],
+  imports: [CommonModule, RouterLink, FormsModule, SidebarComponent, MobileHeaderComponent, MoodIconComponent, TodayPanelComponent, EntryReaderComponent, NewEntryComponent, EditEntryComponent, NotificationsComponent, FavoriteSparksComponent, ActionItemsCardComponent, StreakHistoryComponent, WelcomeBackComponent, TrialBannerComponent, TourComponent],
   template: `
     <!-- First-run feature tour. Self-decides whether to render based
          on the cc_tour_seen localStorage flag. Can be re-triggered
@@ -77,26 +78,10 @@ import { ActivatedRoute } from '@angular/router';
              capabilities; safe to leave in template at all times. -->
         <app-trial-banner></app-trial-banner>
 
-        <!-- Mobile header — hamburger | logo | "Create Entry" pill.
-             Greeting + date moved into the drawer to make room. -->
-        <div class="mobile-header">
-          <button class="mobile-header__hamburger" type="button"
-                  (click)="sidebarState.openMobile()"
-                  title="Open menu" aria-label="Open menu">
-            <span></span>
-            <span></span>
-            <span></span>
-          </button>
-          <a class="mobile-header__logo" routerLink="/dashboard">
-            <img src="logo-icon.png" alt="" class="mobile-header__logo-icon">
-            <span class="mobile-header__logo-name">Creator Companion</span>
-          </a>
-          <button class="mobile-header__compose" type="button" (click)="composeBlank()">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-            <span>Create Entry</span>
-          </button>
-        </div>
+        <!-- Mobile header — shared component used on every authed page
+             so chrome stays consistent across Dashboard / Reminders /
+             To Do / Favorites / Entry view / etc. -->
+        <app-mobile-header />
 
         <!-- Streak module lives in the sidebar on every breakpoint —
              desktop has it pinned just below the logo; mobile shows it

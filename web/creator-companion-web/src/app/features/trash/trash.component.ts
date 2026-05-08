@@ -4,13 +4,17 @@ import { RouterLink } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
 import { AuthService } from '../../core/services/auth.service';
 import { EntryListItem, Capabilities } from '../../core/models/models';
+import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
+import { MobileHeaderComponent } from '../../shared/mobile-header/mobile-header.component';
 
 @Component({
   selector: 'app-trash',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, SidebarComponent, MobileHeaderComponent],
   template: `
     <div class="page">
+      <app-sidebar />
+      <app-mobile-header />
       <header class="topnav">
         <div class="container topnav__inner">
           <button class="btn btn--ghost btn--sm" routerLink="/dashboard">← Dashboard</button>
@@ -83,6 +87,15 @@ import { EntryListItem, Capabilities } from '../../core/models/models';
     </div>
   `,
   styles: [`
+    .page { display: flex; flex-direction: column; min-height: 100vh; }
+    @media (min-width: 768px) { .page { flex-direction: row; } }
+    .content-col { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+    /* Hide the legacy in-page topnav on mobile — the shared mobile-header
+       already provides the chrome. Keep it visible on desktop where the
+       mobile header is hidden, so the user still has the page title. */
+    @media (max-width: 767px) {
+      .topnav { display: none; }
+    }
     .topnav {
       position:sticky; top:0; z-index:100;
       background:var(--color-surface);

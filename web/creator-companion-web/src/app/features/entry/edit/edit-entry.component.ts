@@ -18,20 +18,20 @@ import { MoodIconComponent } from '../../../shared/mood-icon/mood-icon.component
 import { TagInputComponent } from '../../../shared/tag-input.component';
 import { FormatToolbarComponent } from '../../../shared/format-toolbar.component';
 import { SidebarComponent } from '../../../shared/sidebar/sidebar.component';
+import { MobileHeaderComponent } from '../../../shared/mobile-header/mobile-header.component';
 type SaveState = 'idle' | 'saving' | 'saved' | 'error';
 
 @Component({
   selector: 'app-edit-entry',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, TagInputComponent, FormatToolbarComponent, SidebarComponent, MoodIconComponent],
+  imports: [CommonModule, FormsModule, RouterLink, TagInputComponent, FormatToolbarComponent, SidebarComponent, MobileHeaderComponent, MoodIconComponent],
   template: `
     <div class="page" [class.page--embedded]="embedded">
 
-      <!-- Desktop sidebar (hidden when embedded — dashboard provides it) -->
+      <!-- Desktop sidebar + mobile header (hidden when embedded — dashboard provides chrome) -->
       @if (!embedded) {
         <app-sidebar active="dashboard" />
-      }
-@if (!embedded) {
+        <app-mobile-header />
       }
 
       <!-- Main content -->

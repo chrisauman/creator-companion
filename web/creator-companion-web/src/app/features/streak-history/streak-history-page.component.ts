@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
 import { SidebarStateService } from '../../shared/sidebar/sidebar-state.service';
+import { MobileHeaderComponent } from '../../shared/mobile-header/mobile-header.component';
 import { StreakHistoryComponent } from '../dashboard/streak-history.component';
 
 /**
@@ -15,23 +16,12 @@ import { StreakHistoryComponent } from '../dashboard/streak-history.component';
 @Component({
   selector: 'app-streak-history-page',
   standalone: true,
-  imports: [CommonModule, RouterLink, SidebarComponent, StreakHistoryComponent],
+  imports: [CommonModule, RouterLink, SidebarComponent, MobileHeaderComponent, StreakHistoryComponent],
   template: `
     <div class="page">
       <app-sidebar />
 
-      <!-- Mobile top bar -->
-      <header class="topbar">
-        <button class="topbar__menu" type="button"
-                (click)="sidebarState.openMobile()"
-                title="Open menu" aria-label="Open menu">
-          <span></span><span></span><span></span>
-        </button>
-        <a class="topbar__brand" routerLink="/dashboard">
-          <img src="logo-icon.png" alt="" class="topbar__brand-icon">
-          <span class="topbar__brand-name">Creator Companion</span>
-        </a>
-      </header>
+      <app-mobile-header />
 
       <main class="main-content">
         <app-streak-history (returnToToday)="goHome()"></app-streak-history>

@@ -9,17 +9,19 @@ import { Entry } from '../../../core/models/models';
 import { getMoodEmoji } from '../../../core/constants/moods';
 import { marked } from 'marked';
 import { SidebarComponent } from '../../../shared/sidebar/sidebar.component';
+import { MobileHeaderComponent } from '../../../shared/mobile-header/mobile-header.component';
 import { MoodIconComponent } from '../../../shared/mood-icon/mood-icon.component';
 
 @Component({
   selector: 'app-view-entry',
   standalone: true,
-  imports: [CommonModule, RouterLink, SidebarComponent, MoodIconComponent],
+  imports: [CommonModule, RouterLink, SidebarComponent, MobileHeaderComponent, MoodIconComponent],
   template: `
     <div class="page">
 
       <!-- Desktop sidebar -->
       <app-sidebar active="dashboard" />
+      <app-mobile-header />
 <!-- Main content -->
       <main class="main-content">
 

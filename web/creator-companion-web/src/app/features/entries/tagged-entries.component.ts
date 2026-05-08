@@ -5,13 +5,17 @@ import { ApiService } from '../../core/services/api.service';
 import { EntryListItem } from '../../core/models/models';
 import { getMoodEmoji } from '../../core/constants/moods';
 import { MoodIconComponent } from '../../shared/mood-icon/mood-icon.component';
+import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
+import { MobileHeaderComponent } from '../../shared/mobile-header/mobile-header.component';
 
 @Component({
   selector: 'app-tagged-entries',
   standalone: true,
-  imports: [CommonModule, RouterLink, MoodIconComponent],
+  imports: [CommonModule, RouterLink, MoodIconComponent, SidebarComponent, MobileHeaderComponent],
   template: `
     <div class="page">
+      <app-sidebar />
+      <app-mobile-header />
       <header class="topnav">
         <div class="container topnav__inner">
           <button class="btn btn--ghost btn--sm" routerLink="/dashboard">← Dashboard</button>
@@ -93,6 +97,13 @@ import { MoodIconComponent } from '../../shared/mood-icon/mood-icon.component';
     </div>
   `,
   styles: [`
+    .page { display: flex; flex-direction: column; min-height: 100vh; }
+    @media (min-width: 768px) { .page { flex-direction: row; } }
+    /* Hide the legacy in-page topnav on mobile — the shared mobile-header
+       handles chrome there. Desktop keeps it for the page title. */
+    @media (max-width: 767px) {
+      .topnav { display: none; }
+    }
     .topnav {
       position: sticky; top: 0; z-index: 100;
       background: var(--color-surface); border-bottom: 1px solid var(--color-border);

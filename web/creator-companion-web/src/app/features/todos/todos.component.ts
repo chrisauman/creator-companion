@@ -3,28 +3,18 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
 import { SidebarStateService } from '../../shared/sidebar/sidebar-state.service';
+import { MobileHeaderComponent } from '../../shared/mobile-header/mobile-header.component';
 import { ActionItemsCardComponent } from '../dashboard/action-items-card.component';
 
 @Component({
   selector: 'app-todos',
   standalone: true,
-  imports: [CommonModule, RouterLink, SidebarComponent, ActionItemsCardComponent],
+  imports: [CommonModule, RouterLink, SidebarComponent, MobileHeaderComponent, ActionItemsCardComponent],
   template: `
     <div class="page">
       <app-sidebar active="todos" />
 
-      <!-- Mobile top bar -->
-      <header class="topbar">
-        <button class="topbar__menu" type="button"
-                (click)="sidebarState.openMobile()"
-                title="Open menu" aria-label="Open menu">
-          <span></span><span></span><span></span>
-        </button>
-        <a class="topbar__brand" routerLink="/dashboard">
-          <img src="logo-icon.png" alt="" class="topbar__brand-icon">
-          <span class="topbar__brand-name">Creator Companion</span>
-        </a>
-      </header>
+      <app-mobile-header />
 <main class="main-content">
         <!-- No page header here — the sidebar's active "To Do List" item
              already tells the user where they are. -->

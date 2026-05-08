@@ -8,29 +8,20 @@ import { PushService } from '../../core/services/push.service';
 import { Reminder } from '../../core/models/models';
 import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
 import { SidebarStateService } from '../../shared/sidebar/sidebar-state.service';
+import { MobileHeaderComponent } from '../../shared/mobile-header/mobile-header.component';
 const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your streak alive!";
 
 @Component({
   selector: 'app-notifications',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, SidebarComponent],
+  imports: [CommonModule, FormsModule, RouterLink, SidebarComponent, MobileHeaderComponent],
   template: `
     <div class="page" [class.page--embedded]="embedded">
 
       <!-- Page chrome — hidden when embedded inside the dashboard right column -->
       @if (!embedded) {
         <app-sidebar active="notifications" />
-        <header class="topbar">
-          <button class="topbar__menu" type="button"
-                  (click)="sidebarState.openMobile()"
-                  title="Open menu" aria-label="Open menu">
-            <span></span><span></span><span></span>
-          </button>
-          <a class="topbar__brand" routerLink="/dashboard">
-            <img src="logo-icon.png" alt="" class="topbar__brand-icon">
-            <span class="topbar__brand-name">Creator Companion</span>
-          </a>
-        </header>
+        <app-mobile-header />
       }
 
       <main class="main-content">

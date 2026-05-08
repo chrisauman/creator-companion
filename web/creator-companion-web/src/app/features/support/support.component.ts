@@ -4,23 +4,18 @@ import { RouterLink } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
 import { Faq } from '../../core/models/models';
 import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
+import { MobileHeaderComponent } from '../../shared/mobile-header/mobile-header.component';
 @Component({
   selector: 'app-support',
   standalone: true,
-  imports: [CommonModule, RouterLink, SidebarComponent],
+  imports: [CommonModule, RouterLink, SidebarComponent, MobileHeaderComponent],
   template: `
     <div class="page">
 
       <!-- Desktop sidebar -->
       <app-sidebar active="dashboard" />
 
-      <!-- Mobile top bar -->
-      <header class="topbar">
-        <a class="topbar__brand" routerLink="/dashboard">
-          <img src="logo-icon.png" alt="" class="topbar__brand-icon">
-          <span class="topbar__brand-name">Creator Companion</span>
-        </a>
-      </header>
+      <app-mobile-header />
 <main class="main-content">
         <div class="support-wrap">
 

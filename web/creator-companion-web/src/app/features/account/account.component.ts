@@ -10,31 +10,21 @@ import { TokenService } from '../../core/services/token.service';
 import { User, Capabilities, Tag, StreakStats, Reminder } from '../../core/models/models';
 import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
 import { SidebarStateService } from '../../shared/sidebar/sidebar-state.service';
+import { MobileHeaderComponent } from '../../shared/mobile-header/mobile-header.component';
 import { TourComponent } from '../../shared/tour/tour.component';
 const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your streak alive!";
 
 @Component({
   selector: 'app-account',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, SidebarComponent],
+  imports: [CommonModule, RouterLink, FormsModule, SidebarComponent, MobileHeaderComponent],
   template: `
     <div class="page">
 
       <!-- Desktop sidebar -->
       <app-sidebar active="account" />
 
-      <!-- Mobile top bar -->
-      <header class="topbar">
-        <button class="topbar__menu" type="button"
-                (click)="sidebarState.openMobile()"
-                title="Open menu" aria-label="Open menu">
-          <span></span><span></span><span></span>
-        </button>
-        <a class="topbar__brand" routerLink="/dashboard">
-          <img src="logo-icon.png" alt="" class="topbar__brand-icon">
-          <span class="topbar__brand-name">Creator Companion</span>
-        </a>
-      </header>
+      <app-mobile-header />
 <!-- Column wrapper: keeps main + sign-out in the same flex column -->
       <div class="content-col">
 
