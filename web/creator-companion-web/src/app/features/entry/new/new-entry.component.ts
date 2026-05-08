@@ -40,7 +40,13 @@ interface PendingImage {
             Cancel
           </button>
         } @else {
-          <button class="cancel-pill" type="button" routerLink="/dashboard">
+          <!-- Explicit (click) handler — routerLink on a <button> is
+               unreliable on iOS Safari/Chrome (the click doesn't always
+               propagate to the directive's host listener), and a user
+               coming through onboarding straight onto this page reported
+               the Back button doing nothing. Programmatic navigate is
+               the safe path. -->
+          <button class="cancel-pill" type="button" (click)="goBack()">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                  stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
             Back
@@ -1085,6 +1091,14 @@ export class NewEntryComponent implements OnInit, AfterViewInit, OnDestroy {
   /** ✕ button when embedded — let the parent dashboard switch back to Today. */
   cancelCompose(): void {
     this.canceled.emit();
+  }
+
+  /** Standalone Back pill — explicit programmatic navigation back to
+   *  the dashboard. Used when this page is rendered standalone (e.g.
+   *  user came here via /entry/new straight from onboarding); routerLink
+   *  on a <button> didn't always fire on iOS, so we navigate directly. */
+  goBack(): void {
+    this.router.navigate(['/dashboard']);
   }
 
   /** After a successful save: emit when embedded, route otherwise. */

@@ -38,16 +38,13 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
       <main class="main-content">
 
         <!-- Reader-style top bar — wraps inner row in a 760px-max
-             box centred to match the article body below. The Cancel
-             pill / heart / Save button align horizontally with the
-             title and content edges. -->
+             box centred to match the article body below. Cancel moved
+             to the footer next to Save (matches the bottom-button
+             pattern used for Edit on the read view) so the top bar
+             carries only the date breadcrumb + auto-save indicator
+             + favorite heart. -->
         <div class="reader-top">
           <div class="reader-top__inner">
-            <button class="cancel-pill" type="button" (click)="cancelEdit()">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                   stroke-width="2.4" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              Cancel
-            </button>
             <div class="reader-top__breadcrumb">
               {{ monthYearLabel() }} · <strong>{{ weekdayDayLabel() }}</strong>
             </div>
@@ -283,7 +280,14 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
                 </svg>
                 Move to trash
               </button>
-              <button class="save-btn save-btn--bottom" type="button"
+              <!-- Cancel + Save grouped on the right edge. Cancel is
+                   the secondary (ghost) action; Save the primary. -->
+              <button class="btn btn--secondary btn--sm save-btn--bottom" type="button"
+                      (click)="cancelEdit()"
+                      [disabled]="saving()">
+                Cancel
+              </button>
+              <button class="save-btn" type="button"
                       (click)="saveNow()"
                       [disabled]="saving() || !title.trim() || wordCount() < 10 || wordCount() > maxWords()">
                 {{ saving() ? 'Saving…' : 'Save' }}
