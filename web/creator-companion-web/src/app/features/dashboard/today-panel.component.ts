@@ -489,12 +489,18 @@ import { DailyReminderCardComponent } from './daily-reminder-card.component';
       transform: rotate(180deg);
     }
 
-    /* Mood grid inside the cream hero card — reflows from 6 → 4 → 3 cols */
+    /* Mood grid inside the cream hero card. Mobile: fixed 3 columns
+       so each tile is wide enough for the label to read comfortably
+       at the larger size below. Desktop: auto-fill at a wider min so
+       the grid still flexes 4–5 across in the right column. */
     .mood-row {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+      grid-template-columns: repeat(3, 1fr);
       gap: .5rem;
       position: relative;
+    }
+    @media (min-width: 768px) {
+      .mood-row { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }
     }
     .mood {
       display: flex;
@@ -516,11 +522,15 @@ import { DailyReminderCardComponent } from './daily-reminder-card.component';
       color: var(--color-accent-dark);
       transform: translateY(-2px);
     }
+    /* Mood label sits under each icon. Bumped from .625rem (10px) —
+       which felt cramped — to .8125rem (13px). The wider 3-col mobile
+       grid above gives each tile enough room to breathe at this size. */
     .mood-label {
-      font-size: .625rem;
-      font-weight: 500;
-      color: var(--color-text-2);
+      font-size: .8125rem;
+      font-weight: 600;
+      color: var(--color-text);
       text-align: center;
+      letter-spacing: -.005em;
     }
     .mood:hover .mood-label { color: var(--color-text); }
 
