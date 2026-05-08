@@ -32,10 +32,10 @@ import { SidebarStateService } from '../sidebar/sidebar-state.service';
         <img src="logo-icon.png" alt="" class="mobile-header__logo-icon">
         <span class="mobile-header__logo-name">Creator Companion</span>
       </a>
-      <button class="mobile-header__compose" type="button" (click)="compose()">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      <button class="mobile-header__compose" type="button" (click)="compose()"
+              title="Create entry" aria-label="Create entry">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
              stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-        <span>Create Entry</span>
       </button>
     </div>
   `,
@@ -112,19 +112,23 @@ import { SidebarStateService } from '../sidebar/sidebar-state.service';
     @media (max-width: 360px) {
       .mobile-header__logo-name { display: none; }
     }
+    /* Compose CTA — black-circle "+" on mobile. The earlier "Create
+       Entry" pill ate too much horizontal space and pushed the
+       wordmark behind it on narrow viewports. The icon-only circle
+       gives the wordmark room to breathe and matches the
+       hamburger's hit area on the opposite side, balancing the bar. */
     .mobile-header__compose {
       flex-shrink: 0;
       display: inline-flex;
       align-items: center;
-      gap: .375rem;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
       background: #0c0e13;
       color: #fff;
       border: none;
-      border-radius: 999px;
-      padding: .5rem .875rem;
-      font-family: var(--font-sans);
-      font-size: .8125rem;
-      font-weight: 700;
+      border-radius: 50%;
+      padding: 0;
       cursor: pointer;
       transition: background .15s, transform .15s;
     }

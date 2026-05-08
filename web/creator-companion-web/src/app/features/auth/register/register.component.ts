@@ -13,7 +13,10 @@ import { ApiService } from '../../../core/services/api.service';
     <div class="auth-page">
       <div class="auth-card card fade-in">
         <div class="auth-logo">
-          <img src="logo-full.png" alt="Creator Companion" class="logo-img">
+          <div class="auth-brand">
+            <img src="logo-icon.png" alt="" class="auth-brand__icon">
+            <span class="auth-brand__name">Creator Companion</span>
+          </div>
           <p class="text-muted text-sm">Build a creative habit that lasts.</p>
         </div>
 
@@ -123,7 +126,22 @@ import { ApiService } from '../../../core/services/api.service';
     }
     .auth-card { width: 100%; max-width: 440px; }
     .auth-logo { text-align: center; margin-bottom: 1.5rem; }
-    .logo-img { display: block; width: 260px; margin: 0 auto .75rem; }
+    /* Live Fraunces wordmark — never use the rasterized logo-full.png
+       per CLAUDE.md brand rule. */
+    .auth-brand {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      margin-bottom: .75rem;
+    }
+    .auth-brand__icon { width: 36px; height: 36px; display: block; }
+    .auth-brand__name {
+      font-family: var(--font-brand);
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -.01em;
+      color: var(--color-text);
+    }
     h1 { font-size: 1.375rem; margin-bottom: .25rem; }
 
     .plan-toggle {

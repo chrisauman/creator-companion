@@ -12,7 +12,10 @@ import { ApiService } from '../../../core/services/api.service';
     <div class="auth-page">
       <div class="auth-card card fade-in">
         <div class="auth-logo">
-          <img src="logo-full.png" alt="Creator Companion" class="logo-img">
+          <div class="auth-brand">
+            <img src="logo-icon.png" alt="" class="auth-brand__icon">
+            <span class="auth-brand__name">Creator Companion</span>
+          </div>
           <h2 style="margin-bottom:.25rem">Reset your password</h2>
           <p class="text-muted text-sm">Enter your email and we'll send a reset link.</p>
         </div>
@@ -73,7 +76,21 @@ import { ApiService } from '../../../core/services/api.service';
     .auth-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1.5rem; background: var(--color-bg); }
     .auth-card { width: 100%; max-width: 420px; }
     .auth-logo { text-align: center; margin-bottom: 2rem; }
-    .logo-img { display: block; width: 260px; margin: 0 auto .75rem; }
+    /* Live Fraunces wordmark — never the PNG, per CLAUDE.md. */
+    .auth-brand {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      margin-bottom: .75rem;
+    }
+    .auth-brand__icon { width: 36px; height: 36px; display: block; }
+    .auth-brand__name {
+      font-family: var(--font-brand);
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -.01em;
+      color: var(--color-text);
+    }
     h1 { font-size: 1.375rem; margin-bottom: .25rem; }
     .alert--success { background: #d4f0e0; color: #166534; border: 1px solid #86efac; border-radius: 8px; padding: .75rem 1rem; }
     .dev-token { background: var(--color-surface); border: 1px dashed var(--color-border); border-radius: 8px; padding: 1rem; margin-top: 1rem; }

@@ -297,9 +297,12 @@ import { MoodIconComponent } from '../../../shared/mood-icon/mood-icon.component
 
     /* ── Rendered content ────────────────────────────────────────── */
     .entry-content {
-      font-family: var(--font-serif);
+      /* Inter, matching the rest of the app. Was --font-serif (Georgia)
+         which CLAUDE.md flags as "rarely used; reserved" — it stuck out
+         on mobile where the user reads body text most often. */
+      font-family: var(--font-sans);
       font-size: 1.0625rem;
-      line-height: 1.85;
+      line-height: 1.75;
       color: var(--color-text);
       margin-bottom: 2rem;
       ::ng-deep p { margin: 0 0 .75em; &:last-child { margin-bottom: 0; } }
