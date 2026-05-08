@@ -1408,15 +1408,24 @@ export class DashboardComponent implements OnInit {
     const section = params.get('section');
     const compose = params.get('compose');
     const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
-    if (!isDesktop) return;
 
-    // ?compose=1 → open inline compose with no prompt context, then strip
-    // the param so the URL doesn't re-trigger compose on back/forward.
+    // ?compose=1 → open compose. openCompose() itself routes mobile vs.
+    // desktop correctly (mobile goes to /entry/new, desktop opens the
+    // inline composer in the right column). Strip the param either way
+    // so the URL doesn't re-trigger compose on back/forward. This must
+    // run BEFORE the desktop-only early return below — sidebar's "Log
+    // Today's Progress" link relies on this on mobile.
     if (compose === '1') {
       this.openCompose({});
       this.router.navigate(['/dashboard'], { replaceUrl: true });
       return;
     }
+
+    // The remaining ?section= and ?preview= modes drive the dashboard's
+    // right column, which is hidden on mobile — the sidebar links route
+    // mobile users to standalone pages instead, so this block can bail
+    // out for narrow viewports.
+    if (!isDesktop) return;
 
     if (section === 'notifications')       this.rightColumnMode.set('notifications');
     else if (section === 'todos')          this.rightColumnMode.set('todos');
