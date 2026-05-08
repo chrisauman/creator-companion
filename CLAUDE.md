@@ -372,6 +372,30 @@ signal AND strips the URL param.
   components (dashboard, edit-entry) exceed this; warnings only,
   not errors. Don't bloat them further unless necessary.
 
+## Mobile + desktop parity (default assumption)
+
+Layout / UX changes apply to **both** breakpoints unless the user
+explicitly says otherwise. When touching a feature on one surface,
+audit the matching surface for parity in the same change. Common
+gotchas where this has slipped:
+
+- **Embedded vs. standalone.** The dashboard renders some features
+  in its right column on desktop (`entry-reader.component.ts`,
+  `notifications.component.ts` with `embedded=true`, etc.) and the
+  same features have standalone routes on mobile (`view-entry`,
+  `/notifications`, `/todos`, `/favorites`, `/streak-history`).
+  When a UI decision lands in the embedded variant, propagate to
+  the standalone route — and vice versa.
+- **Button placement.** Save / Edit / Delete moved to the bottom
+  of forms is a project convention; verify both the embedded
+  reader/editor AND the standalone page reflect it.
+- **Background colors, fonts, spacing.** When changing one,
+  inspect the matching surface for consistency.
+
+If the user asks to change something on "desktop" without saying
+"only desktop", ask if they want it on mobile too — don't assume
+desktop-only.
+
 ## Things to never do
 
 1. Reintroduce entry-based gating in reminders.
