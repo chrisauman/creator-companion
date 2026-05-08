@@ -74,10 +74,19 @@ import { ActionItemsCardComponent } from '../dashboard/action-items-card.compone
     .main-content {
       flex: 1; min-width: 0;
       padding: 1.25rem 1rem calc(80px + env(safe-area-inset-bottom, 0px));
-      background: var(--color-bg);
+      /* White (not cream) on mobile — the to-do list reads cleaner on
+         pure white; the cream paper feel is reserved for the journaling
+         surfaces (entries, sparks, prompts). */
+      background: #fff;
     }
     @media (min-width: 768px) {
       .main-content { padding: 2.5rem 3rem 4rem; background: #f7f7f5; }
+    }
+    /* Make sure the page wrapper itself stays white on mobile too,
+       so any uncovered area (around the action items card) doesn't
+       reveal a cream backdrop. */
+    @media (max-width: 767px) {
+      .page { background: #fff; }
     }
 
     .page-header { margin-bottom: 1.75rem; }
