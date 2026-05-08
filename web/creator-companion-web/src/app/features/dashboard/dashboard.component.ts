@@ -856,9 +856,12 @@ import { ActivatedRoute } from '@angular/router';
     }
 
     /* ── Entry row (Variant B — meta · title · photo) ──────────── */
+    /* 1.25rem (was .75rem) gives the row a clear breath between
+       siblings. The earlier value made consecutive entries feel
+       like a single block of text. */
     .entry-row {
       display: block;
-      margin-bottom: .75rem;
+      margin-bottom: 1.25rem;
       background: var(--color-surface);
       border: 1px solid var(--color-border);
       border-radius: 16px;

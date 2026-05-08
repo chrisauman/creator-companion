@@ -34,7 +34,7 @@ import { SidebarStateService } from '../sidebar/sidebar-state.service';
       </a>
       <button class="mobile-header__compose" type="button" (click)="compose()"
               title="Create entry" aria-label="Create entry">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
              stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
       </button>
     </div>
@@ -54,15 +54,19 @@ import { SidebarStateService } from '../sidebar/sidebar-state.service';
     @media (min-width: 768px) {
       .mobile-header { display: none; }
     }
+    /* Hamburger — bumped from 40px to 46px (matches Apple HIG min
+       touch-target of 44pt with a small visual cushion) and the bars
+       widened/thickened proportionally so the icon feels balanced
+       against the new hit area. */
     .mobile-header__hamburger {
-      width: 40px; height: 40px;
+      width: 46px; height: 46px;
       flex-shrink: 0;
       background: transparent;
       border: 1px solid var(--color-border);
       border-radius: 12px;
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
-      gap: 4px;
+      gap: 5px;
       padding: 0;
       cursor: pointer;
       transition: background .15s, border-color .15s;
@@ -73,7 +77,7 @@ import { SidebarStateService } from '../sidebar/sidebar-state.service';
     }
     .mobile-header__hamburger span {
       display: block;
-      width: 18px; height: 1.75px;
+      width: 22px; height: 2px;
       background: var(--color-text);
       border-radius: 2px;
     }
@@ -122,8 +126,10 @@ import { SidebarStateService } from '../sidebar/sidebar-state.service';
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 40px;
-      height: 40px;
+      /* 46px matches the new hamburger size — the bar reads as
+         visually balanced when the two end caps are the same. */
+      width: 46px;
+      height: 46px;
       background: #0c0e13;
       color: #fff;
       border: none;
