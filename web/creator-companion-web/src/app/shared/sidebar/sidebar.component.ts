@@ -195,7 +195,8 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
               ·
               <a [routerLink]="sectionLink('streak-history')"
                  [queryParams]="sectionQueryParams('streak-history')"
-                 class="sidebar__streak-history-link">
+                 class="sidebar__streak-history-link"
+                 (click)="closeMobile()">
                 History →
               </a>
             </span>
@@ -599,10 +600,20 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
       color: rgba(255,255,255,.5);
       text-decoration: none;
       font-weight: 500;
-      transition: color .15s ease;
+      /* Generous tap surface — the link is inline text in a footer
+         line, easy to miss on mobile without padding. The negative
+         margin keeps the visible-text baseline aligned where it was. */
+      display: inline-block;
+      padding: .375rem .5rem;
+      margin: -.375rem -.5rem;
+      border-radius: 6px;
+      transition: color .15s ease, background .15s ease;
+      -webkit-tap-highlight-color: rgba(18,196,227,.2);
     }
-    .sidebar__streak-history-link:hover {
+    .sidebar__streak-history-link:hover,
+    .sidebar__streak-history-link:active {
       color: var(--color-accent);
+      background: rgba(255,255,255,.06);
     }
 
     /* On the mobile drawer the streak gets a small bump in scale to
