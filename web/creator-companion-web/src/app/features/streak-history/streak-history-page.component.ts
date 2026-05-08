@@ -1,6 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
 import { SidebarStateService } from '../../shared/sidebar/sidebar-state.service';
 import { MobileHeaderComponent } from '../../shared/mobile-header/mobile-header.component';
@@ -16,7 +16,7 @@ import { StreakHistoryComponent } from '../dashboard/streak-history.component';
 @Component({
   selector: 'app-streak-history-page',
   standalone: true,
-  imports: [CommonModule, RouterLink, SidebarComponent, MobileHeaderComponent, StreakHistoryComponent],
+  imports: [CommonModule, SidebarComponent, MobileHeaderComponent, StreakHistoryComponent],
   template: `
     <div class="page">
       <app-sidebar />

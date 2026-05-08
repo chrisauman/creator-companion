@@ -4,7 +4,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink, ActivatedRoute } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { Subject, debounceTime, takeUntil, forkJoin, of, switchMap, catchError, tap, EMPTY } from 'rxjs';
 import { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
@@ -26,7 +26,7 @@ interface PendingImage {
 @Component({
   selector: 'app-new-entry',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, TagInputComponent, FormatToolbarComponent, MoodIconComponent],
+  imports: [CommonModule, FormsModule, TagInputComponent, FormatToolbarComponent, MoodIconComponent],
   template: `
     <div class="editor-page" [class.editor-page--embedded]="embedded">
 

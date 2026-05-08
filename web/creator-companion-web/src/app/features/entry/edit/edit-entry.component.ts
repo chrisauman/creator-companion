@@ -4,7 +4,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink, ActivatedRoute } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { Subject, debounceTime, takeUntil } from 'rxjs';
 import { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
@@ -24,7 +24,7 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
 @Component({
   selector: 'app-edit-entry',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, TagInputComponent, FormatToolbarComponent, SidebarComponent, MobileHeaderComponent, MoodIconComponent],
+  imports: [CommonModule, FormsModule, TagInputComponent, FormatToolbarComponent, SidebarComponent, MobileHeaderComponent, MoodIconComponent],
   template: `
     <div class="page" [class.page--embedded]="embedded">
 

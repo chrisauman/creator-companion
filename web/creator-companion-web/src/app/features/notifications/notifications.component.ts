@@ -1,7 +1,6 @@
 import { Component, EventEmitter, Input, Output, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
 import { AuthService } from '../../core/services/auth.service';
 import { PushService } from '../../core/services/push.service';
@@ -14,7 +13,7 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
 @Component({
   selector: 'app-notifications',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, SidebarComponent, MobileHeaderComponent],
+  imports: [CommonModule, FormsModule, SidebarComponent, MobileHeaderComponent],
   template: `
     <div class="page" [class.page--embedded]="embedded">
 

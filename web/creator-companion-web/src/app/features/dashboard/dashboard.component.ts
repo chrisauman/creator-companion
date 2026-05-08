@@ -1,6 +1,6 @@
 import { Component, inject, signal, computed, effect, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
 import { AuthService } from '../../core/services/auth.service';
@@ -29,7 +29,7 @@ import { ActivatedRoute } from '@angular/router';
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, SidebarComponent, MobileHeaderComponent, MoodIconComponent, TodayPanelComponent, EntryReaderComponent, NewEntryComponent, EditEntryComponent, NotificationsComponent, FavoriteSparksComponent, ActionItemsCardComponent, StreakHistoryComponent, WelcomeBackComponent, TrialBannerComponent, TourComponent],
+  imports: [CommonModule, FormsModule, SidebarComponent, MobileHeaderComponent, MoodIconComponent, TodayPanelComponent, EntryReaderComponent, NewEntryComponent, EditEntryComponent, NotificationsComponent, FavoriteSparksComponent, ActionItemsCardComponent, StreakHistoryComponent, WelcomeBackComponent, TrialBannerComponent, TourComponent],
   template: `
     <!-- First-run feature tour. Self-decides whether to render based
          on the cc_tour_seen localStorage flag. Can be re-triggered

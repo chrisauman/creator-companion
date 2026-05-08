@@ -1,6 +1,5 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
 import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
 import { SidebarStateService } from '../../shared/sidebar/sidebar-state.service';
 import { MobileHeaderComponent } from '../../shared/mobile-header/mobile-header.component';
@@ -9,7 +8,7 @@ import { ActionItemsCardComponent } from '../dashboard/action-items-card.compone
 @Component({
   selector: 'app-todos',
   standalone: true,
-  imports: [CommonModule, RouterLink, SidebarComponent, MobileHeaderComponent, ActionItemsCardComponent],
+  imports: [CommonModule, SidebarComponent, MobileHeaderComponent, ActionItemsCardComponent],
   template: `
     <div class="page">
       <app-sidebar active="todos" />

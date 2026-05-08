@@ -1,6 +1,6 @@
 import { Component, inject, signal, OnInit, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink, ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
 import { AdminShellComponent } from './admin-shell.component';
@@ -8,7 +8,7 @@ import { AdminShellComponent } from './admin-shell.component';
 @Component({
   selector: 'app-admin-user-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, AdminShellComponent],
+  imports: [CommonModule, FormsModule, AdminShellComponent],
   template: `
     <!-- User Detail is a sub-route under /admin/users — highlight Users
          in the parent nav so the user knows where they are in the

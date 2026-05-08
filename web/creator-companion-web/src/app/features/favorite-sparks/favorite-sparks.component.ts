@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, OnInit, Output, inject, signal } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
 import { FavoriteItem, EntryListItem, MotivationEntry } from '../../core/models/models';
 import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
@@ -9,7 +9,7 @@ import { MobileHeaderComponent } from '../../shared/mobile-header/mobile-header.
 @Component({
   selector: 'app-favorite-sparks',
   standalone: true,
-  imports: [CommonModule, DatePipe, RouterLink, SidebarComponent, MobileHeaderComponent],
+  imports: [CommonModule, DatePipe, SidebarComponent, MobileHeaderComponent],
   template: `
     <div class="page" [class.page--embedded]="embedded">
 

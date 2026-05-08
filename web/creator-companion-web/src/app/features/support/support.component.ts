@@ -1,6 +1,5 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
 import { Faq } from '../../core/models/models';
 import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
@@ -8,7 +7,7 @@ import { MobileHeaderComponent } from '../../shared/mobile-header/mobile-header.
 @Component({
   selector: 'app-support',
   standalone: true,
-  imports: [CommonModule, RouterLink, SidebarComponent, MobileHeaderComponent],
+  imports: [CommonModule, SidebarComponent, MobileHeaderComponent],
   template: `
     <div class="page">
 
