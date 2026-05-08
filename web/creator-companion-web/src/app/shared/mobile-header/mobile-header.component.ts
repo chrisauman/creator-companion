@@ -43,8 +43,12 @@ import { SidebarStateService } from '../sidebar/sidebar-state.service';
     .mobile-header {
       display: flex;
       align-items: center;
-      gap: .5rem;
-      padding: 1rem 1.125rem;
+      /* Tighter left padding (.75rem vs 1.125rem) pulls the hamburger
+         closer to the edge of the screen — was floating mid-air with
+         the logo crowding right behind it. Larger gap (.875rem vs
+         .5rem) gives the wordmark room to breathe. */
+      gap: .875rem;
+      padding: 1rem 1.125rem 1rem .75rem;
       background: var(--color-bg);
       border-bottom: 1px solid var(--color-border);
       position: sticky;
