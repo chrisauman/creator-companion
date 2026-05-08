@@ -288,10 +288,14 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
       from { opacity: 0; }
       to { opacity: 1; }
     }
-    /* Don't show desktop panel-toggle on mobile — irrelevant. */
+    /* Don't show desktop panel-toggle on mobile — irrelevant. The
+       drawer has an explicit X close button; there's no collapsed
+       state on mobile, so the hover-revealed collapse glyph next to
+       the logo is just visual noise. */
     @media (max-width: 767px) {
       .sidebar__panel-toggle { display: none; }
       .sidebar__expand-toggle { display: none; }
+      .sidebar__logo-toggle { display: none; }
       .sidebar--collapsed {
         /* ignore desktop collapsed state on mobile */
         width: 280px;
