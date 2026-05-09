@@ -121,7 +121,43 @@
     <div class="cc-boot-splash__icon"></div>
     <div class="cc-boot-splash__name">Creator Companion</div>
     <div class="cc-boot-splash__hint">Loading…</div>
+    <div id="cc-boot-timer" style="position:fixed;top:env(safe-area-inset-top);left:0;right:0;padding:.5rem 1rem;background:rgba(255,255,255,.1);font-family:monospace;font-size:.75rem;color:#fff;text-align:left;line-height:1.5;white-space:pre-wrap;"></div>
   </div>
+  <script>
+    // Inline timing instrumentation. Logs each phase to the visible
+    // overlay above so we can see exactly where time is going in the
+    // mobile PWA launch. Remove once root cause is identified.
+    (function () {
+      var t0 = performance.now();
+      var el = function () { return document.getElementById('cc-boot-timer'); };
+      var lines = [];
+      function log(label) {
+        var t = (performance.now() - t0).toFixed(0);
+        lines.push(t.padStart(5) + 'ms · ' + label);
+        var node = el();
+        if (node) node.textContent = lines.join('\n');
+      }
+      log('html parsed');
+      window.addEventListener('DOMContentLoaded', function () { log('DOMContentLoaded'); });
+      window.addEventListener('load', function () { log('window.load'); });
+      // Watch for Angular bootstrapping by polling for ng-version on app-root
+      var poll = setInterval(function () {
+        var r = document.querySelector('app-root');
+        if (r && r.hasAttribute('ng-version')) {
+          log('angular bootstrapped');
+          clearInterval(poll);
+        }
+      }, 50);
+      // Also watch for any actual visible content rendering inside app-root
+      var contentPoll = setInterval(function () {
+        var r = document.querySelector('app-root');
+        if (r && r.children.length > 0) {
+          log('app-root has children (route rendered)');
+          clearInterval(contentPoll);
+        }
+      }, 50);
+    })();
+  </script>
   <noscript>Please enable JavaScript to continue using this application.</noscript>
 </body>
 </html>
