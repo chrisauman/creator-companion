@@ -147,21 +147,45 @@ import { ActivatedRoute } from '@angular/router';
 
         <!-- Mobile-only Today panel — stacked above the entry list since
              the right column is hidden on phones. Shown only when in 'today'
-             mode; reading/editing/composing on mobile still navigate. -->
+             mode. Wrapped in a collapsible container so the entries
+             below stay above the fold; user's open/closed preference
+             is persisted to localStorage. -->
         @if (rightColumnMode() === 'today') {
-          <div class="today-panel--mobile-wrap">
-            <app-today-panel
-              [motivation]="motivation()"
-              [canFavorite]="isPaid()"
-              [previewThreatened]="previewMode() === 'threatened'"
-              [previewDailyReminder]="previewMode() === 'daily-reminder'"
-              (backlogYesterday)="onBacklogYesterday($event)"
-              (composeFromPrompt)="composeFromPrompt($event)"
-              (composeFromMood)="composeFromMood($event)"
-              (composeBlank)="composeBlank()"
-              (favoriteSpark)="toggleSparkFavorite()"
-              (expandSpark)="expandSpark()"
-            ></app-today-panel>
+          <div class="today-panel--mobile-wrap"
+               [class.today-panel--mobile-wrap--collapsed]="todayCollapsed()">
+            <button class="today-summary"
+                    type="button"
+                    (click)="toggleTodayCollapsed()"
+                    [attr.aria-expanded]="!todayCollapsed()"
+                    aria-controls="mobile-today-body">
+              <span class="today-summary__icon" aria-hidden="true">✨</span>
+              <span class="today-summary__label">
+                <span class="today-summary__title">Today's Inspiration</span>
+                <span class="today-summary__sub">Daily Spark · Prompt · Mood</span>
+              </span>
+              <svg class="today-summary__chevron"
+                   width="18" height="18" viewBox="0 0 24 24"
+                   fill="none" stroke="currentColor" stroke-width="2.4"
+                   stroke-linecap="round" stroke-linejoin="round"
+                   [style.transform]="todayCollapsed() ? 'rotate(0deg)' : 'rotate(180deg)'"
+                   aria-hidden="true">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </button>
+            <div id="mobile-today-body" class="today-panel--mobile-body" *ngIf="!todayCollapsed()">
+              <app-today-panel
+                [motivation]="motivation()"
+                [canFavorite]="isPaid()"
+                [previewThreatened]="previewMode() === 'threatened'"
+                [previewDailyReminder]="previewMode() === 'daily-reminder'"
+                (backlogYesterday)="onBacklogYesterday($event)"
+                (composeFromPrompt)="composeFromPrompt($event)"
+                (composeFromMood)="composeFromMood($event)"
+                (composeBlank)="composeBlank()"
+                (favoriteSpark)="toggleSparkFavorite()"
+                (expandSpark)="expandSpark()"
+              ></app-today-panel>
+            </div>
           </div>
         }
 
@@ -606,6 +630,69 @@ import { ActivatedRoute } from '@angular/router';
       margin: 0 !important;
     }
 
+    /* Collapse-summary header. Tappable bar that swaps with the
+       expanded panel on click. Same cream gradient as the hero
+       cards inside so it visually inherits "Today" identity. */
+    .today-summary {
+      display: flex;
+      align-items: center;
+      gap: .875rem;
+      width: 100%;
+      padding: .875rem 1rem;
+      background: linear-gradient(180deg, #fdfaf2 0%, #f6f1e6 100%);
+      border: 1px solid rgba(190, 170, 130, .22);
+      border-radius: 16px;
+      font-family: inherit;
+      cursor: pointer;
+      text-align: left;
+      transition: background .15s, border-color .15s, transform .1s;
+      -webkit-tap-highlight-color: rgba(18, 196, 227, .15);
+    }
+    .today-summary:active { transform: scale(.99); }
+    .today-summary:hover {
+      border-color: rgba(190, 170, 130, .35);
+    }
+    .today-summary__icon {
+      font-size: 1.125rem;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+    .today-summary__label {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: .15rem;
+    }
+    .today-summary__title {
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: -.005em;
+      color: var(--color-text);
+      line-height: 1.2;
+    }
+    .today-summary__sub {
+      font-size: .8125rem;
+      color: var(--color-text-2);
+      font-weight: 500;
+    }
+    .today-summary__chevron {
+      flex-shrink: 0;
+      color: var(--color-text-2);
+      transition: transform .25s ease;
+    }
+    /* When expanded, give the body a small top margin to separate
+       it from the now-visible summary header. */
+    .today-panel--mobile-body {
+      margin-top: .75rem;
+    }
+    /* Hide the summary header on desktop — entire collapse mechanism
+       is mobile-only since desktop has the persistent right column. */
+    @media (min-width: 768px) {
+      .today-summary { display: none; }
+      .today-panel--mobile-body { margin-top: 0; }
+    }
+
     /* ── Embedded sections (Notifications / Todos / Favorites) ── */
     .embedded-section {
       display: flex;
@@ -1039,6 +1126,27 @@ export class DashboardComponent implements OnInit {
   // ── Right column state (desktop): Today / Reading / Composing / Editing /
   //                                   Notifications / Todos / Favorites
   rightColumnMode      = signal<'today' | 'reading' | 'composing' | 'editing' | 'notifications' | 'todos' | 'favorites' | 'streak-history'>('today');
+
+  /** Mobile-only collapse state for the "Today" panel (Daily Spark +
+   *  Daily Prompt + Mood grid). Persisted in localStorage so the
+   *  user's open/closed preference survives reloads. Default is
+   *  expanded on first visit so the user discovers what's there;
+   *  once they collapse it, it stays collapsed until they open again. */
+  private static readonly TODAY_COLLAPSED_KEY = 'cc_today_collapsed';
+  todayCollapsed = signal<boolean>(this.readTodayCollapsed());
+
+  private readTodayCollapsed(): boolean {
+    try { return localStorage.getItem(DashboardComponent.TODAY_COLLAPSED_KEY) === '1'; }
+    catch { return false; }
+  }
+
+  toggleTodayCollapsed(): void {
+    const next = !this.todayCollapsed();
+    this.todayCollapsed.set(next);
+    try {
+      localStorage.setItem(DashboardComponent.TODAY_COLLAPSED_KEY, next ? '1' : '0');
+    } catch { /* private mode — fall back to in-memory only */ }
+  }
 
   /**
    * Which sidebar nav item should show the active state. Derived from
