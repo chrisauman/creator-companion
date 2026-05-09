@@ -44,21 +44,18 @@ export const authGuard: CanActivateFn = () => {
     return true;
   }
 
-  // ── 3. No cache — full blocking refresh (first-time or cleared storage) ─
-  return auth.refreshToken().pipe(
-    switchMap(() => auth.loadUser()),
-    map(() => true),
-    catchError((err: HttpErrorResponse) => {
-      // Only send to login on auth failures, not server errors
-      if (err?.status !== 0 && err?.status < 500) {
-        router.navigate(['/login']);
-      } else {
-        // Server/network error — send to login but don't clear stored token
-        router.navigate(['/login']);
-      }
-      return of(false);
-    })
-  );
+  // ── 3. No cache — redirect to login immediately. Don't block on a
+  //       refreshToken round-trip; the API may be cold-starting (Railway
+  //       sleeps when idle) and that 10+ s wait was making the PWA feel
+  //       broken on mobile launches from the home screen.
+  //
+  //       The login page's publicGuard tries refreshToken() in the
+  //       background and will silently bounce the user to /dashboard
+  //       if the HttpOnly refresh cookie turns out to be valid — so
+  //       this isn't a regression for users with valid sessions, just
+  //       a UI re-arrange (login flashes briefly then redirects).
+  router.navigate(['/login']);
+  return of(false);
 };
 
 export const adminGuard: CanActivateFn = () => {
