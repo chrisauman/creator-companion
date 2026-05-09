@@ -37,25 +37,34 @@ self.addEventListener('fetch', event => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
 
-  // ── 1. Navigation requests → stale-while-revalidate on the HTML ──
-  // The previous network-first strategy meant every PWA launch waited
-  // on a full round-trip before the shell rendered. Now the cached
-  // HTML serves instantly and we refresh it in the background.
+  // ── 1. Navigation requests → network-first with 3 s timeout ──
+  // The HTML is ~6 kB after disabling the critical-CSS inliner, so
+  // network-first is fast and ensures the user never gets stuck on
+  // stale code (which is what caused the "I don't see your fix"
+  // confusion across multiple deploys). Cache fallback covers slow
+  // networks and offline state.
   if (req.mode === 'navigate') {
     event.respondWith((async () => {
-      const cache  = await caches.open(NAV_CACHE);
+      const cache = await caches.open(NAV_CACHE);
+
+      // Try network with a 3-second timeout.
+      let networkResponse = null;
+      try {
+        networkResponse = await Promise.race([
+          fetch(req),
+          new Promise(resolve => setTimeout(() => resolve(null), 3000))
+        ]);
+      } catch { /* fall through to cache */ }
+
+      if (networkResponse && networkResponse.ok && networkResponse.type === 'basic') {
+        cache.put(req, networkResponse.clone()).catch(() => {});
+        return networkResponse;
+      }
+
+      // Network failed or timed out — try cache, then offline page.
       const cached = await cache.match(req);
-      const networkPromise = fetch(req)
-        .then(res => {
-          if (res && res.ok && res.type === 'basic') {
-            cache.put(req, res.clone()).catch(() => {});
-          }
-          return res;
-        })
-        .catch(() => null);
       if (cached) return cached;
-      const fresh = await networkPromise;
-      return fresh || (await caches.match(OFFLINE_PAGE));
+      return (await caches.match(OFFLINE_PAGE)) || Response.error();
     })());
     return;
   }
