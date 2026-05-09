@@ -53,7 +53,68 @@
   <meta name="twitter:image" content="https://app.creatorcompanionapp.com/og-image.png">
 </head>
 <body>
+  <!-- Inline pre-boot splash. Renders the moment the HTML parses, so
+       the user sees branded content INSTANTLY on PWA launch instead
+       of staring at a white screen for the duration of the JS bundle
+       download + Angular boot. The fade-out is triggered by Angular's
+       initial render: any non-comment child node appearing inside
+       <app-root> via the CSS adjacent-sibling trick replaces the
+       splash. Inline styles only — no external CSS dependency. -->
+  <style>
+    .cc-boot-splash {
+      position: fixed; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 1.25rem;
+      background: #0c0e13;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+      z-index: 99999;
+      pointer-events: none;
+      animation: ccBootFade .25s ease-out .15s both;
+    }
+    .cc-boot-splash__icon {
+      width: 96px; height: 96px;
+      background-image: url('icons/icon-192x192.png');
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      border-radius: 24px;
+    }
+    .cc-boot-splash__name {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -.005em;
+    }
+    .cc-boot-splash__hint {
+      font-size: .8125rem;
+      color: rgba(255, 255, 255, .55);
+      animation: ccBootPulse 1.4s ease-in-out infinite;
+    }
+    @keyframes ccBootPulse {
+      0%, 100% { opacity: .35; }
+      50% { opacity: .85; }
+    }
+    @keyframes ccBootFade {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    /* Once Angular renders ANY content inside <app-root>, hide the
+       splash. The selector matches when app-root has a non-empty
+       first child (i.e. Angular booted). */
+    app-root:not(:empty) ~ .cc-boot-splash,
+    app-root[ng-version] + .cc-boot-splash {
+      opacity: 0;
+      transition: opacity .35s ease;
+      pointer-events: none;
+    }
+  </style>
   <app-root></app-root>
+  <div class="cc-boot-splash" aria-hidden="true">
+    <div class="cc-boot-splash__icon"></div>
+    <div class="cc-boot-splash__name">Creator Companion</div>
+    <div class="cc-boot-splash__hint">Loading…</div>
+  </div>
   <noscript>Please enable JavaScript to continue using this application.</noscript>
 </body>
 </html>
