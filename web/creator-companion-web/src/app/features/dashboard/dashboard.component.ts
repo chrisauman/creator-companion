@@ -1424,14 +1424,20 @@ export class DashboardComponent implements OnInit {
     const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
 
     // ?compose=1 → open compose. openCompose() itself routes mobile vs.
-    // desktop correctly (mobile goes to /entry/new, desktop opens the
-    // inline composer in the right column). Strip the param either way
-    // so the URL doesn't re-trigger compose on back/forward. This must
-    // run BEFORE the desktop-only early return below — sidebar's "Log
-    // Today's Progress" link relies on this on mobile.
+    // desktop correctly (mobile navigates AWAY to /entry/new, desktop
+    // opens the inline composer in the right column).
+    //
+    // Only strip the param on desktop — on mobile we'd be cancelling
+    // openCompose's in-flight /entry/new navigation by issuing a
+    // second navigate to /dashboard right after it (the second one
+    // wins). That bug surfaced as "tapping Log Today's Progress just
+    // closes the menu" because the drawer closed via NavigationEnd
+    // but the user landed back on /dashboard with no compose action.
     if (compose === '1') {
       this.openCompose({});
-      this.router.navigate(['/dashboard'], { replaceUrl: true });
+      if (isDesktop) {
+        this.router.navigate(['/dashboard'], { replaceUrl: true });
+      }
       return;
     }
 
