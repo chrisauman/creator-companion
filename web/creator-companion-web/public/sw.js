@@ -3,9 +3,12 @@
 // strategies for HTML, JS, CSS, and font assets.
 
 const OFFLINE_PAGE  = '/offline.html';
-const NAV_CACHE     = 'cc-nav-v1';     // app-shell HTML responses
-const ASSET_CACHE   = 'cc-assets-v1';  // hashed JS / CSS / fonts
-const OFFLINE_CACHE = 'cc-offline-v1';
+// v2 — bumped to flush stale HTML from before the inline splash + the
+// non-blocking authGuard fix. Old caches will be deleted by the
+// activate handler below since they're no longer in the keep-list.
+const NAV_CACHE     = 'cc-nav-v2';     // app-shell HTML responses
+const ASSET_CACHE   = 'cc-assets-v2';  // hashed JS / CSS / fonts
+const OFFLINE_CACHE = 'cc-offline-v2';
 
 self.addEventListener('install', event => {
   event.waitUntil(

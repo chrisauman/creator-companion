@@ -13,9 +13,18 @@
 
   <!-- iOS PWA support -->
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Creator">
   <link rel="apple-touch-icon" href="icons/icon-152x152.png">
+
+  <!-- iOS launch image. Without this, iOS PWAs show a white default
+       splash during the WebKit cold-start window between icon tap
+       and the URL loading — perceived as "10 seconds of white
+       screen." This image fills that window with our dark branded
+       splash, seamlessly blending into the in-HTML splash that
+       takes over once the HTML parses. Single image — iOS scales
+       it for non-Pro-Max iPhones. -->
+  <link rel="apple-touch-startup-image" href="launch-image.png">
 
   <link rel="icon" type="image/x-icon" href="favicon.ico">
 
@@ -71,7 +80,9 @@
       font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
       z-index: 99999;
       pointer-events: none;
-      animation: ccBootFade .25s ease-out .15s both;
+      /* No fade-in delay — paints with the first render frame so the
+         user never sees a white void during the JS bundle load. */
+      opacity: 1;
     }
     .cc-boot-splash__icon {
       width: 96px; height: 96px;
@@ -94,10 +105,6 @@
     @keyframes ccBootPulse {
       0%, 100% { opacity: .35; }
       50% { opacity: .85; }
-    }
-    @keyframes ccBootFade {
-      from { opacity: 0; }
-      to   { opacity: 1; }
     }
     /* Once Angular renders ANY content inside <app-root>, hide the
        splash. The selector matches when app-root has a non-empty
