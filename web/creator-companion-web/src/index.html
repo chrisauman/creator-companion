@@ -19,10 +19,26 @@
 
   <link rel="icon" type="image/x-icon" href="favicon.ico">
 
-  <!-- Fonts -->
+  <!-- Fonts (async-load to avoid render-blocking).
+       The previous setup was a synchronous <link rel="stylesheet">
+       which made every PWA launch wait on the Google Fonts CSS +
+       WOFF2 files before painting — about 10 s of white screen on
+       cold mobile networks. The media="print"/onload trick lets
+       the browser fetch the stylesheet without blocking render;
+       once it lands, JS swaps it to media="all" and the live fonts
+       upgrade in (with display=swap on the @font-face declarations
+       so the swap is invisible to the user — Inter / Fraunces just
+       appear once they're ready). -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@700;800;900&family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;0,14..32,900;1,14..32,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Fraunces:wght@700;800;900&family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;0,14..32,900;1,14..32,400&display=swap"
+        media="print"
+        onload="this.media='all'">
+  <noscript>
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Fraunces:wght@700;800;900&family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;0,14..32,900;1,14..32,400&display=swap">
+  </noscript>
 
   <!-- Open Graph -->
   <meta property="og:type" content="website">
