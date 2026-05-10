@@ -27,7 +27,7 @@ import { environment } from '../../../../environments/environment';
           </div>
 
           <!-- Defense in depth: even though the backend only returns
-               `resetToken` in development, gate the UI on environment
+               resetToken in development, gate the UI on environment
                too so a copy-paste bug or env detection slip can't ever
                surface the token in a production bundle. -->
           @if (devToken() && !isProduction) {

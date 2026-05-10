@@ -194,6 +194,11 @@ import { ApiService } from '../../core/services/api.service';
   `]
 })
 export class TrialBannerComponent {
+  // Static constants come first so the field initializers below can
+  // reference them safely (TS2729 otherwise — "used before initialization").
+  private static readonly DISMISS_KEY        = 'cc_trial_banner_dismissed';
+  private static readonly DISMISS_KEY_URGENT = 'cc_trial_banner_dismissed_urgent';
+
   private auth   = inject(AuthService);
   private api    = inject(ApiService);
   private router = inject(Router);
@@ -262,9 +267,6 @@ export class TrialBannerComponent {
       this.writeKey(TrialBannerComponent.DISMISS_KEY);
     }
   }
-
-  private static readonly DISMISS_KEY        = 'cc_trial_banner_dismissed';
-  private static readonly DISMISS_KEY_URGENT = 'cc_trial_banner_dismissed_urgent';
 
   private readKey(key: string): boolean {
     try { return localStorage.getItem(key) === '1'; }

@@ -14,42 +14,20 @@ namespace CreatorCompanion.Api.Application.Services;
 
 public class AuthService(AppDbContext db, IConfiguration config, IEmailService emailService, IAuditService audit, IStorageService storage) : IAuthService
 {
-    // In-memory lockout tracker: identifier → (failCount, windowStart)
-    private static readonly Dictionary<string, (int Count, DateTime WindowStart)> _failedAttempts = new();
-    private static readonly Lock _lock = new();
+    // Lockout configuration. Per-account counter is persisted on the
+    // User row so it survives Railway redeploys and applies globally
+    // across replicas (the previous static-Dictionary implementation
+    // reset on every restart and counted per-instance — attackers
+    // could defeat it by waiting for a redeploy or being routed to a
+    // different replica). The IP-tier of throttling lives in
+    // AspNetCoreRateLimit; this is the per-account gate.
     private const int MaxFailedAttempts = 10;
     private static readonly TimeSpan LockoutWindow = TimeSpan.FromMinutes(15);
 
-    private static bool IsLockedOut(string identifier)
-    {
-        lock (_lock)
-        {
-            if (!_failedAttempts.TryGetValue(identifier, out var entry)) return false;
-            if (DateTime.UtcNow - entry.WindowStart > LockoutWindow)
-            {
-                _failedAttempts.Remove(identifier);
-                return false;
-            }
-            return entry.Count >= MaxFailedAttempts;
-        }
-    }
-
-    private static void RecordFailure(string identifier)
-    {
-        lock (_lock)
-        {
-            if (_failedAttempts.TryGetValue(identifier, out var entry) &&
-                DateTime.UtcNow - entry.WindowStart <= LockoutWindow)
-                _failedAttempts[identifier] = (entry.Count + 1, entry.WindowStart);
-            else
-                _failedAttempts[identifier] = (1, DateTime.UtcNow);
-        }
-    }
-
-    private static void ClearFailures(string identifier)
-    {
-        lock (_lock) { _failedAttempts.Remove(identifier); }
-    }
+    // Target work factor for new and rehashed BCrypt hashes. OWASP
+    // 2024+ recommends ≥12; legacy hashes at factor 10 are upgraded
+    // transparently the next time the user authenticates.
+    private const int BCryptWorkFactor = 12;
 
     public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
     {
@@ -62,7 +40,7 @@ public class AuthService(AppDbContext db, IConfiguration config, IEmailService e
             FirstName = request.FirstName.Trim(),
             LastName  = request.LastName.Trim(),
             Email = request.Email.ToLower(),
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password, BCryptWorkFactor),
             TimeZoneId = request.TimeZoneId,
             // 10-day free trial — full access during this window. After
             // expiration, EntitlementService.HasAccess returns false and
@@ -142,44 +120,85 @@ public class AuthService(AppDbContext db, IConfiguration config, IEmailService e
 
     // Constant-time dummy BCrypt hash used to equalize the timing of
     // "user does not exist" vs "wrong password". Hashed once at static
-    // init so it doesn't show up in flame graphs each login. Workfactor
-    // matches BCrypt.Net default (10).
+    // init at the current work factor so verify-against-dummy takes
+    // the same ~time as verify-against-real on a brand-new account.
     private static readonly string DummyHash =
-        BCrypt.Net.BCrypt.HashPassword("\0timing-equalization-dummy\0");
+        BCrypt.Net.BCrypt.HashPassword("\0timing-equalization-dummy\0", BCryptWorkFactor);
 
     public async Task<AuthResponse> LoginAsync(LoginRequest request)
     {
         var identifier = request.Email.ToLower();
 
-        if (IsLockedOut(identifier))
-            throw new UnauthorizedAccessException("Invalid credentials.");
-            // Same error message as "wrong password" — a distinct
-            // "locked out" message let attackers deliberately lock a
-            // target email then probe membership via the response text.
-
         var user = await db.Users
             .FirstOrDefaultAsync(u => u.Email == identifier);
 
+        // Per-account lockout check. Uses the same "Invalid credentials"
+        // message as wrong-password so a distinct lockout response
+        // can't be used to confirm an email exists (an attacker who
+        // deliberately locks the target would otherwise read the
+        // distinct message and learn membership).
+        if (user is not null && user.LockedUntil.HasValue && user.LockedUntil > DateTime.UtcNow)
+        {
+            // Still run BCrypt against the dummy so total time matches
+            // the wrong-password path. Otherwise lockout returns
+            // measurably faster than a normal failure.
+            _ = BCrypt.Net.BCrypt.Verify(request.Password, DummyHash);
+            await audit.LogAsync("login.locked_out", user.Id);
+            throw new UnauthorizedAccessException("Invalid credentials.");
+        }
+
         // Always run BCrypt.Verify even when the user doesn't exist so
         // the unknown-email path can't be distinguished from the
-        // wrong-password path by timing (~10ms for both).
+        // wrong-password path by timing.
         bool passwordOk = user is not null
             ? BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash)
             : BCrypt.Net.BCrypt.Verify(request.Password, DummyHash) && false;
 
         if (user is null || !passwordOk)
         {
-            RecordFailure(identifier);
-            await audit.LogAsync("login.failed", null, $"email={identifier}");
+            if (user is not null)
+            {
+                user.FailedLoginCount += 1;
+                if (user.FailedLoginCount >= MaxFailedAttempts)
+                    user.LockedUntil = DateTime.UtcNow.Add(LockoutWindow);
+                await db.SaveChangesAsync();
+            }
+            await audit.LogAsync("login.failed", user?.Id, $"email={identifier}");
             throw new UnauthorizedAccessException("Invalid credentials.");
         }
 
         if (!user.IsActive)
             throw new UnauthorizedAccessException("Invalid credentials.");
 
-        ClearFailures(identifier);
+        // Successful login — reset the lockout counter and (if the
+        // stored hash uses a weaker work factor than current policy)
+        // transparently rehash the password at the new factor so old
+        // accounts catch up without forcing a reset flow.
+        user.FailedLoginCount = 0;
+        user.LockedUntil = null;
+        if (NeedsRehash(user.PasswordHash))
+        {
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password, BCryptWorkFactor);
+            user.UpdatedAt = DateTime.UtcNow;
+        }
+        await db.SaveChangesAsync();
+
         await audit.LogAsync("login.success", user.Id);
         return await IssueTokensAsync(user);
+    }
+
+    /// <summary>
+    /// True when the stored hash's BCrypt work factor is below the
+    /// current policy. Used to opportunistically rehash on successful
+    /// login. BCrypt hashes look like `$2a$10$saltsaltsaltsalt…`; the
+    /// number after the second `$` is the work factor (base-2 cost).
+    /// </summary>
+    private static bool NeedsRehash(string hash)
+    {
+        if (string.IsNullOrEmpty(hash) || hash.Length < 7 || hash[0] != '$') return false;
+        var parts = hash.Split('$', 4);
+        if (parts.Length < 4) return false;
+        return int.TryParse(parts[2], out var cost) && cost < BCryptWorkFactor;
     }
 
     public async Task<AuthResponse> RefreshAsync(string refreshToken)
@@ -242,8 +261,25 @@ public class AuthService(AppDbContext db, IConfiguration config, IEmailService e
     public async Task<string> ForgotPasswordAsync(string email)
     {
         var user = await db.Users.FirstOrDefaultAsync(u => u.Email == email.ToLower());
-        // Always return success to prevent user enumeration
-        if (user is null) return string.Empty;
+
+        // Timing equalization: an attacker observing response latency
+        // can otherwise distinguish "email registered" (1 DB lookup +
+        // 1 DELETE + 1 INSERT + 1 SaveChanges + Resend HTTP call) from
+        // "email not registered" (1 DB lookup, return immediately). We
+        // do dummy work for the unknown path so the latency profile is
+        // similar. Not a substitute for proper rate limiting (already
+        // enforced via AspNetCoreRateLimit on /v1/auth/forgot-password)
+        // but defense in depth.
+        if (user is null)
+        {
+            // Mirror the cost of the real path with the equivalent
+            // crypto + DB read time. We can't perfectly match the
+            // network-bound Resend call, but generating a token and
+            // hashing it is the main per-request cost on our side.
+            _ = HashToken(GenerateSecureToken());
+            await db.Users.AnyAsync(u => u.Id == Guid.Empty);
+            return string.Empty;
+        }
 
         // Invalidate any existing unused tokens for this user
         var existing = await db.PasswordResetTokens
@@ -314,8 +350,13 @@ public class AuthService(AppDbContext db, IConfiguration config, IEmailService e
         if (resetToken is null || !resetToken.IsValid)
             throw new InvalidOperationException("Reset link is invalid or has expired.");
 
-        resetToken.User.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+        resetToken.User.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword, BCryptWorkFactor);
         resetToken.User.UpdatedAt = DateTime.UtcNow;
+        // Reset password is the canonical "I've recovered my account"
+        // signal — clear any lingering lockout so the user can sign in
+        // immediately on the next request.
+        resetToken.User.FailedLoginCount = 0;
+        resetToken.User.LockedUntil = null;
 
         await audit.LogAsync("password.reset", resetToken.UserId);
 

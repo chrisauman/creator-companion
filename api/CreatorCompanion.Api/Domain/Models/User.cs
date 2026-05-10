@@ -59,6 +59,22 @@ public class User
     public bool IsAdmin { get; set; } = false;
     public bool EmailVerified { get; set; } = false;
 
+    /// <summary>
+    /// Number of consecutive failed login attempts since the last
+    /// successful login (or last lockout-window reset). Persisted so
+    /// the limit survives a Railway redeploy and applies globally
+    /// across replicas — the previous in-memory dictionary reset on
+    /// every restart and counted per-instance, so brute-force could
+    /// defeat the limit by waiting for a redeploy or rotating replicas.
+    /// </summary>
+    public int FailedLoginCount { get; set; } = 0;
+
+    /// <summary>
+    /// Timestamp at which the account becomes unlockable. Set on the
+    /// Nth failed attempt; cleared on a successful login. UTC.
+    /// </summary>
+    public DateTime? LockedUntil { get; set; }
+
     /// <summary>Whether the Daily Motivation card is shown on the dashboard (paid users only).</summary>
     public bool ShowMotivation { get; set; } = true;
 

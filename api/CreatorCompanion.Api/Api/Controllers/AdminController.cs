@@ -13,8 +13,11 @@ namespace CreatorCompanion.Api.Api.Controllers;
 [ApiController]
 [Route("v1/admin")]
 [Authorize(Policy = "AdminOnly")]
-public class AdminController(AppDbContext db) : ControllerBase
+public class AdminController(AppDbContext db, IAuditService audit) : ControllerBase
 {
+    private Guid AdminId => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)
+        ?? User.FindFirstValue("sub")!);
+
     [HttpGet("stats")]
     public async Task<IActionResult> GetStats()
     {
@@ -156,6 +159,7 @@ public class AdminController(AppDbContext db) : ControllerBase
 
         pause.Status = Domain.Enums.PauseStatus.Cancelled;
         await db.SaveChangesAsync();
+        await audit.LogAsync("admin.user_pause_cancelled", AdminId, $"target={id}");
         return NoContent();
     }
 
@@ -165,6 +169,7 @@ public class AdminController(AppDbContext db) : ControllerBase
         var pauses = await db.Pauses.Where(p => p.UserId == id).ToListAsync();
         db.Pauses.RemoveRange(pauses);
         await db.SaveChangesAsync();
+        await audit.LogAsync("admin.user_pauses_cleared", AdminId, $"target={id} count={pauses.Count}");
         return NoContent();
     }
 
@@ -187,6 +192,14 @@ public class AdminController(AppDbContext db) : ControllerBase
                 return Conflict(new { error = "Email is already in use." });
         }
 
+        // Snapshot security-relevant fields before mutation so the audit
+        // log records the actual delta — promotion to admin and tier
+        // changes are the things you most need a trail of.
+        var wasAdmin           = user.IsAdmin;
+        var wasActive          = user.IsActive;
+        var oldTier            = user.Tier;
+        var passwordChanged    = !string.IsNullOrWhiteSpace(request.NewPassword);
+
         user.FirstName           = request.FirstName.Trim();
         user.LastName            = request.LastName.Trim();
         user.Email               = request.Email;
@@ -198,10 +211,24 @@ public class AdminController(AppDbContext db) : ControllerBase
         user.TrialEndsAt         = request.TrialEndsAt;
         user.UpdatedAt           = DateTime.UtcNow;
 
-        if (!string.IsNullOrWhiteSpace(request.NewPassword))
-            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+        if (passwordChanged)
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword, 12);
 
         await db.SaveChangesAsync();
+
+        // Emit fine-grained audit entries for every security-relevant
+        // change so a compromised admin can be retraced.
+        if (wasAdmin != user.IsAdmin)
+            await audit.LogAsync(user.IsAdmin ? "admin.promoted_user" : "admin.demoted_user",
+                AdminId, $"target={id}");
+        if (wasActive != user.IsActive)
+            await audit.LogAsync(user.IsActive ? "admin.reactivated_user" : "admin.deactivated_user",
+                AdminId, $"target={id}");
+        if (oldTier != user.Tier)
+            await audit.LogAsync("admin.tier_changed",
+                AdminId, $"target={id} from={oldTier} to={user.Tier}");
+        if (passwordChanged)
+            await audit.LogAsync("admin.password_reset", AdminId, $"target={id}");
 
         return Ok(new
         {
@@ -271,6 +298,7 @@ public class AdminController(AppDbContext db) : ControllerBase
         // Delete user — Drafts, Pauses, RefreshTokens, Journals, Tags all cascade
         db.Users.Remove(user);
         await db.SaveChangesAsync();
+        await audit.LogAsync("admin.deleted_user", AdminId, $"target={id} email={user.Email}");
 
         return NoContent();
     }
@@ -284,9 +312,12 @@ public class AdminController(AppDbContext db) : ControllerBase
         var user = await db.Users.FindAsync(id);
         if (user is null) return NotFound();
 
+        var oldTier = user.Tier;
         user.Tier = tier;
         user.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync();
+        if (oldTier != user.Tier)
+            await audit.LogAsync("admin.tier_changed", AdminId, $"target={id} from={oldTier} to={user.Tier}");
 
         return Ok(new { id = user.Id, tier = user.Tier.ToString() });
     }
@@ -297,9 +328,26 @@ public class AdminController(AppDbContext db) : ControllerBase
         var user = await db.Users.FindAsync(id);
         if (user is null) return NotFound();
 
+        var wasActive = user.IsActive;
         user.IsActive = request.IsActive;
         user.UpdatedAt = DateTime.UtcNow;
+
+        // If we're deactivating, revoke every active refresh token now
+        // rather than waiting for the next RefreshAsync to notice the
+        // flipped IsActive. Otherwise a malicious session can keep
+        // refreshing access tokens for up to 30 days.
+        if (wasActive && !user.IsActive)
+        {
+            var now = DateTime.UtcNow;
+            await db.RefreshTokens
+                .Where(rt => rt.UserId == id && rt.RevokedAt == null)
+                .ExecuteUpdateAsync(s => s.SetProperty(r => r.RevokedAt, now));
+        }
+
         await db.SaveChangesAsync();
+        if (wasActive != user.IsActive)
+            await audit.LogAsync(user.IsActive ? "admin.reactivated_user" : "admin.deactivated_user",
+                AdminId, $"target={id}");
 
         return Ok(new { id = user.Id, isActive = user.IsActive });
     }
@@ -340,7 +388,9 @@ public class AdminController(AppDbContext db) : ControllerBase
         {
             try
             {
-                await sender.SendAsync(sub, "Creator Companion", "🔔 Test notification — your push is working!");
+                // Plain copy — no emoji (per project style; the in-app
+                // notifications use SVG icons consistently).
+                await sender.SendAsync(sub, "Creator Companion", "Test notification — your push is working.");
                 sent++;
             }
             catch (WebPush.WebPushException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Gone)

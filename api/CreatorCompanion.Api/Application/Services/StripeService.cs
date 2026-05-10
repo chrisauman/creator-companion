@@ -140,6 +140,38 @@ public class StripeService(AppDbContext db, IOptions<StripeConfig> config, IEmai
         var user = await db.Users.FindAsync(userId);
         if (user == null) return;
 
+        // Defense in depth: confirm the Stripe customer's email
+        // matches the user we're about to upgrade. ClientReferenceId
+        // is signed-event data so this is only relevant if a malicious
+        // pre-checkout request ever managed to spoof a userId that
+        // doesn't own this customer. The check is also useful
+        // diagnostic when manual Stripe support actions create
+        // out-of-band sessions.
+        try
+        {
+            if (!string.IsNullOrEmpty(session.CustomerId))
+            {
+                var customer = await new CustomerService().GetAsync(session.CustomerId);
+                if (customer is not null &&
+                    !string.IsNullOrEmpty(customer.Email) &&
+                    !string.Equals(customer.Email, user.Email, StringComparison.OrdinalIgnoreCase))
+                {
+                    // Don't flip Tier — record the mismatch so we can
+                    // investigate. Returning silently keeps Stripe
+                    // happy with a 2xx ack so it doesn't retry forever.
+                    Console.WriteLine($"[WARN] Stripe customer email mismatch: user={userId} userEmail={user.Email} customerEmail={customer.Email}");
+                    return;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            // If the lookup itself fails, fall through — the worst
+            // case is a paying customer doesn't immediately get tier=Paid
+            // (HandleSubscriptionUpdatedAsync will catch up shortly).
+            Console.WriteLine($"[WARN] Could not verify Stripe customer email for user={userId}: {ex.Message}");
+        }
+
         user.StripeCustomerId     = session.CustomerId;
         user.StripeSubscriptionId = session.SubscriptionId;
         user.Tier                 = AccountTier.Paid;

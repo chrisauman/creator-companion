@@ -106,7 +106,9 @@ public class UsersController(AppDbContext db, IStorageService storage, IImagePro
         if (request.NewPassword == request.CurrentPassword)
             return BadRequest(new { error = "New password must be different from your current password." });
 
-        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+        // OWASP-2024 work factor (12). Logging in afterwards rehashes
+        // legacy hashes transparently; new hashes start at the target.
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword, 12);
         user.UpdatedAt = DateTime.UtcNow;
 
         // Revoke every other active refresh token for this user. A
