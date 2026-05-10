@@ -199,9 +199,26 @@ public class AuthService(AppDbContext db, IConfiguration config, IEmailService e
         if (token is null || !token.IsActive)
             throw new UnauthorizedAccessException("Invalid or expired refresh token.");
 
-        // Rotate: revoke old, issue new
-        token.RevokedAt = DateTime.UtcNow;
-        await db.SaveChangesAsync();
+        // Also reject if the user has been admin-deactivated since the
+        // token was issued. Otherwise an attacker-controlled refresh
+        // token continues working for up to 30 days after IsActive=false.
+        if (!token.User.IsActive)
+            throw new UnauthorizedAccessException("Invalid or expired refresh token.");
+
+        // Atomic rotate: only ONE concurrent caller wins. Without this,
+        // two simultaneous /v1/auth/refresh calls (two tabs racing on
+        // session expiry, or token-theft replay) both pass the IsActive
+        // check, both issue new refresh tokens, and we end up with two
+        // active sessions per stolen token. ExecuteUpdateAsync compiles
+        // to a single UPDATE ... WHERE RevokedAt IS NULL, returning the
+        // affected-rows count — only one caller sees 1 and proceeds.
+        var now = DateTime.UtcNow;
+        var revoked = await db.RefreshTokens
+            .Where(r => r.Id == token.Id && r.RevokedAt == null)
+            .ExecuteUpdateAsync(s => s.SetProperty(r => r.RevokedAt, now));
+
+        if (revoked == 0)
+            throw new UnauthorizedAccessException("Invalid or expired refresh token.");
 
         return await IssueTokensAsync(token.User);
     }

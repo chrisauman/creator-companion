@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output, OnInit, input, inject, signal, computed } from '@angular/core';
+import { Component, EventEmitter, Output, OnInit, input, inject, signal, computed, HostListener } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
@@ -346,6 +346,15 @@ export class WelcomeBackComponent implements OnInit {
   }
 
   onSkip(): void {
+    this.dismissed.emit();
+  }
+
+  /** ESC dismisses the takeover for the current break. Keyboard users
+   *  couldn't get out of this otherwise — the component renders fixed
+   *  full-screen over the dashboard. Document-level listener so focus
+   *  position inside the overlay doesn't matter. */
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
     this.dismissed.emit();
   }
 }

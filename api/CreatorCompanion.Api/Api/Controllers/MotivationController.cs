@@ -78,14 +78,41 @@ public class MotivationController(AppDbContext db, IEntitlementService entitleme
             .OrderBy(_ => Guid.NewGuid())   // random via EF
             .FirstAsync();
 
-        // Record it as shown today
+        // Record it as shown today.
+        //
+        // Race-handling: two concurrent GET /motivation/today calls can
+        // each pass the `todayRecord is null` check and each pick a
+        // (different) random unseen entry. Without a unique constraint
+        // on (UserId, ShownDate) both inserts would commit, the
+        // dashboard would show one motivation on first paint and
+        // another on subsequent loads, and the user-favorited toggle
+        // would race against an unstable entry id. The unique index
+        // added in AddMotivationShownDayUniqueIndex catches the second
+        // insert; we recover by reading the winner's row instead.
         db.UserMotivationShown.Add(new UserMotivationShown
         {
             UserId            = UserId,
             MotivationEntryId = candidate.Id,
             ShownDate         = today
         });
-        await db.SaveChangesAsync();
+        try
+        {
+            await db.SaveChangesAsync();
+        }
+        catch (DbUpdateException)
+        {
+            // The other concurrent caller won. Drop our pending insert
+            // and re-read the winning row so we return THEIR pick (the
+            // user must see the same motivation on every load today).
+            db.ChangeTracker.Clear();
+            var winning = await db.UserMotivationShown
+                .Include(s => s.Entry)
+                .FirstOrDefaultAsync(s => s.UserId == UserId && s.ShownDate == today);
+            if (winning is not null)
+            {
+                candidate = winning.Entry;
+            }
+        }
 
         var isFavorited = await db.UserFavoritedMotivations
             .AnyAsync(f => f.UserId == UserId && f.MotivationEntryId == candidate.Id);

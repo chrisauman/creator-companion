@@ -1,4 +1,5 @@
-import { Component, inject, signal, computed, effect, OnInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, inject, signal, computed, effect, OnInit, ViewChild, ElementRef, DestroyRef, HostListener } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -53,13 +54,20 @@ import { ActivatedRoute } from '@angular/router';
         ></app-welcome-back>
       }
 
-      <!-- Achievement celebration overlay -->
+      <!-- Achievement celebration overlay. Modal pattern: dialog role,
+           aria-modal, labelled by the title; ESC closes (via the host
+           document keydown listener below); backdrop click closes; click
+           on the modal itself does not bubble. -->
       @if (showCelebration() && isPaid()) {
-        <div class="celebration-overlay" (click)="dismissCelebration()">
+        <div class="celebration-overlay"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="celebration-title"
+             (click)="dismissCelebration()">
           <div class="celebration-modal" (click)="$event.stopPropagation()">
             <div class="celebration-icon">{{ celebrationMilestone()!.icon }}</div>
             <p class="celebration-earned">You've earned a new title!</p>
-            <h2 class="celebration-title">{{ celebrationMilestone()!.title }}</h2>
+            <h2 id="celebration-title" class="celebration-title">{{ celebrationMilestone()!.title }}</h2>
             <p class="celebration-days">{{ celebrationMilestone()!.days }} days of showing up. Keep going.</p>
             <button class="btn btn--primary btn--lg" (click)="dismissCelebration()">Let's go!</button>
           </div>
@@ -1076,6 +1084,7 @@ export class DashboardComponent implements OnInit {
   private router = inject(Router);
   private route  = inject(ActivatedRoute);
   sidebarState   = inject(SidebarStateService);
+  private destroyRef = inject(DestroyRef);
 
   isAdmin = this.tokens.isAdmin.bind(this.tokens);
 
@@ -1269,12 +1278,21 @@ export class DashboardComponent implements OnInit {
 
     // Re-apply section param on subsequent navigations (e.g. user clicks
     // a sidebar nav item while already on /dashboard).
-    this.route.queryParamMap.subscribe(() => this.applySectionQueryParam());
+    // takeUntilDestroyed tears the subscription down when the component
+    // unmounts. Previously these were untracked subscriptions to long-
+    // lived service subjects, so navigating away and back accumulated
+    // handlers — clicking the sidebar logo once fired returnToToday()
+    // N times.
+    this.route.queryParamMap
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.applySectionQueryParam());
 
     // Sidebar logo click → reset to today view (mirrors the Today pill
     // in the right column). The router won't re-fire a navigation when
     // we're already on /dashboard, so we listen explicitly here.
-    this.sidebarState.returnToTodayRequest$.subscribe(() => this.returnToToday());
+    this.sidebarState.returnToTodayRequest$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.returnToToday());
 
     // Safety net: if any API call hangs past 20 s, exit the loading state
     // gracefully rather than spinning forever. Covers Railway cold starts
@@ -1392,6 +1410,14 @@ export class DashboardComponent implements OnInit {
 
   dismissCelebration(): void {
     this.showCelebration.set(false);
+  }
+
+  /** ESC closes any open modal/overlay on the dashboard. Keyboard users
+   *  couldn't dismiss the achievement-celebration takeover before; the
+   *  document-level listener works regardless of which element has focus. */
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.showCelebration()) this.dismissCelebration();
   }
 
   private async initPushNudge(): Promise<void> {

@@ -13,8 +13,12 @@ public class UserMotivationShownConfiguration : IEntityTypeConfiguration<UserMot
         // Each user sees each entry at most once before the library resets
         builder.HasIndex(s => new { s.UserId, s.MotivationEntryId }).IsUnique();
 
-        // Fast lookup for "what did this user see today?"
-        builder.HasIndex(s => new { s.UserId, s.ShownDate });
+        // Fast lookup for "what did this user see today?" AND unique
+        // because there is exactly one motivation per user per local
+        // day. Concurrent GET /v1/motivation/today calls without this
+        // constraint can each insert a different random pick and the
+        // dashboard then flickers between picks across reloads.
+        builder.HasIndex(s => new { s.UserId, s.ShownDate }).IsUnique();
 
         builder.HasOne(s => s.User)
             .WithMany()

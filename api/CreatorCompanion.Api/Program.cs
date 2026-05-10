@@ -219,15 +219,32 @@ try
 
     var allowedOrigins = builder.Configuration["Cors:AllowedOrigins"]?.Split(',')
         ?? ["http://localhost:4200", "http://192.168.127.165:4200"];
+    var isDevEnv = builder.Environment.IsDevelopment();
 
     builder.Services.AddCors(options =>
     {
         options.AddPolicy("AppCors", policy =>
             policy.SetIsOriginAllowed(origin =>
-                      Uri.TryCreate(origin, UriKind.Absolute, out var uri) &&
-                      (uri.Host == "localhost" ||
-                       uri.Host == "192.168.127.165" ||
-                       allowedOrigins.Any(a => a.Trim().Equals(origin, StringComparison.OrdinalIgnoreCase))))
+                  {
+                      if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri))
+                          return false;
+
+                      // Always honor the configured allowlist (production
+                      // app + marketing site go here).
+                      if (allowedOrigins.Any(a =>
+                            a.Trim().Equals(origin, StringComparison.OrdinalIgnoreCase)))
+                          return true;
+
+                      // Loose localhost / LAN-IP allow ONLY in Development.
+                      // In Production this used to let any localhost:* page
+                      // (browser extensions, other locally-installed apps,
+                      // attacker pages on the LAN) issue credentialed
+                      // cross-origin requests against the live API.
+                      if (isDevEnv && (uri.Host == "localhost" || uri.Host == "192.168.127.165"))
+                          return true;
+
+                      return false;
+                  })
                   .WithHeaders("Authorization", "Content-Type", "Accept", "X-Requested-With")
                   .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
                   .AllowCredentials());

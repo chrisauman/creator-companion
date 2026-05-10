@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../../../core/services/api.service';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-forgot-password',
@@ -25,7 +26,11 @@ import { ApiService } from '../../../core/services/api.service';
             <strong>Check your email.</strong> If that address is registered, a reset link has been sent.
           </div>
 
-          @if (devToken()) {
+          <!-- Defense in depth: even though the backend only returns
+               `resetToken` in development, gate the UI on environment
+               too so a copy-paste bug or env detection slip can't ever
+               surface the token in a production bundle. -->
+          @if (devToken() && !isProduction) {
             <div class="dev-token">
               <p class="text-sm text-muted" style="margin-bottom:.4rem">
                 <strong>Dev mode:</strong> no email server is configured. Copy your reset token below.
@@ -99,6 +104,8 @@ import { ApiService } from '../../../core/services/api.service';
 })
 export class ForgotPasswordComponent {
   private api = inject(ApiService);
+
+  readonly isProduction = environment.production;
 
   email    = '';
   loading  = signal(false);

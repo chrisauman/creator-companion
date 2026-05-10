@@ -119,10 +119,19 @@ public class EntitlementService(AppDbContext db, IOptions<EntryLimitsConfig> lim
                 $"You can have a maximum of {limits.MaxDiaries} journal(s).");
     }
 
+    // Whitespace-aware split. The previous Split(' ', …) only recognized
+    // the single ASCII space character, so a user pasting tab- or
+    // newline-separated text under-counted words and could exceed
+    // MaxWordsPerEntry. Regex `\s+` collapses any run of whitespace
+    // (space, tab, newline, em-space, NBSP via \s in .NET) and the
+    // RemoveEmptyEntries flag drops leading/trailing splits.
+    private static readonly System.Text.RegularExpressions.Regex WordSplit =
+        new(@"\s+", System.Text.RegularExpressions.RegexOptions.Compiled);
+
     private static int CountWords(string text) =>
         string.IsNullOrWhiteSpace(text)
             ? 0
-            : text.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length;
+            : WordSplit.Split(text.Trim()).Count(w => w.Length > 0);
 }
 
 /// <summary>

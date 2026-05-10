@@ -112,6 +112,14 @@ public class EntryService(
             Metadata = request.Metadata ?? "{}"
         };
 
+        // Wrap entry + draft-removal + tags + analytics in a single
+        // transaction. Prior code did three separate SaveChanges (entry,
+        // tag join rows, analytics), so a crash between them could leave
+        // an entry without its tags but with a streak-counting row, or
+        // double-bumping analytics on retry. The transaction makes the
+        // whole create atomic from the caller's perspective.
+        await using var tx = await db.Database.BeginTransactionAsync();
+
         db.Entries.Add(entry);
 
         var draft = await db.Drafts
@@ -130,6 +138,8 @@ public class EntryService(
             tagNames = await tags.SetEntryTagsAsync(userId, entry.Id, request.Tags, limits.MaxTagsPerEntry);
 
         await TrackAnalyticsAsync(userId, AnalyticsEventType.EntryCreated, entry.EntryDate);
+
+        await tx.CommitAsync();
 
         return await MapToResponseAsync(entry, tagNames);
     }

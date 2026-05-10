@@ -232,6 +232,10 @@ public class ReminderBackgroundService(
         // Only consider active accounts that have at least one push
         // subscription registered — otherwise there's no device to
         // notify and we'd spend cycles for nothing.
+        // Tracked so we can mutate StreakThreatenedNotifiedFor below.
+        // (AsNoTracking would require re-attaching, which is more code
+        // for negligible win — the list is bounded by total active
+        // users with push subs.)
         var candidates = await db.Users
             .Where(u => u.IsActive)
             .Where(u => db.PushSubscriptions.Any(s => s.UserId == u.Id))
@@ -283,6 +287,7 @@ public class ReminderBackgroundService(
         // + lastEntryDate (which is all we need here). Keeps the trigger
         // condition aligned with the in-app banner.
         var validDates = await db.Entries
+            .AsNoTracking()
             .Where(e => e.UserId == user.Id && e.DeletedAt == null)
             .Select(e => e.EntryDate)
             .Distinct()
@@ -291,6 +296,7 @@ public class ReminderBackgroundService(
         if (validDates.Count == 0) return false;
 
         var pauses = await db.Pauses
+            .AsNoTracking()
             .Where(p => p.UserId == user.Id && p.Status == Domain.Enums.PauseStatus.Active)
             .Select(p => new { p.StartDate, p.EndDate })
             .ToListAsync(ct);

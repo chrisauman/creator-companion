@@ -15,43 +15,55 @@ public class StreakService(AppDbContext db) : IStreakService
         var userTz = TimeZoneInfo.FindSystemTimeZoneById(user.TimeZoneId);
         var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, userTz));
 
-        // Load all valid entry dates (not deleted, submitted only — no drafts)
+        var monthStart = new DateOnly(today.Year, today.Month, 1);
+        var monthEnd = new DateOnly(today.Year, today.Month,
+            DateTime.DaysInMonth(today.Year, today.Month));
+
+        // Load all valid entry dates (not deleted, submitted only — no drafts).
+        // AsNoTracking everywhere — this is a read-only compute path called
+        // on every dashboard load.
         var validDates = await db.Entries
+            .AsNoTracking()
             .Where(e => e.UserId == userId && e.DeletedAt == null)
             .Select(e => e.EntryDate)
             .Distinct()
             .OrderByDescending(d => d)
             .ToListAsync();
 
-        // Load active pause ranges (for streak bridging)
-        var pauses = await db.Pauses
-            .Where(p => p.UserId == userId && p.Status == PauseStatus.Active)
+        // Single Pauses fetch covering BOTH needs: streak bridging
+        // (active pauses) AND month-usage accounting (any status, any
+        // overlap with this calendar month). Was two queries; the union
+        // is small (one row per pause), filter in memory.
+        var pauseRows = await db.Pauses
+            .AsNoTracking()
+            .Where(p => p.UserId == userId &&
+                       (p.Status == PauseStatus.Active ||
+                        (p.StartDate <= monthEnd && p.EndDate >= monthStart)))
+            .Select(p => new { p.Id, p.StartDate, p.EndDate, p.Status })
+            .ToListAsync();
+
+        var pauses = pauseRows
+            .Where(p => p.Status == PauseStatus.Active)
             .Select(p => new { p.Id, p.StartDate, p.EndDate })
-            .ToListAsync();
+            .ToList();
 
-        // Count ALL pause days used this calendar month (active + cancelled)
-        var monthStart = new DateOnly(today.Year, today.Month, 1);
-        var monthEnd = new DateOnly(today.Year, today.Month,
-            DateTime.DaysInMonth(today.Year, today.Month));
-
-        var allMonthPauses = await db.Pauses
-            .Where(p => p.UserId == userId && p.StartDate <= monthEnd && p.EndDate >= monthStart)
-            .Select(p => new { p.StartDate, p.EndDate })
-            .ToListAsync();
-
-        int pauseDaysUsedThisMonth = allMonthPauses.Sum(p =>
-        {
-            var overlapStart = p.StartDate > monthStart ? p.StartDate : monthStart;
-            var overlapEnd   = p.EndDate   < monthEnd   ? p.EndDate   : monthEnd;
-            return overlapEnd >= overlapStart
-                ? overlapEnd.DayNumber - overlapStart.DayNumber + 1
-                : 0;
-        });
+        int pauseDaysUsedThisMonth = pauseRows
+            .Where(p => p.StartDate <= monthEnd && p.EndDate >= monthStart)
+            .Sum(p =>
+            {
+                var overlapStart = p.StartDate > monthStart ? p.StartDate : monthStart;
+                var overlapEnd   = p.EndDate   < monthEnd   ? p.EndDate   : monthEnd;
+                return overlapEnd >= overlapStart
+                    ? overlapEnd.DayNumber - overlapStart.DayNumber + 1
+                    : 0;
+            });
 
         var totalEntries = await db.Entries
+            .AsNoTracking()
             .CountAsync(e => e.UserId == userId && e.DeletedAt == null);
 
         var totalMedia = await db.EntryMedia
+            .AsNoTracking()
             .CountAsync(m => m.UserId == userId && m.DeletedAt == null);
 
         var activeDays = validDates.Count;
@@ -113,6 +125,15 @@ public class StreakService(AppDbContext db) : IStreakService
         return streak;
     }
 
+    /// <summary>
+    /// Max chapters returned by GetHistoryAsync. Keeps the response
+    /// bounded for users with years of daily entries — the in-memory
+    /// computation walks every date but the wire payload stays small.
+    /// The streak-history UI renders all returned chapters; if you need
+    /// more, add explicit pagination.
+    /// </summary>
+    private const int MaxHistoryChapters = 100;
+
     public async Task<List<StreakHistoryItem>> GetHistoryAsync(Guid userId)
     {
         // Mirrors the data-prep + grouping logic of ComputeLongestStreak,
@@ -130,6 +151,7 @@ public class StreakService(AppDbContext db) : IStreakService
         // Distinct entry dates (multiple entries on the same calendar day
         // count as one day in the streak).
         var validDates = await db.Entries
+            .AsNoTracking()
             .Where(e => e.UserId == userId && e.DeletedAt == null)
             .Select(e => e.EntryDate)
             .Distinct()
@@ -141,6 +163,7 @@ public class StreakService(AppDbContext db) : IStreakService
         // (distinct from "n days" — useful when the user wrote multiple
         // entries on a single day during a chapter).
         var entriesPerDay = await db.Entries
+            .AsNoTracking()
             .Where(e => e.UserId == userId && e.DeletedAt == null)
             .GroupBy(e => e.EntryDate)
             .Select(g => new { Date = g.Key, Count = g.Count() })
@@ -148,6 +171,7 @@ public class StreakService(AppDbContext db) : IStreakService
         var entryCountByDate = entriesPerDay.ToDictionary(x => x.Date, x => x.Count);
 
         var pauses = await db.Pauses
+            .AsNoTracking()
             .Where(p => p.UserId == userId && p.Status == PauseStatus.Active)
             .Select(p => new { p.StartDate, p.EndDate })
             .ToListAsync();
@@ -221,6 +245,7 @@ public class StreakService(AppDbContext db) : IStreakService
 
         var result = ranges
             .OrderByDescending(r => r.End)  // most recent chapter first
+            .Take(MaxHistoryChapters)
             .Select((r, idx) => new StreakHistoryItem(
                 r.Start,
                 r.End,

@@ -13,9 +13,16 @@ namespace CreatorCompanion.Api.Api.Controllers;
 [Authorize]
 public class UsersController(AppDbContext db, IStorageService storage, IImageProcessor imageProcessor) : ControllerBase
 {
+    // HEIC/HEIF allowed because iPhone defaults to it. ImageSharp can't
+    // decode HEIC natively, but UploadProfileImage runs through
+    // imageProcessor.ProcessAsync which would reject — so iPhone users
+    // got a silent "this format isn't supported" loop. The entry-media
+    // path already accepts these and falls back to storing the original;
+    // mirror that here. (Server still re-encodes via JPEG for the
+    // formats ImageSharp does decode.)
     private static readonly HashSet<string> AllowedImageTypes = new(StringComparer.OrdinalIgnoreCase)
     {
-        "image/jpeg", "image/png", "image/webp"
+        "image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"
     };
     private const long MaxProfileImageBytes = 5 * 1024 * 1024; // 5 MB raw upload — server downscales to 512px²
     private const int  ProfileImageMaxSidePx = 512;
@@ -101,6 +108,17 @@ public class UsersController(AppDbContext db, IStorageService storage, IImagePro
 
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
         user.UpdatedAt = DateTime.UtcNow;
+
+        // Revoke every other active refresh token for this user. A
+        // password change is a security signal — typically "I think
+        // someone got into my account" — so other devices' refresh
+        // tokens shouldn't keep working. ResetPasswordAsync already
+        // does this; ChangePasswordAsync was an inconsistent gap.
+        var now = DateTime.UtcNow;
+        await db.RefreshTokens
+            .Where(rt => rt.UserId == UserId && rt.RevokedAt == null)
+            .ExecuteUpdateAsync(s => s.SetProperty(r => r.RevokedAt, now));
+
         await db.SaveChangesAsync();
 
         return Ok(new { message = "Password updated successfully." });
@@ -159,7 +177,7 @@ public class UsersController(AppDbContext db, IStorageService storage, IImagePro
             return BadRequest(new { error = "No file uploaded." });
 
         if (!AllowedImageTypes.Contains(file.ContentType))
-            return BadRequest(new { error = "Only JPEG, PNG, or WebP images are allowed." });
+            return BadRequest(new { error = "Only JPEG, PNG, WebP, or HEIC images are allowed." });
 
         if (file.Length > MaxProfileImageBytes)
             return BadRequest(new { error = "Image must be 5 MB or smaller." });
@@ -170,15 +188,26 @@ public class UsersController(AppDbContext db, IStorageService storage, IImagePro
         // Downscale + recompress through ImageSharp so we never store
         // multi-megabyte phone-camera originals as someone's avatar.
         // 512px on the longest side keeps the ~30 KB after JPEG re-encode.
+        // HEIC/HEIF can't be decoded by ImageSharp (no native codec
+        // ships with it) — fall back to storing the original; the
+        // browser handles display. Same pattern as the entry-media path.
         string newPath;
         await using (var source = file.OpenReadStream())
         {
-            var (processed, processedType) =
-                await imageProcessor.ProcessAsync(source, ProfileImageMaxSidePx);
-            await using (processed)
+            if (imageProcessor.CanProcess(file.ContentType))
             {
-                var fileName = Path.ChangeExtension($"avatar_{file.FileName}", ".jpg");
-                newPath = await storage.SaveAsync(processed, fileName, processedType);
+                var (processed, processedType) =
+                    await imageProcessor.ProcessAsync(source, ProfileImageMaxSidePx);
+                await using (processed)
+                {
+                    var fileName = Path.ChangeExtension($"avatar_{file.FileName}", ".jpg");
+                    newPath = await storage.SaveAsync(processed, fileName, processedType);
+                }
+            }
+            else
+            {
+                var fileName = $"avatar_{file.FileName}";
+                newPath = await storage.SaveAsync(source, fileName, file.ContentType);
             }
         }
 
