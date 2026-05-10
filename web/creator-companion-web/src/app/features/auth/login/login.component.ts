@@ -126,9 +126,24 @@ export class LoginComponent {
         }
       },
       error: err => {
-        this.error.set(err?.error?.error ?? 'Sign in failed. Please try again.');
+        // Differentiate so users don't reset their password thinking
+        // they have a wrong-credentials problem when the real cause
+        // is a cold-start 5xx or a rate-limit window.
+        this.error.set(this.describeLoginError(err));
         this.loading.set(false);
       }
     });
+  }
+
+  private describeLoginError(err: any): string {
+    const status: number | undefined = err?.status;
+    // 0 covers fetch network errors (offline, DNS, CORS)
+    if (status === 0 || status === undefined)
+      return "Couldn't reach the server. Check your connection and try again.";
+    if (status === 401) return 'Email or password is incorrect.';
+    if (status === 429) return 'Too many attempts. Please wait a moment and try again.';
+    if (status >= 500)  return 'The server is waking up. Try again in a moment.';
+    // Fall back to the server-provided message when available.
+    return err?.error?.error ?? 'Sign in failed. Please try again.';
   }
 }

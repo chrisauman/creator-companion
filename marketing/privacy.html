@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy — Creator Companion</title>
+  <meta name="description" content="How Creator Companion handles your data. Short, plain English, no dark patterns.">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@700;800&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,600;1,700;1,800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="canonical" href="https://www.creatorcompanionapp.com/privacy.html">
+  <style>
+    .legal {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 4rem 1.5rem 5rem;
+    }
+    .legal h1 { font-size: 2rem; font-weight: 800; letter-spacing: -.02em; margin-bottom: .5rem; }
+    .legal .updated { font-size: .875rem; color: var(--text-2); margin-bottom: 2rem; }
+    .legal h2 { font-size: 1.25rem; font-weight: 700; margin: 2rem 0 .75rem; }
+    .legal p, .legal ul { font-size: 1rem; line-height: 1.7; color: var(--ink, #1a1d24); margin-bottom: 1rem; }
+    .legal ul { padding-left: 1.25rem; }
+    .legal li { margin-bottom: .35rem; }
+    .legal a { color: var(--accent); text-decoration: underline; }
+  </style>
+</head>
+<body class="page-inner">
+
+  <!-- Nav -->
+  <nav class="nav" id="nav">
+    <div class="nav__inner">
+      <a href="index.html" class="nav__logo">
+        <img src="logo-icon.png" alt="" class="nav__logo-icon">
+        <span class="nav__logo-name">Creator Companion</span>
+      </a>
+      <div class="nav__links">
+        <a href="pricing.html">Pricing</a>
+        <a href="pricing.html#faq">FAQ</a>
+        <a href="https://app.creatorcompanionapp.com/login">Log in</a>
+        <a href="signup.html" class="btn btn--primary btn--sm">Start free trial</a>
+      </div>
+      <button class="nav__hamburger" id="hamburger" aria-label="Open menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+  <div class="mobile-menu" id="mobileMenu">
+    <a href="pricing.html">Pricing</a>
+    <a href="pricing.html#faq">FAQ</a>
+    <a href="https://app.creatorcompanionapp.com/login">Log in</a>
+    <a href="signup.html" class="btn btn--primary btn--sm">Start free trial</a>
+  </div>
+
+  <main class="legal">
+    <h1>Privacy Policy</h1>
+    <p class="updated">Last updated: May 10, 2026</p>
+
+    <p>Creator Companion is a private daily journal. We try to write this policy the way we'd want one written for us — short, plain, and honest about what we do and don't do with your data.</p>
+
+    <h2>What we collect</h2>
+    <ul>
+      <li><strong>Account info:</strong> first name, last name, email address, password (hashed via BCrypt — we never see it), and the time zone you set so streaks match your local day.</li>
+      <li><strong>Your entries:</strong> the journal text, photos, tags, moods, and to-do items you create.</li>
+      <li><strong>Subscription data:</strong> when you subscribe, Stripe processes payment. We store the Stripe customer/subscription IDs, never your card number.</li>
+      <li><strong>Operational logs:</strong> request IPs, timestamps, and audit events (sign-ins, password resets) — for security and abuse detection.</li>
+      <li><strong>Push subscriptions:</strong> if you enable notifications, the browser-issued push endpoint so we can deliver reminders.</li>
+    </ul>
+
+    <h2>What we don't do</h2>
+    <ul>
+      <li>We don't sell your data. Ever.</li>
+      <li>We don't read your entries. They exist for one person — you.</li>
+      <li>We don't show ads or run trackers. There is no advertising layer.</li>
+      <li>We don't use your content to train models.</li>
+      <li>We don't share your data with third parties except the service providers below.</li>
+    </ul>
+
+    <h2>Service providers</h2>
+    <p>We use a small set of providers to run the service. Each receives only the data they need:</p>
+    <ul>
+      <li><strong>Railway</strong> — hosts the API and PostgreSQL database (US region).</li>
+      <li><strong>Cloudflare R2</strong> — stores your uploaded photos.</li>
+      <li><strong>Vercel</strong> — serves the web app and marketing site.</li>
+      <li><strong>Stripe</strong> — handles all payment processing. We never see your card details.</li>
+      <li><strong>Resend</strong> — sends transactional emails (welcome, trial reminders, password resets).</li>
+    </ul>
+
+    <h2>Your rights</h2>
+    <ul>
+      <li><strong>Export:</strong> download all your entries any time, in JSON or plain text.</li>
+      <li><strong>Delete:</strong> delete your account from the account page. Your entries, photos, and Stripe subscription are removed; we purge the data within 30 days from backups.</li>
+      <li><strong>Access / correction:</strong> email us and we'll help you access or correct anything in your account.</li>
+    </ul>
+
+    <h2>Security</h2>
+    <p>Traffic is encrypted in transit (HTTPS). Passwords are hashed with BCrypt — we can't read them and we can't recover them. JWT access tokens live in memory; refresh tokens live in HttpOnly Secure cookies. We rate-limit auth endpoints to slow brute-force attempts.</p>
+
+    <h2>Cookies</h2>
+    <p>We use one cookie: a single HttpOnly Secure cookie that holds your refresh token so you stay signed in across sessions. No third-party tracking cookies, no analytics cookies, no advertising cookies.</p>
+
+    <h2>Contact</h2>
+    <p>Questions? Email <a href="mailto:hello@creatorcompanionapp.com">hello@creatorcompanionapp.com</a>.</p>
+
+    <p style="margin-top:3rem;font-size:.875rem;color:var(--text-2)">This is a placeholder policy intended to be honest about current practice. We'll revise as the product evolves; if you have an account, we'll email you before any material change.</p>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container footer__inner">
+      <span class="footer__logo footer__logo--text">Creator Companion</span>
+      <div class="footer__links">
+        <a href="index.html">Home</a>
+        <a href="pricing.html">Pricing</a>
+        <a href="privacy.html">Privacy</a>
+        <a href="terms.html">Terms</a>
+      </div>
+      <span class="footer__copy">© 2026 Creator Companion</span>
+    </div>
+  </footer>
+
+  <script>
+    const hamburger = document.getElementById('hamburger');
+    const menu = document.getElementById('mobileMenu');
+    hamburger.addEventListener('click', () => {
+      hamburger.classList.toggle('open');
+      menu.classList.toggle('open');
+    });
+    menu.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+      hamburger.classList.remove('open');
+      menu.classList.remove('open');
+    }));
+  </script>
+</body>
+</html>

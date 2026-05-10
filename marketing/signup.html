@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sign up — Creator Companion</title>
-  <meta name="description" content="Create your free Creator Companion account. No credit card required.">
+  <meta name="description" content="Start your 10-day free trial. No credit card required. Then $5/month or $50/year.">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,12 +14,12 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://www.creatorcompanionapp.com/signup.html">
   <meta property="og:title" content="Sign up — Creator Companion">
-  <meta property="og:description" content="Create your free Creator Companion account. No credit card required.">
+  <meta property="og:description" content="Start your 10-day free trial. No credit card required.">
   <meta property="og:image" content="https://www.creatorcompanionapp.com/og-image.png">
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Sign up — Creator Companion">
-  <meta name="twitter:description" content="Create your free Creator Companion account. No credit card required.">
+  <meta name="twitter:description" content="Start your 10-day free trial. No credit card required.">
   <meta name="twitter:image" content="https://www.creatorcompanionapp.com/og-image.png">
   <link rel="canonical" href="https://www.creatorcompanionapp.com/signup.html">
   <style>
@@ -37,42 +37,24 @@
       text-align: center;
       margin-bottom: 2rem;
     }
-    .signup-eyebrow .nav__logo {
-      justify-content: center;
-      font-size: 1.125rem;
-      margin-bottom: .5rem;
-      display: flex;
-    }
     .signup-eyebrow p {
-      font-size: .9375rem;
+      font-size: 1rem;
+      line-height: 1.6;
       color: var(--text-2);
     }
-    .plan-toggle {
-      display: flex;
-      background: var(--surface-2);
-      border: 1px solid var(--border);
+    .trial-summary {
+      background: var(--accent-light);
+      border: 1.5px solid var(--accent);
       border-radius: var(--radius-md);
-      padding: .25rem;
+      padding: .875rem 1rem;
       margin-bottom: 1.5rem;
-      gap: .25rem;
+      font-size: .9375rem;
+      color: var(--ink);
+      line-height: 1.55;
     }
-    .plan-toggle__btn {
-      flex: 1; padding: .5rem; border: none; background: transparent;
-      border-radius: var(--radius-sm); font-family: var(--font);
-      font-size: .875rem; font-weight: 600; cursor: pointer;
-      color: var(--text-2); transition: background .15s, color .15s;
-    }
-    .plan-toggle__btn.active {
-      background: var(--surface); color: var(--accent-dark);
-      box-shadow: var(--shadow-sm);
-    }
-    .plan-summary {
-      background: var(--accent-light); border: 1.5px solid var(--accent);
-      border-radius: var(--radius-md); padding: .875rem 1rem;
-      margin-bottom: 1.5rem; font-size: .875rem; color: var(--accent-dark);
-      font-weight: 500;
-    }
-    .plan-summary strong { font-weight: 700; }
+    .trial-summary strong { font-weight: 700; color: var(--accent-dark, var(--accent)); }
+    .name-row { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+    @media (max-width: 480px) { .name-row { grid-template-columns: 1fr; } }
     .tz-note {
       font-size: .8125rem; color: var(--text-3); margin-top: .2rem;
     }
@@ -86,7 +68,6 @@
       <a href="index.html" class="nav__logo">
         <img src="logo-icon.png" alt="" class="nav__logo-icon">
         <span class="nav__logo-name">Creator Companion</span>
-        <img src="logo-full.png" alt="Creator Companion" class="nav__logo-full">
       </a>
       <div class="nav__links">
         <a href="pricing.html">Pricing</a>
@@ -111,18 +92,11 @@
     </div>
 
     <div class="form-card">
-      <h1 class="form-title">Create your account</h1>
-      <p class="form-sub">Free to start. No credit card required.</p>
+      <h1 class="form-title">Start your free trial</h1>
+      <p class="form-sub">10 days, every feature. No credit card required.</p>
 
-      <!-- Plan toggle -->
-      <div class="plan-toggle">
-        <button class="plan-toggle__btn active" id="btn-free" onclick="selectPlan('free')">Free</button>
-        <button class="plan-toggle__btn" id="btn-paid" onclick="selectPlan('paid')">Paid — $3/mo</button>
-        <button class="plan-toggle__btn" id="btn-annual" onclick="selectPlan('annual')">Annual — $30/yr</button>
-      </div>
-
-      <div class="plan-summary" id="plan-summary">
-        <strong>Free plan:</strong> 1 entry/day · 100 words · 1 photo · always free
+      <div class="trial-summary">
+        <strong>10-day free trial</strong> — then $5/month or $50/year if you keep going. Cancel any time, no fees.
       </div>
 
       <div id="form-error" class="form-error"></div>
@@ -130,13 +104,21 @@
 
       <form id="signup-form" novalidate>
 
-        <div class="field">
-          <label for="username">Username</label>
-          <input type="text" id="username" name="username"
-            placeholder="yourcreativename"
-            autocomplete="username" autocorrect="off" autocapitalize="off"
-            spellcheck="false" required minlength="3" maxlength="30">
-          <span class="field-hint">Letters, numbers, and underscores only</span>
+        <div class="name-row">
+          <div class="field">
+            <label for="firstName">First name</label>
+            <input type="text" id="firstName" name="firstName"
+              placeholder="Alex"
+              autocomplete="given-name" autocorrect="off" autocapitalize="words"
+              required minlength="1" maxlength="40">
+          </div>
+          <div class="field">
+            <label for="lastName">Last name</label>
+            <input type="text" id="lastName" name="lastName"
+              placeholder="Rivera"
+              autocomplete="family-name" autocorrect="off" autocapitalize="words"
+              required minlength="1" maxlength="40">
+          </div>
         </div>
 
         <div class="field">
@@ -163,28 +145,18 @@
 
         <hr class="form-divider">
 
-        <!-- Billing section — hidden for free -->
-        <div id="billing-section" style="display:none">
-          <p style="font-size:.875rem;font-weight:600;color:var(--text-2);margin-bottom:1rem">
-            💳 Payment details
-          </p>
-          <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-md);padding:1rem;text-align:center;color:var(--text-3);font-size:.875rem">
-            Stripe payment integration coming soon.<br>You'll be signed up on the free plan for now.
-          </div>
-          <hr class="form-divider">
-        </div>
-
         <button type="submit" class="btn btn--primary btn--full btn--lg" id="submit-btn">
-          Create free account
+          Start free trial
         </button>
 
         <p class="form-footer">
-          Already have an account? <a href="#" id="login-link">Sign in →</a>
+          Already have an account? <a href="https://app.creatorcompanionapp.com/login">Sign in →</a>
         </p>
 
         <p style="font-size:.75rem;color:var(--text-3);text-align:center;margin-top:1rem;line-height:1.6">
           By creating an account you agree to our
-          <a href="#">Privacy Policy</a>. Your data is private and belongs to you.
+          <a href="terms.html">Terms</a> and
+          <a href="privacy.html">Privacy Policy</a>. Your data is private and belongs to you.
         </p>
 
       </form>
@@ -194,11 +166,12 @@
   <!-- Footer -->
   <footer class="footer">
     <div class="container footer__inner">
-      <span class="footer__logo"><img src="logo-full.png" alt="Creator Companion"></span>
+      <span class="footer__logo footer__logo--text">Creator Companion</span>
       <div class="footer__links">
         <a href="index.html">Home</a>
         <a href="pricing.html">Pricing</a>
-        <a href="#">Privacy</a>
+        <a href="privacy.html">Privacy</a>
+        <a href="terms.html">Terms</a>
       </div>
       <span class="footer__copy">© 2026 Creator Companion</span>
     </div>
@@ -206,32 +179,8 @@
 
   <script>
     // ── Config ──────────────────────────────────────────────────────────────
-    // Point this at your live API URL once deployed
     const API_BASE = 'https://api.creatorcompanionapp.com/v1';
     const APP_URL  = 'https://app.creatorcompanionapp.com';
-
-    // ── Plan toggle ─────────────────────────────────────────────────────────
-    let selectedPlan = 'free';
-    const summaries = {
-      free:   '<strong>Free plan:</strong> 1 entry/day · 100 words · 1 photo · always free',
-      paid:   '<strong>Paid plan — $3/month:</strong> 5 entries/day · 2,500 words · 20 photos · all features',
-      annual: '<strong>Annual plan — $30/year:</strong> Everything in Paid · save 2 months free'
-    };
-    const submitLabels = {
-      free:   'Create free account',
-      paid:   'Continue to payment',
-      annual: 'Continue to payment'
-    };
-
-    function selectPlan(plan) {
-      selectedPlan = plan;
-      document.querySelectorAll('.plan-toggle__btn').forEach(b => b.classList.remove('active'));
-      document.getElementById('btn-' + plan).classList.add('active');
-      document.getElementById('plan-summary').innerHTML = summaries[plan];
-      document.getElementById('submit-btn').textContent = submitLabels[plan];
-      document.getElementById('billing-section').style.display =
-        plan === 'free' ? 'none' : 'block';
-    }
 
     // ── Timezone picker ─────────────────────────────────────────────────────
     const TZ_SELECT = document.getElementById('timezone');
@@ -258,10 +207,11 @@
       TZ_SELECT.appendChild(opt);
     });
 
-    // Set login link to point at the app
-    document.getElementById('login-link').href = APP_URL + '/login';
-
     // ── Form submission ─────────────────────────────────────────────────────
+    // POST shape must match RegisterRequest in the backend: FirstName +
+    // LastName + Email + Password + TimeZoneId. The old form sent `username`
+    // which the backend silently dropped (UserName was removed per the
+    // historical refactor noted in CLAUDE.md), so signups failed.
     document.getElementById('signup-form').addEventListener('submit', async function(e) {
       e.preventDefault();
       const errEl = document.getElementById('form-error');
@@ -271,13 +221,13 @@
       errEl.style.display = 'none';
       sucEl.style.display = 'none';
 
-      const username = document.getElementById('username').value.trim();
-      const email    = document.getElementById('email').value.trim();
-      const password = document.getElementById('password').value;
-      const timezone = document.getElementById('timezone').value;
+      const firstName = document.getElementById('firstName').value.trim();
+      const lastName  = document.getElementById('lastName').value.trim();
+      const email     = document.getElementById('email').value.trim();
+      const password  = document.getElementById('password').value;
+      const timezone  = document.getElementById('timezone').value;
 
-      // Client-side validation
-      if (!username || !email || !password || !timezone) {
+      if (!firstName || !lastName || !email || !password || !timezone) {
         errEl.textContent = 'Please fill in all fields.';
         errEl.style.display = 'block';
         return;
@@ -296,20 +246,21 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-          body: JSON.stringify({ username, email, password, timeZoneId: timezone })
+          body: JSON.stringify({ firstName, lastName, email, password, timeZoneId: timezone })
         });
 
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
 
         if (!res.ok) {
           errEl.textContent = data.error ?? 'Something went wrong. Please try again.';
           errEl.style.display = 'block';
           btn.disabled = false;
-          btn.textContent = submitLabels[selectedPlan];
+          btn.textContent = 'Start free trial';
           return;
         }
 
-        // Store access token and redirect to the app
+        // Hand the access token off to the app via sessionStorage so the
+        // user lands authenticated in onboarding without a second login.
         if (data.accessToken) {
           sessionStorage.setItem('cc_access_token', data.accessToken);
         }
@@ -325,7 +276,7 @@
         errEl.textContent = 'Could not connect. Please check your connection and try again.';
         errEl.style.display = 'block';
         btn.disabled = false;
-        btn.textContent = submitLabels[selectedPlan];
+        btn.textContent = 'Start free trial';
       }
     });
   </script>

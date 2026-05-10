@@ -156,7 +156,7 @@ import { MoodIconComponent } from '../../../shared/mood-icon/mood-icon.component
       display: flex;
       align-items: center;
       gap: .5rem;
-      padding: .875rem 1.125rem;
+      padding: .875rem 1.5rem;
       border-bottom: 1px solid var(--color-border);
       background: var(--color-surface);
       position: sticky; top: 0;

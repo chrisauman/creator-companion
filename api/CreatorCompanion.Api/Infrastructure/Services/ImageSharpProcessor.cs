@@ -22,6 +22,14 @@ public sealed class ImageSharpProcessor : IImageProcessor
         "image/jpeg", "image/png", "image/webp"
     };
 
+    // Decompression-bomb guard: reject any image whose pixel count
+    // exceeds this before we let ImageSharp allocate a full buffer.
+    // 50 megapixels covers any phone/DSLR with headroom; anything
+    // bigger is almost certainly a crafted file aimed at OOMing the
+    // process. (Image.Identify only reads the header so this check
+    // is cheap.)
+    private const long MaxPixelCount = 50L * 1024 * 1024;
+
     public bool CanProcess(string contentType) => Supported.Contains(contentType);
 
     public async Task<(Stream Stream, string ContentType)> ProcessAsync(
@@ -29,6 +37,29 @@ public sealed class ImageSharpProcessor : IImageProcessor
         int maxLongestSide,
         int jpegQuality = 82)
     {
+        // Identify header-only before LoadAsync — bails on a crafted
+        // 100KB PNG that would decompress to multi-GB.
+        var startPos = source.CanSeek ? source.Position : 0;
+        ImageInfo info;
+        try
+        {
+            info = await Image.IdentifyAsync(source);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException("Unsupported or malformed image file.", ex);
+        }
+
+        if (info is null)
+            throw new InvalidOperationException("Unsupported or malformed image file.");
+
+        if ((long)info.Width * info.Height > MaxPixelCount)
+            throw new InvalidOperationException(
+                $"Image is too large to process ({info.Width}x{info.Height}).");
+
+        // Identify consumed the header; rewind before LoadAsync.
+        if (source.CanSeek) source.Position = startPos;
+
         using var image = await Image.LoadAsync(source);
 
         // Auto-rotate based on EXIF orientation — required so photos

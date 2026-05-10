@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
-import { ApiService } from '../../../core/services/api.service';
 
 @Component({
   selector: 'app-register',
@@ -20,20 +19,14 @@ import { ApiService } from '../../../core/services/api.service';
           <p class="text-muted text-sm">Build a creative habit that lasts.</p>
         </div>
 
-        <!-- Plan selector -->
-        <div class="plan-toggle">
-          <button class="plan-btn" [class.active]="plan() === 'free'" (click)="plan.set('free')">Free</button>
-          <button class="plan-btn" [class.active]="plan() === 'monthly'" (click)="plan.set('monthly')">$3 / month</button>
-          <button class="plan-btn" [class.active]="plan() === 'annual'" (click)="plan.set('annual')">$30 / year</button>
-        </div>
+        <!-- 10-day free trial summary — single plan, trial-only model.
+             The old free/monthly/annual selector advertised $3/$30 prices
+             that don't match Stripe and a free tier that the backend no
+             longer supports (EntitlementService.HasAccess = trial || paid).
+             Stripe Checkout happens after the trial ends, not at signup. -->
         <div class="plan-summary">
-          @if (plan() === 'free') {
-            <strong>Free:</strong> 1 entry/day · 100 words · always free
-          } @else if (plan() === 'monthly') {
-            <strong>Paid — $3/mo:</strong> 5 entries/day · 2,500 words · all features
-          } @else {
-            <strong>Annual — $30/yr:</strong> Everything in Paid · save 2 months
-          }
+          <strong>10-day free trial</strong> — every feature, no credit card.
+          After your trial, keep going for $5/month or $50/year.
         </div>
 
         <div *ngIf="error()" class="alert alert--error">{{ error() }}</div>
@@ -105,7 +98,7 @@ import { ApiService } from '../../../core/services/api.service';
           </div>
 
           <button class="btn btn--primary btn--full btn--lg" type="submit" [disabled]="loading()">
-            {{ loading() ? (plan() === 'free' ? 'Creating account…' : 'Creating account…') : (plan() === 'free' ? 'Create free account' : 'Continue to payment') }}
+            {{ loading() ? 'Creating account…' : 'Start free trial' }}
           </button>
         </form>
 
@@ -144,35 +137,18 @@ import { ApiService } from '../../../core/services/api.service';
     }
     h1 { font-size: 1.375rem; margin-bottom: .25rem; }
 
-    .plan-toggle {
-      display: flex; gap: .25rem;
-      background: var(--color-surface-2);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-md);
-      padding: .25rem;
-      margin-bottom: .875rem;
-    }
-    .plan-btn {
-      flex: 1; padding: .5rem .25rem;
-      border: none; background: transparent;
-      border-radius: var(--radius-sm);
-      font-family: var(--font-sans); font-size: .8125rem; font-weight: 600;
-      cursor: pointer; color: var(--color-text-2);
-      transition: background .15s, color .15s;
-    }
-    .plan-btn.active {
-      background: var(--color-accent-dark); color: #fff;
-      box-shadow: var(--shadow-sm);
-    }
+    /* Single trial-summary panel (no toggle — single plan, trial-only). */
     .plan-summary {
       background: var(--color-accent-light);
       border: 1px solid var(--color-accent);
       border-radius: var(--radius-md);
-      padding: .625rem .875rem;
-      font-size: .8125rem;
-      color: var(--color-accent-dark);
+      padding: .75rem .875rem;
+      font-size: .9375rem;
+      line-height: 1.5;
+      color: var(--color-text);
       margin-bottom: 1.25rem;
     }
+    .plan-summary strong { color: var(--color-accent-dark); font-weight: 700; }
     /* First/last name share a row on wide enough screens; stack on phones. */
     .name-row {
       display: grid;
@@ -186,14 +162,12 @@ import { ApiService } from '../../../core/services/api.service';
 })
 export class RegisterComponent {
   private auth   = inject(AuthService);
-  private api    = inject(ApiService);
   private router = inject(Router);
 
   firstName = '';
   lastName  = '';
   email     = '';
   password  = '';
-  plan      = signal<'free' | 'monthly' | 'annual'>('free');
   loading   = signal(false);
   error     = signal('');
 
@@ -215,27 +189,11 @@ export class RegisterComponent {
 
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 
+    // Trial-only signup: never bounces through Stripe Checkout. The 10-day
+    // trial is created server-side in AuthService.RegisterAsync; conversion
+    // to a paid subscription happens later from the in-app paywall.
     this.auth.register(this.firstName.trim(), this.lastName.trim(), this.email, this.password, tz).subscribe({
-      next: () => {
-        if (this.plan() === 'free') {
-          this.router.navigate(['/onboarding']);
-          return;
-        }
-        // Paid plan: get config then redirect to Stripe Checkout
-        this.api.getStripeConfig().subscribe({
-          next: cfg => {
-            const priceId = this.plan() === 'monthly' ? cfg.monthlyPriceId : cfg.annualPriceId;
-            this.api.createCheckoutSession(priceId).subscribe({
-              next: res => { window.location.href = res.url; },
-              error: () => {
-                // Fall back to onboarding on Stripe error
-                this.router.navigate(['/onboarding']);
-              }
-            });
-          },
-          error: () => this.router.navigate(['/onboarding'])
-        });
-      },
+      next: () => this.router.navigate(['/onboarding']),
       error: err => {
         this.error.set(err?.error?.error ?? 'Registration failed. Please try again.');
         this.loading.set(false);

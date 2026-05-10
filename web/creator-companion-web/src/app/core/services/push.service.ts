@@ -6,10 +6,19 @@ export class PushService {
   private api = inject(ApiService);
 
   get isSupported(): boolean {
-    return 'serviceWorker' in navigator && 'PushManager' in window;
+    return typeof navigator !== 'undefined'
+        && 'serviceWorker' in navigator
+        && typeof window !== 'undefined'
+        && 'PushManager' in window
+        && typeof Notification !== 'undefined';
   }
 
+  /** Centralized permission read with a `typeof` guard. Reading
+   *  `Notification.permission` directly throws ReferenceError in older
+   *  Safari and non-secure contexts; every caller should go through
+   *  this method instead of touching the global. */
   async getPermissionState(): Promise<NotificationPermission> {
+    if (typeof Notification === 'undefined') return 'denied';
     return Notification.permission;
   }
 

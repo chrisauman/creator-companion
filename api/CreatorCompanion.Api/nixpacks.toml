@@ -1,5 +1,7 @@
 [phases.setup]
-nixPkgs = ["dotnet-sdk_9"]
+# Project targets net10.0; railway.json selects Dockerfile so this
+# file is unused today, but keep it in sync as a fallback path.
+nixPkgs = ["dotnet-sdk_10"]
 
 [phases.build]
 cmds = ["dotnet publish -c Release -o out"]

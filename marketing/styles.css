@@ -74,20 +74,18 @@ a:hover { text-decoration: underline; }
 }
 .nav__logo { display: flex; align-items: center; gap: .625rem; text-decoration: none; }
 
-/* Dark hero: icon + white text name */
+/* Brand wordmark is live Fraunces 800 text (per CLAUDE.md — never a PNG).
+   Dark hero: white text. Scrolled / inner pages: dark ink. */
 .nav__logo-icon { height: 30px; width: auto; display: block; }
 .nav__logo-name {
   font-family: 'Fraunces', Georgia, serif;
-  font-size: 1rem; font-weight: 700; color: #fff;
-  white-space: nowrap; letter-spacing: .01em;
+  font-size: 1.0625rem; font-weight: 800; color: #fff;
+  white-space: nowrap; letter-spacing: -.01em;
   transition: color .3s;
 }
-.nav__logo-full { display: none; }
 
-/* Scrolled white nav: hide icon + text, show full logo (white bg matches) */
-.nav--scrolled .nav__logo-icon { display: none; }
-.nav--scrolled .nav__logo-name { display: none; }
-.nav--scrolled .nav__logo-full { display: block; height: 26px; width: auto; }
+/* Scrolled white nav: keep live text, swap to dark ink. */
+.nav--scrolled .nav__logo-name { color: var(--ink); }
 
 .nav__links { display: flex; align-items: center; gap: 0.25rem; }
 .nav__links a {
@@ -749,6 +747,11 @@ a:hover { text-decoration: underline; }
   display: grid; grid-template-columns: 1fr 1fr;
   gap: 1.5rem; max-width: 780px; margin: 0 auto;
 }
+/* Single-plan layout — trial-only model. One card, centered, wider. */
+.plans--single {
+  grid-template-columns: 1fr;
+  max-width: 460px;
+}
 
 .plan {
   background: var(--white);
@@ -892,6 +895,14 @@ a:hover { text-decoration: underline; }
   border-bottom: 1px solid rgba(255,255,255,.06);
 }
 .site-footer__logo img { height: 22px; filter: brightness(0) invert(1); opacity: .6; }
+/* Live-text variant — replaces the PNG wordmark per CLAUDE.md brand rule. */
+.site-footer__logo--text {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 1.0625rem; font-weight: 800; letter-spacing: -.01em;
+  color: rgba(255,255,255,.6);
+  text-decoration: none;
+}
+.site-footer__logo--text:hover { color: rgba(255,255,255,.9); text-decoration: none; }
 .site-footer__nav { display: flex; gap: 2rem; flex-wrap: wrap; }
 .site-footer__nav a { font-size: .875rem; color: rgba(255,255,255,.35); transition: color .15s; text-decoration: none; }
 .site-footer__nav a:hover { color: rgba(255,255,255,.7); text-decoration: none; }
@@ -916,10 +927,11 @@ body.page-inner .nav__links a:hover { color: var(--text); background: var(--off)
 body.page-inner .nav__links .btn { background: var(--ink); color: #fff !important; }
 body.page-inner .nav__links .btn:hover { background: var(--ink-3) !important; color: #fff !important; }
 body.page-inner .nav__hamburger span { background: var(--text); }
-/* Inner pages always have white nav — always show full logo, hide icon + name */
-body.page-inner .nav__logo-icon { display: none; }
-body.page-inner .nav__logo-name { display: none; }
-body.page-inner .nav__logo-full { display: block; height: 26px; width: auto; }
+/* Inner pages always have white nav — keep the icon + live wordmark visible,
+   just swap the text color to dark. Live Fraunces beats a PNG raster on any
+   hi-DPI display, and avoids the brand-wordmark-as-PNG violation called out
+   in CLAUDE.md. */
+body.page-inner .nav__logo-name { color: var(--ink); }
 
 /* Page hero */
 .page-hero {
@@ -1077,6 +1089,11 @@ details[open] .faq-q::after { content: '−'; }
 .footer { background: var(--ink-2); border-top: 1px solid rgba(255,255,255,.06); padding: 3rem 0; }
 .footer__inner { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; flex-wrap: wrap; }
 .footer__logo img { height: 22px; filter: brightness(0) invert(1); opacity: .5; }
+.footer__logo--text {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 1.0625rem; font-weight: 800; letter-spacing: -.01em;
+  color: rgba(255,255,255,.5);
+}
 .footer__links { display: flex; gap: 2rem; flex-wrap: wrap; }
 .footer__links a { font-size: .875rem; color: rgba(255,255,255,.3); text-decoration: none; transition: color .15s; }
 .footer__links a:hover { color: rgba(255,255,255,.7); }

@@ -13,4 +13,11 @@ public interface IEntryService
     Task<bool> ToggleFavoriteAsync(Guid userId, Guid entryId);
     Task<StreakResponse> GetStreakAsync(Guid userId);
     Task HardDeleteAsync(Guid userId, Guid entryId);
+
+    /// <summary>
+    /// Hard-deletes every soft-deleted entry older than the 48h
+    /// recovery window, removing media from storage in the process.
+    /// Called by ReminderBackgroundService on every tick.
+    /// </summary>
+    Task<int> PurgeExpiredTrashAsync(CancellationToken ct = default);
 }

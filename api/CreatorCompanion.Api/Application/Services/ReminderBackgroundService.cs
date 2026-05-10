@@ -24,65 +24,101 @@ public class ReminderBackgroundService(
 
         while (!stoppingToken.IsCancellationRequested)
         {
-            try { await ProcessRemindersAsync(); }
+            try { await ProcessRemindersAsync(stoppingToken); }
+            catch (OperationCanceledException) { break; }
             catch (Exception ex) { logger.LogError(ex, "Error processing reminders."); }
 
             // Streak-threatened push runs in the same loop. Independent
             // path with its own dedupe (User.StreakThreatenedNotifiedFor),
             // so a failure here doesn't affect reminders and vice versa.
-            try { await ProcessThreatenedNotificationsAsync(); }
+            try { await ProcessThreatenedNotificationsAsync(stoppingToken); }
+            catch (OperationCanceledException) { break; }
             catch (Exception ex) { logger.LogError(ex, "Error processing streak-threatened notifications."); }
 
             // Trial lifecycle emails (3-day reminder, 1-day reminder,
             // expired notification). Each has its own dedupe column so
             // a single user gets at most one email per cadence. Run
             // every minute is overkill but cheap — one query per tick.
-            try { await ProcessTrialEmailsAsync(); }
+            try { await ProcessTrialEmailsAsync(stoppingToken); }
+            catch (OperationCanceledException) { break; }
             catch (Exception ex) { logger.LogError(ex, "Error processing trial-lifecycle emails."); }
 
-            await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
+            // 48-hour trash purge — CLAUDE.md promises this; without
+            // it, soft-deleted entries (and their R2 media) live
+            // forever. PurgeExpiredTrashAsync batches to 200/tick so
+            // a large backlog spreads across ticks.
+            try
+            {
+                using var purgeScope = scopeFactory.CreateScope();
+                var entryService = purgeScope.ServiceProvider.GetRequiredService<IEntryService>();
+                var purged = await entryService.PurgeExpiredTrashAsync(stoppingToken);
+                if (purged > 0) logger.LogInformation("Purged {Count} expired trash entries.", purged);
+            }
+            catch (OperationCanceledException) { break; }
+            catch (Exception ex) { logger.LogError(ex, "Error purging expired trash."); }
+
+            try { await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken); }
+            catch (OperationCanceledException) { break; }
         }
     }
 
-    private async Task ProcessRemindersAsync()
+    private async Task ProcessRemindersAsync(CancellationToken ct)
     {
         using var scope  = scopeFactory.CreateScope();
         var db     = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var sender = scope.ServiceProvider.GetRequiredService<IPushSender>();
 
         // Load admin config (singleton row — fall back to defaults if missing)
-        var config = await db.ReminderConfigs.FindAsync(1) ?? new ReminderConfig();
+        var config = await db.ReminderConfigs.FindAsync([1], ct) ?? new ReminderConfig();
 
         var utcNow = DateTime.UtcNow;
 
         var reminders = await db.Reminders
             .Where(r => r.IsEnabled)
             .Include(r => r.User)
-            .ToListAsync();
+            .ToListAsync(ct);
 
         logger.LogDebug("ReminderTick: UTC={UtcNow}, checking {Count} enabled reminder(s).",
             utcNow.ToString("HH:mm:ss"), reminders.Count);
 
+        // Persist LastSentAt PER reminder rather than once at the end of
+        // the loop. A Railway redeploy mid-tick used to wipe the entire
+        // batch's dedupe state, causing duplicate pushes on next boot.
         foreach (var reminder in reminders)
         {
-            try { await ProcessOneAsync(db, sender, config, reminder, utcNow); }
+            if (ct.IsCancellationRequested) break;
+            try
+            {
+                var sent = await ProcessOneAsync(db, sender, config, reminder, utcNow, ct);
+                if (sent) await db.SaveChangesAsync(ct);
+            }
+            catch (OperationCanceledException) { break; }
             catch (Exception ex)
             {
                 logger.LogError(ex, "Error processing reminder {ReminderId}", reminder.Id);
             }
         }
-
-        await db.SaveChangesAsync();
     }
 
-    private async Task ProcessOneAsync(
+    private async Task<bool> ProcessOneAsync(
         AppDbContext db,
         IPushSender sender,
         ReminderConfig config,
         Reminder reminder,
-        DateTime utcNow)
+        DateTime utcNow,
+        CancellationToken ct)
     {
-        var userTz   = TimeZoneInfo.FindSystemTimeZoneById(reminder.User.TimeZoneId);
+        // Bad/legacy TZ IDs would 500 the entire tick; fall through to
+        // UTC and continue. ThreatenedOneAsync already does this; the
+        // main reminder path used to crash here.
+        TimeZoneInfo userTz;
+        try { userTz = TimeZoneInfo.FindSystemTimeZoneById(reminder.User.TimeZoneId); }
+        catch
+        {
+            logger.LogWarning("Skipping reminder {ReminderId}: unknown TimeZoneId '{Tz}'.",
+                reminder.Id, reminder.User.TimeZoneId);
+            return false;
+        }
         var userNow  = TimeZoneInfo.ConvertTimeFromUtc(utcNow, userTz);
         var userTime = TimeOnly.FromDateTime(userNow);
         var today    = DateOnly.FromDateTime(userNow);
@@ -106,8 +142,8 @@ public class ReminderBackgroundService(
             reminder.Id, reminder.Time.ToString("HH:mm"), userTime.ToString("HH:mm"),
             reminder.User.TimeZoneId, userNow >= scheduledToday, alreadySentToday);
 
-        if (userNow < scheduledToday) return;
-        if (alreadySentToday) { logger.LogDebug("ReminderSkip: {ReminderId} — already sent today.", reminder.Id); return; }
+        if (userNow < scheduledToday) return false;
+        if (alreadySentToday) { logger.LogDebug("ReminderSkip: {ReminderId} — already sent today.", reminder.Id); return false; }
 
         // No entry-based gating — reminders are general-purpose. People
         // set them for any cue they care about (post a thought, walk the
@@ -127,9 +163,9 @@ public class ReminderBackgroundService(
         // ── Send to all subscriptions ────────────────────────────────────────
         var subscriptions = await db.PushSubscriptions
             .Where(s => s.UserId == reminder.UserId)
-            .ToListAsync();
+            .ToListAsync(ct);
 
-        if (!subscriptions.Any()) return;
+        if (!subscriptions.Any()) return false;
 
         var expiredEndpoints = new List<string>();
 
@@ -153,7 +189,7 @@ public class ReminderBackgroundService(
         {
             var expired = await db.PushSubscriptions
                 .Where(s => expiredEndpoints.Contains(s.Endpoint))
-                .ToListAsync();
+                .ToListAsync(ct);
             db.PushSubscriptions.RemoveRange(expired);
         }
 
@@ -163,6 +199,9 @@ public class ReminderBackgroundService(
             "Sent reminder to user {UserId} ({Count} device(s))",
             reminder.UserId,
             subscriptions.Count - expiredEndpoints.Count);
+
+        // Tell the caller to flush so this dedupe survives a mid-tick restart.
+        return true;
     }
 
     // ── Streak-threatened push ────────────────────────────────────────
@@ -182,7 +221,7 @@ public class ReminderBackgroundService(
     ///    "user opted out of nudges entirely"). A future setting could
     ///    let users opt in/out of this specific push independently.
     /// </summary>
-    private async Task ProcessThreatenedNotificationsAsync()
+    private async Task ProcessThreatenedNotificationsAsync(CancellationToken ct)
     {
         using var scope  = scopeFactory.CreateScope();
         var db     = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -196,41 +235,48 @@ public class ReminderBackgroundService(
         var candidates = await db.Users
             .Where(u => u.IsActive)
             .Where(u => db.PushSubscriptions.Any(s => s.UserId == u.Id))
-            .ToListAsync();
+            .ToListAsync(ct);
 
+        // Per-user SaveChanges so a mid-tick restart doesn't lose
+        // dedupe state for users we already notified this tick.
         foreach (var user in candidates)
         {
-            try { await ProcessThreatenedOneAsync(db, sender, user, utcNow); }
+            if (ct.IsCancellationRequested) break;
+            try
+            {
+                var sent = await ProcessThreatenedOneAsync(db, sender, user, utcNow, ct);
+                if (sent) await db.SaveChangesAsync(ct);
+            }
+            catch (OperationCanceledException) { break; }
             catch (Exception ex)
             {
                 logger.LogError(ex, "Error processing threatened-push for user {UserId}", user.Id);
             }
         }
-
-        await db.SaveChangesAsync();
     }
 
-    private async Task ProcessThreatenedOneAsync(
+    private async Task<bool> ProcessThreatenedOneAsync(
         AppDbContext db,
         IPushSender sender,
         User user,
-        DateTime utcNow)
+        DateTime utcNow,
+        CancellationToken ct)
     {
         TimeZoneInfo userTz;
         try { userTz = TimeZoneInfo.FindSystemTimeZoneById(user.TimeZoneId); }
-        catch { return; }  // bad TZ — skip silently
+        catch { return false; }  // bad TZ — skip silently
 
         var local = TimeZoneInfo.ConvertTimeFromUtc(utcNow, userTz);
         var today = DateOnly.FromDateTime(local);
 
         // Don't fire before the morning threshold. Users who normally
         // journal at 9am shouldn't get a "missed yesterday" push at 7am.
-        if (local.Hour < ThreatenedPushHourLocal) return;
+        if (local.Hour < ThreatenedPushHourLocal) return false;
 
         var missedDate = today.AddDays(-1);
 
         // Already notified for THIS gap? Skip.
-        if (user.StreakThreatenedNotifiedFor == missedDate) return;
+        if (user.StreakThreatenedNotifiedFor == missedDate) return false;
 
         // Streak state — re-derive locally so this method is self-
         // contained. Mirrors IStreakService.ComputeAsync for current-streak
@@ -240,14 +286,14 @@ public class ReminderBackgroundService(
             .Where(e => e.UserId == user.Id && e.DeletedAt == null)
             .Select(e => e.EntryDate)
             .Distinct()
-            .ToListAsync();
+            .ToListAsync(ct);
 
-        if (validDates.Count == 0) return;
+        if (validDates.Count == 0) return false;
 
         var pauses = await db.Pauses
             .Where(p => p.UserId == user.Id && p.Status == Domain.Enums.PauseStatus.Active)
             .Select(p => new { p.StartDate, p.EndDate })
-            .ToListAsync();
+            .ToListAsync(ct);
 
         var pausedDates = new HashSet<DateOnly>();
         foreach (var pause in pauses)
@@ -268,23 +314,23 @@ public class ReminderBackgroundService(
             cursor = cursor.AddDays(-1);
         }
 
-        if (currentStreak <= 0) return;
+        if (currentStreak <= 0) return false;
 
         // Last entry date — needed to confirm "exactly yesterday missed."
         var lastEntryDate = validDates.OrderByDescending(d => d).FirstOrDefault();
-        if (lastEntryDate == default) return;
+        if (lastEntryDate == default) return false;
 
         // Threatened iff the user missed exactly yesterday (lastEntry is
         // 2 days back relative to local-today). 0 or 1 day = fine; 3+
         // days = streak already broken (Welcome Back territory).
-        if (today.DayNumber - lastEntryDate.DayNumber != 2) return;
+        if (today.DayNumber - lastEntryDate.DayNumber != 2) return false;
 
         // ── Send to all subscriptions ──────────────────────────────────
         var subs = await db.PushSubscriptions
             .Where(s => s.UserId == user.Id)
-            .ToListAsync();
+            .ToListAsync(ct);
 
-        if (subs.Count == 0) return;
+        if (subs.Count == 0) return false;
 
         const string Title = "Creator Companion";
         const string Body  = "2 days have slipped by — but you've got this. Log recent progress.";
@@ -312,7 +358,7 @@ public class ReminderBackgroundService(
         {
             var expired = await db.PushSubscriptions
                 .Where(s => expiredEndpoints.Contains(s.Endpoint))
-                .ToListAsync();
+                .ToListAsync(ct);
             db.PushSubscriptions.RemoveRange(expired);
         }
 
@@ -324,6 +370,8 @@ public class ReminderBackgroundService(
         logger.LogInformation(
             "Sent streak-threatened push to user {UserId} ({Count} device(s), missed {MissedDate})",
             user.Id, sentCount, missedDate);
+
+        return true;
     }
 
     // ── Trial lifecycle emails ─────────────────────────────────────────
@@ -340,7 +388,7 @@ public class ReminderBackgroundService(
     /// trial nags. The 60s loop fires this method on every tick;
     /// the dedupe flags + tight WHERE clauses keep DB cost trivial.
     /// </summary>
-    private async Task ProcessTrialEmailsAsync()
+    private async Task ProcessTrialEmailsAsync(CancellationToken ct)
     {
         using var scope = scopeFactory.CreateScope();
         var db    = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -361,7 +409,7 @@ public class ReminderBackgroundService(
                      && u.TrialEndsAt > in1d
                      && u.TrialEndsAt <= in3d
                      && u.TrialReminder3dSentAt == null)
-            .ToListAsync();
+            .ToListAsync(ct);
 
         foreach (var user in threeDayCandidates)
         {
@@ -387,7 +435,7 @@ public class ReminderBackgroundService(
                      && u.TrialEndsAt > now
                      && u.TrialEndsAt <= in1d
                      && u.TrialReminder1dSentAt == null)
-            .ToListAsync();
+            .ToListAsync(ct);
 
         foreach (var user in oneDayCandidates)
         {
@@ -412,7 +460,7 @@ public class ReminderBackgroundService(
                      && u.TrialEndsAt != null
                      && u.TrialEndsAt < now
                      && u.TrialEndedEmailSentAt == null)
-            .ToListAsync();
+            .ToListAsync(ct);
 
         foreach (var user in endedCandidates)
         {
@@ -429,6 +477,6 @@ public class ReminderBackgroundService(
         }
 
         if (threeDayCandidates.Count + oneDayCandidates.Count + endedCandidates.Count > 0)
-            await db.SaveChangesAsync();
+            await db.SaveChangesAsync(ct);
     }
 }

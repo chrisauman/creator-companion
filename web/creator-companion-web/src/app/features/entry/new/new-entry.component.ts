@@ -186,7 +186,7 @@ interface PendingImage {
               >
                 <span class="drop-zone__icon">🖼</span>
                 <span class="drop-zone__text">Add photos</span>
-                <span class="drop-zone__hint">Click or drag &amp; drop · JPEG, PNG, WEBP, HEIC · max 20 MB each</span>
+                <span class="drop-zone__hint">Click or drag &amp; drop · JPEG, PNG, WEBP, HEIC · max 15 MB each</span>
               </div>
             }
 
@@ -858,7 +858,11 @@ export class NewEntryComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly ALLOWED_TYPES = new Set([
     'image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'
   ]);
-  private readonly MAX_BYTES = 20 * 1024 * 1024;
+  // Must match MediaService.MaxFileSizeBytes on the server (15 MB).
+  // Keeping these in sync prevents the user from picking a file the
+  // client accepts and the server then rejects with a generic
+  // "Could not publish entry."
+  private readonly MAX_BYTES = 15 * 1024 * 1024;
 
   ngOnInit(): void {
     // Apply initialDate first so any subsequent draft fetches use the
@@ -1000,7 +1004,7 @@ export class NewEntryComponent implements OnInit, AfterViewInit, OnDestroy {
         continue;
       }
       if (file.size > this.MAX_BYTES) {
-        this.imageError.set(`${file.name}: exceeds the 20 MB limit.`);
+        this.imageError.set(`${file.name}: exceeds the 15 MB limit.`);
         continue;
       }
 

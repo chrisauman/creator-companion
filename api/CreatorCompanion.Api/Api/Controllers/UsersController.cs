@@ -242,10 +242,32 @@ public class UsersController(AppDbContext db, IStorageService storage, IImagePro
         try { await email.SendAccountDeletionConfirmationAsync(user.Email, user.FirstName); }
         catch (Exception ex) { Console.WriteLine($"[WARN] Could not send deletion email to {user.Email}: {ex.Message}"); }
 
+        // Collect every R2 media path the user owns BEFORE we cascade
+        // the rows away. ImageSharp/R2 cleanup is best-effort — leaving
+        // a row with a missing blob would be worse than a stray blob.
+        var mediaPaths = await db.EntryMedia
+            .Where(m => m.UserId == UserId)
+            .Select(m => m.StoragePath)
+            .ToListAsync();
+
         // Delete entries explicitly (cascade handles EntryTags + EntryMedia)
         var entries = await db.Entries.Where(e => e.UserId == UserId).ToListAsync();
         db.Entries.RemoveRange(entries);
         await db.SaveChangesAsync();
+
+        // R2 cleanup pass — entry media + the profile avatar. The user's
+        // confirmation email promised this; failing silently would be
+        // a privacy regression.
+        foreach (var path in mediaPaths)
+        {
+            try { await storage.DeleteAsync(path); }
+            catch (Exception ex) { Console.WriteLine($"[WARN] Could not delete media {path}: {ex.Message}"); }
+        }
+        if (!string.IsNullOrEmpty(user.ProfileImagePath))
+        {
+            try { await storage.DeleteAsync(user.ProfileImagePath); }
+            catch (Exception ex) { Console.WriteLine($"[WARN] Could not delete avatar for user {user.Id}: {ex.Message}"); }
+        }
 
         // Delete tokens and subscriptions not covered by cascade
         var resetTokens = await db.PasswordResetTokens.Where(t => t.UserId == UserId).ToListAsync();

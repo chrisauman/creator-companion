@@ -500,12 +500,12 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
       border-bottom: 1px solid rgba(255,255,255,.07);
       height: 52px;
       display: flex; align-items: center; justify-content: space-between;
-      padding: 0 1.125rem;
+      padding: 0 1.5rem;
     }
     @media (min-width: 768px) { .topbar { display: none; } }
     .topbar__brand { display: flex; align-items: center; gap: .5rem; text-decoration: none; }
     .topbar__brand-icon { height: 24px; width: auto; display: block; }
-    .topbar__brand-name { font-family: var(--font-sans); font-size: .9375rem; font-weight: 700; color: #fff; }
+    .topbar__brand-name { font-family: var(--font-brand); font-size: 1rem; font-weight: 800; letter-spacing: -.01em; color: #fff; }
     /* Hamburger — light-on-dark mobile topbar variant. Same styling as
        the matching button in the other standalone pages. */
     .topbar__menu {
@@ -1077,7 +1077,9 @@ export class AccountComponent implements OnInit {
     this.pushWorking.set(true);
     this.pushDenied.set(false);
     const granted = await this.push.subscribe();
-    if (!granted && Notification.permission === 'denied') {
+    // Use the guarded service accessor — direct `Notification.permission`
+    // throws ReferenceError in older Safari and any non-secure context.
+    if (!granted && (await this.push.getPermissionState()) === 'denied') {
       this.pushDenied.set(true);
     }
     this.pushEnabled.set(await this.push.isSubscribed());

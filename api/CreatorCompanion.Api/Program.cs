@@ -121,6 +121,15 @@ try
         // into HttpContext.Connection.RemoteIpAddress before rate limiting runs,
         // so we do NOT read the raw X-Forwarded-For header here (prevents spoofing).
         options.ClientIdHeader             = "X-ClientId";
+
+        // The Stripe webhook MUST be exempt from the global write
+        // rate limit. Stripe replays events under back-off; receiving
+        // a 429 makes Stripe drop the event after retries, silently
+        // losing subscription state changes. Signature verification
+        // (inside StripeService.HandleWebhookAsync) is the auth gate
+        // for this endpoint.
+        options.EndpointWhitelist = ["post:/v1/stripe/webhook"];
+
         options.GeneralRules =
         [
             // Auth endpoints — tight window, low limit
@@ -171,14 +180,41 @@ try
     builder.Services.AddScoped<IPushSender, WebPushSender>();
     builder.Services.AddHostedService<ReminderBackgroundService>();
 
-    // Generate VAPID keys on startup if not configured (dev convenience)
-    var vapidPublic = builder.Configuration["Vapid:PublicKey"];
-    if (string.IsNullOrEmpty(vapidPublic))
+    // Production safety: required env-driven settings must be set
+    // BEFORE the app starts serving traffic. Missing values silently
+    // crippled features at runtime (push delivery off, paywall broken,
+    // no inbound email). Fail-fast surfaces misconfig in the deploy.
+    if (!builder.Environment.IsDevelopment())
     {
-        var keys = WebPush.VapidHelper.GenerateVapidKeys();
-        SerilogLog.Warning("VAPID keys not configured. Add these to appsettings.json:");
-        SerilogLog.Warning("  Vapid:PublicKey  = {Key}", keys.PublicKey);
-        SerilogLog.Warning("  Vapid:PrivateKey = {Key}", keys.PrivateKey);
+        var required = new (string Key, string FriendlyName)[]
+        {
+            ("Stripe:SecretKey",     "Stripe:SecretKey"),
+            ("Stripe:WebhookSecret", "Stripe:WebhookSecret"),
+            ("Stripe:MonthlyPriceId","Stripe:MonthlyPriceId"),
+            ("Stripe:AnnualPriceId", "Stripe:AnnualPriceId"),
+            ("Vapid:PublicKey",      "Vapid:PublicKey"),
+            ("Vapid:PrivateKey",     "Vapid:PrivateKey"),
+            ("Vapid:Subject",        "Vapid:Subject"),
+        };
+        var missing = required
+            .Where(r => string.IsNullOrWhiteSpace(builder.Configuration[r.Key]))
+            .Select(r => r.FriendlyName)
+            .ToList();
+        if (missing.Count > 0)
+            throw new InvalidOperationException(
+                $"Required config missing in Production: {string.Join(", ", missing)}");
+    }
+    else
+    {
+        // Generate VAPID keys on startup if not configured — dev only.
+        var vapidPublic = builder.Configuration["Vapid:PublicKey"];
+        if (string.IsNullOrEmpty(vapidPublic))
+        {
+            var keys = WebPush.VapidHelper.GenerateVapidKeys();
+            SerilogLog.Warning("VAPID keys not configured. Add these to appsettings.json:");
+            SerilogLog.Warning("  Vapid:PublicKey  = {Key}", keys.PublicKey);
+            SerilogLog.Warning("  Vapid:PrivateKey = {Key}", keys.PrivateKey);
+        }
     }
 
     var allowedOrigins = builder.Configuration["Cors:AllowedOrigins"]?.Split(',')
@@ -239,7 +275,11 @@ try
     {
         context.Response.Headers["X-Content-Type-Options"]    = "nosniff";
         context.Response.Headers["X-Frame-Options"]           = "DENY";
-        context.Response.Headers["X-XSS-Protection"]         = "1; mode=block";
+        // X-XSS-Protection is deprecated and can introduce bugs in legacy
+        // browsers when set to "1; mode=block" (per OWASP guidance). Use
+        // "0" to explicitly disable the legacy auditor; CSP is the modern
+        // mitigation (applied at the frontend / Vercel layer).
+        context.Response.Headers["X-XSS-Protection"]         = "0";
         context.Response.Headers["Referrer-Policy"]          = "strict-origin-when-cross-origin";
         context.Response.Headers["Permissions-Policy"]       = "camera=(), microphone=(), geolocation=()";
         // HSTS — only meaningful over HTTPS; omit in development to avoid breaking local HTTP

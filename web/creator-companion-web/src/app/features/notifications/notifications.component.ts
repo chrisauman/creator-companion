@@ -230,12 +230,12 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
       border-bottom: 1px solid rgba(255,255,255,.07);
       height: 52px;
       display: flex; align-items: center; justify-content: space-between;
-      padding: 0 1.125rem;
+      padding: 0 1.5rem;
     }
     @media (min-width: 768px) { .topbar { display: none; } }
     .topbar__brand { display: flex; align-items: center; gap: .5rem; text-decoration: none; }
     .topbar__brand-icon { height: 24px; width: auto; display: block; }
-    .topbar__brand-name { font-family: var(--font-sans); font-size: .9375rem; font-weight: 700; color: #fff; }
+    .topbar__brand-name { font-family: var(--font-brand); font-size: 1rem; font-weight: 800; letter-spacing: -.01em; color: #fff; }
     /* Hamburger button for the dark mobile topbar — opens the
        slide-in sidebar drawer. Light-on-dark variant of the
        dashboard's mobile-header__hamburger so it reads on the
@@ -664,7 +664,8 @@ export class NotificationsComponent implements OnInit {
     this.pushWorking.set(true);
     this.pushDenied.set(false);
     const granted = await this.push.subscribe();
-    if (!granted && Notification.permission === 'denied') this.pushDenied.set(true);
+    // Guarded read — see PushService.getPermissionState() comment.
+    if (!granted && (await this.push.getPermissionState()) === 'denied') this.pushDenied.set(true);
     const subscribed = await this.push.isSubscribed();
     this.pushEnabled.set(subscribed);
 
@@ -779,27 +780,11 @@ export class NotificationsComponent implements OnInit {
     });
   }
 
-  addReminder(): void {
-    this.reminderWorking.set(true);
-    this.reminderError.set('');
-    this.api.createReminder('12:00').subscribe({
-      next: () => { this.loadReminders(); this.reminderWorking.set(false); },
-      error: err => {
-        this.reminderError.set(err?.error?.error ?? 'Could not add reminder.');
-        this.reminderWorking.set(false);
-      }
-    });
-  }
-
-  deleteReminder(r: Reminder): void {
-    if (!confirm('Delete this reminder?')) return;
-    this.reminderWorking.set(true);
-    this.api.deleteReminder(r.id).subscribe({
-      next: () => { delete this.drafts[r.id]; this.loadReminders(); this.reminderWorking.set(false); },
-      error: err => {
-        this.reminderError.set(err?.error?.error ?? 'Could not delete reminder.');
-        this.reminderWorking.set(false);
-      }
-    });
-  }
+  // addReminder + deleteReminder removed. The UI is a five-fixed-slot
+  // model per CLAUDE.md ("5 fixed slots per user. Lazy-created on first
+  // GET. UI never exposes add/delete; users edit time/message/on-off
+  // per slot."). The dead methods + matching api.createReminder /
+  // api.deleteReminder call sites are a re-wiring hazard, so they're
+  // gone. If a future re-design exposes user-managed slots, restore via
+  // a deliberate PR — don't reintroduce silently.
 }

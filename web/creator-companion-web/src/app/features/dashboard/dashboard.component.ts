@@ -220,7 +220,7 @@ import { ActivatedRoute } from '@angular/router';
 
           <!-- Empty states -->
           <div *ngIf="entries().length === 0 && !loading()" class="empty-state">
-            <p>No entries yet. Write your first one above.</p>
+            <p>No entries yet. Log your first step above.</p>
           </div>
           <div *ngIf="entries().length > 0 && filteredAndSorted().length === 0" class="empty-state">
             <p *ngIf="sortOrder() === 'favorites' && !searchQuery()">No favorites yet. Open an entry and tap the star to save it.</p>
@@ -1277,21 +1277,20 @@ export class DashboardComponent implements OnInit {
     this.sidebarState.returnToTodayRequest$.subscribe(() => this.returnToToday());
 
     // Safety net: if any API call hangs past 20 s, exit the loading state
-    // gracefully rather than spinning forever. This covers Railway cold starts
+    // gracefully rather than spinning forever. Covers Railway cold starts
     // and iOS PWA scenarios where network requests can be delayed.
+    //
+    // Important: this NO LONGER force-logs-out on a wall-clock timeout.
+    // Mobile browsers throttle background tabs (>20s) and slow networks
+    // were force-redirecting valid sessions to /login. Auth failures
+    // surface via the auth interceptor's 401 → refresh → fail path,
+    // which is the only source of truth for "session has expired."
     const safetyTimer = setTimeout(() => {
       if (!this.streak()) {
         this.streak.set({ currentStreak: 0, longestStreak: 0, totalEntries: 0,
           totalMediaCount: 0, totalActiveDays: 0, isPaused: false, pauseDaysUsedThisMonth: 0 });
       }
-      if (this.loading()) {
-        this.loading.set(false);
-      }
-      // If we still have no valid access token after 20 s, the session
-      // restoration definitively failed — send the user to login.
-      if (!this.tokens.getAccessToken()) {
-        window.location.replace('/login');
-      }
+      if (this.loading()) this.loading.set(false);
     }, 20000);
 
     this.api.getStreak().subscribe({

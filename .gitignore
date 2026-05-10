@@ -12,6 +12,12 @@ obj/
 # Secrets — never commit these
 appsettings.Development.json
 appsettings.Production.json
+.env
+.env.*
+!.env.example
+*.pem
+*.pfx
+*.key
 
 # ── Angular ──────────────────────────────────────────────────
 web/creator-companion-web/node_modules/

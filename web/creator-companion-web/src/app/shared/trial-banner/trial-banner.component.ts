@@ -198,15 +198,26 @@ export class TrialBannerComponent {
   private api    = inject(ApiService);
   private router = inject(Router);
 
-  loading   = signal(false);
-  dismissed = signal<boolean>(this.readDismissedFromStorage());
+  loading            = signal(false);
+  dismissedQuiet     = signal<boolean>(this.readKey(TrialBannerComponent.DISMISS_KEY));
+  dismissedUrgent    = signal<boolean>(this.readKey(TrialBannerComponent.DISMISS_KEY_URGENT));
 
-  /** Whether the banner should currently render. Visible iff: user's
-   *  capabilities flag IsInTrial = true AND user hasn't dismissed. */
+  /** Whether the banner should currently render. Visible iff: user is
+   *  in trial AND the current-mode dismissal hasn't been recorded.
+   *
+   *  Two dismissal slots: a "quiet" dismissal (days 3–10 left) and an
+   *  "urgent" dismissal (≤2 days). A user who clicks X on day 8 is
+   *  saying "I get it, leave me alone" — but the urgent variant on
+   *  day 2 is a separate, intentional conversion moment per CLAUDE.md
+   *  ("red+urgent in final 2 days"), so we re-show until they dismiss
+   *  it again in its urgent form. */
   visible = computed<boolean>(() => {
-    if (this.dismissed()) return false;
     const caps = this.auth.capabilities();
-    return !!(caps && caps.isInTrial);
+    if (!caps?.isInTrial) return false;
+    const urgent = this.daysLeft() <= 2;
+    return urgent
+      ? !this.dismissedUrgent()
+      : !this.dismissedQuiet();
   });
 
   /** Days remaining (rounded up) until TrialEndsAt. Drives the
@@ -242,16 +253,26 @@ export class TrialBannerComponent {
   }
 
   dismiss(): void {
-    this.dismissed.set(true);
-    try {
-      localStorage.setItem(TrialBannerComponent.DISMISS_KEY, '1');
-    } catch { /* private mode / quota — fall back to in-memory */ }
+    const urgent = this.daysLeft() <= 2;
+    if (urgent) {
+      this.dismissedUrgent.set(true);
+      this.writeKey(TrialBannerComponent.DISMISS_KEY_URGENT);
+    } else {
+      this.dismissedQuiet.set(true);
+      this.writeKey(TrialBannerComponent.DISMISS_KEY);
+    }
   }
 
-  private static readonly DISMISS_KEY = 'cc_trial_banner_dismissed';
+  private static readonly DISMISS_KEY        = 'cc_trial_banner_dismissed';
+  private static readonly DISMISS_KEY_URGENT = 'cc_trial_banner_dismissed_urgent';
 
-  private readDismissedFromStorage(): boolean {
-    try { return localStorage.getItem(TrialBannerComponent.DISMISS_KEY) === '1'; }
+  private readKey(key: string): boolean {
+    try { return localStorage.getItem(key) === '1'; }
     catch { return false; }
+  }
+
+  private writeKey(key: string): void {
+    try { localStorage.setItem(key, '1'); }
+    catch { /* private mode / quota — fall back to in-memory */ }
   }
 }

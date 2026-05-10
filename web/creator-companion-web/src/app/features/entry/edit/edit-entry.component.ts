@@ -362,7 +362,7 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
     @media (min-width: 768px) { .topbar { display: none; } }
     .topbar__brand { display: flex; align-items: center; gap: .5rem; text-decoration: none; flex-shrink: 0; }
     .topbar__brand-icon { height: 22px; width: auto; display: block; }
-    .topbar__brand-name { font-family: var(--font-sans); font-size: .875rem; font-weight: 700; color: #fff; }
+    .topbar__brand-name { font-family: var(--font-brand); font-size: 1rem; font-weight: 800; letter-spacing: -.01em; color: #fff; }
     .topbar__actions { margin-left: auto; display: flex; align-items: center; gap: .5rem; flex-shrink: 0; }
 
     /* ── Main content ────────────────────────────────────────────── */
@@ -908,7 +908,8 @@ export class EditEntryComponent implements OnInit, OnDestroy {
   private readonly ALLOWED_TYPES = new Set([
     'image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'
   ]);
-  private readonly MAX_BYTES = 20 * 1024 * 1024;
+  // Must match MediaService.MaxFileSizeBytes on the server (15 MB).
+  private readonly MAX_BYTES = 15 * 1024 * 1024;
 
   ngOnInit(): void {
     // When embedded, the dashboard provides the entry id directly.
@@ -1142,7 +1143,7 @@ export class EditEntryComponent implements OnInit, OnDestroy {
         continue;
       }
       if (file.size > this.MAX_BYTES) {
-        this.imageError.set(`${file.name}: exceeds the 20 MB limit.`);
+        this.imageError.set(`${file.name}: exceeds the 15 MB limit.`);
         continue;
       }
       toUpload.push(file);
@@ -1184,7 +1185,10 @@ export class EditEntryComponent implements OnInit, OnDestroy {
   deleteEntry(): void {
     this.api.deleteEntry(this.entryId).subscribe({
       next: () => this.afterDelete(),
-      error: () => this.afterDelete()
+      // Don't navigate away on error — the entry is still here. Tell
+      // the user so they can retry. Previously we navigated either way,
+      // which lied to the user about what just happened.
+      error: () => this.error.set('Could not delete this entry. Please try again.')
     });
   }
 

@@ -4,7 +4,7 @@ namespace CreatorCompanion.Api.Infrastructure.Storage;
 
 // Dev-only implementation. Swap for AzureBlobStorageService in production
 // without changing any service or controller code.
-public class LocalStorageService(IConfiguration config, IWebHostEnvironment env) : IStorageService
+public class LocalStorageService(IWebHostEnvironment env) : IStorageService
 {
     private readonly string _basePath = Path.Combine(
         env.ContentRootPath, "uploads");

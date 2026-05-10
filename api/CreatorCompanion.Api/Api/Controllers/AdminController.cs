@@ -213,19 +213,59 @@ public class AdminController(AppDbContext db) : ControllerBase
     }
 
     [HttpDelete("users/{id:guid}")]
-    public async Task<IActionResult> DeleteUser(Guid id)
+    public async Task<IActionResult> DeleteUser(
+        Guid id,
+        [FromServices] IStorageService storage,
+        [FromServices] IStripeService stripe)
     {
         var user = await db.Users.FindAsync(id);
         if (user is null) return NotFound();
+
+        // Cancel an active Stripe subscription so the platform stops
+        // charging a deleted user. Mirrors the self-delete path.
+        if (!string.IsNullOrEmpty(user.StripeSubscriptionId))
+        {
+            try { await stripe.CancelSubscriptionAsync(user.StripeSubscriptionId); }
+            catch (Exception ex) { Console.WriteLine($"[WARN] Could not cancel Stripe subscription for user {id}: {ex.Message}"); }
+        }
+
+        // Collect media paths before cascade so we can clean R2 after.
+        var mediaPaths = await db.EntryMedia
+            .Where(m => m.UserId == id)
+            .Select(m => m.StoragePath)
+            .ToListAsync();
 
         // Delete entries first (cascades EntryTags and EntryMedia)
         var entries = await db.Entries.Where(e => e.UserId == id).ToListAsync();
         db.Entries.RemoveRange(entries);
         await db.SaveChangesAsync();
 
-        // Delete any password reset tokens (no cascade configured)
+        // R2 cleanup
+        foreach (var path in mediaPaths)
+        {
+            try { await storage.DeleteAsync(path); }
+            catch (Exception ex) { Console.WriteLine($"[WARN] Could not delete media {path}: {ex.Message}"); }
+        }
+        if (!string.IsNullOrEmpty(user.ProfileImagePath))
+        {
+            try { await storage.DeleteAsync(user.ProfileImagePath); }
+            catch (Exception ex) { Console.WriteLine($"[WARN] Could not delete avatar for user {id}: {ex.Message}"); }
+        }
+
+        // Delete tokens / push subs / reminders / verification tokens
+        // explicitly (mirrors self-delete path; some have no cascade FK).
         var resetTokens = await db.PasswordResetTokens.Where(t => t.UserId == id).ToListAsync();
         db.PasswordResetTokens.RemoveRange(resetTokens);
+
+        var verifyTokens = await db.EmailVerificationTokens.Where(t => t.UserId == id).ToListAsync();
+        db.EmailVerificationTokens.RemoveRange(verifyTokens);
+
+        var pushSubs = await db.PushSubscriptions.Where(s => s.UserId == id).ToListAsync();
+        db.PushSubscriptions.RemoveRange(pushSubs);
+
+        var reminders = await db.Reminders.Where(r => r.UserId == id).ToListAsync();
+        db.Reminders.RemoveRange(reminders);
+
         await db.SaveChangesAsync();
 
         // Delete user — Drafts, Pauses, RefreshTokens, Journals, Tags all cascade

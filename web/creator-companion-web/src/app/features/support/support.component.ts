@@ -76,12 +76,12 @@ import { MobileHeaderComponent } from '../../shared/mobile-header/mobile-header.
     .topbar {
       position: sticky; top: 0; z-index: 100;
       background: #111318; border-bottom: 1px solid rgba(255,255,255,.07);
-      height: 52px; display: flex; align-items: center; padding: 0 .75rem;
+      height: 52px; display: flex; align-items: center; padding: 0 1.5rem;
     }
     @media (min-width: 768px) { .topbar { display: none; } }
     .topbar__brand { display: flex; align-items: center; gap: .5rem; text-decoration: none; }
     .topbar__brand-icon { height: 22px; width: auto; }
-    .topbar__brand-name { font-family: var(--font-sans); font-size: .875rem; font-weight: 700; color: #fff; }
+    .topbar__brand-name { font-family: var(--font-brand); font-size: 1rem; font-weight: 800; letter-spacing: -.01em; color: #fff; }
 
     /* ── Main ────────────────────────────────────────────────────── */
     .main-content {

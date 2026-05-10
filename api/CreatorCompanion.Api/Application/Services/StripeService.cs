@@ -78,6 +78,39 @@ public class StripeService(AppDbContext db, IOptions<StripeConfig> config, IEmai
             throw new InvalidOperationException("Invalid Stripe webhook signature.");
         }
 
+        // Idempotency: Stripe retries any non-2xx delivery and can also
+        // replay events (manual resend from dashboard, post-outage
+        // backfill). Without this guard:
+        //  - HandleCheckoutCompletedAsync re-sends receipt emails.
+        //  - HandleSubscriptionUpdatedAsync replays old state transitions
+        //    out of order (e.g. an old "canceled" event reverting a fresh
+        //    "active" tier flip).
+        // The ProcessedStripeEvents table is keyed on Stripe's event id;
+        // we attempt an INSERT first; a duplicate-key violation means
+        // "already processed — return 200 without doing anything."
+        var alreadyProcessed = await db.ProcessedStripeEvents
+            .AsNoTracking()
+            .AnyAsync(e => e.Id == stripeEvent.Id);
+        if (alreadyProcessed) return;
+
+        db.ProcessedStripeEvents.Add(new Domain.Models.ProcessedStripeEvent
+        {
+            Id          = stripeEvent.Id,
+            EventType   = stripeEvent.Type,
+            ProcessedAt = DateTime.UtcNow
+        });
+        try
+        {
+            // Save the idempotency marker FIRST so a duplicate delivery
+            // arriving while the handlers run still hits the dedupe path.
+            await db.SaveChangesAsync();
+        }
+        catch (DbUpdateException)
+        {
+            // Concurrent delivery beat us to it; treat as already-processed.
+            return;
+        }
+
         switch (stripeEvent.Type)
         {
             case EventTypes.CheckoutSessionCompleted:
@@ -155,17 +188,24 @@ public class StripeService(AppDbContext db, IOptions<StripeConfig> config, IEmai
         var user = await db.Users.FirstOrDefaultAsync(u => u.StripeCustomerId == invoice.CustomerId);
         if (user == null) return;
 
-        // Only downgrade after Stripe has exhausted all retries (billing_reason = subscription_cycle
-        // failures arrive multiple times; the subscription status flips to past_due first, then
-        // unpaid/canceled — CustomerSubscriptionUpdated/Deleted handles final cancellation).
-        // Here we just downgrade immediately on any payment failure so users can't access paid
-        // features while their payment is in a failed state.
-        if (user.Tier == AccountTier.Paid)
-        {
-            user.Tier      = AccountTier.Free;
-            user.UpdatedAt = DateTime.UtcNow;
-            await db.SaveChangesAsync();
-        }
+        // Do NOT downgrade on the first payment failure. Stripe's Smart
+        // Retries can fire this event multiple times across the dunning
+        // period (3D Secure flakes, bank fraud rules, expiring cards
+        // that succeed on the next attempt). Flipping a paying customer
+        // to Free at retry #1 locks them out mid-day even when Stripe
+        // will succeed on a retry an hour later.
+        //
+        // Final cancellation is owned by HandleSubscriptionUpdatedAsync
+        // (status transitions to "canceled"/"unpaid") and
+        // HandleSubscriptionDeletedAsync. Keep this handler as a hook
+        // for surfacing past-due status / notifying the user without
+        // revoking access.
+        //
+        // Intentional no-op — left in place because Stripe is configured
+        // to send invoice.payment_failed and a missing handler would
+        // log noise.
+        _ = user; // suppress unused-variable warning while leaving the read for side-effects if reintroduced
+        await Task.CompletedTask;
     }
 
     public async Task CancelSubscriptionAsync(string subscriptionId)

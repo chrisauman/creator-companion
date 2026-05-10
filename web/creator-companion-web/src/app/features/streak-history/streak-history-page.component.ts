@@ -38,12 +38,12 @@ import { StreakHistoryComponent } from '../dashboard/streak-history.component';
       border-bottom: 1px solid rgba(255,255,255,.07);
       height: 52px;
       display: flex; align-items: center;
-      padding: 0 1.125rem;
+      padding: 0 1.5rem;
     }
     @media (min-width: 768px) { .topbar { display: none; } }
     .topbar__brand { display: flex; align-items: center; gap: .5rem; text-decoration: none; }
     .topbar__brand-icon { height: 24px; width: auto; display: block; }
-    .topbar__brand-name { font-family: var(--font-sans); font-size: .9375rem; font-weight: 700; color: #fff; }
+    .topbar__brand-name { font-family: var(--font-brand); font-size: 1rem; font-weight: 800; letter-spacing: -.01em; color: #fff; }
     .topbar__menu {
       width: 36px; height: 36px;
       flex-shrink: 0;

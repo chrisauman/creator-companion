@@ -16,7 +16,49 @@ public class EntryService(
     IStorageService storage,
     ITagService tags) : IEntryService
 {
-    private static readonly HtmlSanitizer Sanitizer = new();
+    // Lock the HTML sanitizer down to an explicit allowlist rather than
+    // relying on the default. Entry content is rendered as HTML in the
+    // dashboard reader, view-entry, embedded reader, and the favorites
+    // surface — a regression in HtmlSanitizer defaults would become a
+    // stored XSS across every reading surface. Pinning behavior here
+    // means version bumps are predictable.
+    private static readonly HtmlSanitizer Sanitizer = BuildSanitizer();
+
+    private static HtmlSanitizer BuildSanitizer()
+    {
+        var s = new HtmlSanitizer();
+
+        // Strip the wide tag/attribute defaults; allow only what the
+        // entry composer can produce (TipTap StarterKit minus media).
+        s.AllowedTags.Clear();
+        foreach (var t in new[]
+                 {
+                     "p","br","strong","em","b","i","u","s","del",
+                     "ul","ol","li",
+                     "h1","h2","h3","h4","h5","h6",
+                     "blockquote","code","pre",
+                     "a","span"
+                 })
+            s.AllowedTags.Add(t);
+
+        s.AllowedAttributes.Clear();
+        s.AllowedAttributes.Add("href");
+        s.AllowedAttributes.Add("title");
+
+        // Drop `style` outright — inline style is an XSS vector via
+        // `background:url(javascript:…)`, expression(), and CSS keylogging.
+        s.AllowedCssProperties.Clear();
+
+        // URL schemes — only http(s) and mailto. Block javascript:, data:,
+        // vbscript:, file:. (HtmlSanitizer defaults block javascript and
+        // vbscript; we narrow further by allowlisting.)
+        s.AllowedSchemes.Clear();
+        s.AllowedSchemes.Add("http");
+        s.AllowedSchemes.Add("https");
+        s.AllowedSchemes.Add("mailto");
+
+        return s;
+    }
 
     private static string SanitizeContent(string? content)
     {
@@ -286,9 +328,64 @@ public class EntryService(
             .FirstOrDefaultAsync(e => e.Id == entryId && e.UserId == userId && e.DeletedAt != null)
             ?? throw new InvalidOperationException("Deleted entry not found.");
 
+        // Best-effort R2 cleanup before the rows go. If a single file
+        // fails (already gone, transient network) we still proceed with
+        // the DB delete — leaving the row would defeat the "permanently
+        // deleted" promise. Orphaned blobs are recoverable; orphaned
+        // DB rows that point at nothing are not.
+        foreach (var m in entry.Media)
+        {
+            try { await storage.DeleteAsync(m.StoragePath); }
+            catch { /* swallow — file may already be gone */ }
+        }
+
         db.EntryMedia.RemoveRange(entry.Media);
         db.Entries.Remove(entry);
         await db.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Hard-deletes every entry whose soft-delete timestamp is older
+    /// than the 48h recovery window. Used by the background worker on
+    /// each tick. Returns the number of entries purged.
+    ///
+    /// CLAUDE.md documents this as guaranteed behavior ("Trash retention
+    /// — 48h before hard-delete"); without this loop, soft-deleted
+    /// rows live forever, R2 media never gets cleaned up, and the
+    /// user-facing promise of "permanently deleted" is unenforced.
+    /// </summary>
+    public async Task<int> PurgeExpiredTrashAsync(CancellationToken ct = default)
+    {
+        var cutoff = DateTime.UtcNow.AddHours(-48);
+
+        // Limit per tick to keep one bad tick from chewing through
+        // arbitrary backlog. 200 entries × ~10 media each is a
+        // reasonable bound for a 60s tick on Railway.
+        const int batchLimit = 200;
+
+        var expired = await db.Entries
+            .Include(e => e.Media)
+            .Where(e => e.DeletedAt != null && e.DeletedAt < cutoff)
+            .OrderBy(e => e.DeletedAt)
+            .Take(batchLimit)
+            .ToListAsync(ct);
+
+        if (expired.Count == 0) return 0;
+
+        foreach (var entry in expired)
+        {
+            foreach (var m in entry.Media)
+            {
+                try { await storage.DeleteAsync(m.StoragePath); }
+                catch { /* swallow — file may already be gone */ }
+            }
+
+            db.EntryMedia.RemoveRange(entry.Media);
+            db.Entries.Remove(entry);
+        }
+
+        await db.SaveChangesAsync(ct);
+        return expired.Count;
     }
 
     public async Task SoftDeleteAsync(Guid userId, Guid entryId)

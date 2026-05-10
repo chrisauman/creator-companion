@@ -33,12 +33,21 @@ public class PushController(AppDbContext db, IConfiguration config, IPushSender 
     [HttpPost("subscribe")]
     public async Task<IActionResult> Subscribe([FromBody] SubscribeRequest request)
     {
-        // Upsert: update if endpoint already exists, otherwise create
         var existing = await db.PushSubscriptions
             .FirstOrDefaultAsync(s => s.Endpoint == request.Endpoint);
 
         if (existing is not null)
         {
+            // Endpoint already registered. If the row belongs to a
+            // different user, this is a shared device that just changed
+            // hands (browser profile swap, family iPad). Hand the row
+            // over to the new owner rather than letting the original
+            // owner's reminders fire on someone else's screen.
+            if (existing.UserId != UserId)
+            {
+                existing.UserId = UserId;
+                existing.Platform = request.Platform;
+            }
             existing.P256dh     = request.P256dh;
             existing.Auth       = request.Auth;
             existing.LastSeenAt = DateTime.UtcNow;

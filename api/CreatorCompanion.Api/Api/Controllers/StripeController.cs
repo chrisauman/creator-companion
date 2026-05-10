@@ -6,6 +6,7 @@ using CreatorCompanion.Api.Common;
 using CreatorCompanion.Api.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
 namespace CreatorCompanion.Api.Api.Controllers;
@@ -15,11 +16,21 @@ namespace CreatorCompanion.Api.Api.Controllers;
 public class StripeController(
     IStripeService stripe,
     AppDbContext db,
-    IOptions<StripeConfig> config) : ControllerBase
+    IOptions<StripeConfig> config,
+    IConfiguration appConfig) : ControllerBase
 {
     private readonly StripeConfig _cfg = config.Value;
     private Guid UserId => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)
         ?? User.FindFirstValue("sub")!);
+
+    // Stripe success/cancel/portal-return URLs come from server config
+    // ONLY — never from the request's Origin/Referer header. The latter
+    // is a small open-redirect-ish vector: a malicious page could hit
+    // /v1/stripe/checkout, get a Stripe Checkout URL whose success_url
+    // returns to its own domain (carrying the session_id in the query
+    // string), and capture the post-payment redirect.
+    private string AppBaseUrl =>
+        (appConfig["App:BaseUrl"] ?? "https://app.creatorcompanionapp.com").TrimEnd('/');
 
     [HttpGet("config")]
     [Authorize]
@@ -33,9 +44,7 @@ public class StripeController(
         var user = await db.Users.FindAsync(UserId);
         if (user == null) return Unauthorized();
 
-        var appUrl = HttpContext.Request.Headers["Origin"].FirstOrDefault()
-            ?? HttpContext.Request.Headers["Referer"].FirstOrDefault()?.TrimEnd('/')
-            ?? "https://app.creatorcompanionapp.com";
+        var appUrl = AppBaseUrl;
 
         try
         {
@@ -59,9 +68,7 @@ public class StripeController(
         var user = await db.Users.FindAsync(UserId);
         if (user == null) return Unauthorized();
 
-        var appUrl = HttpContext.Request.Headers["Origin"].FirstOrDefault()
-            ?? HttpContext.Request.Headers["Referer"].FirstOrDefault()?.TrimEnd('/')
-            ?? "https://app.creatorcompanionapp.com";
+        var appUrl = AppBaseUrl;
 
         try
         {

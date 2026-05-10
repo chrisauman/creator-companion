@@ -75,11 +75,14 @@ public class AuthService(AppDbContext db, IConfiguration config, IEmailService e
         db.Users.Add(user);
         await audit.LogAsync("user.registered", user.Id, $"email={user.Email}");
 
-        // Create email verification token (best-effort — email may not send until domain is set up)
+        // Create email verification token (best-effort — email may not send until domain is set up).
+        // The plain token is mailed; only the SHA-256 hash is persisted.
+        var verifyPlain = GenerateSecureToken();
         var verificationToken = new Domain.Models.EmailVerificationToken
         {
             UserId    = user.Id,
-            Token     = GenerateSecureToken(),
+            Token     = string.Empty,
+            TokenHash = HashToken(verifyPlain),
             ExpiresAt = DateTime.UtcNow.AddHours(24)
         };
         db.EmailVerificationTokens.Add(verificationToken);
@@ -122,7 +125,7 @@ public class AuthService(AppDbContext db, IConfiguration config, IEmailService e
         try
         {
             var appBaseUrl  = config["App:BaseUrl"] ?? "https://creator-companion-web.vercel.app";
-            var verifyLink  = $"{appBaseUrl}/verify-email?token={System.Web.HttpUtility.UrlEncode(verificationToken.Token)}";
+            var verifyLink  = $"{appBaseUrl}/verify-email?token={System.Web.HttpUtility.UrlEncode(verifyPlain)}";
             await emailService.SendVerificationEmailAsync(user.Email, verifyLink);
         }
         catch (Exception ex)
@@ -137,17 +140,34 @@ public class AuthService(AppDbContext db, IConfiguration config, IEmailService e
         return result;
     }
 
+    // Constant-time dummy BCrypt hash used to equalize the timing of
+    // "user does not exist" vs "wrong password". Hashed once at static
+    // init so it doesn't show up in flame graphs each login. Workfactor
+    // matches BCrypt.Net default (10).
+    private static readonly string DummyHash =
+        BCrypt.Net.BCrypt.HashPassword("\0timing-equalization-dummy\0");
+
     public async Task<AuthResponse> LoginAsync(LoginRequest request)
     {
         var identifier = request.Email.ToLower();
 
         if (IsLockedOut(identifier))
-            throw new UnauthorizedAccessException("Too many failed attempts. Please try again in 15 minutes.");
+            throw new UnauthorizedAccessException("Invalid credentials.");
+            // Same error message as "wrong password" — a distinct
+            // "locked out" message let attackers deliberately lock a
+            // target email then probe membership via the response text.
 
         var user = await db.Users
             .FirstOrDefaultAsync(u => u.Email == identifier);
 
-        if (user is null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+        // Always run BCrypt.Verify even when the user doesn't exist so
+        // the unknown-email path can't be distinguished from the
+        // wrong-password path by timing (~10ms for both).
+        bool passwordOk = user is not null
+            ? BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash)
+            : BCrypt.Net.BCrypt.Verify(request.Password, DummyHash) && false;
+
+        if (user is null || !passwordOk)
         {
             RecordFailure(identifier);
             await audit.LogAsync("login.failed", null, $"email={identifier}");
@@ -155,7 +175,7 @@ public class AuthService(AppDbContext db, IConfiguration config, IEmailService e
         }
 
         if (!user.IsActive)
-            throw new UnauthorizedAccessException("Account is inactive.");
+            throw new UnauthorizedAccessException("Invalid credentials.");
 
         ClearFailures(identifier);
         await audit.LogAsync("login.success", user.Id);
@@ -164,9 +184,17 @@ public class AuthService(AppDbContext db, IConfiguration config, IEmailService e
 
     public async Task<AuthResponse> RefreshAsync(string refreshToken)
     {
+        // Hash-lookup first (new tokens are stored hash-only); fall back
+        // to the legacy plain-Token column for tokens issued before the
+        // at-rest-hash rollout. The fallback can be removed once the
+        // refresh-token TTL (30 days) has elapsed since rollout.
+        var hash = HashToken(refreshToken);
         var token = await db.RefreshTokens
             .Include(r => r.User)
-            .FirstOrDefaultAsync(r => r.Token == refreshToken);
+            .FirstOrDefaultAsync(r => r.TokenHash == hash)
+            ?? await db.RefreshTokens
+                .Include(r => r.User)
+                .FirstOrDefaultAsync(r => r.Token == refreshToken);
 
         if (token is null || !token.IsActive)
             throw new UnauthorizedAccessException("Invalid or expired refresh token.");
@@ -180,7 +208,9 @@ public class AuthService(AppDbContext db, IConfiguration config, IEmailService e
 
     public async Task RevokeAsync(string refreshToken, string? requestingUserId = null)
     {
-        var token = await db.RefreshTokens.FirstOrDefaultAsync(r => r.Token == refreshToken);
+        var hash = HashToken(refreshToken);
+        var token = await db.RefreshTokens.FirstOrDefaultAsync(r => r.TokenHash == hash)
+            ?? await db.RefreshTokens.FirstOrDefaultAsync(r => r.Token == refreshToken);
         if (token is null || !token.IsActive) return;
 
         // If a userId was provided, ensure the token belongs to that user
@@ -204,17 +234,20 @@ public class AuthService(AppDbContext db, IConfiguration config, IEmailService e
             .ToListAsync();
         db.PasswordResetTokens.RemoveRange(existing);
 
+        // Plain token is mailed to the user; only the hash is persisted.
+        var resetPlain = GenerateSecureToken();
         var resetToken = new Domain.Models.PasswordResetToken
         {
-            UserId = user.Id,
-            Token = GenerateSecureToken(),
+            UserId    = user.Id,
+            Token     = string.Empty,
+            TokenHash = HashToken(resetPlain),
             ExpiresAt = DateTime.UtcNow.AddHours(1)
         };
         db.PasswordResetTokens.Add(resetToken);
         await db.SaveChangesAsync();
 
         var appBaseUrl = config["App:BaseUrl"] ?? "https://creator-companion-web.vercel.app";
-        var resetLink  = $"{appBaseUrl}/reset-password?token={HttpUtility.UrlEncode(resetToken.Token)}";
+        var resetLink  = $"{appBaseUrl}/reset-password?token={HttpUtility.UrlEncode(resetPlain)}";
         try
         {
             await emailService.SendPasswordResetAsync(user.Email, resetLink);
@@ -225,14 +258,21 @@ public class AuthService(AppDbContext db, IConfiguration config, IEmailService e
             Console.WriteLine($"[WARN] Failed to send password reset email to {user.Email}: {ex.Message}");
         }
 
-        return resetToken.Token;
+        // Return the plain token so the Development handler can surface
+        // it back to the dev (controller already gates on env); never
+        // store the plain value past this point.
+        return resetPlain;
     }
 
     public async Task<bool> VerifyEmailAsync(string token)
     {
+        var hash = HashToken(token);
         var record = await db.EmailVerificationTokens
             .Include(t => t.User)
-            .FirstOrDefaultAsync(t => t.Token == token);
+            .FirstOrDefaultAsync(t => t.TokenHash == hash)
+            ?? await db.EmailVerificationTokens
+                .Include(t => t.User)
+                .FirstOrDefaultAsync(t => t.Token == token);
 
         if (record is null || !record.IsValid) return false;
 
@@ -246,9 +286,13 @@ public class AuthService(AppDbContext db, IConfiguration config, IEmailService e
 
     public async Task ResetPasswordAsync(string token, string newPassword)
     {
+        var hash = HashToken(token);
         var resetToken = await db.PasswordResetTokens
             .Include(t => t.User)
-            .FirstOrDefaultAsync(t => t.Token == token);
+            .FirstOrDefaultAsync(t => t.TokenHash == hash)
+            ?? await db.PasswordResetTokens
+                .Include(t => t.User)
+                .FirstOrDefaultAsync(t => t.Token == token);
 
         if (resetToken is null || !resetToken.IsValid)
             throw new InvalidOperationException("Reset link is invalid or has expired.");
@@ -295,10 +339,15 @@ public class AuthService(AppDbContext db, IConfiguration config, IEmailService e
         }
 
         var refreshDays = config.GetValue<int>("Jwt:RefreshExpiryDays", 30);
+        var refreshPlain = GenerateSecureToken();
         var refreshToken = new RefreshToken
         {
             UserId = user.Id,
-            Token = GenerateSecureToken(),
+            // New tokens are stored as SHA-256 digest only — the raw
+            // value is returned to the client (cookie + JSON) but never
+            // persisted. Plain `Token` stays empty for new rows.
+            Token = string.Empty,
+            TokenHash = HashToken(refreshPlain),
             ExpiresAt = DateTime.UtcNow.AddDays(refreshDays)
         };
         db.RefreshTokens.Add(refreshToken);
@@ -306,7 +355,7 @@ public class AuthService(AppDbContext db, IConfiguration config, IEmailService e
 
         return new AuthResponse(
             accessToken,
-            refreshToken.Token,
+            refreshPlain,
             expiresAt,
             new UserSummary(
                 user.Id,
@@ -352,5 +401,19 @@ public class AuthService(AppDbContext db, IConfiguration config, IEmailService e
     {
         var bytes = RandomNumberGenerator.GetBytes(64);
         return Convert.ToBase64String(bytes);
+    }
+
+    /// <summary>
+    /// SHA-256 hex digest of a token. Tokens are 64 random bytes
+    /// (high entropy), so a plain digest is sufficient — no HMAC
+    /// secret needed, no rainbow-table risk. Used for the at-rest
+    /// hash columns on RefreshToken / PasswordResetToken /
+    /// EmailVerificationToken.
+    /// </summary>
+    internal static string HashToken(string raw)
+    {
+        var bytes = System.Text.Encoding.UTF8.GetBytes(raw);
+        var digest = SHA256.HashData(bytes);
+        return Convert.ToHexString(digest).ToLowerInvariant();
     }
 }
