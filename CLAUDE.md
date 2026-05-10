@@ -452,22 +452,73 @@ desktop-only.
 6. Replace the live Fraunces wordmark with a PNG raster.
 7. Mass-rename routes/files without explicit instruction (URL bookmarks).
 
+## Security posture (current state)
+
+Snapshot of what's enforced server-side as of the May 2026 audit pass.
+Re-read this before changing auth, billing, or storage paths.
+
+- **JWT access token** in memory only, ~60min TTL, `ClockSkew=0`.
+- **Refresh token** in HttpOnly Secure SameSite=None cookie ONLY —
+  never returned to JS, never stored in localStorage, never accepted
+  from the request body. SHA-256 hashed at rest; legacy plain rows
+  honored during the 30-day rotation window then a follow-up
+  migration drops the plain `Token` column.
+- **Password hashing** BCrypt work factor 12 (OWASP 2024+). Legacy
+  factor-10 hashes are rehashed transparently on next successful login.
+- **Per-account login lockout** — 10 failures / 15 minutes, persisted
+  on `User.FailedLoginCount` + `User.LockedUntil`. Survives redeploys
+  and applies globally across replicas. Locked-out path runs dummy
+  BCrypt to match wrong-password timing. Lockout response copy is the
+  same as "Invalid credentials" so attackers can't probe membership.
+- **Forgot-password** uses the same dummy-work pattern; unknown-email
+  path's latency tracks the registered-email path.
+- **Password reset / email verification tokens** SHA-256 hashed at
+  rest with partial unique indexes (`TokenHash` IS NOT NULL).
+- **Stripe webhooks** idempotent via `ProcessedStripeEvents` table
+  (Stripe event id PK). InvoicePaymentFailed does NOT downgrade; final
+  cancellation comes via `customer.subscription.updated` / `.deleted`.
+  Checkout completion cross-checks `customer.email == user.email`.
+- **CORS production** locked to the configured `Cors:AllowedOrigins`
+  allowlist; loose localhost/LAN match only in Development.
+- **ImageSharp** 3.1.10 (high-sev CVE closed) + 50MP decompression-
+  bomb guard via `Image.IdentifyAsync` before `LoadAsync`.
+- **HtmlSanitizer** locked to an explicit tag/attribute/URL-scheme
+  allowlist. Inline `style` and non-http(s)/mailto schemes blocked.
+- **Trash purge** — soft-deleted entries hard-delete after 48h via
+  `ReminderBackgroundService` calling `IEntryService.PurgeExpiredTrashAsync`.
+  Entry HardDelete, self-account-delete, and admin-delete-user all
+  clean orphaned R2 media.
+- **Admin actions** audit-logged via `IAuditService` (promote/demote,
+  tier change, activate/deactivate, password reset, delete user,
+  pause cancel/clear). SetActive(false) immediately revokes that
+  user's refresh tokens.
+- **Service worker** is push-only (no fetch interception, no cache)
+  — the earlier kill-switch traced the iOS slow-launch to WebKit
+  standalone startup, not the SW, but we deliberately keep the SW
+  minimal pending more evidence.
+
 ## TODO / open questions
 
 - **Vercel's exact role.** Confirm whether Vercel hosts the frontend
   PWA, the marketing site, both, or something else. Update the
   Infrastructure and Build & deploy sections accordingly, then remove
-  this TODO.
-- **Pricing model decision.** Considering moving from "free + paid"
-  to "10-day free trial → single paid plan (monthly or yearly)."
-  Affects: signup flow, paywall placement, tier-gated features
-  (currently very few — `IsPaid` claim, custom-reminder cap), trial
-  countdown UI, expiration handling, billing copy on the marketing
-  site. When committed, document the new flow here and remove this.
-- **Encryption verification.** User notes: "all data is encrypted —
-  need to check on this again." Audit at-rest encryption (Postgres
-  on Railway, R2 buckets) and in-transit (HTTPS everywhere). Document
-  what *is* encrypted and what isn't, plus any remaining gaps.
+  this TODO. (Marketing now has its own `marketing/vercel.json` with
+  CSP/HSTS, suggesting Vercel hosts at least that.)
+- **Encryption at rest.** Railway Postgres is encrypted at rest per
+  their docs; R2 buckets are encrypted at rest per Cloudflare's docs.
+  Tokens (refresh / reset / verify) are SHA-256-hashed at rest as of
+  the May 2026 pass. Still to verify: backup encryption posture,
+  whether column-level encryption is needed for PII beyond passwords.
+- **Drop legacy plain Token columns.** After 30 days post-deploy of
+  the at-rest-hash rollout (May 2026 + 30d), drop `Token` columns
+  from `RefreshTokens`, `PasswordResetTokens`,
+  `EmailVerificationTokens` and remove the legacy-fallback lookups
+  in `AuthService.RefreshAsync` / `VerifyEmailAsync` /
+  `ResetPasswordAsync`.
+- **Email verification gating.** Currently the 10-day trial is
+  issued at registration regardless of email verification. Policy
+  decision: require verified email before granting trial / before
+  allowing writes?
 
 ## How to update this file
 

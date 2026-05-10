@@ -74,13 +74,16 @@ public class AuthController(IAuthService authService, IWebHostEnvironment env) :
     }
 
     [HttpPost("refresh")]
-    public async Task<IActionResult> Refresh([FromBody] RefreshRequest? request = null)
+    public async Task<IActionResult> Refresh()
     {
-        // Accept refresh token from the HttpOnly cookie (preferred) or from
-        // the request body (localStorage fallback for browsers that block
-        // cross-origin cookies — Safari ITP, private browsing, etc.)
-        var refreshToken = GetRefreshCookie()
-                        ?? request?.RefreshToken;
+        // Cookie-only. Previously also accepted the token from the request
+        // body as a "localStorage fallback for Safari ITP" — that opened a
+        // cross-site CSRF path (any allow-listed origin with a malicious
+        // page could mint refreshes via cookie OR a stolen body token).
+        // Modern Safari handles SameSite=None; Secure cookies correctly;
+        // browsers that don't can re-login. The frontend no longer stores
+        // a refresh-token mirror in localStorage either.
+        var refreshToken = GetRefreshCookie();
 
         if (string.IsNullOrEmpty(refreshToken))
             return Unauthorized(new { error = "No refresh token." });
@@ -99,10 +102,10 @@ public class AuthController(IAuthService authService, IWebHostEnvironment env) :
     }
 
     [HttpPost("revoke")]
-    public async Task<IActionResult> Revoke([FromBody] RevokeRequest? request = null)
+    public async Task<IActionResult> Revoke()
     {
-        // Accept token from cookie or body (matches the refresh fallback pattern)
-        var refreshToken = GetRefreshCookie() ?? request?.RefreshToken;
+        // Cookie-only (mirrors the refresh endpoint). Body fallback removed.
+        var refreshToken = GetRefreshCookie();
         if (!string.IsNullOrEmpty(refreshToken))
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
@@ -146,5 +149,5 @@ public class AuthController(IAuthService authService, IWebHostEnvironment env) :
     }
 }
 
-public record RefreshRequest(string? RefreshToken = null);
-public record RevokeRequest(string? RefreshToken = null);
+// RefreshRequest / RevokeRequest records previously held a body
+// RefreshToken fallback; removed when refresh/revoke went cookie-only.

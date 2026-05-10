@@ -14,25 +14,25 @@ export interface CachedUser {
 @Injectable({ providedIn: 'root' })
 export class TokenService {
   // Access token lives in memory only (lost on page close — by design).
-  // Refresh token is stored in an HttpOnly cookie (primary) AND in
-  // localStorage (fallback for browsers that block cross-origin cookies,
-  // e.g. Safari ITP, iOS, private browsing).
+  // Refresh token lives EXCLUSIVELY in the HttpOnly Secure SameSite=None
+  // cookie issued by the backend; it is intentionally never visible to
+  // JavaScript. A previous version mirrored it into localStorage as a
+  // "Safari ITP fallback" — that defeated the HttpOnly mitigation
+  // entirely (XSS could read the token) and opened a CSRF-via-body path
+  // on /v1/auth/refresh. Both are now closed.
   private _accessToken  = signal<string | null>(null);
   private _expiresAt    = signal<Date | null>(null);
 
-  private static readonly RT_KEY   = 'cc_rt';
+  private static readonly RT_KEY    = 'cc_rt'; // legacy — kept for migration cleanup only
   private static readonly USER_KEY  = 'cc_user';
 
-  setTokens(accessToken: string, refreshToken: string, expiresAt: string): void {
+  setTokens(accessToken: string, _refreshToken: string, expiresAt: string): void {
     this._accessToken.set(accessToken);
     this._expiresAt.set(new Date(expiresAt));
-    if (refreshToken) {
-      try { localStorage.setItem(TokenService.RT_KEY, refreshToken); } catch {}
-    }
-  }
-
-  getRefreshToken(): string | null {
-    try { return localStorage.getItem(TokenService.RT_KEY); } catch { return null; }
+    // Intentionally no longer storing _refreshToken anywhere — cookie only.
+    // Clear any legacy localStorage refresh token from before this rollout
+    // so XSS can't read it. Best-effort; silently swallow private-mode.
+    try { localStorage.removeItem(TokenService.RT_KEY); } catch {}
   }
 
   /** Cached user — held in a signal so components (e.g. the sidebar
@@ -86,6 +86,9 @@ export class TokenService {
     this._expiresAt.set(null);
     this._cachedUser.set(null);
     try {
+      // RT_KEY removal kept for users with stale localStorage from
+      // the pre-cookie-only era. Safe to no-op once it's been gone
+      // for a release cycle.
       localStorage.removeItem(TokenService.RT_KEY);
       localStorage.removeItem(TokenService.USER_KEY);
     } catch {}

@@ -42,6 +42,18 @@ public class MediaService(
             ?? throw new InvalidOperationException("Entry not found.");
 
         var user = await db.Users.FindAsync(userId)!;
+
+        // Per-entry advisory lock so two concurrent uploads to the
+        // same entry can't both pass EnforceImageLimitAsync's COUNT
+        // and exceed the per-entry image cap. The xact lock is released
+        // automatically when the transaction commits/rolls back below.
+        await using var tx = await db.Database.BeginTransactionAsync(
+            System.Data.IsolationLevel.Serializable);
+
+        var lockKey = unchecked((long)entryId.GetHashCode()) ^ 0x6D656469610000L; // "media"
+        await db.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT pg_advisory_xact_lock({lockKey})");
+
         await entitlements.EnforceImageLimitAsync(user!, entryId);
 
         string storagePath;
@@ -85,6 +97,7 @@ public class MediaService(
 
         db.EntryMedia.Add(media);
         await db.SaveChangesAsync();
+        await tx.CommitAsync();
 
         return new MediaSummary(media.Id, media.FileName, media.ContentType,
             media.FileSizeBytes, media.TakenAt, storage.GetUrl(media.StoragePath));

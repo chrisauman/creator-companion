@@ -36,18 +36,14 @@ export class ApiService {
   }
 
   refresh(): Observable<AuthResponse> {
-    // Send the stored refresh token in the body as a fallback for browsers
-    // that block cross-origin HttpOnly cookies (Safari ITP, iOS, etc.).
-    // The API accepts from either the cookie or the body.
-    const rt = this.tokens.getRefreshToken();
-    const body = rt ? { refreshToken: rt } : {};
-    return this.http.post<AuthResponse>(`${this.base}/auth/refresh`, body, { withCredentials: true });
+    // Cookie-only — the HttpOnly cc_refresh_token cookie is the sole
+    // source of authentication for refresh. The earlier body-fallback
+    // was removed (it both defeated HttpOnly and opened a CSRF path).
+    return this.http.post<AuthResponse>(`${this.base}/auth/refresh`, {}, { withCredentials: true });
   }
 
   revoke(): Observable<void> {
-    const rt = this.tokens.getRefreshToken();
-    const body = rt ? { refreshToken: rt } : {};
-    return this.http.post<void>(`${this.base}/auth/revoke`, body, { withCredentials: true });
+    return this.http.post<void>(`${this.base}/auth/revoke`, {}, { withCredentials: true });
   }
 
   forgotPassword(email: string): Observable<{ message: string; resetToken: string }> {

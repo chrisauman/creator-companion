@@ -19,6 +19,18 @@ public class PauseService(AppDbContext db, IEntitlementService entitlement) : IP
 
         entitlement.EnforcePause(user);
 
+        // SERIALIZABLE transaction with a per-user advisory lock so two
+        // concurrent CreatePauseAsync calls can't both read pre-existing
+        // pause totals, both pass the 10-day cap, and both insert. The
+        // advisory lock keys on the user id (hashed to a stable int64)
+        // and is released when the transaction commits or rolls back.
+        await using var tx = await db.Database.BeginTransactionAsync(
+            System.Data.IsolationLevel.Serializable);
+
+        var lockKey = unchecked((long)userId.GetHashCode()) ^ 0x70617573650000L; // "pause"
+        await db.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT pg_advisory_xact_lock({lockKey})");
+
         // Ensure no active pause already exists
         var existing = await db.Pauses
             .AnyAsync(p => p.UserId == userId && p.Status == PauseStatus.Active);
@@ -50,6 +62,7 @@ public class PauseService(AppDbContext db, IEntitlementService entitlement) : IP
 
         db.Pauses.Add(pause);
         await db.SaveChangesAsync();
+        await tx.CommitAsync();
 
         return ToResponse(pause);
     }

@@ -19,14 +19,15 @@ export const authGuard: CanActivateFn = () => {
     );
   }
 
-  // ── 2. Optimistic auth — cached session exists in localStorage ─────────
-  // Show the route immediately and refresh the token in the background.
-  // This prevents a blank screen during Railway cold starts. If the
-  // refresh returns a definitive 401 the user is logged out then.
+  // ── 2. Optimistic auth — cached user exists in localStorage ─────────
+  // Show the route immediately and refresh in the background. The
+  // refresh-token cookie is HttpOnly so we can't observe it from JS;
+  // the presence of a cached user is our proxy for "had a session,
+  // try the cookie." If the refresh returns a definitive 401 the user
+  // is logged out then.
   const cachedUser = tokens.getCachedUser();
-  const hasStoredToken = !!tokens.getRefreshToken();
 
-  if (cachedUser && hasStoredToken) {
+  if (cachedUser) {
     // Allow navigation right away
     auth.refreshToken().pipe(
       switchMap(() => auth.loadUser()),
