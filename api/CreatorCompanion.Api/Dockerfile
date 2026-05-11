@@ -1,13 +1,23 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
-# Restore first as its own layer so source edits don't bust the
-# NuGet cache on every rebuild.
-COPY CreatorCompanion.Api.csproj ./
-RUN dotnet restore CreatorCompanion.Api.csproj
-
+# Single combined restore+publish. An earlier version split this into
+# two layers ("COPY .csproj → restore", then "COPY . → publish --no-restore")
+# for better layer caching, but the standalone `dotnet restore` step
+# OOM-killed (exit 137) under Railway's build memory budget — turning
+# every commit into a failed deploy. The combined `dotnet publish` does
+# the same work in a single process that the SDK can pipeline, which
+# fits within the budget. Don't split this again without testing on
+# Railway specifically.
+#
+# /p:UseCurrentRuntime=true also helps: it tells the SDK to restore
+# only the RID we're actually building for (linux-x64) instead of every
+# runtime identifier in the metadata, further reducing peak memory.
 COPY . .
-RUN dotnet publish CreatorCompanion.Api.csproj -c Release -o /app/out --no-restore
+RUN dotnet publish CreatorCompanion.Api.csproj \
+    -c Release \
+    -o /app/out \
+    /p:UseCurrentRuntime=true
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
