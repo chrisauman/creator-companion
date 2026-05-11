@@ -1,9 +1,10 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { Router } from '@angular/router';
-import { Observable, of, tap, catchError, throwError, shareReplay, delay, finalize, timeout } from 'rxjs';
+import { Observable, of, tap, catchError, throwError, shareReplay, finalize, timeout } from 'rxjs';
 import { ApiService } from './api.service';
 import { TokenService } from './token.service';
 import { User, AuthResponse, Capabilities } from '../models/models';
+import { environment } from '../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -77,6 +78,32 @@ export class AuthService {
     this._capabilities.set(null);
   }
 
+  /** Fire-and-forget revoke that survives the imminent navigation.
+   *  Falls back to a regular fetch with `keepalive: true` if
+   *  sendBeacon isn't available (older browsers). The empty-object
+   *  body matches the cookie-only refresh/revoke contract. */
+  private beaconRevoke(): void {
+    const url = `${environment.apiBaseUrl}/auth/revoke`;
+    const blob = new Blob(['{}'], { type: 'application/json' });
+    try {
+      if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
+        navigator.sendBeacon(url, blob);
+        return;
+      }
+    } catch { /* fall through */ }
+    // Fallback for environments without sendBeacon — keepalive lets
+    // the request continue past unload.
+    try {
+      fetch(url, {
+        method: 'POST',
+        credentials: 'include',
+        body: '{}',
+        headers: { 'Content-Type': 'application/json' },
+        keepalive: true,
+      }).catch(() => {});
+    } catch { /* swallow — logout should never throw */ }
+  }
+
   /** Sessionstorage key set during logout. The publicGuard reads this on the
    *  next page load and skips its background refresh attempt — otherwise the
    *  HttpOnly refresh-token cookie (still valid until the server-side revoke
@@ -104,14 +131,14 @@ export class AuthService {
     // revoke completes) would log the user right back in, making logout
     // appear to take two clicks. See publicGuard in auth.guard.ts.
     try { sessionStorage.setItem(AuthService.LOGOUT_FLAG, '1'); } catch {}
-    // Fire revoke in the background — do NOT wait for it before navigating.
-    // Railway cold starts can stall the revoke response for 8+ seconds, which
-    // previously blocked window.location.replace('/login') from ever firing,
-    // leaving the user stuck on the dashboard indefinitely (especially on iOS PWA
-    // where the access token is lost from memory every time the app is backgrounded).
-    // The refresh token is also stored in localStorage and cleared above, so the
-    // client cannot reuse it regardless of whether the server-side revoke completes.
-    this.api.revoke().subscribe({ error: () => {} });
+    // Use navigator.sendBeacon to guarantee the revoke request actually
+    // leaves the browser even though we're about to navigate. A plain
+    // fetch/XHR may be aborted by the unload — Railway cold-start
+    // delays then leave the server-side refresh-token cookie valid
+    // even after the user "logged out", which was the original
+    // motivation for the cookie-revoke-on-unload pattern. sendBeacon
+    // is fire-and-forget but the browser commits to delivering it.
+    this.beaconRevoke();
     window.location.replace('/login');
   }
 

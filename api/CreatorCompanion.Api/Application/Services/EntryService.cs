@@ -113,12 +113,34 @@ public class EntryService(
         };
 
         // Wrap entry + draft-removal + tags + analytics in a single
-        // transaction. Prior code did three separate SaveChanges (entry,
-        // tag join rows, analytics), so a crash between them could leave
-        // an entry without its tags but with a streak-counting row, or
-        // double-bumping analytics on retry. The transaction makes the
-        // whole create atomic from the caller's perspective.
-        await using var tx = await db.Database.BeginTransactionAsync();
+        // SERIALIZABLE transaction + per-user-per-day advisory lock so
+        // two concurrent CreateAsync calls can't both pass the
+        // MaxEntriesPerDay check above and both insert. Without the
+        // lock, the COUNT-then-INSERT pattern on lines 43-56 lets
+        // paid users race past their 5/day cap and free users race
+        // past their 1/day cap.
+        await using var tx = await db.Database.BeginTransactionAsync(
+            System.Data.IsolationLevel.Serializable);
+
+        var lockKey = unchecked((long)HashCode.Combine(userId, request.JournalId, request.EntryDate));
+        await db.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT pg_advisory_xact_lock({lockKey})");
+
+        // Re-check after acquiring the lock — a concurrent call that
+        // got here first may have already used the day's allowance.
+        var lockedCount = await db.Entries
+            .CountAsync(e =>
+                e.UserId == userId &&
+                e.JournalId == request.JournalId &&
+                e.EntryDate == request.EntryDate &&
+                e.DeletedAt == null);
+        if (lockedCount >= limits.MaxEntriesPerDay)
+        {
+            var message = limits.MaxEntriesPerDay == 1
+                ? "You've already logged an entry for this date. Multiple entries per day are available on the paid plan."
+                : $"You've reached the limit of {limits.MaxEntriesPerDay} entries for this date.";
+            throw new InvalidOperationException(message);
+        }
 
         db.Entries.Add(entry);
 

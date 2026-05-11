@@ -19,12 +19,16 @@ jobs:
           dotnet-version: '10.0.x'
 
       - name: Restore dependencies
-        working-directory: api/CreatorCompanion.Api
-        run: dotnet restore
+        working-directory: api
+        run: dotnet restore CreatorCompanion.slnx
 
       - name: Build
-        working-directory: api/CreatorCompanion.Api
-        run: dotnet build --no-restore --configuration Release
+        working-directory: api
+        run: dotnet build --no-restore --configuration Release CreatorCompanion.slnx
+
+      - name: Test
+        working-directory: api
+        run: dotnet test --no-build --configuration Release --logger "console;verbosity=normal" CreatorCompanion.slnx
 
   build-web:
     name: Build & verify web

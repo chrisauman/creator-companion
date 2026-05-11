@@ -31,6 +31,11 @@ public class AuthService(AppDbContext db, IConfiguration config, IEmailService e
 
     public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
     {
+        // First-pass exists check — fast common path. The unique index
+        // on User.Email (configured in UserConfiguration) is the real
+        // authority; the check below + the catch-on-SaveChanges below
+        // close the race where two concurrent registrations for the
+        // same email both pass this check.
         var emailExists = await db.Users.AnyAsync(u => u.Email == request.Email.ToLower());
         if (emailExists)
             throw new InvalidOperationException("An account with that email already exists.");
@@ -95,7 +100,19 @@ public class AuthService(AppDbContext db, IConfiguration config, IEmailService e
             });
         }
 
-        await db.SaveChangesAsync();
+        try
+        {
+            await db.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex) when (IsUniqueViolation(ex, "Email"))
+        {
+            // Two concurrent registrations for the same email both
+            // passed the AnyAsync check; the unique index on Email
+            // (UserConfiguration) catches the loser. Translate the
+            // raw 23505 into a friendly conflict instead of leaking
+            // a DB error to the caller.
+            throw new InvalidOperationException("An account with that email already exists.");
+        }
 
         var result = await IssueTokensAsync(user);
 
@@ -459,6 +476,25 @@ public class AuthService(AppDbContext db, IConfiguration config, IEmailService e
     {
         var bytes = RandomNumberGenerator.GetBytes(64);
         return Convert.ToBase64String(bytes);
+    }
+
+    /// <summary>
+    /// Detects whether a DbUpdateException is a Postgres unique-index
+    /// violation (SQLSTATE 23505) on the named column. Used to
+    /// translate concurrent-insert losers into clean conflict errors
+    /// instead of leaking a raw DB exception to the caller.
+    /// </summary>
+    private static bool IsUniqueViolation(DbUpdateException ex, string columnHint)
+    {
+        // Npgsql sets InnerException to PostgresException with SqlState 23505.
+        if (ex.InnerException is Npgsql.PostgresException pg &&
+            pg.SqlState == "23505")
+        {
+            // ConstraintName / Detail typically contain the column name.
+            var detail = (pg.Detail ?? string.Empty) + " " + (pg.ConstraintName ?? string.Empty);
+            return detail.Contains(columnHint, StringComparison.OrdinalIgnoreCase);
+        }
+        return false;
     }
 
     /// <summary>

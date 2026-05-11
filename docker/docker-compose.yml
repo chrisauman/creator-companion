@@ -1,25 +1,32 @@
 version: '3.9'
 
+# Local dev stack for the API. The production database is Postgres on
+# Railway; this file gives a matching local instance so `dotnet ef`
+# migrations and integration tests have a real Postgres to talk to.
+# An earlier version of this file ran SQL Server, leftover from a
+# previous architecture — the codebase has been Npgsql-only for some
+# time. Copy docker/.env.example to docker/.env to set the password.
+
 services:
-  sqlserver:
-    image: mcr.microsoft.com/mssql/server:2022-latest
+  postgres:
+    image: postgres:16
     container_name: creator-companion-db
     environment:
-      ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: "${DB_SA_PASSWORD}"
-      MSSQL_PID: "Developer"
+      POSTGRES_USER: creator
+      POSTGRES_PASSWORD: "${DB_SA_PASSWORD}"
+      POSTGRES_DB: creatorcompanion
     ports:
-      - "1433:1433"
+      - "5432:5432"
     volumes:
-      - sqlserver_data:/var/opt/mssql
+      - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"${DB_SA_PASSWORD}\" -Q \"SELECT 1\" -No || exit 1"]
+      test: ["CMD-SHELL", "pg_isready -U creator -d creatorcompanion"]
       interval: 10s
       timeout: 5s
       retries: 10
-      start_period: 30s
+      start_period: 10s
 
 volumes:
-  sqlserver_data:
+  postgres_data:
     driver: local
