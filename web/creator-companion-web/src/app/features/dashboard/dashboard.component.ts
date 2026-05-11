@@ -1137,17 +1137,26 @@ export class DashboardComponent implements OnInit {
   //                                   Notifications / Todos / Favorites
   rightColumnMode      = signal<'today' | 'reading' | 'composing' | 'editing' | 'notifications' | 'todos' | 'favorites' | 'streak-history'>('today');
 
-  /** Mobile-only collapse state for the "Today" panel (Daily Spark +
-   *  Daily Prompt + Mood grid). Persisted in localStorage so the
-   *  user's open/closed preference survives reloads. Default is
-   *  expanded on first visit so the user discovers what's there;
-   *  once they collapse it, it stays collapsed until they open again. */
+  /** Mobile-only collapse state for the "Today's Inspiration" panel
+   *  (Daily Spark + Daily Prompt + Mood grid). Persisted in
+   *  localStorage so the user's open/closed preference survives
+   *  reloads. Default is COLLAPSED on first visit — entries below
+   *  the fold matter more than the inspiration block, so the entry
+   *  list should be visible without scrolling past the panel. The
+   *  chevron + summary label still signal that the section exists
+   *  and can be expanded. Users who have explicitly opened it
+   *  ('0' in localStorage) keep the expanded state. */
   private static readonly TODAY_COLLAPSED_KEY = 'cc_today_collapsed';
   todayCollapsed = signal<boolean>(this.readTodayCollapsed());
 
   private readTodayCollapsed(): boolean {
-    try { return localStorage.getItem(DashboardComponent.TODAY_COLLAPSED_KEY) === '1'; }
-    catch { return false; }
+    try {
+      const stored = localStorage.getItem(DashboardComponent.TODAY_COLLAPSED_KEY);
+      // '0' = user has explicitly expanded → keep expanded.
+      // '1' or absent → collapsed (default for new sessions).
+      return stored !== '0';
+    }
+    catch { return true; }
   }
 
   toggleTodayCollapsed(): void {

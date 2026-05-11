@@ -12,6 +12,13 @@
       "runtimeExecutable": "npx",
       "runtimeArgs": ["serve", "-l", "4301", "marketing"],
       "port": 4301
+    },
+    {
+      "name": "web",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["ng", "serve", "--port", "4200"],
+      "port": 4200,
+      "cwd": "web/creator-companion-web"
     }
   ]
 }
