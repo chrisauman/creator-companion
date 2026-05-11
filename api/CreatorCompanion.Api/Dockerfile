@@ -22,13 +22,16 @@ RUN dotnet publish CreatorCompanion.Api.csproj \
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
-# Run as non-root. The base image doesn't ship an "app" user, so
-# create one with a shell-less, password-less account.
-RUN adduser --disabled-password --gecos '' --no-create-home --uid 10001 app \
- && chown -R app:app /app
-
-COPY --from=build --chown=app:app /app/out .
-USER app
+# Run as non-root via a numeric UID. The .NET 10 ASP.NET base image
+# is a minimal Debian variant that doesn't ship `adduser` — an
+# earlier version of this Dockerfile tried `adduser …` and broke
+# every Railway deploy with `/bin/sh: 1: adduser: not found`,
+# silently keeping the API stuck on an older commit for days. Using
+# a numeric USER directive sidesteps the package-availability
+# problem entirely: the kernel doesn't require the UID to have a
+# /etc/passwd entry, and COPY --chown accepts numeric IDs.
+COPY --from=build --chown=10001:10001 /app/out .
+USER 10001
 
 ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
