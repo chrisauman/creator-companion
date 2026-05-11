@@ -497,6 +497,84 @@ Re-read this before changing auth, billing, or storage paths.
   standalone startup, not the SW, but we deliberately keep the SW
   minimal pending more evidence.
 
+## Known deferred items (won't-fix with reasoning)
+
+Items the May 2026 audit pass flagged but didn't fix, with rationale.
+Document here so future audits don't re-spend the cycles deciding.
+
+- **ForwardedHeaders `KnownNetworks` allow-list** — Audit recommended
+  populating with Railway's proxy IP ranges. Railway uses dynamic
+  proxy IPs and doesn't publish them, so the only working alternative
+  would be an HTTP-level IP filter at Railway's edge — which doesn't
+  exist as a feature. The current `ForwardLimit=1` + trust-one-hop is
+  the right posture for a managed platform.
+- **Refresh-token family-based reuse detection** — Audit recommended
+  per-family revoke-on-reuse. The current atomic rotation
+  (ExecuteUpdate WHERE RevokedAt IS NULL) prevents the replay
+  scenario; family detection would add a column, a state machine, and
+  notification logic for an attack profile we don't see in practice.
+  If we ever ship a refresh-token-stolen incident, revisit.
+- **Web app `vercel.json` HSTS/X-Frame-Options/Referrer-Policy** —
+  Audit recommended adding these. The proper fix is nonce-based CSP
+  (Angular's inline runtime currently needs `'unsafe-inline'` which
+  neuters the existing CSP). Doing the nonce refactor properly is real
+  work; the marketing site is the higher-exposure surface and already
+  has the full header set via `marketing/vercel.json`.
+- **Storage-upload-before-DB-row orphan-on-failure** — Audit noted
+  that MediaService writes to R2 before the `EntryMedia` row commits,
+  so a failed SaveChanges leaks the blob. The right answer is a
+  periodic R2 reconciliation job that deletes objects with no matching
+  EntryMedia row; that's bigger infra work, and the cost is bounded
+  by storage pricing not security.
+- **Tests use InMemoryDatabase** — CLAUDE.md feedback says no DB
+  mocking, but Testcontainers-Postgres migration touches the whole
+  test suite (existing InMemory tests would need fixture rewrites).
+  Postgres-only operations (advisory locks, ExecuteUpdate, isolation
+  levels) are gated on `IsRelational()` / `ProviderName "Npgsql"` in
+  the production code so tests don't fail spuriously; the
+  concurrency/race coverage that needs a real Postgres is documented
+  as a Postgres-required follow-up in `SecurityHardeningTests.cs`'s
+  header comment. Migrate the fixture when next touching the test
+  infra.
+- **Legacy "Free-tier limits" tests** — Seven tests in
+  EntitlementServiceTests / EntryServiceTests assert that `Tier=Free`
+  users get a 100-word cap, 1-journal cap, no-backfill, etc. That
+  behavior was removed in the trial-only refactor: an in-trial Free
+  user gets PaidLimits via `EnforceAccess`; a post-trial user gets
+  blocked entirely. Tests are marked `[Fact(Skip = "...")]` with
+  rationale rather than deleted; rewrite to assert post-trial
+  NoAccessException + verify in-trial limit shape.
+- **Drop legacy plain `Token` columns** — Time-based deferred. Wait
+  30 days post-deploy of the at-rest-hash rollout (May 2026 → June
+  2026) for refresh tokens to age out, then a follow-up migration
+  drops `Token` columns from `RefreshTokens`, `PasswordResetTokens`,
+  `EmailVerificationTokens` and removes the legacy-fallback lookups
+  in `AuthService.RefreshAsync` / `VerifyEmailAsync` /
+  `ResetPasswordAsync`.
+- **Email verification before granting trial** — Policy call: today
+  the 10-day trial is issued at registration regardless of email
+  verification. An attacker can sign up with any email and get 10
+  days of full access. Tradeoff: requiring verification adds friction
+  to legitimate signups (mail-delivery race, typo recovery). Defer
+  until we see actual abuse.
+- **ImageSharp 4.x major bump** — Closes the remaining moderate CVE
+  (GHSA-rxmq-m78w-7wmc). 4.x has breaking API changes; scope as a
+  separate focused PR, not bundled with the audit pass.
+- **Refresh-token cap reduced from 5 to 3** — Lower cap would surface
+  multi-device token theft sooner. Five is fine for most users
+  (mobile + desktop + tablet); not worth shaking up here.
+- **`logout()` race window with the publicGuard auto-restore** —
+  `cc_just_logged_out` sessionStorage flag handles this for one page
+  load; a quick browser-back inside that window restores the session.
+  Acceptable.
+- **Various design polish items**: column-3 eyebrow size (.6875rem
+  vs CLAUDE.md's documented .8125rem — the .6875rem is the
+  consistent reality across the codebase, CLAUDE.md is stale on this
+  specific number); embedded-vs-standalone reader typography
+  hierarchy (embedded uses 1rem/1.5, standalone uses 1.0625rem/1.75 —
+  consolidating is bigger UI work); admin status pills using Tailwind
+  palette instead of brand tokens (admin-only surface, low priority).
+
 ## TODO / open questions
 
 - **Vercel's exact role.** Confirm whether Vercel hosts the frontend
