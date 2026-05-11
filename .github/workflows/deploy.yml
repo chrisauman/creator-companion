@@ -99,6 +99,20 @@ jobs:
   # build-time OOMs, fixed at the Dockerfile level. If Railway's
   # webhook ever degrades like Vercel's did, add a parallel
   # deploy-railway job using RAILWAY_TOKEN + the Railway CLI.
+  #
+  # ── Root cause of the May 2026 incident ──
+  # Two compounding silent skips made backend-only commits look like
+  # they shipped while actually being dropped:
+  #   1. Vercel project Root Directory = web/creator-companion-web,
+  #      so monorepo skip-by-path logic excluded any commit that
+  #      didn't touch that subtree (api-only, CI-only, docs-only).
+  #   2. Ignored Build Step was set to "Automatic", which applies
+  #      that path-based skip even for deploy-hook triggered builds.
+  # Fix landed in the Vercel project Settings → Build and Deployment:
+  #   - Ignored Build Step: Custom, command `exit 1` (always build)
+  #   - Skip deployments when no changes to root directory: Disabled
+  # If a backend-only commit ever fails to deploy again, these are
+  # the first two places to check.
   deploy-vercel:
     name: Deploy web to Vercel
     needs: build-web
