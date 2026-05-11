@@ -311,6 +311,38 @@ interface PendingImage {
             <div class="alert alert--error" style="margin-top:1rem">{{ submitError() }}</div>
           }
 
+          @if (failedUploads().length > 0) {
+            <!-- Per-file failure list. The entry IS saved (savedEntryId
+                 is set); only these specific images failed. Show the
+                 filename + the actual server error so the user knows
+                 what's wrong (oversized? blocked type?) before they
+                 retry. Retry-all is the primary action; per-row Remove
+                 lets them give up on a single file and continue. -->
+            <div class="alert alert--error" style="margin-top:1rem">
+              <p style="margin:0 0 .5rem;font-weight:600">
+                Your entry was saved, but {{ failedUploads().length }} of your
+                {{ failedUploads().length === 1 ? 'photo' : 'photos' }} couldn't be uploaded.
+              </p>
+              <ul style="list-style:none;padding:0;margin:0 0 .75rem">
+                @for (item of failedUploads(); track item.file) {
+                  <li style="display:flex;align-items:center;gap:.5rem;padding:.25rem 0;font-size:.875rem">
+                    <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                      <strong>{{ item.file.name }}</strong> — {{ item.error }}
+                    </span>
+                    <button type="button" class="btn btn--ghost btn--sm"
+                            (click)="removeFailedUpload(item.file)"
+                            [disabled]="submitting()">Skip</button>
+                  </li>
+                }
+              </ul>
+              <button type="button" class="btn btn--primary btn--sm"
+                      (click)="retryFailedUploads()"
+                      [disabled]="submitting()">
+                {{ submitting() ? 'Retrying…' : 'Retry uploads' }}
+              </button>
+            </div>
+          }
+
         </div>
       </main>
     </div>
@@ -1160,24 +1192,24 @@ export class NewEntryComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.api.createEntry(this.journalId(), this.selectedDate(), this.title, this.content, '{}', mood, tags).pipe(
       switchMap(entry => {
+        // Persist the saved entry id so the retry path knows where to
+        // attach the still-pending uploads. Capture BEFORE the upload
+        // forkJoin so a transient upload failure doesn't wipe it.
+        this.savedEntryId.set(entry.id);
         if (files.length === 0) return of(null);
-        let done = 0;
-        this.uploadProgress.set(`Uploading 1 of ${files.length}…`);
-        return forkJoin(
-          files.map(file => this.api.uploadMedia(entry.id, file).pipe(
-            tap(() => { done++; this.uploadProgress.set(`Uploading ${done} of ${files.length}…`); })
-          ))
-        ).pipe(
-          catchError(() => {
-            this.submitError.set('Entry saved, but some images could not be uploaded.');
-            setTimeout(() => this.finishAfterSave(), 2000);
-            return EMPTY;
-          })
-        );
+        return this.uploadFilesIndividually(entry.id, files);
       })
     ).subscribe({
       next: () => {
-        // Clear the draft so it doesn't reappear on the next new entry
+        // If any file failed, stay on the page so the user can retry —
+        // don't silently navigate away. failedUploads() drives the
+        // "Retry failed images" UI added below the drop zone.
+        if (this.failedUploads().length > 0) {
+          this.submitting.set(false);
+          this.editor?.setEditable(true);
+          return;
+        }
+        // All clean — clear the draft and navigate.
         this.api.discardDraft(this.journalId(), this.selectedDate()).subscribe({
           error: () => {} // best-effort, don't block navigation
         });
@@ -1189,5 +1221,81 @@ export class NewEntryComponent implements OnInit, AfterViewInit, OnDestroy {
         this.editor?.setEditable(true);
       }
     });
+  }
+
+  // ── Per-file upload tracking ───────────────────────────────────────────
+  //
+  // Previously a forkJoin over all uploads collapsed any single failure
+  // into a generic "some images could not be uploaded" message, then
+  // setTimeout'd to navigate away — the user lost track of which file
+  // failed AND couldn't retry. Now each upload reports its own status
+  // and a "Retry failed" CTA appears in the template if any error.
+
+  /** Entry id captured after createEntry succeeds. Used by retryFailedUploads. */
+  savedEntryId = signal<string | null>(null);
+
+  /** Files that errored on upload. Each retains its original File so the
+   *  retry can re-POST without the user re-picking from the file chooser. */
+  failedUploads = signal<{ file: File; error: string }[]>([]);
+
+  private uploadFilesIndividually(entryId: string, files: File[]) {
+    let done = 0;
+    const total = files.length;
+    this.uploadProgress.set(`Uploading 1 of ${total}…`);
+    this.failedUploads.set([]);
+
+    const single$ = files.map(file =>
+      this.api.uploadMedia(entryId, file).pipe(
+        tap(() => { done++; this.uploadProgress.set(`Uploading ${done} of ${total}…`); }),
+        catchError((err: any) => {
+          // Record the failure but keep the stream alive so other files
+          // continue uploading. forkJoin completes once every inner
+          // observable completes — including ones that emit `null`.
+          const message = err?.error?.error ?? err?.message ?? 'Upload failed.';
+          this.failedUploads.update(list => [...list, { file, error: message }]);
+          done++;
+          this.uploadProgress.set(`Uploading ${done} of ${total}…`);
+          return of(null);
+        })
+      )
+    );
+
+    return forkJoin(single$);
+  }
+
+  /** Retry every file that failed in the previous upload pass. */
+  retryFailedUploads(): void {
+    const entryId = this.savedEntryId();
+    if (!entryId || this.failedUploads().length === 0) return;
+
+    const filesToRetry = this.failedUploads().map(f => f.file);
+    this.failedUploads.set([]);
+    this.submitting.set(true);
+
+    this.uploadFilesIndividually(entryId, filesToRetry).subscribe({
+      next: () => {
+        if (this.failedUploads().length === 0) {
+          this.api.discardDraft(this.journalId(), this.selectedDate()).subscribe({
+            error: () => {}
+          });
+          this.finishAfterSave();
+          return;
+        }
+        this.submitting.set(false);
+      },
+      error: () => { this.submitting.set(false); }
+    });
+  }
+
+  /** Drop a specific failed file (user gives up on it). */
+  removeFailedUpload(file: File): void {
+    this.failedUploads.update(list => list.filter(f => f.file !== file));
+    // If they cleared the last failure, allow them to finish.
+    if (this.failedUploads().length === 0 && this.savedEntryId()) {
+      this.api.discardDraft(this.journalId(), this.selectedDate()).subscribe({
+        error: () => {}
+      });
+      this.finishAfterSave();
+    }
   }
 }

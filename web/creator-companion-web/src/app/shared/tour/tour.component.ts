@@ -2,6 +2,7 @@ import {
   Component, OnInit, OnDestroy, inject, signal, computed, HostListener
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ViewportService } from '../../core/services/viewport.service';
 
 /**
  * One step in a tour. `target` is a CSS selector for the element to
@@ -251,7 +252,7 @@ export class TourComponent implements OnInit, OnDestroy {
    *  mobile, which made the previous tour effectively invisible past
    *  the centered intro). */
   private isMobile(): boolean {
-    return typeof window !== 'undefined' && window.innerWidth < 768;
+    return !ViewportService.isDesktopNow();
   }
 
   /**

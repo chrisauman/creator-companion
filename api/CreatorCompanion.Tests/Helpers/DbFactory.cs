@@ -28,7 +28,13 @@ public static class DbFactory
             Email = "test@example.com",
             PasswordHash = BCrypt.Net.BCrypt.HashPassword("Password1!"),
             TimeZoneId = timezone,
-            Tier = tier
+            Tier = tier,
+            // Trial-only pricing model — every write hits
+            // EntitlementService.EnforceAccess() which requires
+            // either an active subscription or an in-trial timestamp.
+            // Free-tier tests in the suite predate this model; give
+            // them a far-future trial so EnforceAccess passes.
+            TrialEndsAt = DateTime.UtcNow.AddYears(1)
         };
         var journal = new Journal
         {

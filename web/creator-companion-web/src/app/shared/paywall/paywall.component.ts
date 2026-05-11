@@ -94,13 +94,13 @@ import { AuthService } from '../../core/services/auth.service';
       font-weight: 800;
       line-height: 1.15;
       letter-spacing: -.025em;
-      color: #1a1d24;
+      color: var(--color-text);
       margin: 0 0 1.25rem;
     }
     .paywall__intro {
       font-size: 1rem;
       line-height: 1.55;
-      color: #2a2f3a;
+      color: var(--color-text);
       margin: 0 0 2rem;
     }
 
@@ -161,7 +161,7 @@ import { AuthService } from '../../core/services/auth.service';
 
     .paywall__fineprint {
       font-size: .8125rem;
-      color: #6b7280;
+      color: var(--color-text-2);
       margin: .5rem 0 1.5rem;
     }
     .paywall__error {
@@ -172,7 +172,7 @@ import { AuthService } from '../../core/services/auth.service';
     .paywall__skip {
       display: inline-flex;
       gap: .5rem;
-      color: #9ca3af;
+      color: var(--color-text-3);
       font-size: .8125rem;
     }
     .paywall__skip button {

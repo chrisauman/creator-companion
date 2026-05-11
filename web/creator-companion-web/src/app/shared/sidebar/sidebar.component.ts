@@ -5,6 +5,7 @@ import { filter } from 'rxjs/operators';
 import { ApiService } from '../../core/services/api.service';
 import { TokenService } from '../../core/services/token.service';
 import { AuthService } from '../../core/services/auth.service';
+import { ViewportService } from '../../core/services/viewport.service';
 import { StreakStats } from '../../core/models/models';
 import { SidebarStateService } from './sidebar-state.service';
 import { TierIconComponent } from '../tier-icon/tier-icon.component';
@@ -877,7 +878,7 @@ export class SidebarComponent implements OnInit {
    * the standalone /notifications, /todos, /favorites page instead.
    */
   sectionLink(section: 'notifications' | 'todos' | 'favorites' | 'streak-history'): string[] {
-    const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
+    const isDesktop = ViewportService.isDesktopNow();
     // Desktop renders all of these inline in the dashboard's right column
     // via the ?section= query param. Mobile has no right column, so each
     // gets a dedicated standalone route instead.
@@ -886,7 +887,7 @@ export class SidebarComponent implements OnInit {
   }
 
   sectionQueryParams(section: 'notifications' | 'todos' | 'favorites' | 'streak-history'): Record<string, string> | null {
-    const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
+    const isDesktop = ViewportService.isDesktopNow();
     return isDesktop ? { section } : null;
   }
 
@@ -959,7 +960,7 @@ export class SidebarComponent implements OnInit {
    * a localStorage flag that has no visual effect — the icon looks dead.
    */
   onLogoClick(): void {
-    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+    if (!ViewportService.isDesktopNow()) {
       this.closeMobile();
     } else {
       this.toggleCollapsed();

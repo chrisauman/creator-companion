@@ -18,6 +18,8 @@ public class AuthServiceTests
         public Task SendPasswordChangedAsync(string toEmail) => Task.CompletedTask;
         public Task SendWelcomeAsync(string toEmail, string displayName) => Task.CompletedTask;
         public Task SendAccountDeletionConfirmationAsync(string toEmail, string displayName) => Task.CompletedTask;
+        public Task SendTrialEndingSoonAsync(string toEmail, string displayName, int daysLeft) => Task.CompletedTask;
+        public Task SendTrialEndedAsync(string toEmail, string displayName) => Task.CompletedTask;
     }
 
     private sealed class NullAuditService : IAuditService

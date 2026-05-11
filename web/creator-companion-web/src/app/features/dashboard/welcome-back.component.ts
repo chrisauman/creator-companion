@@ -149,14 +149,14 @@ import { StreakHistoryItem, StreakStats } from '../../core/models/models';
       font-weight: 800;
       line-height: 1.15;
       letter-spacing: -.025em;
-      color: #1a1d24;
+      color: var(--color-text);
       margin: 0 0 1.75rem;
     }
 
     .welcome-back__intro {
       font-size: 1.0625rem;
       line-height: 1.6;
-      color: #2a2f3a;
+      color: var(--color-text);
       margin: 0 0 2rem;
     }
     .welcome-back__intro strong {
@@ -164,7 +164,7 @@ import { StreakHistoryItem, StreakStats } from '../../core/models/models';
       font-weight: 700;
     }
     .welcome-back__intro--loading {
-      color: #6b7280;
+      color: var(--color-text-2);
       font-style: italic;
     }
 
@@ -177,7 +177,7 @@ import { StreakHistoryItem, StreakStats } from '../../core/models/models';
       align-items: center;
       gap: 1rem;
       margin-bottom: 1.25rem;
-      color: #6b7280;
+      color: var(--color-text-2);
     }
     .welcome-back__divider::before,
     .welcome-back__divider::after {
@@ -201,12 +201,12 @@ import { StreakHistoryItem, StreakStats } from '../../core/models/models';
       gap: 1rem;
       flex-wrap: wrap;
       margin: 0 0 2.5rem;
-      color: #2a2f3a;
+      color: var(--color-text);
       font-size: .9375rem;
     }
     .welcome-back__stat strong {
       font-weight: 700;
-      color: #1a1d24;
+      color: var(--color-text);
     }
     .welcome-back__stat-divider {
       width: 4px;
@@ -215,7 +215,7 @@ import { StreakHistoryItem, StreakStats } from '../../core/models/models';
       border-radius: 50%;
     }
     .welcome-back__arrow {
-      color: #9ca3af;
+      color: var(--color-text-3);
       margin: 0 .25rem;
     }
 
@@ -249,7 +249,7 @@ import { StreakHistoryItem, StreakStats } from '../../core/models/models';
 
     .welcome-back__hint {
       margin: .875rem 0 2.25rem;
-      color: #6b7280;
+      color: var(--color-text-2);
       font-size: .875rem;
       font-style: italic;
     }
@@ -261,7 +261,7 @@ import { StreakHistoryItem, StreakStats } from '../../core/models/models';
       display: inline-flex;
       align-items: center;
       gap: .5rem;
-      color: #9ca3af;
+      color: var(--color-text-3);
       font-size: .8125rem;
     }
     .welcome-back__skip button {

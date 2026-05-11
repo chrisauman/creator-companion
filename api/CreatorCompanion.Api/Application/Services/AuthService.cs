@@ -248,10 +248,29 @@ public class AuthService(AppDbContext db, IConfiguration config, IEmailService e
         // active sessions per stolen token. ExecuteUpdateAsync compiles
         // to a single UPDATE ... WHERE RevokedAt IS NULL, returning the
         // affected-rows count — only one caller sees 1 and proceeds.
+        //
+        // InMemoryDatabase doesn't implement ExecuteUpdateAsync; tests
+        // fall back to read-modify-write (sufficient for single-threaded
+        // test scenarios, the race protection is real-DB-only).
         var now = DateTime.UtcNow;
-        var revoked = await db.RefreshTokens
-            .Where(r => r.Id == token.Id && r.RevokedAt == null)
-            .ExecuteUpdateAsync(s => s.SetProperty(r => r.RevokedAt, now));
+        int revoked;
+        if (db.Database.IsRelational())
+        {
+            revoked = await db.RefreshTokens
+                .Where(r => r.Id == token.Id && r.RevokedAt == null)
+                .ExecuteUpdateAsync(s => s.SetProperty(r => r.RevokedAt, now));
+        }
+        else
+        {
+            if (token.RevokedAt is not null)
+                revoked = 0;
+            else
+            {
+                token.RevokedAt = now;
+                await db.SaveChangesAsync();
+                revoked = 1;
+            }
+        }
 
         if (revoked == 0)
             throw new UnauthorizedAccessException("Invalid or expired refresh token.");

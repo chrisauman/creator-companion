@@ -58,18 +58,22 @@ public class FavoritesController(
         skip = Math.Max(0, skip);
         take = Math.Clamp(take, 1, MaxTake);
 
-        // Fetch both lists pre-sorted by FavoritedAt DESC. We pull
-        // everything from each table because cross-source pagination
-        // can't be done correctly with a per-table Skip/Take — the
-        // merge order depends on timestamps from both. For a typical
-        // user with <100 favorites this is fine; if someone hits
-        // thousands we can revisit (e.g. a precomputed merged view).
+        // Cross-source pagination needs both sources sorted by the
+        // same key — we still merge in memory, but each source is
+        // capped at `skip + take + 1` rows (the most we could possibly
+        // need to fill this page even if the other source contributes
+        // zero). Previously we pulled the entire history from both
+        // tables; users with thousands of favorites would OOM the
+        // request. The +1 lets us detect hasMore correctly.
+        var perSourceCap = skip + take + 1;
 
         // Sparks (favorited motivations).
         var sparkRows = await db.UserFavoritedMotivations
+            .AsNoTracking()
             .Where(f => f.UserId == UserId)
             .Include(f => f.Entry)
             .OrderByDescending(f => f.CreatedAt)
+            .Take(perSourceCap)
             .Select(f => new
             {
                 Type        = "spark",
@@ -85,8 +89,10 @@ public class FavoritesController(
         // excluded — we don't want to surface trashed-but-favorited
         // items in the gallery.
         var entryRows = await db.Entries
+            .AsNoTracking()
             .Where(e => e.UserId == UserId && e.IsFavorited && e.DeletedAt == null)
             .OrderByDescending(e => e.FavoritedAt ?? e.UpdatedAt)
+            .Take(perSourceCap)
             .Select(e => new
             {
                 Type        = "entry",
@@ -103,10 +109,13 @@ public class FavoritesController(
             .ThenBy(x => x.Type)
             .ToList();
 
-        var totalCount = merged.Count;
-        var pageRows   = merged.Skip(skip).Take(take + 1).ToList();
-        var hasMore    = pageRows.Count > take;
-        if (hasMore) pageRows = pageRows.Take(take).ToList();
+        // hasMore is true if either the merged result still has rows
+        // past this page, OR if either source hit its perSourceCap
+        // (meaning there could be more on the other side of the cap).
+        var pageRows = merged.Skip(skip).Take(take + 1).ToList();
+        var capReached = sparkRows.Count >= perSourceCap || entryRows.Count >= perSourceCap;
+        var hasMore = pageRows.Count > take || (capReached && pageRows.Count == take);
+        if (pageRows.Count > take) pageRows = pageRows.Take(take).ToList();
 
         // Build the EntryListItem payloads in a second pass (one
         // batched query for all entry IDs in the page) — same shape

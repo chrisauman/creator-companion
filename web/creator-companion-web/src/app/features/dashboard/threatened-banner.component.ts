@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Output, OnInit, input, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../core/services/api.service';
+import { AuthService } from '../../core/services/auth.service';
 import { StreakStats } from '../../core/models/models';
 
 /**
@@ -156,7 +157,7 @@ import { StreakStats } from '../../core/models/models';
       transition: all .15s;
     }
     .threatened-card__cta:hover {
-      background: #12C4E3;
+      background: #0bd2f0;
       border-color: #12C4E3;
       color: #fff;
     }
@@ -164,6 +165,7 @@ import { StreakStats } from '../../core/models/models';
 })
 export class ThreatenedBannerComponent implements OnInit {
   private api = inject(ApiService);
+  private auth = inject(AuthService);
 
   /** True when running under `?preview=threatened`. Forces visibility,
    *  ignoring real streak state. */
@@ -211,19 +213,47 @@ export class ThreatenedBannerComponent implements OnInit {
 
   // ── helpers ────────────────────────────────────────────────────────
 
+  /** Returns today's ISO date in the user's profile timezone. Browser
+   *  local timezone can drift from the user's profile TZ (international
+   *  travel, mismatched device clock); the server records lastEntryDate
+   *  in the user's profile TZ, so we have to compute the comparison
+   *  date in the same zone or off-by-one errors cause the banner to
+   *  fire on the wrong day. Intl.DateTimeFormat handles the conversion
+   *  in a way that respects DST. */
+  private userTimeZone(): string | undefined {
+    return this.auth.user()?.timeZoneId;
+  }
+
   private todayIso(): string {
-    return this.formatIso(new Date());
+    return this.formatIsoInZone(new Date(), this.userTimeZone());
   }
   private yesterdayIso(): string {
     const d = new Date();
     d.setDate(d.getDate() - 1);
-    return this.formatIso(d);
+    return this.formatIsoInZone(d, this.userTimeZone());
   }
-  private formatIso(d: Date): string {
-    const y  = d.getFullYear();
-    const m  = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${dd}`;
+  private formatIsoInZone(d: Date, tz?: string): string {
+    if (!tz) {
+      // Fallback to local-TZ behavior if the user profile hasn't been
+      // hydrated yet (very early page load). Same code path as before.
+      const y  = d.getFullYear();
+      const m  = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${dd}`;
+    }
+    try {
+      // `en-CA` happens to produce yyyy-MM-dd. Cleaner than reshuffling
+      // formatToParts output. timeZone option does the actual offset.
+      return new Intl.DateTimeFormat('en-CA', {
+        timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+      }).format(d);
+    } catch {
+      // Unknown TZ id — fall back to local rather than throwing.
+      const y  = d.getFullYear();
+      const m  = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${dd}`;
+    }
   }
   /** Days-since-epoch number for an ISO yyyy-MM-dd date. */
   private toDayNumber(iso: string): number {

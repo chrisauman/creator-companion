@@ -119,12 +119,25 @@ public class EntryService(
         // lock, the COUNT-then-INSERT pattern on lines 43-56 lets
         // paid users race past their 5/day cap and free users race
         // past their 1/day cap.
-        await using var tx = await db.Database.BeginTransactionAsync(
-            System.Data.IsolationLevel.Serializable);
-
-        var lockKey = unchecked((long)HashCode.Combine(userId, request.JournalId, request.EntryDate));
-        await db.Database.ExecuteSqlInterpolatedAsync(
-            $"SELECT pg_advisory_xact_lock({lockKey})");
+        //
+        // The advisory lock + SERIALIZABLE isolation are
+        // Postgres/relational features. Tests run against InMemoryDatabase
+        // which doesn't implement BeginTransactionAsync(IsolationLevel),
+        // ExecuteSqlInterpolatedAsync, or real isolation — `null` falls
+        // back to a no-op "transaction" so the same code path is
+        // exercised in tests.
+        var useRelational = db.Database.IsRelational();
+        Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction? tx = null;
+        if (useRelational)
+        {
+            tx = await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
+            if (db.Database.ProviderName?.Contains("Npgsql") == true)
+            {
+                var lockKey = unchecked((long)HashCode.Combine(userId, request.JournalId, request.EntryDate));
+                await db.Database.ExecuteSqlInterpolatedAsync(
+                    $"SELECT pg_advisory_xact_lock({lockKey})");
+            }
+        }
 
         // Re-check after acquiring the lock — a concurrent call that
         // got here first may have already used the day's allowance.
@@ -161,7 +174,7 @@ public class EntryService(
 
         await TrackAnalyticsAsync(userId, AnalyticsEventType.EntryCreated, entry.EntryDate);
 
-        await tx.CommitAsync();
+        if (tx is not null) await tx.CommitAsync();
 
         return await MapToResponseAsync(entry, tagNames);
     }

@@ -112,10 +112,10 @@ const TEMPLATES = [
       transition: border-color .15s;
       width: 100%;
     }
-    .template-item:hover { border-color: var(--accent, #6c63ff); }
+    .template-item:hover { border-color: var(--color-accent); }
     .template-item--active {
-      border-color: var(--accent, #6c63ff);
-      background: var(--accent-subtle, #f0eeff);
+      border-color: var(--color-accent);
+      background: var(--color-accent-light);
     }
     .template-item__label { display: block; font-weight: 600; font-size: .9rem; }
     .template-item__desc  { display: block; font-size: .8rem; color: var(--text-muted, #6b7280); margin-top: .2rem; }
@@ -153,12 +153,12 @@ const TEMPLATES = [
       border-radius: 0 0 6px 6px;
       padding: .75rem 1rem;
       outline: none;
-      font-family: sans-serif;
+      font-family: var(--font-sans);
       font-size: .9375rem;
       line-height: 1.6;
       color: var(--text, #111);
     }
-    .rich-editor:focus { border-color: var(--accent, #6c63ff); }
+    .rich-editor:focus { border-color: var(--color-accent); }
     .rich-editor h2 { font-size: 1.2rem; margin: .75rem 0 .25rem; }
     .rich-editor h3 { font-size: 1rem; margin: .75rem 0 .25rem; }
     .rich-editor p  { margin: .4rem 0; }

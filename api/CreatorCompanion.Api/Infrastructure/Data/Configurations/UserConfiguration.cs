@@ -22,5 +22,21 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.ProfileImagePath).HasMaxLength(500);
 
         builder.HasIndex(u => u.Email).IsUnique();
+
+        // Partial index covering all three trial-lifecycle email
+        // queries (3-day reminder / 1-day reminder / trial-ended).
+        // The worker runs each cohort query every 60s; filtering on
+        // StripeSubscriptionId IS NULL excludes the paying users the
+        // worker doesn't care about, and the index sorts by
+        // TrialEndsAt so the range predicates each query uses are
+        // ordered scans. The trial-sent-at predicate is applied as a
+        // residual filter on the index pages — still much faster than
+        // a full table scan. Three separate indexes would be more
+        // selective per query but cost 3× the write amplification on
+        // every user update; one index is the right tradeoff for the
+        // current scale.
+        builder.HasIndex(u => u.TrialEndsAt)
+            .HasDatabaseName("IX_Users_TrialEmail_Pending")
+            .HasFilter("\"StripeSubscriptionId\" IS NULL AND \"TrialEndsAt\" IS NOT NULL AND (\"TrialReminder3dSentAt\" IS NULL OR \"TrialReminder1dSentAt\" IS NULL OR \"TrialEndedEmailSentAt\" IS NULL)");
     }
 }

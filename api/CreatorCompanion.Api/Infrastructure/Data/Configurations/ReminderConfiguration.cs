@@ -20,6 +20,14 @@ public class ReminderConfiguration : IEntityTypeConfiguration<Reminder>
 
         builder.HasIndex(r => r.UserId);
 
+        // Partial index on enabled reminders. The background worker
+        // queries `WHERE IsEnabled = true` every 60 seconds; without
+        // this index it scans the full Reminders table. Filtering on
+        // IsEnabled = true keeps the index small (most rows are slots
+        // the user hasn't turned on yet).
+        builder.HasIndex(r => r.IsEnabled)
+            .HasFilter("\"IsEnabled\" = true");
+
         builder.HasOne(r => r.User)
             .WithMany()
             .HasForeignKey(r => r.UserId)

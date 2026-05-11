@@ -74,12 +74,19 @@ public class MediaService(
         // same entry can't both pass EnforceImageLimitAsync's COUNT
         // and exceed the per-entry image cap. The xact lock is released
         // automatically when the transaction commits/rolls back below.
-        await using var tx = await db.Database.BeginTransactionAsync(
-            System.Data.IsolationLevel.Serializable);
-
-        var lockKey = unchecked((long)entryId.GetHashCode()) ^ 0x6D656469610000L; // "media"
-        await db.Database.ExecuteSqlInterpolatedAsync(
-            $"SELECT pg_advisory_xact_lock({lockKey})");
+        // Tests use InMemoryDatabase which doesn't implement isolation
+        // levels or pg_advisory_xact_lock — skip both when non-relational.
+        Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction? tx = null;
+        if (db.Database.IsRelational())
+        {
+            tx = await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
+            if (db.Database.ProviderName?.Contains("Npgsql") == true)
+            {
+                var lockKey = unchecked((long)entryId.GetHashCode()) ^ 0x6D656469610000L; // "media"
+                await db.Database.ExecuteSqlInterpolatedAsync(
+                    $"SELECT pg_advisory_xact_lock({lockKey})");
+            }
+        }
 
         await entitlements.EnforceImageLimitAsync(user!, entryId);
 
@@ -124,7 +131,7 @@ public class MediaService(
 
         db.EntryMedia.Add(media);
         await db.SaveChangesAsync();
-        await tx.CommitAsync();
+        if (tx is not null) await tx.CommitAsync();
 
         return new MediaSummary(media.Id, media.FileName, media.ContentType,
             media.FileSizeBytes, media.TakenAt, storage.GetUrl(media.StoragePath));

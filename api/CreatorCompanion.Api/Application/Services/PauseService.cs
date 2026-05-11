@@ -24,12 +24,19 @@ public class PauseService(AppDbContext db, IEntitlementService entitlement) : IP
         // pause totals, both pass the 10-day cap, and both insert. The
         // advisory lock keys on the user id (hashed to a stable int64)
         // and is released when the transaction commits or rolls back.
-        await using var tx = await db.Database.BeginTransactionAsync(
-            System.Data.IsolationLevel.Serializable);
-
-        var lockKey = unchecked((long)userId.GetHashCode()) ^ 0x70617573650000L; // "pause"
-        await db.Database.ExecuteSqlInterpolatedAsync(
-            $"SELECT pg_advisory_xact_lock({lockKey})");
+        // Tests use InMemoryDatabase which doesn't implement isolation
+        // levels or pg_advisory_xact_lock — skip both when non-relational.
+        Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction? tx = null;
+        if (db.Database.IsRelational())
+        {
+            tx = await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
+            if (db.Database.ProviderName?.Contains("Npgsql") == true)
+            {
+                var lockKey = unchecked((long)userId.GetHashCode()) ^ 0x70617573650000L; // "pause"
+                await db.Database.ExecuteSqlInterpolatedAsync(
+                    $"SELECT pg_advisory_xact_lock({lockKey})");
+            }
+        }
 
         // Ensure no active pause already exists
         var existing = await db.Pauses
@@ -62,7 +69,7 @@ public class PauseService(AppDbContext db, IEntitlementService entitlement) : IP
 
         db.Pauses.Add(pause);
         await db.SaveChangesAsync();
-        await tx.CommitAsync();
+        if (tx is not null) await tx.CommitAsync();
 
         return ToResponse(pause);
     }

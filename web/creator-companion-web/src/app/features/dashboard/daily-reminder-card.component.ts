@@ -156,7 +156,7 @@ import { StreakStats } from '../../core/models/models';
       transition: all .15s;
     }
     .reminder-card__cta:hover {
-      background: #12C4E3;
+      background: #0bd2f0;
       border-color: #12C4E3;
       color: #fff;
     }

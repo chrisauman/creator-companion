@@ -6,6 +6,7 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
 import { AuthService } from '../../core/services/auth.service';
 import { TokenService } from '../../core/services/token.service';
+import { ViewportService } from '../../core/services/viewport.service';
 import { StreakStats, EntryListItem, MotivationEntry, Entry } from '../../core/models/models';
 import { getMoodEmoji } from '../../core/constants/moods';
 import { MILESTONES, getMilestoneIndex, Milestone } from '../../core/constants/milestones';
@@ -1476,7 +1477,7 @@ export class DashboardComponent implements OnInit {
    * reading-pane experience is built for mobile in Phase H).
    */
   handleEntryClick(entry: EntryListItem): void {
-    const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
+    const isDesktop = ViewportService.isDesktopNow();
     if (isDesktop) {
       this.selectEntry(entry.id);
     } else {
@@ -1554,7 +1555,7 @@ export class DashboardComponent implements OnInit {
     const params = this.route.snapshot.queryParamMap;
     const section = params.get('section');
     const compose = params.get('compose');
-    const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
+    const isDesktop = ViewportService.isDesktopNow();
 
     // ?compose=1 → open compose. openCompose() itself routes mobile vs.
     // desktop correctly (mobile navigates AWAY to /entry/new, desktop
@@ -1640,7 +1641,7 @@ export class DashboardComponent implements OnInit {
   editSelectedEntry(): void {
     const id = this.selectedEntryId();
     if (!id) return;
-    const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
+    const isDesktop = ViewportService.isDesktopNow();
     if (isDesktop) {
       this.rightColumnMode.set('editing');
     } else {
@@ -1688,7 +1689,7 @@ export class DashboardComponent implements OnInit {
    * compose into the mobile layout.
    */
   private openCompose(ctx: { mood?: string; prompt?: string; spark?: string | null; date?: string | null }): void {
-    const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
+    const isDesktop = ViewportService.isDesktopNow();
     if (isDesktop) {
       this.composeMood.set(ctx.mood ?? null);
       this.composePrompt.set(ctx.prompt ?? null);
