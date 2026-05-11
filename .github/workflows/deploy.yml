@@ -50,3 +50,45 @@ jobs:
       - name: Build
         working-directory: web/creator-companion-web
         run: npm run build -- --configuration production
+
+  # ── Deploy ───────────────────────────────────────────────────────────
+  # Vercel's GitHub App webhook has degraded twice (Saturday and again
+  # today), losing pushes silently. This job is the durable fallback:
+  # GitHub Actions runs on every push to main, and after the web build
+  # passes it POSTs to a Vercel Deploy Hook URL. Vercel always builds
+  # the latest commit on the hook's configured branch (main), so this
+  # delivers the same outcome as the broken webhook — but driven from
+  # GitHub Actions, which is reliable.
+  #
+  # Setup: in Vercel project → Settings → Git → Deploy Hooks, create a
+  # hook for branch `main`. Copy the URL into the GitHub secret
+  # VERCEL_DEPLOY_HOOK at repo Settings → Secrets and variables →
+  # Actions. The secret is encrypted at rest and never echoed in logs.
+  #
+  # Railway is intentionally not in this job — its GitHub App
+  # integration is delivering pushes correctly (every commit appears
+  # in the Railway dashboard); the failures we saw were build-time
+  # OOMs, fixed at the Dockerfile level. If Railway's webhook ever
+  # degrades the same way Vercel's did, add a parallel deploy-railway
+  # job that uses RAILWAY_TOKEN + the Railway CLI.
+  deploy-vercel:
+    name: Deploy web to Vercel
+    needs: build-web
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Vercel deploy hook
+        env:
+          DEPLOY_HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$DEPLOY_HOOK" ]; then
+            echo "::error::VERCEL_DEPLOY_HOOK secret is not set. Add it under repo Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+          # POST with no body — Vercel only needs the hook URL to be
+          # hit. -f makes curl exit non-zero on any 4xx/5xx so failed
+          # triggers show up as a failed workflow.
+          echo "POST to Vercel deploy hook (URL redacted)…"
+          curl --fail --silent --show-error -X POST "$DEPLOY_HOOK" | tee /tmp/vercel-response.json
+          echo ""
+          echo "Deploy triggered. Watch the Deployments tab in the Vercel project."
