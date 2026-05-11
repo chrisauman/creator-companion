@@ -52,25 +52,53 @@ jobs:
         run: npm run build -- --configuration production
 
   # ── Deploy ───────────────────────────────────────────────────────────
-  # Vercel's GitHub App webhook has degraded twice (Saturday and again
-  # today), losing pushes silently. This job is the durable fallback:
-  # GitHub Actions runs on every push to main, and after the web build
-  # passes it POSTs to a Vercel Deploy Hook URL. Vercel always builds
-  # the latest commit on the hook's configured branch (main), so this
-  # delivers the same outcome as the broken webhook — but driven from
-  # GitHub Actions, which is reliable.
+  # Vercel's GitHub App webhook has degraded silently more than once.
+  # Failure mode: GitHub stops delivering push events (or Vercel stops
+  # processing them), no error surfaces in either dashboard, and the
+  # project just sits N commits behind production indefinitely.
   #
-  # Setup: in Vercel project → Settings → Git → Deploy Hooks, create a
-  # hook for branch `main`. Copy the URL into the GitHub secret
-  # VERCEL_DEPLOY_HOOK at repo Settings → Secrets and variables →
-  # Actions. The secret is encrypted at rest and never echoed in logs.
+  # Fallback: this job POSTs Vercel's Deploy Hook URL on every push to
+  # main. The hook URL lives in the GitHub secret VERCEL_DEPLOY_HOOK
+  # (Settings → Secrets and variables → Actions).
+  #
+  # ── THE TRAP ──
+  # The hook returns 2xx the moment Vercel ACCEPTS the POST, not when
+  # the build completes. The response is always shaped like
+  # {"job":{"id":"…","state":"PENDING","createdAt":…}}, whether the
+  # deploy ultimately succeeds OR is silently orphaned.
+  #
+  # Silent-orphan pattern (May 2026, lost 9 commits): if Vercel's
+  # GitHub App is disconnected from the repo, Vercel creates a
+  # PENDING job from the hook but has no source to build from — the
+  # job dies without ever showing up in the Deployments tab, while
+  # `curl --fail` reports success. We burned hours diagnosing a "fix
+  # isn't working" loop because the workflow was green and nothing
+  # was actually shipping.
+  #
+  # The verification step below is the only honest signal. It polls
+  # the live site for the SHA stamp injected by
+  # web/creator-companion-web/scripts/inject-version.mjs and fails
+  # red if the new commit doesn't appear within 10 minutes.
+  #
+  # If verification fails:
+  #   1. Vercel → creator-companion-onti → Settings → Git: is the
+  #      GitHub repo still "Connected"? Reconnect if not.
+  #   2. Vercel → Deployments tab: is there a deployment row for this
+  #      commit?
+  #        - If no row exists → hook isn't reaching the project.
+  #          Re-copy the URL from Settings → Git → Deploy Hooks and
+  #          update the GitHub secret VERCEL_DEPLOY_HOOK.
+  #        - If a row exists but failed → open it and read the build log.
+  #   3. Vercel → Settings → Git → Ignored Build Step: must be
+  #      "Automatic". A custom script using bash-only `==` in /bin/sh
+  #      silently rejected every build until May 2026 — never use a
+  #      custom Ignored Build Step here without a portable POSIX test.
   #
   # Railway is intentionally not in this job — its GitHub App
-  # integration is delivering pushes correctly (every commit appears
-  # in the Railway dashboard); the failures we saw were build-time
-  # OOMs, fixed at the Dockerfile level. If Railway's webhook ever
-  # degrades the same way Vercel's did, add a parallel deploy-railway
-  # job that uses RAILWAY_TOKEN + the Railway CLI.
+  # integration delivers pushes correctly; the failures we saw were
+  # build-time OOMs, fixed at the Dockerfile level. If Railway's
+  # webhook ever degrades like Vercel's did, add a parallel
+  # deploy-railway job using RAILWAY_TOKEN + the Railway CLI.
   deploy-vercel:
     name: Deploy web to Vercel
     needs: build-web
@@ -86,9 +114,44 @@ jobs:
             exit 1
           fi
           # POST with no body — Vercel only needs the hook URL to be
-          # hit. -f makes curl exit non-zero on any 4xx/5xx so failed
-          # triggers show up as a failed workflow.
+          # hit. -f makes curl exit non-zero on any 4xx/5xx, but a 2xx
+          # here does NOT mean the deploy will land — see the
+          # comment block above and the verification step below.
           echo "POST to Vercel deploy hook (URL redacted)…"
           curl --fail --silent --show-error -X POST "$DEPLOY_HOOK" | tee /tmp/vercel-response.json
           echo ""
-          echo "Deploy triggered. Watch the Deployments tab in the Vercel project."
+          echo "Hook accepted. Verifying the deploy actually reaches production…"
+
+      - name: Verify deploy reached production
+        env:
+          SITE_URL: https://app.creatorcompanionapp.com
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          # Poll the live site for the cc-build meta tag injected at
+          # build time by web/creator-companion-web/scripts/inject-version.mjs.
+          # Match against the first 7 chars of the pushed commit's SHA.
+          # If we don't see it within 10 minutes, the deploy didn't
+          # actually land — fail red so the breakage is visible
+          # immediately instead of going unnoticed for days.
+          SHORT_SHA="${EXPECTED_SHA:0:7}"
+          DEADLINE=$(( $(date +%s) + 600 ))
+          LIVE_SHA=""
+
+          echo "Waiting for $SITE_URL to serve cc-build=$SHORT_SHA (10 min ceiling)…"
+          while [ $(date +%s) -lt $DEADLINE ]; do
+            # `--max-time 10` so a stuck connection can't eat the
+            # whole budget on a single attempt.
+            LIVE_SHA=$(curl --silent --max-time 10 "$SITE_URL/" \
+              | sed -n 's/.*name="cc-build" content="\([a-f0-9]*\)".*/\1/p' \
+              | head -1)
+            if [ "$LIVE_SHA" = "$SHORT_SHA" ]; then
+              echo "✓ Live SHA is $SHORT_SHA — deploy verified."
+              exit 0
+            fi
+            REMAINING=$(( DEADLINE - $(date +%s) ))
+            echo "Live SHA is '${LIVE_SHA:-<none>}', expected '$SHORT_SHA'. Re-checking in 20s (${REMAINING}s remaining)…"
+            sleep 20
+          done
+
+          echo "::error::Deploy did not reach $SITE_URL within 10 min. Live SHA still '${LIVE_SHA:-<none>}', expected '$SHORT_SHA'. Vercel accepted the hook (see previous step) but the build never landed. See troubleshooting checklist in this workflow's comment block."
+          exit 1
