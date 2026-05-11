@@ -22,4 +22,10 @@ USER app
 
 ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
+
+# Note on health checks: Railway's platform healthcheck is configured
+# via railway.json's `healthcheckPath` (more reliable than Dockerfile
+# HEALTHCHECK on this image since dotnet/aspnet:10.0 doesn't ship
+# curl/wget). Program.cs maps GET /health to a 200 OK response.
+
 ENTRYPOINT ["dotnet", "CreatorCompanion.Api.dll"]

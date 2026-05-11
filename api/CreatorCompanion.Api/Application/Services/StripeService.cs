@@ -191,11 +191,44 @@ public class StripeService(AppDbContext db, IOptions<StripeConfig> config, IEmai
         if (user == null) return;
 
         user.StripeSubscriptionId = sub.Id;
-        user.Tier = sub.Status is "active" or "trialing"
-            ? AccountTier.Paid
-            : AccountTier.Free;
-        user.UpdatedAt = DateTime.UtcNow;
 
+        // Tier mapping rules:
+        //  - active / trialing → Paid (the normal happy path).
+        //  - past_due / unpaid → KEEP existing tier. Stripe's dunning
+        //    retries the failed invoice over several days; flipping to
+        //    Free here would lock a paying customer out on day 1 of
+        //    what's almost always a transient card issue (expired card,
+        //    3DS prompt, bank fraud-rule rejection).
+        //  - canceled / incomplete_expired / paused → Free. These are
+        //    terminal states; the customer has either explicitly ended
+        //    or Stripe has given up on the dunning cycle.
+        //  - incomplete → Free if no prior Paid tier; keep current
+        //    otherwise (this typically means the very first payment
+        //    hasn't completed yet).
+        //
+        // Final-cancellation events fire HandleSubscriptionDeletedAsync,
+        // which is the authoritative "subscription is gone, downgrade".
+        switch (sub.Status)
+        {
+            case "active":
+            case "trialing":
+                user.Tier = AccountTier.Paid;
+                break;
+            case "past_due":
+            case "unpaid":
+                // Keep current tier — let Stripe dunning run.
+                break;
+            case "canceled":
+            case "incomplete_expired":
+            case "paused":
+                user.Tier = AccountTier.Free;
+                break;
+            case "incomplete":
+                if (user.Tier != AccountTier.Paid) user.Tier = AccountTier.Free;
+                break;
+        }
+
+        user.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync();
     }
 

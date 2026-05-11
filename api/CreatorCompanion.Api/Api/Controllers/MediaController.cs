@@ -42,11 +42,18 @@ public class MediaController(IMediaService mediaService, IWebHostEnvironment env
         }
     }
 
-    // Serve local files in dev — replaced by CDN/Blob URLs in production
+    // Serve local files in dev — replaced by CDN/Blob URLs in production.
+    // GUARDED on env.IsDevelopment(): if storage config ever flips to
+    // LocalStorageService in production (mis-configured DI), an
+    // [AllowAnonymous] route serving user uploads is the most
+    // exposed surface in the app. Returning 404 in non-dev makes the
+    // route effectively non-existent.
     [HttpGet("file/{fileName}")]
     [AllowAnonymous]
     public IActionResult ServeFile(string fileName)
     {
+        if (!env.IsDevelopment()) return NotFound();
+
         var uploadsPath = Path.Combine(env.ContentRootPath, "uploads");
         var safeName = Path.GetFileName(fileName); // prevent path traversal
         var fullPath = Path.Combine(uploadsPath, safeName);

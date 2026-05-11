@@ -49,7 +49,14 @@ try
         var host = uri.Host;
         var port = uri.Port > 0 ? uri.Port : 5432;
         var db   = uri.AbsolutePath.TrimStart('/');
-        return $"Host={host};Port={port};Database={db};Username={user};Password={pass};SSL Mode=Disable";
+        // SSL Mode=Require with Trust Server Certificate=true is the
+        // Railway-recommended posture. Railway terminates TLS internally
+        // with a self-signed cert that Npgsql can't validate against a
+        // root, so VerifyFull would break the connection; Require gives
+        // us in-transit encryption (defense in depth against any future
+        // routing change that exposes the connection) without the
+        // cert-pinning headache.
+        return $"Host={host};Port={port};Database={db};Username={user};Password={pass};SSL Mode=Require;Trust Server Certificate=true";
     }
 
     var connectionString = ResolveConnectionString(rawDbUrl);
