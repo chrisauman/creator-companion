@@ -48,7 +48,14 @@ import { SidebarStateService } from '../sidebar/sidebar-state.service';
          the logo crowding right behind it. Larger gap (.875rem vs
          .5rem) gives the wordmark room to breathe. */
       gap: .875rem;
-      padding: 1rem 1.125rem 1rem .75rem;
+      /* Top padding adds the iOS safe-area inset (status bar /
+         dynamic island height) ON TOP of the regular 1rem. Without
+         this, installed-PWA mode on iPhone with the
+         "black-translucent" status bar style renders the header
+         flush against (or behind) the system clock + signal icons.
+         The 0px fallback is for browsers without env() support
+         where the regular 1rem is the right value. */
+      padding: calc(env(safe-area-inset-top, 0px) + 1rem) 1.125rem 1rem .75rem;
       background: var(--color-bg);
       border-bottom: 1px solid var(--color-border);
       position: sticky;
