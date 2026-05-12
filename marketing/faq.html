@@ -116,7 +116,9 @@
     }
     .faq-item.open .faq-chev { transform: rotate(180deg); }
     .faq-a {
-      padding: 0 1.25rem 1.25rem;
+      /* Top padding so the answer reads as a clear paragraph break
+         below the question, not flush with the chevron baseline. */
+      padding: .375rem 1.25rem 1.25rem;
       font-size: 1rem; line-height: 1.65; color: #1a1d24;
     }
     .faq-empty {

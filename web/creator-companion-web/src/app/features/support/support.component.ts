@@ -114,16 +114,19 @@ import { MobileHeaderComponent } from '../../shared/mobile-header/mobile-header.
             <div class="loading-state">Loading…</div>
           }
 
-          @if (!loading() && faqs().length === 0) {
-            <div class="empty-state">No FAQs available yet. Check back soon.</div>
-          }
-
           @if (!loading() && faqs().length > 0 && filteredFaqs().length === 0) {
             <div class="empty-state">
               No questions match your search.
               <button class="faq-reset-link" type="button" (click)="resetFilters()">Clear filters</button>
             </div>
           }
+          <!--
+            We deliberately do NOT render a "No FAQs available yet" empty
+            state. Even when the DB-driven list is empty, the page is not
+            empty — the pinned "Replay tour" entry above is always visible.
+            Showing "No FAQs available" next to a visible FAQ entry read as
+            a bug to users, so the empty-list message is omitted entirely.
+          -->
 
           @if (!loading() && filteredFaqs().length > 0) {
             <section class="faq-list">
@@ -244,7 +247,10 @@ import { MobileHeaderComponent } from '../../shared/mobile-header/mobile-header.
     .faq-item--open .faq-chevron { transform: rotate(180deg); }
 
     .faq-answer {
-      padding: 0 1.25rem 1.125rem;
+      /* Top padding gives the expanded answer a clear breath of
+         whitespace below the question heading — without it, the body
+         text sits flush with the chevron line and reads cramped. */
+      padding: .375rem 1.25rem 1.125rem;
       /* Body copy standard — 1rem Inter, line-height 1.6, ink color.
          Was --font-serif (Georgia) which CLAUDE.md flags as reserved. */
       p {
