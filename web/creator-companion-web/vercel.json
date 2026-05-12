@@ -24,7 +24,7 @@
       ]
     },
     {
-      "source": "/(icons|assets)/.*",
+      "source": "/:dir(icons|assets)/:rest*",
       "headers": [
         {
           "key": "Cache-Control",
