@@ -107,13 +107,14 @@ jobs:
     needs: build-web
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    # All `vercel` commands need to run from the project's Root
-    # Directory (configured in Vercel as `web/creator-companion-web`).
-    # `defaults.run.working-directory` keeps every step consistent so
-    # the .vercel/project.json and .vercel/output stay co-located.
-    defaults:
-      run:
-        working-directory: web/creator-companion-web
+    # `vercel` commands run from the REPO ROOT, NOT from
+    # `web/creator-companion-web`. The Vercel project itself has
+    # Root Directory configured as `web/creator-companion-web` — if
+    # we `cd` into it AND the project has that Root Directory set,
+    # the CLI doubles the path: `…/web/creator-companion-web/web/
+    # creator-companion-web` and errors with "provided path does
+    # not exist". Run from repo root and the project's Root
+    # Directory setting resolves correctly.
     steps:
       - uses: actions/checkout@v4
 
@@ -157,8 +158,6 @@ jobs:
         run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Verify deploy reached production
-        # Working-directory doesn't matter here (just curl + sed), but
-        # the job-level default applies — harmless.
         env:
           SITE_URL: https://app.creatorcompanionapp.com
           EXPECTED_SHA: ${{ github.sha }}
