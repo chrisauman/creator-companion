@@ -445,12 +445,12 @@ export class ApiService {
     return this.http.get<Faq[]>(`${this.base}/admin/faq`);
   }
 
-  adminCreateFaq(question: string, answer: string, isPublished: boolean): Observable<Faq> {
-    return this.http.post<Faq>(`${this.base}/admin/faq`, { question, answer, isPublished });
+  adminCreateFaq(question: string, answer: string, category: string, isPublished: boolean): Observable<Faq> {
+    return this.http.post<Faq>(`${this.base}/admin/faq`, { question, answer, category, isPublished });
   }
 
-  adminUpdateFaq(id: string, question: string, answer: string, isPublished: boolean): Observable<Faq> {
-    return this.http.put<Faq>(`${this.base}/admin/faq/${id}`, { question, answer, isPublished });
+  adminUpdateFaq(id: string, question: string, answer: string, category: string, isPublished: boolean): Observable<Faq> {
+    return this.http.put<Faq>(`${this.base}/admin/faq/${id}`, { question, answer, category, isPublished });
   }
 
   adminDeleteFaq(id: string): Observable<void> {

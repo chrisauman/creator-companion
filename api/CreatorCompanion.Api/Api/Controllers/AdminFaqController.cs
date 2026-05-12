@@ -13,7 +13,7 @@ namespace CreatorCompanion.Api.Api.Controllers;
 public class AdminFaqController(AppDbContext db) : ControllerBase
 {
     private static FaqResponse Map(Faq f) =>
-        new(f.Id, f.Question, f.Answer, f.SortOrder, f.IsPublished, f.CreatedAt, f.UpdatedAt);
+        new(f.Id, f.Question, f.Answer, f.Category, f.SortOrder, f.IsPublished, f.CreatedAt, f.UpdatedAt);
 
     [HttpGet]
     public async Task<IActionResult> GetAll()
@@ -37,6 +37,7 @@ public class AdminFaqController(AppDbContext db) : ControllerBase
         {
             Question    = request.Question.Trim(),
             Answer      = request.Answer.Trim(),
+            Category    = string.IsNullOrWhiteSpace(request.Category) ? "General" : request.Category.Trim(),
             IsPublished = request.IsPublished,
             SortOrder   = maxOrder + 1
         };
@@ -55,6 +56,7 @@ public class AdminFaqController(AppDbContext db) : ControllerBase
 
         faq.Question    = request.Question.Trim();
         faq.Answer      = request.Answer.Trim();
+        faq.Category    = string.IsNullOrWhiteSpace(request.Category) ? "General" : request.Category.Trim();
         faq.IsPublished = request.IsPublished;
         faq.UpdatedAt   = DateTime.UtcNow;
 

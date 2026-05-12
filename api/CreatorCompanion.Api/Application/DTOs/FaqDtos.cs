@@ -6,6 +6,7 @@ public record FaqResponse(
     Guid     Id,
     string   Question,
     string   Answer,
+    string   Category,
     int      SortOrder,
     bool     IsPublished,
     DateTime CreatedAt,
@@ -15,12 +16,14 @@ public record FaqResponse(
 public record CreateFaqRequest(
     [Required, MaxLength(500)] string Question,
     [Required]                 string Answer,
+    [MaxLength(80)] string Category = "General",
     bool IsPublished = true
 );
 
 public record UpdateFaqRequest(
     [Required, MaxLength(500)] string Question,
     [Required]                 string Answer,
+    [MaxLength(80)] string Category = "General",
     bool IsPublished = true
 );
 

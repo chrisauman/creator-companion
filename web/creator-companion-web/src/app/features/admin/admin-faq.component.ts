@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
@@ -38,6 +38,19 @@ import { AdminShellComponent } from './admin-shell.component';
             <textarea class="form-textarea" [(ngModel)]="draftAnswer"
               placeholder="Write a clear, helpful answer…"
               rows="4"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Category</label>
+            <input class="form-input" [(ngModel)]="draftCategory"
+              placeholder="e.g. Getting started, Pricing & billing, Streaks"
+              [attr.list]="'cat-list'"
+              maxlength="80">
+            <datalist id="cat-list">
+              @for (cat of existingCategories(); track cat) {
+                <option [value]="cat"></option>
+              }
+            </datalist>
+            <p class="form-hint">Pick an existing category or type a new one. Free-form text.</p>
           </div>
           <div class="form-check">
             <input type="checkbox" id="add-published" [(ngModel)]="draftPublished">
@@ -89,6 +102,11 @@ import { AdminShellComponent } from './admin-shell.component';
                     <label class="form-label">Answer</label>
                     <textarea class="form-textarea" [(ngModel)]="draftAnswer" rows="4"></textarea>
                   </div>
+                  <div class="form-group">
+                    <label class="form-label">Category</label>
+                    <input class="form-input" [(ngModel)]="draftCategory"
+                           [attr.list]="'cat-list'" maxlength="80">
+                  </div>
                   <div class="form-check">
                     <input type="checkbox" [id]="'pub-' + faq.id" [(ngModel)]="draftPublished">
                     <label [for]="'pub-' + faq.id">Published</label>
@@ -107,6 +125,7 @@ import { AdminShellComponent } from './admin-shell.component';
                 <div class="faq-content">
                   <div class="faq-content__top">
                     <span class="faq-q">{{ faq.question }}</span>
+                    <span class="cat-badge">{{ faq.category }}</span>
                     <span class="status-badge" [class.status-badge--on]="faq.isPublished">
                       {{ faq.isPublished ? 'Published' : 'Draft' }}
                     </span>
@@ -202,6 +221,17 @@ import { AdminShellComponent } from './admin-shell.component';
       border: 1px solid var(--color-border);
       &--on { background: #dcfce7; color: #166534; border-color: #86efac; }
     }
+    .cat-badge {
+      font-size: .6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+      padding: .15rem .5rem; border-radius: 100px; flex-shrink: 0;
+      background: var(--color-accent-light);
+      color: var(--color-accent-dark);
+      border: 1px solid var(--color-accent);
+    }
+    .form-hint {
+      font-size: .75rem; color: var(--color-text-3);
+      margin: .375rem 0 0;
+    }
 
     /* ── Row actions ─────────────────────────────────────────────── */
     .faq-actions { display: flex; gap: .5rem; flex-shrink: 0; align-items: flex-start; }
@@ -220,9 +250,19 @@ export class AdminFaqComponent implements OnInit {
   showAddForm = signal(false);
   editingId   = signal<string | null>(null);
 
-  draftQuestion = '';
-  draftAnswer   = '';
+  draftQuestion  = '';
+  draftAnswer    = '';
+  draftCategory  = 'General';
   draftPublished = true;
+
+  /** Distinct categories already used in the FAQ set — fed to the
+   *  <datalist> autocomplete on the category input so admins can
+   *  pick from existing buckets without typing one in by hand. */
+  existingCategories = computed<string[]>(() => {
+    const set = new Set<string>();
+    for (const f of this.faqs()) set.add(f.category);
+    return Array.from(set).sort();
+  });
 
   ngOnInit(): void {
     this.load();
@@ -238,8 +278,9 @@ export class AdminFaqComponent implements OnInit {
   // ── Add ─────────────────────────────────────────────────────────
   startAdd(): void {
     this.cancelEdit();
-    this.draftQuestion = '';
-    this.draftAnswer   = '';
+    this.draftQuestion  = '';
+    this.draftAnswer    = '';
+    this.draftCategory  = 'General';
     this.draftPublished = true;
     this.showAddForm.set(true);
   }
@@ -248,13 +289,15 @@ export class AdminFaqComponent implements OnInit {
     this.showAddForm.set(false);
     this.draftQuestion = '';
     this.draftAnswer   = '';
+    this.draftCategory = 'General';
   }
 
   submitAdd(): void {
     if (!this.draftQuestion.trim() || !this.draftAnswer.trim() || this.saving()) return;
     this.saving.set(true);
     this.error.set('');
-    this.api.adminCreateFaq(this.draftQuestion.trim(), this.draftAnswer.trim(), this.draftPublished).subscribe({
+    const category = this.draftCategory.trim() || 'General';
+    this.api.adminCreateFaq(this.draftQuestion.trim(), this.draftAnswer.trim(), category, this.draftPublished).subscribe({
       next: faq => {
         this.faqs.update(list => [...list, faq]);
         this.cancelAdd();
@@ -270,6 +313,7 @@ export class AdminFaqComponent implements OnInit {
     this.editingId.set(faq.id);
     this.draftQuestion  = faq.question;
     this.draftAnswer    = faq.answer;
+    this.draftCategory  = faq.category || 'General';
     this.draftPublished = faq.isPublished;
   }
 
@@ -277,13 +321,15 @@ export class AdminFaqComponent implements OnInit {
     this.editingId.set(null);
     this.draftQuestion = '';
     this.draftAnswer   = '';
+    this.draftCategory = 'General';
   }
 
   submitEdit(faq: Faq): void {
     if (!this.draftQuestion.trim() || !this.draftAnswer.trim() || this.saving()) return;
     this.saving.set(true);
     this.error.set('');
-    this.api.adminUpdateFaq(faq.id, this.draftQuestion.trim(), this.draftAnswer.trim(), this.draftPublished).subscribe({
+    const category = this.draftCategory.trim() || 'General';
+    this.api.adminUpdateFaq(faq.id, this.draftQuestion.trim(), this.draftAnswer.trim(), category, this.draftPublished).subscribe({
       next: updated => {
         this.faqs.update(list => list.map(f => f.id === updated.id ? updated : f));
         this.cancelEdit();

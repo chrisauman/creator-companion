@@ -196,6 +196,10 @@ export interface Faq {
   id: string;
   question: string;
   answer: string;
+  /** Topical bucket — drives the category filter on the support page
+   *  and the marketing /faq route. Free-form string; defaults to
+   *  "General" on legacy rows that pre-date the column. */
+  category: string;
   sortOrder: number;
   isPublished: boolean;
   createdAt: string;

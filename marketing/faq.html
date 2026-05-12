@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FAQ — Creator Companion</title>
+  <meta name="description" content="Answers about Creator Companion — the daily journal that helps creative people show up for their work every day. Pricing, streaks, privacy, and more.">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@700;800&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,600;1,700;1,800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://www.creatorcompanionapp.com/faq.html">
+  <meta property="og:title" content="FAQ — Creator Companion">
+  <meta property="og:description" content="Answers about Creator Companion — the daily journal for creative people.">
+  <meta property="og:image" content="https://www.creatorcompanionapp.com/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="FAQ — Creator Companion">
+  <meta name="twitter:description" content="Answers about Creator Companion — the daily journal for creative people.">
+  <meta name="twitter:image" content="https://www.creatorcompanionapp.com/og-image.png">
+  <link rel="canonical" href="https://www.creatorcompanionapp.com/faq.html">
+  <style>
+    /* Page-specific styles — nav/footer/buttons inherit styles.css. */
+    .faq-controls {
+      max-width: 720px;
+      margin: 0 auto 1.75rem;
+      padding: 0 1.25rem;
+    }
+    .faq-search-bar {
+      display: flex; align-items: center; gap: .625rem;
+      padding: .75rem 1rem;
+      background: #fff;
+      border: 1px solid #e5e2dc;
+      border-radius: 999px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.04);
+    }
+    .faq-search-bar:focus-within {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px rgba(18,196,227,.18);
+    }
+    .faq-search-bar svg { width: 18px; height: 18px; flex-shrink: 0; color: #9b958a; }
+    .faq-search-bar input {
+      flex: 1; min-width: 0;
+      border: none; outline: none; background: transparent;
+      font: inherit; font-size: 1rem; color: #1a1d24;
+    }
+    .faq-search-bar input::placeholder { color: #9b958a; }
+    .faq-search-bar .clear {
+      flex-shrink: 0;
+      width: 26px; height: 26px;
+      display: grid; place-items: center;
+      background: #f1efe9; border: none; border-radius: 50%;
+      cursor: pointer; font-size: 1rem; color: #6b6860;
+    }
+    .faq-search-bar .clear:hover { background: #e5e2dc; color: #1a1d24; }
+
+    .faq-cats {
+      display: flex; flex-wrap: wrap; gap: .375rem;
+      margin-top: .875rem;
+      justify-content: center;
+    }
+    .faq-cat-btn {
+      background: #fff;
+      border: 1px solid #e5e2dc;
+      border-radius: 999px;
+      padding: .4375rem .9375rem;
+      font: inherit; font-size: .875rem; font-weight: 600;
+      color: #6b6860; cursor: pointer;
+      transition: background .15s, color .15s, border-color .15s;
+    }
+    .faq-cat-btn:hover {
+      background: #f7f5f1; border-color: #c7c2b8; color: #1a1d24;
+    }
+    .faq-cat-btn.active {
+      background: #1a1d24; color: #fff; border-color: #1a1d24;
+    }
+
+    .faq-list {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 0 1.25rem;
+    }
+    .faq-item {
+      background: #fff;
+      border: 1px solid #e5e2dc;
+      border-radius: 14px;
+      margin-bottom: .75rem;
+      overflow: hidden;
+      transition: border-color .15s;
+    }
+    .faq-item.open { border-color: #c7c2b8; }
+    .faq-q {
+      display: flex; align-items: center; gap: .75rem;
+      width: 100%;
+      padding: 1.125rem 1.25rem;
+      background: none; border: none;
+      text-align: left;
+      font: inherit; font-size: 1rem; font-weight: 700;
+      color: #1a1d24;
+      cursor: pointer;
+    }
+    .faq-q-cat {
+      flex-shrink: 0;
+      font-size: .6875rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .08em;
+      color: var(--accent);
+    }
+    .faq-q-text { flex: 1; }
+    .faq-chev {
+      flex-shrink: 0;
+      width: 18px; height: 18px;
+      transition: transform .2s;
+      color: #6b6860;
+    }
+    .faq-item.open .faq-chev { transform: rotate(180deg); }
+    .faq-a {
+      padding: 0 1.25rem 1.25rem;
+      font-size: 1rem; line-height: 1.65; color: #1a1d24;
+    }
+    .faq-empty {
+      text-align: center;
+      padding: 3rem 1.25rem;
+      color: #6b6860; font-size: .9375rem;
+    }
+    .faq-empty button {
+      background: none; border: none; padding: 0 .25rem;
+      color: var(--accent); font: inherit;
+      cursor: pointer; text-decoration: underline;
+    }
+    .faq-loading { text-align: center; padding: 3rem 1.25rem; color: #9b958a; }
+  </style>
+</head>
+<body>
+
+  <!-- Nav (mirrors index.html / pricing.html) -->
+  <nav class="nav" id="nav">
+    <div class="nav__inner">
+      <a href="index.html" class="nav__logo">
+        <img src="logo-icon.png" alt="" class="nav__logo-icon">
+        <span class="nav__logo-name">Creator Companion</span>
+      </a>
+      <div class="nav__links">
+        <a href="pricing.html">Pricing</a>
+        <a href="faq.html">FAQ</a>
+        <a href="https://app.creatorcompanionapp.com/login">Log in</a>
+        <a href="signup.html" class="btn btn--primary btn--sm">Start free trial</a>
+      </div>
+      <button class="nav__hamburger" id="hamburger" aria-label="Open menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+  <div class="mobile-menu" id="mobileMenu">
+    <a href="pricing.html">Pricing</a>
+    <a href="faq.html">FAQ</a>
+    <a href="https://app.creatorcompanionapp.com/login">Log in</a>
+    <a href="signup.html" class="btn btn--primary btn--sm">Start free trial</a>
+  </div>
+
+  <!-- Page hero -->
+  <section class="page-hero">
+    <div class="container">
+      <h1 class="page-hero__title">Frequently asked questions</h1>
+      <p class="page-hero__sub">Everything about Creator Companion — features, pricing, streaks,<br>privacy, best practices. Still curious? <a href="mailto:chris@sanctuarymg.com" style="color:var(--accent);font-weight:700">Send us a note</a>.</p>
+    </div>
+  </section>
+
+  <!-- FAQ controls -->
+  <section class="section" style="padding-top: 0">
+    <div class="faq-controls">
+      <div class="faq-search-bar">
+        <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.452 4.391l3.328 3.329a.75.75 0 1 1-1.06 1.06l-3.329-3.328A7 7 0 0 1 2 9Z" clip-rule="evenodd"/>
+        </svg>
+        <label for="faq-q" class="sr-only">Search questions and answers</label>
+        <input id="faq-q" type="search" placeholder="Search questions and answers…" autocomplete="off">
+        <button class="clear" id="faq-clear" type="button" aria-label="Clear search" style="display:none">×</button>
+      </div>
+      <div class="faq-cats" id="faq-cats" role="tablist" aria-label="Filter by category"></div>
+    </div>
+
+    <div class="faq-list" id="faq-list">
+      <div class="faq-loading">Loading questions…</div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta">
+    <div class="container">
+      <h2 class="section__title">Ready to show up for your work?</h2>
+      <p style="font-size:1.125rem;color:#555;margin:0 auto 2rem;max-width:520px">Start your 10-day free trial — full access, no credit card.</p>
+      <a href="signup.html" class="btn btn--primary btn--lg">Start free trial</a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container footer__inner">
+      <span class="footer__logo footer__logo--text">Creator Companion</span>
+      <div class="footer__links">
+        <a href="index.html">Home</a>
+        <a href="pricing.html">Pricing</a>
+        <a href="faq.html">FAQ</a>
+        <a href="signup.html">Sign up</a>
+        <a href="privacy.html">Privacy</a>
+        <a href="terms.html">Terms</a>
+      </div>
+      <span class="footer__copy">© 2026 Creator Companion</span>
+    </div>
+  </footer>
+
+  <script>
+    // ── Mobile menu (same pattern as pricing.html) ────────────────
+    const hamburger = document.getElementById('hamburger');
+    const menu = document.getElementById('mobileMenu');
+    hamburger.addEventListener('click', () => {
+      hamburger.classList.toggle('open');
+      menu.classList.toggle('open');
+    });
+    menu.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+      hamburger.classList.remove('open');
+      menu.classList.remove('open');
+    }));
+
+    // ── FAQ hydration ─────────────────────────────────────────────
+    // Fetches the published FAQ set from the public API endpoint
+    // (/v1/faq/public — anonymous, no auth required) and renders
+    // it client-side with search + category filtering. For SEO we
+    // can pre-render this at build time later; for now, the API
+    // is fast enough that the latency is negligible.
+    const API = 'https://api.creatorcompanionapp.com/v1/faq/public';
+    const listEl  = document.getElementById('faq-list');
+    const qInput  = document.getElementById('faq-q');
+    const qClear  = document.getElementById('faq-clear');
+    const catsEl  = document.getElementById('faq-cats');
+
+    let faqs = [];
+    let activeCategory = null;
+    let openId = null;
+
+    function render() {
+      const q = qInput.value.trim().toLowerCase();
+      qClear.style.display = q ? 'grid' : 'none';
+
+      const filtered = faqs.filter(f => {
+        if (activeCategory && f.category !== activeCategory) return false;
+        if (!q) return true;
+        return (
+          f.question.toLowerCase().includes(q) ||
+          f.answer.toLowerCase().includes(q) ||
+          f.category.toLowerCase().includes(q)
+        );
+      });
+
+      if (filtered.length === 0) {
+        listEl.innerHTML = `
+          <div class="faq-empty">
+            No questions match your search.
+            <button type="button" id="faq-reset">Clear filters</button>
+          </div>`;
+        document.getElementById('faq-reset')?.addEventListener('click', resetFilters);
+        return;
+      }
+
+      listEl.innerHTML = filtered.map(f => `
+        <div class="faq-item ${openId === f.id ? 'open' : ''}" data-id="${f.id}">
+          <button class="faq-q" type="button" aria-expanded="${openId === f.id}">
+            <span class="faq-q-cat">${escapeHtml(f.category)}</span>
+            <span class="faq-q-text">${escapeHtml(f.question)}</span>
+            <svg class="faq-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </button>
+          ${openId === f.id ? `<div class="faq-a">${escapeHtml(f.answer)}</div>` : ''}
+        </div>
+      `).join('');
+
+      // Wire up open/close on each row
+      listEl.querySelectorAll('.faq-item').forEach(el => {
+        el.querySelector('.faq-q').addEventListener('click', () => {
+          const id = el.dataset.id;
+          openId = (openId === id) ? null : id;
+          render();
+        });
+      });
+    }
+
+    function renderCategories() {
+      const seen = new Map();
+      for (const f of faqs) {
+        if (!seen.has(f.category)) seen.set(f.category, f.sortOrder);
+      }
+      const cats = Array.from(seen.entries())
+        .sort((a, b) => a[1] - b[1])
+        .map(([cat]) => cat);
+
+      catsEl.innerHTML = `
+        <button class="faq-cat-btn ${activeCategory === null ? 'active' : ''}" type="button" data-cat="">All</button>
+        ${cats.map(c => `<button class="faq-cat-btn ${activeCategory === c ? 'active' : ''}" type="button" data-cat="${escapeHtml(c)}">${escapeHtml(c)}</button>`).join('')}
+      `;
+      catsEl.querySelectorAll('.faq-cat-btn').forEach(b => {
+        b.addEventListener('click', () => {
+          activeCategory = b.dataset.cat || null;
+          renderCategories();
+          render();
+        });
+      });
+    }
+
+    function resetFilters() {
+      qInput.value = '';
+      activeCategory = null;
+      renderCategories();
+      render();
+    }
+
+    function escapeHtml(s) {
+      return String(s ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    qInput.addEventListener('input', render);
+    qClear.addEventListener('click', () => { qInput.value = ''; render(); qInput.focus(); });
+
+    fetch(API)
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then(data => {
+        faqs = Array.isArray(data) ? data : [];
+        if (faqs.length === 0) {
+          listEl.innerHTML = `<div class="faq-empty">FAQs are loading shortly — check back in a moment.</div>`;
+          return;
+        }
+        renderCategories();
+        render();
+      })
+      .catch(err => {
+        console.error('FAQ load failed', err);
+        listEl.innerHTML = `<div class="faq-empty">We couldn't load the FAQ right now. Please try again in a moment, or <a href="mailto:chris@sanctuarymg.com" style="color:var(--accent)">email support</a>.</div>`;
+      });
+  </script>
+</body>
+</html>
