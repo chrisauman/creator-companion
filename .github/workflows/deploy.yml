@@ -52,101 +52,113 @@ jobs:
         run: npm run build -- --configuration production
 
   # ── Deploy ───────────────────────────────────────────────────────────
-  # Vercel's GitHub App webhook has degraded silently more than once.
-  # Failure mode: GitHub stops delivering push events (or Vercel stops
-  # processing them), no error surfaces in either dashboard, and the
-  # project just sits N commits behind production indefinitely.
+  # Deploys to Vercel via the Vercel CLI (not Deploy Hooks). The CLI
+  # uploads a pre-built artifact directly to Vercel and is independent
+  # of the Vercel ↔ GitHub App connection — it just authenticates with
+  # an API token and pushes the build. This survives the failure modes
+  # that brought down hook-based deploys in May 2026:
   #
-  # Fallback: this job POSTs Vercel's Deploy Hook URL on every push to
-  # main. The hook URL lives in the GitHub secret VERCEL_DEPLOY_HOOK
-  # (Settings → Secrets and variables → Actions).
+  #   1. GitHub App webhook degrading silently (pushes go undelivered
+  #      to Vercel for hours/days with no UI indication).
+  #   2. Hook URL → project source binding severed by GitHub
+  #      disconnect/reconnect (POSTs to the hook URL still return
+  #      `{"state":"PENDING"}` but no Deployments-tab row ever
+  #      materializes; the job dies silently in Vercel's queue).
+  #   3. Monorepo skip-by-path in the project's Root Directory
+  #      auto-skipping commits that don't touch the web subtree.
   #
-  # ── THE TRAP ──
-  # The hook returns 2xx the moment Vercel ACCEPTS the POST, not when
-  # the build completes. The response is always shaped like
-  # {"job":{"id":"…","state":"PENDING","createdAt":…}}, whether the
-  # deploy ultimately succeeds OR is silently orphaned.
+  # None of these affect `vercel deploy --prebuilt --prod` — it bypasses
+  # the entire trigger pipeline and uploads the build directly.
   #
-  # Silent-orphan pattern (May 2026, lost 9 commits): if Vercel's
-  # GitHub App is disconnected from the repo, Vercel creates a
-  # PENDING job from the hook but has no source to build from — the
-  # job dies without ever showing up in the Deployments tab, while
-  # `curl --fail` reports success. We burned hours diagnosing a "fix
-  # isn't working" loop because the workflow was green and nothing
-  # was actually shipping.
+  # ── Secrets required ──
+  #   - VERCEL_TOKEN        Personal access token, Full Account scope,
+  #                         no expiration. Create at
+  #                         vercel.com → avatar → Account Settings → Tokens.
+  #   - VERCEL_ORG_ID       On Hobby this is the personal Account ID,
+  #                         not a team ID. Find in Account Settings →
+  #                         General → "Your ID".
+  #   - VERCEL_PROJECT_ID   Project ID for creator-companion-onti.
+  #                         Find in project Settings → General →
+  #                         "Project ID" (starts with prj_).
   #
-  # The verification step below is the only honest signal. It polls
-  # the live site for the SHA stamp injected by
-  # web/creator-companion-web/scripts/inject-version.mjs and fails
-  # red if the new commit doesn't appear within 10 minutes.
+  # ── Verification ──
+  # After `vercel deploy` returns, the live site is polled for the
+  # cc-build meta tag injected by inject-version.mjs. The job goes
+  # red if the new SHA doesn't reach production within 10 minutes —
+  # so future deploy regressions are visible immediately rather than
+  # silently rotting for days.
   #
-  # If verification fails:
-  #   1. Vercel → creator-companion-onti → Settings → Git: is the
-  #      GitHub repo still "Connected"? Reconnect if not.
-  #   2. Vercel → Deployments tab: is there a deployment row for this
-  #      commit?
-  #        - If no row exists → hook isn't reaching the project.
-  #          Re-copy the URL from Settings → Git → Deploy Hooks and
-  #          update the GitHub secret VERCEL_DEPLOY_HOOK.
-  #        - If a row exists but failed → open it and read the build log.
-  #   3. Vercel → Settings → Git → Ignored Build Step: must be
-  #      "Automatic". A custom script using bash-only `==` in /bin/sh
-  #      silently rejected every build until May 2026 — never use a
-  #      custom Ignored Build Step here without a portable POSIX test.
+  # If the verify step fails:
+  #   1. Read the Vercel CLI output above — `vercel deploy` prints the
+  #      deployment URL on success. If it failed, the error message
+  #      is in that step.
+  #   2. Check Vercel → Deployments tab. The CLI deploy WILL appear
+  #      there even if it failed — read its build log.
+  #   3. If the CLI itself failed at auth: the VERCEL_TOKEN secret is
+  #      expired, revoked, or missing. Recreate at vercel.com.
   #
   # Railway is intentionally not in this job — its GitHub App
   # integration delivers pushes correctly; the failures we saw were
   # build-time OOMs, fixed at the Dockerfile level. If Railway's
-  # webhook ever degrades like Vercel's did, add a parallel
-  # deploy-railway job using RAILWAY_TOKEN + the Railway CLI.
-  #
-  # ── Root cause of the May 2026 incident ──
-  # Two compounding silent skips made backend-only commits look like
-  # they shipped while actually being dropped:
-  #   1. Vercel project Root Directory = web/creator-companion-web,
-  #      so monorepo skip-by-path logic excluded any commit that
-  #      didn't touch that subtree (api-only, CI-only, docs-only).
-  #   2. Ignored Build Step was set to "Automatic", which applies
-  #      that path-based skip even for deploy-hook triggered builds.
-  # Fix landed in the Vercel project Settings → Build and Deployment:
-  #   - Ignored Build Step: Custom, command `exit 1` (always build)
-  #   - Skip deployments when no changes to root directory: Disabled
-  # If a backend-only commit ever fails to deploy again, these are
-  # the first two places to check.
-  #
-  # ── Hook URL hygiene ──
-  # Disconnecting and reconnecting the Vercel ↔ GitHub link severs
-  # a deploy hook's source binding, even though Vercel keeps
-  # accepting POSTs to the old URL and returning PENDING. If the
-  # verification step fails red and the Vercel Deployments tab
-  # shows no row for the commit at all, revoke the hook in Vercel
-  # → Settings → Git → Deploy Hooks, create a fresh one for main,
-  # and update the VERCEL_DEPLOY_HOOK GitHub secret with the new
-  # URL.
+  # webhook ever degrades, add a parallel deploy-railway job using
+  # RAILWAY_TOKEN + the Railway CLI (same shape as this one).
   deploy-vercel:
     name: Deploy web to Vercel
     needs: build-web
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    # All `vercel` commands need to run from the project's Root
+    # Directory (configured in Vercel as `web/creator-companion-web`).
+    # `defaults.run.working-directory` keeps every step consistent so
+    # the .vercel/project.json and .vercel/output stay co-located.
+    defaults:
+      run:
+        working-directory: web/creator-companion-web
     steps:
-      - name: Trigger Vercel deploy hook
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: web/creator-companion-web/package-lock.json
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Link & pull Vercel project config
         env:
-          DEPLOY_HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK }}
-        run: |
-          if [ -z "$DEPLOY_HOOK" ]; then
-            echo "::error::VERCEL_DEPLOY_HOOK secret is not set. Add it under repo Settings → Secrets and variables → Actions."
-            exit 1
-          fi
-          # POST with no body — Vercel only needs the hook URL to be
-          # hit. -f makes curl exit non-zero on any 4xx/5xx, but a 2xx
-          # here does NOT mean the deploy will land — see the
-          # comment block above and the verification step below.
-          echo "POST to Vercel deploy hook (URL redacted)…"
-          curl --fail --silent --show-error -X POST "$DEPLOY_HOOK" | tee /tmp/vercel-response.json
-          echo ""
-          echo "Hook accepted. Verifying the deploy actually reaches production…"
+          VERCEL_ORG_ID:     ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        # `vercel pull` writes .vercel/project.json (linking this
+        # directory to the project identified by the env vars) and
+        # downloads project-level config (env vars, framework, build
+        # settings) for the build step to consume.
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build with Vercel CLI
+        env:
+          # Make the SHA available to inject-version.mjs so the
+          # cc-build meta tag matches what the verify step expects.
+          # The script falls back to `git rev-parse HEAD` if this is
+          # unset, but being explicit is safer.
+          VERCEL_GIT_COMMIT_SHA: ${{ github.sha }}
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy prebuilt artifact to production
+        env:
+          VERCEL_ORG_ID:     ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        # `--prebuilt` tells Vercel to use the .vercel/output we just
+        # built locally instead of rebuilding on Vercel's side. This
+        # bypasses Ignored Build Step, Root Directory skip-logic, and
+        # every other server-side filter that broke hook deploys.
+        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Verify deploy reached production
+        # Working-directory doesn't matter here (just curl + sed), but
+        # the job-level default applies — harmless.
         env:
           SITE_URL: https://app.creatorcompanionapp.com
           EXPECTED_SHA: ${{ github.sha }}
@@ -163,8 +175,6 @@ jobs:
 
           echo "Waiting for $SITE_URL to serve cc-build=$SHORT_SHA (10 min ceiling)…"
           while [ $(date +%s) -lt $DEADLINE ]; do
-            # `--max-time 10` so a stuck connection can't eat the
-            # whole budget on a single attempt.
             LIVE_SHA=$(curl --silent --max-time 10 "$SITE_URL/" \
               | sed -n 's/.*name="cc-build" content="\([a-f0-9]*\)".*/\1/p' \
               | head -1)
@@ -177,5 +187,5 @@ jobs:
             sleep 20
           done
 
-          echo "::error::Deploy did not reach $SITE_URL within 10 min. Live SHA still '${LIVE_SHA:-<none>}', expected '$SHORT_SHA'. Vercel accepted the hook (see previous step) but the build never landed. See troubleshooting checklist in this workflow's comment block."
+          echo "::error::Deploy did not reach $SITE_URL within 10 min. Live SHA still '${LIVE_SHA:-<none>}', expected '$SHORT_SHA'. Vercel CLI reported success (see previous step) but the new SHA never appeared on production. See troubleshooting checklist in this workflow's comment block."
           exit 1
