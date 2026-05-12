@@ -377,10 +377,14 @@ import { MoodIconComponent } from '../../shared/mood-icon/mood-icon.component';
     }
     .reading__images--single { grid-template-columns: 1fr; }
     .reading__image {
+      /* Show the FULL image at its natural aspect ratio. The earlier
+         max-height + object-fit: cover rule cropped portrait photos
+         top-and-bottom and clipped the subject — defeats the purpose
+         of attaching a photo to a journal entry. The standalone
+         view-entry component never had this constraint; this matches
+         it so both surfaces render identically. */
       width: 100%;
       height: auto;
-      max-height: 480px;
-      object-fit: cover;
       border-radius: 14px;
       border: 1px solid var(--color-border);
       display: block;
