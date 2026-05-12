@@ -77,7 +77,8 @@ import { ApiService } from '../../../core/services/api.service';
     </div>
   `,
   styles: [`
-    .auth-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1.5rem; background: var(--color-bg); }
+    /* See login.component.ts for the iOS Safari 100vh / 100dvh rationale. */
+    .auth-page { min-height: 100vh; min-height: 100dvh; display: flex; align-items: center; justify-content: center; padding: 1.5rem; background: var(--color-bg); }
     .auth-card { width: 100%; max-width: 420px; }
     .auth-logo { text-align: center; margin-bottom: 2rem; }
     /* Live Fraunces wordmark — never the PNG, per CLAUDE.md. */

@@ -70,7 +70,14 @@ body {
   background: var(--color-bg);
   color: var(--color-text);
   line-height: 1.6;
+  // 100vh on iOS Safari counts the area behind the dynamic URL bar,
+  // making the body taller than the actual visible viewport — content
+  // centered with flex ends up pushed downward off the visible center.
+  // 100dvh (dynamic viewport height) tracks the real visible area as
+  // the browser chrome shows/hides. iOS 15.4+ and Chrome 108+ support
+  // it; older browsers fall back to the 100vh declaration above.
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 a { color: var(--color-accent); text-decoration: none; }

@@ -67,7 +67,13 @@ import { AuthService } from '../../../core/services/auth.service';
   `,
   styles: [`
     .auth-page {
+      /* 100vh on iOS Safari is taller than the visible area (counts the
+         space behind the URL/tab bars), so flex-centered content gets
+         pushed below the visible center. 100dvh tracks the actual
+         visible viewport. iOS 15.4+ / Chrome 108+ use dvh; older
+         browsers fall back to vh. */
       min-height: 100vh;
+      min-height: 100dvh;
       display: flex;
       align-items: center;
       justify-content: center;

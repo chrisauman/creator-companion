@@ -120,7 +120,9 @@ const NOTIF_STEP = 3;
   `,
   styles: [`
     .onboarding-page {
+      /* See login.component.ts for the iOS Safari 100vh rationale. */
       min-height: 100vh;
+      min-height: 100dvh;
       display: flex;
       align-items: center;
       justify-content: center;
