@@ -15,7 +15,7 @@ import { MobileHeaderComponent } from '../../shared/mobile-header/mobile-header.
       <app-sidebar active="dashboard" />
 
       <app-mobile-header />
-<main class="main-content">
+<main id="main" class="main-content">
         <div class="support-wrap">
 
           <div class="support-header">

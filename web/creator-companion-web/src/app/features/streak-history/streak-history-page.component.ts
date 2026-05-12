@@ -23,7 +23,8 @@ import { StreakHistoryComponent } from '../dashboard/streak-history.component';
 
       <app-mobile-header />
 
-      <main class="main-content">
+      <main id="main" class="main-content">
+        <h1 class="sr-only">Streak history</h1>
         <app-streak-history (returnToToday)="goHome()"></app-streak-history>
       </main>
     </div>

@@ -255,7 +255,66 @@ textarea.form-control {
 .sr-only {
   position: absolute; width: 1px; height: 1px;
   padding: 0; margin: -1px; overflow: hidden;
-  clip: rect(0,0,0,0); border: 0;
+  clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+}
+
+/* Skip-to-main-content link — visible only when focused via keyboard
+   Tab. Lets screen-reader and keyboard users jump past the sidebar /
+   mobile header / trial banner on every page load. Required for
+   WCAG 2.4.1 Bypass Blocks (Level A). */
+.skip-link {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: #0c0e13;
+  color: #fff;
+  padding: .75rem 1rem;
+  border-radius: 0 0 .5rem 0;
+  font-size: .9375rem;
+  font-weight: 600;
+  text-decoration: none;
+  z-index: 9999;
+  transform: translateY(-110%);
+  transition: transform .15s ease;
+}
+.skip-link:focus,
+.skip-link:focus-visible {
+  transform: translateY(0);
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+// ─── Global accessibility: focus visibility ─────────────────────────────────
+// Browsers strip the default focus ring on many element types when
+// authors add their own styles. We need a consistent, always-visible
+// keyboard focus indicator across the app (WCAG 2.4.7 Focus Visible,
+// Level AA). This baseline applies to anything keyboard-focusable and
+// is overridden per-component only when the component provides its
+// own clearly-visible focus style.
+// `:focus-visible` (not `:focus`) so the ring shows on keyboard
+// navigation but NOT after a mouse click — mouse users get hover
+// states which provide the affordance for them.
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+// ─── Global accessibility: reduced motion ───────────────────────────────────
+// Honour the user's prefers-reduced-motion setting (WCAG 2.3.3,
+// vestibular disorders). Disables all animations, transitions, and
+// smooth scrolling. The 0.01ms (not 0ms) keeps state-driven side
+// effects firing — some Angular animation callbacks depend on the
+// transitionend event, which doesn't fire at 0ms.
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 // ─── Animations ──────────────────────────────────────────────────────────────

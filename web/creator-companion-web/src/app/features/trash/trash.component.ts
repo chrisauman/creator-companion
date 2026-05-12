@@ -23,7 +23,8 @@ import { MobileHeaderComponent } from '../../shared/mobile-header/mobile-header.
         </div>
       </header>
 
-      <main class="container main-content">
+      <main id="main" class="container main-content">
+        <h1 class="sr-only">Trash</h1>
 
         <div *ngIf="!caps()?.canRecoverDeleted" class="alert alert--error" style="margin-bottom:1.5rem">
           Recovery requires a paid plan. Entries will be permanently deleted after 48 hours.

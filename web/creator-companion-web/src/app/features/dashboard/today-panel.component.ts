@@ -75,8 +75,9 @@ import { DailyReminderCardComponent } from './daily-reminder-card.component';
             @if (hasMoreToShow()) {
               <button class="spark-hero__corner-btn spark-hero__corner-btn--expand"
                       type="button"
-                      [title]="sparkExpanded() ? 'Show less' : 'Read more'"
-                      [attr.aria-expanded]="sparkExpanded()"
+="sparkExpanded() ? 'Show less' : 'Read more'"
+="sparkExpanded() ? 'Show less' : 'Read more'"
+="sparkExpanded()"
                       (click)="toggleSparkExpanded()">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                      stroke-width="2" stroke-linecap="round" stroke-linejoin="round"

@@ -28,7 +28,8 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
 <!-- Column wrapper: keeps main + sign-out in the same flex column -->
       <div class="content-col">
 
-      <main class="container main-content stack stack--lg" *ngIf="user()">
+      <main id="main" class="container main-content stack stack--lg" *ngIf="user()">
+        <h1 class="sr-only">Account</h1>
 
         <!-- Plan -->
         <section class="card">

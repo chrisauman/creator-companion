@@ -9,7 +9,7 @@ import { ApiService } from '../../../core/services/api.service';
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink],
   template: `
-    <div class="auth-page">
+    <main class="auth-page" id="main">
       <div class="auth-card card fade-in">
         <div class="auth-logo">
           <div class="auth-brand">
@@ -74,7 +74,7 @@ import { ApiService } from '../../../core/services/api.service';
           <a routerLink="/login">← Back to sign in</a>
         </p>
       </div>
-    </div>
+    </main>
   `,
   styles: [`
     /* See login.component.ts for the iOS Safari 100vh / 100dvh rationale. */

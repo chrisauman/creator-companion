@@ -9,7 +9,7 @@ import { AuthService } from '../../../core/services/auth.service';
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink],
   template: `
-    <div class="auth-page">
+    <main class="auth-page" id="main">
       <div class="auth-card card fade-in">
         <div class="auth-logo">
           <div class="auth-brand">
@@ -106,7 +106,7 @@ import { AuthService } from '../../../core/services/auth.service';
           Already have an account? <a routerLink="/login">Sign in</a>
         </p>
       </div>
-    </div>
+    </main>
   `,
   styles: [`
     .auth-page {

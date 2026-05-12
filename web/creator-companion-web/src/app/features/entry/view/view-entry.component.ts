@@ -23,7 +23,7 @@ import { MoodIconComponent } from '../../../shared/mood-icon/mood-icon.component
       <app-sidebar active="dashboard" />
       <app-mobile-header />
 <!-- Main content -->
-      <main class="main-content">
+      <main id="main" class="main-content">
 
         <!-- Reader-style top bar — works on both mobile and desktop. -->
         <div class="reader-top">
@@ -99,7 +99,8 @@ import { MoodIconComponent } from '../../../shared/mood-icon/mood-icon.component
               <div class="entry-images">
                 @for (img of entry()!.media; track img.id) {
                   <img class="entry-image"
-                    [src]="fullImageUrl(img.url)" [alt]="img.fileName"
+                    [src]="fullImageUrl(img.url)"
+                    [alt]="imageAlt(img, $index)"
                     loading="lazy" (error)="onImgError($event)" />
                 }
               </div>
@@ -443,6 +444,22 @@ export class ViewEntryComponent implements OnInit {
     const img = event.target as HTMLImageElement;
     console.error('[Image load failed]', img.src);
     img.style.display = 'none';
+  }
+
+  /** Alt text for an entry image. Filenames are often useless
+   *  (IMG_4523.jpg); we fall back to the entry title (which provides
+   *  useful context to screen-reader users) and finally to a generic
+   *  "Photo X of N" label. Mirrors the helper in entry-reader. */
+  imageAlt(img: { fileName?: string }, index: number): string {
+    const e = this.entry();
+    const fname = (img.fileName ?? '').trim();
+    const isCameraDefault = /^(IMG_|DSC|PHOTO|image|photo)[\w\-.]*$/i.test(fname);
+    if (fname && !isCameraDefault) return fname;
+    const total = e?.media?.length ?? 1;
+    const titleHint = e?.title?.trim();
+    const position = total > 1 ? ` ${index + 1} of ${total}` : '';
+    if (titleHint) return `Photo${position} from “${titleHint}”`;
+    return `Photo${position} from this journal entry`;
   }
 
   toggleFavorite(): void {

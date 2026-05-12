@@ -67,7 +67,8 @@ interface PendingImage {
       </div>
 
       <!-- Editor -->
-      <main class="editor-main">
+      <main id="main" class="editor-main">
+        <h1 class="sr-only">New entry</h1>
         <div class="container">
 
           <!-- Entry date — paid users get a 3-option backfill picker; free
@@ -116,7 +117,8 @@ interface PendingImage {
               </div>
               <button class="prompt-banner__dismiss" type="button"
                       (click)="dismissPromptBanner()"
-                      title="Dismiss">
+                      title="Dismiss"
+                      aria-label="Dismiss prompt">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
                   <line x1="18" y1="6" x2="6" y2="18"/>
                   <line x1="6" y1="6" x2="18" y2="18"/>
@@ -125,7 +127,12 @@ interface PendingImage {
             </div>
           }
 
+          <!-- Visually-hidden <label> so screen readers identify the
+               field. Placeholders are NOT labels per WCAG 1.3.1 — they
+               disappear on focus, leaving AT users without context. -->
+          <label for="entry-title-input" class="sr-only">Entry title</label>
           <input
+            id="entry-title-input"
             class="title-input"
             type="text"
             [(ngModel)]="title"
@@ -164,7 +171,7 @@ interface PendingImage {
                 @for (img of pendingImages(); track img.preview; let i = $index) {
                   <div class="image-thumb">
                     <img [src]="img.preview" [alt]="img.file.name" />
-                    <button class="image-thumb__remove" (click)="removeImage(i)" title="Remove" [disabled]="submitting()">✕</button>
+                    <button class="image-thumb__remove" (click)="removeImage(i)" title="Remove" aria-label="Remove image" [disabled]="submitting()">✕</button>
                   </div>
                 }
                 @if (pendingImages().length < maxImages()) {
@@ -262,6 +269,8 @@ interface PendingImage {
                     type="button"
                     class="mood-chip"
                     [class.mood-chip--selected]="selectedMood() === mood.key"
+                    [attr.aria-pressed]="selectedMood() === mood.key"
+                    [attr.aria-label]="'Mood: ' + mood.key"
                     (click)="selectedMood.set(mood.key)"
                     [disabled]="submitting()"
                   >
@@ -280,8 +289,19 @@ interface PendingImage {
             <div class="footer-meta">
               <span class="word-count"
                 [class.word-count--warn]="wordCount() > maxWords() * 0.9"
-                [class.word-count--over]="wordCount() > maxWords()">
+                [class.word-count--over]="wordCount() > maxWords()"
+                [attr.role]="wordCount() > maxWords() ? 'status' : null"
+                [attr.aria-live]="wordCount() > maxWords() ? 'polite' : null">
+                <!-- Warning icon: non-color cue for the at-limit state so
+                     color-blind users see the alert without relying on
+                     the orange/red text change alone (WCAG 1.4.1). -->
+                @if (wordCount() > maxWords() * 0.9) {
+                  <span class="word-count__icon" aria-hidden="true">⚠</span>
+                }
                 {{ wordCount() }} / {{ maxWords() }} words
+                @if (wordCount() > maxWords()) {
+                  <span class="sr-only">(over the limit)</span>
+                }
               </span>
               @if (pendingImages().length > 0) {
                 <span class="image-count">· {{ pendingImages().length }} photo{{ pendingImages().length !== 1 ? 's' : '' }}</span>
@@ -691,8 +711,14 @@ interface PendingImage {
     .footer-meta { display: flex; align-items: center; gap: .4rem; }
     .word-count {
       font-size: .8125rem; color: var(--color-text-3);
+      display: inline-flex; align-items: center; gap: .25rem;
       &--warn { color: var(--color-streak); }
       &--over { color: var(--color-danger); font-weight: 600; }
+    }
+    .word-count__icon {
+      /* Non-color cue paired with the warn/over colour change so
+         users with color-vision deficiency see the alert too. */
+      font-size: .9375rem; line-height: 1;
     }
     .image-count { font-size: .8125rem; color: var(--color-text-3); }
     .editor-actions { display: flex; gap: .75rem; }

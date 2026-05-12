@@ -2,6 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../core/services/api.service';
 import { AuthService } from '../../core/services/auth.service';
+import { FocusTrapDirective } from '../focus-trap.directive';
 
 /**
  * Paywall takeover. Rendered as a sibling to <router-outlet> at the
@@ -23,9 +24,9 @@ import { AuthService } from '../../core/services/auth.service';
 @Component({
   selector: 'app-paywall',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FocusTrapDirective],
   template: `
-    <div class="paywall" role="dialog" aria-labelledby="paywall-title">
+    <div class="paywall" role="dialog" aria-modal="true" aria-labelledby="paywall-title" appFocusTrap>
       <div class="paywall__inner">
         <h1 id="paywall-title" class="paywall__title">Your trial has ended.</h1>
         <p class="paywall__intro">

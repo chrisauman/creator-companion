@@ -184,7 +184,8 @@ import { ActionItem } from '../../core/models/models';
           <button class="todo-list__done-toggle"
                   type="button"
                   (click)="doneExpanded.set(!doneExpanded())"
-                  [attr.aria-expanded]="doneExpanded()">
+="doneExpanded()"
+="doneExpanded() ? 'Hide completed to-dos' : 'Show completed to-dos'">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
                  stroke="currentColor" stroke-width="2.5"
                  stroke-linecap="round" stroke-linejoin="round"

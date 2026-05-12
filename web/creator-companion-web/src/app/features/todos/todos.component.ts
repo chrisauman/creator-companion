@@ -14,7 +14,8 @@ import { ActionItemsCardComponent } from '../dashboard/action-items-card.compone
       <app-sidebar active="todos" />
 
       <app-mobile-header />
-<main class="main-content">
+<main id="main" class="main-content">
+        <h1 class="sr-only">To do list</h1>
         <!-- No page header here — the sidebar's active "To Do List" item
              already tells the user where they are. -->
         <app-action-items-card />

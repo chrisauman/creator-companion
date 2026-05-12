@@ -35,7 +35,8 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
       }
 
       <!-- Main content -->
-      <main class="main-content">
+      <main id="main" class="main-content">
+        <h1 class="sr-only">Edit entry</h1>
 
         <!-- Reader-style top bar — wraps inner row in a 760px-max
              box centred to match the article body below. Cancel moved
@@ -77,7 +78,7 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
         <!-- Favorite nudge for free users -->
         <div class="favorite-nudge" *ngIf="showFavoriteNudge()">
           <span>⭐ Favoriting entries is available on the paid plan</span>
-          <button class="favorite-nudge__close" (click)="showFavoriteNudge.set(false)">✕</button>
+          <button class="favorite-nudge__close" (click)="showFavoriteNudge.set(false)" aria-label="Dismiss favorite tip">✕</button>
         </div>
 
         @if (loading()) {
@@ -99,8 +100,10 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
               }
             </div>
 
-            <!-- Title -->
+            <!-- Title (visually-hidden label for screen readers) -->
+            <label for="edit-entry-title-input" class="sr-only">Entry title</label>
             <input
+              id="edit-entry-title-input"
               class="title-input"
               type="text"
               [(ngModel)]="title"

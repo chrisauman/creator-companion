@@ -3,6 +3,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ViewportService } from '../../core/services/viewport.service';
+import { FocusTrapDirective } from '../focus-trap.directive';
 
 /**
  * One step in a tour. `target` is a CSS selector for the element to
@@ -47,10 +48,10 @@ export interface TourStep {
 @Component({
   selector: 'app-tour',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FocusTrapDirective],
   template: `
     @if (visible()) {
-      <div class="tour" role="dialog" aria-labelledby="tour-title">
+      <div class="tour" role="dialog" aria-modal="true" aria-labelledby="tour-title" appFocusTrap>
 
         <!-- Spotlight overlay: full-screen dim with a transparent
              cutout around the target element. Drawn via four absolutely

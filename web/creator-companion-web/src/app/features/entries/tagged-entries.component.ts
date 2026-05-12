@@ -24,7 +24,7 @@ import { MobileHeaderComponent } from '../../shared/mobile-header/mobile-header.
         </div>
       </header>
 
-      <main class="container main-content">
+      <main id="main" class="container main-content">
         <div class="page-header">
           <h1 class="page-title">
             <span class="tag-badge">#{{ tagName() }}</span>

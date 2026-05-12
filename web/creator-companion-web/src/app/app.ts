@@ -20,6 +20,12 @@ import { PaywallComponent } from './shared/paywall/paywall.component';
   standalone: true,
   imports: [CommonModule, RouterOutlet, PaywallComponent],
   template: `
+    <!-- Skip-to-main-content link: invisible until focused via Tab,
+         lets keyboard and screen-reader users jump past the sidebar
+         / mobile header / trial banner on every page. WCAG 2.4.1
+         "Bypass Blocks" (Level A). The target #main is on the
+         <main> element of each routed component. -->
+    <a href="#main" class="skip-link">Skip to main content</a>
     <router-outlet />
     @if (showPaywall()) {
       <app-paywall></app-paywall>

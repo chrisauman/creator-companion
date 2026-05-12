@@ -20,7 +20,8 @@ import { MobileHeaderComponent } from '../../shared/mobile-header/mobile-header.
       }
 
       <!-- Main content -->
-      <main class="main-content">
+      <main id="main" class="main-content">
+        <h1 class="sr-only">Favorites</h1>
 
         <!-- Reader-style top bar (embedded only). Same pattern as
              the entry reader: 64px sticky surface with an inner row
@@ -94,7 +95,7 @@ import { MobileHeaderComponent } from '../../shared/mobile-header/mobile-header.
                           <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
                         </svg>
                       </button>
-                      <button class="spark-toggle" [attr.aria-expanded]="expandedId() === spark.id">
+                      <button class="spark-toggle" [attr.aria-expanded]="expandedId() === spark.id" [attr.aria-label]="(expandedId() === spark.id) ? 'Hide spark details' : 'Show spark details'">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
                           fill="none" stroke="currentColor" stroke-width="2.5"
                           stroke-linecap="round" stroke-linejoin="round"
@@ -126,6 +127,7 @@ import { MobileHeaderComponent } from '../../shared/mobile-header/mobile-header.
                       <button class="entry-card__heart"
                               type="button"
                               title="Remove from favorites"
+                              aria-label="Remove from favorites"
                               (click)="$event.stopPropagation(); unfavoriteEntry(entry.id)">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
                           fill="currentColor" stroke="currentColor" stroke-width="2"

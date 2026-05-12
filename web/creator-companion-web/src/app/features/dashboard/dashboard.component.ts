@@ -88,7 +88,8 @@ import { ActivatedRoute } from '@angular/router';
 
       <!-- ── Mobile bottom nav ───────────────────────────────── -->
       <!-- ── Main content ────────────────────────────────────── -->
-      <main class="main-content">
+      <main class="main-content" id="main">
+        <h1 class="sr-only">Journal</h1>
 
         <!-- Trial countdown banner — visible only while the user is
              inside their 10-day trial. Self-renders or hides based on
@@ -122,7 +123,7 @@ import { ActivatedRoute } from '@angular/router';
                     </svg>
                   </button>
                 }
-                <button class="motivation-toggle" [attr.aria-expanded]="motivationExpanded()">
+                <button class="motivation-toggle" [attr.aria-expanded]="motivationExpanded()" [attr.aria-label]="motivationExpanded() ? 'Hide spark details' : 'Show spark details'">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
                     fill="none" stroke="currentColor" stroke-width="2.5"
                     stroke-linecap="round" stroke-linejoin="round"

@@ -23,7 +23,8 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
         <app-mobile-header />
       }
 
-      <main class="main-content">
+      <main id="main" class="main-content">
+        <h1 class="sr-only">Reminders</h1>
 
         <!-- Reader-style top bar (embedded only). 64px tall full-
              column-width sticky surface with an inner row capped at

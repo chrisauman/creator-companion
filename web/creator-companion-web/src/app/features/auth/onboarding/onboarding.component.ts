@@ -46,7 +46,7 @@ const NOTIF_STEP = 3;
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="onboarding-page">
+    <main class="onboarding-page" id="main">
       <div class="onboarding-card card fade-in">
 
         <div class="step-content">
@@ -116,7 +116,7 @@ const NOTIF_STEP = 3;
         </div>
 
       </div>
-    </div>
+    </main>
   `,
   styles: [`
     .onboarding-page {

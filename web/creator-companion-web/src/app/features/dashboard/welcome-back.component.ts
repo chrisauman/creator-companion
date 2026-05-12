@@ -4,6 +4,7 @@ import { ActivatedRoute } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
 import { TokenService } from '../../core/services/token.service';
 import { StreakHistoryItem, StreakStats } from '../../core/models/models';
+import { FocusTrapDirective } from '../../shared/focus-trap.directive';
 
 /**
  * Welcome Back — full-takeover screen shown the first time a user opens
@@ -39,9 +40,9 @@ import { StreakHistoryItem, StreakStats } from '../../core/models/models';
 @Component({
   selector: 'app-welcome-back',
   standalone: true,
-  imports: [CommonModule, DatePipe],
+  imports: [CommonModule, DatePipe, FocusTrapDirective],
   template: `
-    <div class="welcome-back" role="dialog" aria-labelledby="welcome-back-title">
+    <div class="welcome-back" role="dialog" aria-modal="true" aria-labelledby="welcome-back-title" appFocusTrap>
       <div class="welcome-back__inner">
 
         @if (preview()) {

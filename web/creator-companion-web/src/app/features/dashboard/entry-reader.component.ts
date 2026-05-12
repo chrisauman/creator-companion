@@ -103,7 +103,7 @@ import { MoodIconComponent } from '../../shared/mood-icon/mood-icon.component';
                 @for (img of entry.media; track img.id) {
                   <img class="reading__image"
                        [src]="fullImageUrl(img.url)"
-                       [alt]="img.fileName"
+                       [alt]="imageAlt(img, $index, entry)"
                        loading="lazy"
                        (error)="onImgError($event)" />
                 }
@@ -485,5 +485,22 @@ export class EntryReaderComponent implements OnChanges {
   onImgError(event: Event): void {
     const img = event.target as HTMLImageElement;
     img.style.display = 'none';
+  }
+
+  /** Alt text for an entry image. Filenames are often useless (IMG_4523.jpg);
+   *  we fall back to the entry title (which provides useful context to
+   *  screen-reader users) and finally to a generic "Photo X of N" label.
+   *  Ideally we'd capture a real description at upload time — that's a
+   *  future "describe this image" field on the entry composer. */
+  imageAlt(img: { fileName?: string }, index: number, entry: { title?: string; media: unknown[] }): string {
+    const fname = (img.fileName ?? '').trim();
+    // Treat camera-default filenames as no useful alt
+    const isCameraDefault = /^(IMG_|DSC|PHOTO|image|photo)[\w\-.]*$/i.test(fname);
+    if (fname && !isCameraDefault) return fname;
+    const total = entry.media?.length ?? 1;
+    const titleHint = entry.title?.trim();
+    const position = total > 1 ? ` ${index + 1} of ${total}` : '';
+    if (titleHint) return `Photo${position} from “${titleHint}”`;
+    return `Photo${position} from this journal entry`;
   }
 }
