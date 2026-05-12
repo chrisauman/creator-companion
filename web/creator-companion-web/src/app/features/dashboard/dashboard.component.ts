@@ -396,12 +396,23 @@ import { ActivatedRoute } from '@angular/router';
     }
     @media (min-width: 768px) {
       .main-content {
-        /* No top padding — the search bar (left) and today-panel/
-           reader-top (right) push themselves to the top of the
-           viewport. Side padding is just enough breathing room from
-           the sidebar's dark edge before the entry list starts. */
+        /* No top padding by default — the search bar (left) and
+           today-panel/reader-top (right) push themselves to the top
+           of the viewport. Side padding is just enough breathing
+           room from the sidebar's dark edge before the entry list
+           starts. */
         padding: 0 1.25rem 4rem;
         background: #f7f7f5;
+      }
+      /* When the trial banner is the first child of main-content
+         (i.e. the user is in trial and hasn't dismissed), give it a
+         small top inset so it doesn't sit flush with the viewport
+         edge. Targets the banner via :first-child so that when the
+         banner ISN'T rendered, the search bar / today panel still
+         get their flush-to-top treatment. */
+      .main-content > app-trial-banner:first-child {
+        display: block;
+        padding-top: 1rem;
       }
     }
 
@@ -691,7 +702,11 @@ import { ActivatedRoute } from '@angular/router';
       gap: .15rem;
     }
     .today-summary__title {
-      font-size: 1rem;
+      /* .9375rem (15px) matches the trial-banner headline and other
+         secondary headlines on the mobile dashboard. Previously 1rem,
+         which read as the same scale as entry-row titles below it
+         and made the section header feel heavier than it should. */
+      font-size: .9375rem;
       font-weight: 700;
       letter-spacing: -.005em;
       color: var(--color-text);
@@ -867,7 +882,10 @@ import { ActivatedRoute } from '@angular/router';
     /* ── Search bar (modern pill style) ─────────────────────────── */
     .search-bar {
       display: flex; align-items: center; gap: .5rem;
-      margin-top: 1rem; margin-bottom: .5rem;
+      /* Bottom gap matches the trial banner's bottom gap (1rem)
+         so the vertical rhythm above and below structural rows
+         on mobile reads as one uniform spacing unit. */
+      margin-top: 1rem; margin-bottom: 1rem;
     }
     /* On desktop, the search bar sits at the top of the entry-list
        column and aligns with the reader-top (64px) on the right column.

@@ -23,29 +23,36 @@ import { ApiService } from '../../core/services/api.service';
   imports: [CommonModule],
   template: `
     @if (visible()) {
+      <!-- The whole bar is the CTA: a single button-shaped row with
+           one line of copy. Click anywhere on the bar to start the
+           Stripe checkout flow. The dismiss × is a separate inner
+           button that stops propagation so it doesn't also trigger
+           subscribe(). Wrapped in <div role="button"> rather than
+           <button> so the nested dismiss <button> is valid HTML
+           (nested <button>s are forbidden by the spec). -->
       <div class="trial-banner"
            [class.trial-banner--urgent]="daysLeft() <= 2"
-           role="status">
+           [class.trial-banner--loading]="loading()"
+           role="button"
+           tabindex="0"
+           [attr.aria-label]="ariaLabel()"
+           (click)="subscribe()"
+           (keydown.enter)="subscribe()"
+           (keydown.space)="$event.preventDefault(); subscribe()">
         <span class="trial-banner__headline">
           @if (daysLeft() === 0) {
-            <strong>Trial ends today!</strong>
+            <strong>Trial ends today.</strong> Click here to subscribe!
           } @else if (daysLeft() === 1) {
-            <strong>1 day</strong> left!
+            <strong>1 day left.</strong> Click here to subscribe!
           } @else {
-            <strong>{{ daysLeft() }} days</strong> left!
+            <strong>{{ daysLeft() }} days left.</strong> Click here to subscribe!
           }
         </span>
-        <button class="trial-banner__cta"
-                type="button"
-                [disabled]="loading()"
-                (click)="subscribe()">
-          Subscribe now
-        </button>
         <button class="trial-banner__dismiss"
                 type="button"
                 title="Dismiss"
                 aria-label="Dismiss"
-                (click)="dismiss()">
+                (click)="$event.stopPropagation(); dismiss()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                stroke-width="2.4" stroke-linecap="round" aria-hidden="true">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -55,12 +62,10 @@ import { ApiService } from '../../core/services/api.service';
     }
   `,
   styles: [`
-    /* One-line trial banner. Cyan-tinted in the normal window,
-       flips to a red-tinted "urgent" variant in the final 2 days.
-       Layout is the same on mobile and desktop: headline grows,
-       CTA sits to its right, dismiss × at the far right. The CTA
-       size shrinks slightly on narrow viewports so all three pieces
-       fit on a single line even at 320px wide. */
+    /* The whole bar is one big tap target. Cyan-tinted in the normal
+       window, flips to red-tinted "urgent" in the final 2 days.
+       Click anywhere → Stripe checkout. The dismiss × is the only
+       opt-out and lives in the upper-right of the bar. */
     .trial-banner {
       background: linear-gradient(
         180deg,
@@ -69,11 +74,36 @@ import { ApiService } from '../../core/services/api.service';
       );
       border: 1px solid rgba(18, 196, 227, .25);
       border-radius: .75rem;
-      padding: .5rem .5rem .5rem 1rem;
+      padding: .75rem 1rem;
+      /* Equal space above and below — the parent's content padding
+         provides the "above" gap; this margin provides the "below"
+         gap; both should read as roughly the same vertical breathing
+         room. On desktop the parent provides no top padding, so the
+         dashboard's main-content rule adds an explicit top inset
+         where this banner lives. */
       margin: 0 0 1rem;
       display: flex;
       align-items: center;
       gap: .625rem;
+      cursor: pointer;
+      transition: background .15s, border-color .15s, transform .1s;
+      -webkit-tap-highlight-color: rgba(18, 196, 227, .15);
+      /* role=button div: reset default link-like styles. */
+      text-align: left;
+      user-select: none;
+    }
+    .trial-banner:hover {
+      background: linear-gradient(
+        180deg,
+        rgba(18, 196, 227, .10) 0%,
+        rgba(18, 196, 227, .18) 100%
+      );
+      border-color: rgba(18, 196, 227, .42);
+    }
+    .trial-banner:active { transform: scale(.997); }
+    .trial-banner:focus-visible {
+      outline: 2px solid #0bd2f0;
+      outline-offset: 2px;
     }
     .trial-banner--urgent {
       background: linear-gradient(
@@ -83,6 +113,15 @@ import { ApiService } from '../../core/services/api.service';
       );
       border-color: rgba(225, 29, 72, .30);
     }
+    .trial-banner--urgent:hover {
+      background: linear-gradient(
+        180deg,
+        rgba(225, 29, 72, .08) 0%,
+        rgba(225, 29, 72, .15) 100%
+      );
+      border-color: rgba(225, 29, 72, .48);
+    }
+    .trial-banner--loading { opacity: .65; cursor: progress; }
 
     .trial-banner__headline {
       flex: 1 1 auto;
@@ -92,35 +131,12 @@ import { ApiService } from '../../core/services/api.service';
       color: var(--color-text);
       /* Long headlines truncate before they wrap to a second line —
          keeps the single-row contract intact even when the days
-         number is e.g. "10 days left!" */
+         number is e.g. "10 days left." */
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
     .trial-banner__headline strong { font-weight: 700; }
-
-    /* Standard black pill button. Same hover treatment as other
-       primary CTAs (cyan flip on hover). */
-    .trial-banner__cta {
-      flex-shrink: 0;
-      background: #0c0e13;
-      color: #fff;
-      border: none;
-      padding: .5rem 1rem;
-      border-radius: 999px;
-      font-size: .8125rem;
-      font-weight: 700;
-      cursor: pointer;
-      font-family: inherit;
-      transition: background .15s, color .15s, transform .1s;
-      white-space: nowrap;
-    }
-    .trial-banner__cta:hover:not(:disabled) {
-      background: #0bd2f0;
-      color: #fff;
-      transform: translateY(-1px);
-    }
-    .trial-banner__cta:disabled { opacity: .55; cursor: not-allowed; }
 
     .trial-banner__dismiss {
       flex-shrink: 0;
@@ -139,15 +155,6 @@ import { ApiService } from '../../core/services/api.service';
     .trial-banner__dismiss:hover {
       color: var(--color-text);
       background: rgba(0, 0, 0, .05);
-    }
-
-    /* At very narrow widths (<= 360px), shrink the CTA padding a bit
-       more so the dismiss × never collides with it. */
-    @media (max-width: 360px) {
-      .trial-banner__cta {
-        padding: .4375rem .75rem;
-        font-size: .75rem;
-      }
     }
   `]
 })
@@ -191,6 +198,16 @@ export class TrialBannerComponent {
     return urgent
       ? !this.dismissedUrgent()
       : !this.dismissedQuiet();
+  });
+
+  /** Screen-reader label for the whole-bar click target. The visible
+   *  copy reads "X days left. Click here to subscribe!" which assumes
+   *  the user can see the bar; AT users get a plainer phrasing. */
+  ariaLabel = computed<string>(() => {
+    const d = this.daysLeft();
+    if (d === 0) return 'Trial ends today. Subscribe to keep your access.';
+    if (d === 1) return '1 day left in your trial. Subscribe to keep your access.';
+    return `${d} days left in your trial. Subscribe to keep your access.`;
   });
 
   /** Days remaining (rounded up) until TrialEndsAt. Drives the
