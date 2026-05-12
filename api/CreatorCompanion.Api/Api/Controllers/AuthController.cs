@@ -8,9 +8,28 @@ namespace CreatorCompanion.Api.Api.Controllers;
 
 [ApiController]
 [Route("v1/auth")]
-public class AuthController(IAuthService authService, IWebHostEnvironment env) : ControllerBase
+public class AuthController(IAuthService authService, IWebHostEnvironment env, IConfiguration config) : ControllerBase
 {
     // ── Cookie helpers ───────────────────────────────────────────────────────
+
+    // The refresh cookie is intentionally domain-scoped to the parent
+    // registrable domain (e.g. .creatorcompanionapp.com), not the
+    // api.* host that sets it. Reason: the SPA lives on app.* while
+    // the API lives on api.* — without Domain set, the cookie is
+    // scoped to ONLY api.* and mobile Chrome's tracking-protection
+    // logic treats cross-subdomain requests from app.* as
+    // third-party-cookie-attached and blocks them, even though both
+    // share the same eTLD+1. Setting Domain promotes the cookie to a
+    // "first-party domain cookie" that browsers send unimpeded across
+    // subdomains. (Desktop Chrome was permissive enough that this
+    // worked silently without Domain; mobile Chrome is not.)
+    //
+    // Reads the parent domain from Auth:CookieDomain so localhost,
+    // staging, and prod stay configurable. If unset, falls back to
+    // not setting Domain at all — preserving the old host-scoped
+    // behaviour for any environment that doesn't have it configured.
+    private string? CookieDomain =>
+        env.IsDevelopment() ? null : config["Auth:CookieDomain"];
 
     private void SetRefreshCookie(string token, DateTime expiresAt)
     {
@@ -19,6 +38,7 @@ public class AuthController(IAuthService authService, IWebHostEnvironment env) :
             HttpOnly  = true,
             Secure    = !env.IsDevelopment(),
             SameSite  = env.IsDevelopment() ? SameSiteMode.Lax : SameSiteMode.None,
+            Domain    = CookieDomain,
             Expires   = expiresAt,
             Path      = "/"
         });
@@ -31,6 +51,10 @@ public class AuthController(IAuthService authService, IWebHostEnvironment env) :
             HttpOnly = true,
             Secure   = !env.IsDevelopment(),
             SameSite = env.IsDevelopment() ? SameSiteMode.Lax : SameSiteMode.None,
+            // Must match the SetRefreshCookie Domain — otherwise the
+            // browser stores it as a separate cookie and the original
+            // never gets deleted on logout.
+            Domain   = CookieDomain,
             Path     = "/"
         });
     }
