@@ -113,6 +113,16 @@ jobs:
   #   - Skip deployments when no changes to root directory: Disabled
   # If a backend-only commit ever fails to deploy again, these are
   # the first two places to check.
+  #
+  # ── Hook URL hygiene ──
+  # Disconnecting and reconnecting the Vercel ↔ GitHub link severs
+  # a deploy hook's source binding, even though Vercel keeps
+  # accepting POSTs to the old URL and returning PENDING. If the
+  # verification step fails red and the Vercel Deployments tab
+  # shows no row for the commit at all, revoke the hook in Vercel
+  # → Settings → Git → Deploy Hooks, create a fresh one for main,
+  # and update the VERCEL_DEPLOY_HOOK GitHub secret with the new
+  # URL.
   deploy-vercel:
     name: Deploy web to Vercel
     needs: build-web
