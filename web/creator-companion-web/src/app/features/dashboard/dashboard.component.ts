@@ -1537,6 +1537,21 @@ export class DashboardComponent implements OnInit {
     this.selectedEntryError.set(false);
     this.rightColumnMode.set('reading');
 
+    // Strip any ?section= query param now that we're showing an entry —
+    // otherwise the URL ("/dashboard?section=favorites") gets out of
+    // sync with the displayed mode ("reading"), and the NEXT click on
+    // that same sidebar item becomes a no-op because Angular's router
+    // sees an identical URL and skips navigation. This was the May 2026
+    // "click Favorites after viewing an entry from Favorites does
+    // nothing" bug. Same as returnToToday() does after a save.
+    if (this.route.snapshot.queryParamMap.has('section')) {
+      this.router.navigate(['/dashboard'], {
+        queryParams: { section: null },
+        queryParamsHandling: 'merge',
+        replaceUrl: true
+      });
+    }
+
     this.api.getEntry(id).subscribe({
       next: e => {
         this.selectedEntry.set(e);
