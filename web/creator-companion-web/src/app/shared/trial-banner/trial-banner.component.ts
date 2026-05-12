@@ -154,8 +154,18 @@ import { ApiService } from '../../core/services/api.service';
 export class TrialBannerComponent {
   // Static constants come first so the field initializers below can
   // reference them safely (TS2729 otherwise — "used before initialization").
-  private static readonly DISMISS_KEY        = 'cc_trial_banner_dismissed';
-  private static readonly DISMISS_KEY_URGENT = 'cc_trial_banner_dismissed_urgent';
+  //
+  // The `_v2` suffix invalidates dismiss state stored under the
+  // earlier key names. Reason: dismissals are device-local (per
+  // localStorage), so a user who dismissed on desktop could find
+  // mobile still showing the banner while desktop stayed silent —
+  // confusing inconsistency that surfaced in May 2026. Bumping the
+  // key forces a clean re-show; subsequent dismissals work as before.
+  // If you need to re-bump in future (e.g. layout change worth
+  // re-engaging dismissed users about), incrementing the suffix
+  // again is the standard pattern.
+  private static readonly DISMISS_KEY        = 'cc_trial_banner_dismissed_v2';
+  private static readonly DISMISS_KEY_URGENT = 'cc_trial_banner_dismissed_urgent_v2';
 
   private auth   = inject(AuthService);
   private api    = inject(ApiService);
