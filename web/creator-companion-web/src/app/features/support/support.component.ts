@@ -1,5 +1,6 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
 import { Faq } from '../../core/models/models';
 import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
@@ -7,7 +8,7 @@ import { MobileHeaderComponent } from '../../shared/mobile-header/mobile-header.
 @Component({
   selector: 'app-support',
   standalone: true,
-  imports: [CommonModule, SidebarComponent, MobileHeaderComponent],
+  imports: [CommonModule, RouterLink, SidebarComponent, MobileHeaderComponent],
   template: `
     <div class="page">
 
@@ -22,6 +23,39 @@ import { MobileHeaderComponent } from '../../shared/mobile-header/mobile-header.
             <h1 class="support-title">Help & Support</h1>
             <p class="support-sub">Find answers to common questions below.</p>
           </div>
+
+          <!-- Pinned FAQ (always shown at the top of the list, even
+               when the DB-driven list is empty). Provides the
+               always-available "replay tour" entry point that the
+               admin and onboarding both reference. The link goes to
+               /onboarding?replay=1 which fires the cards from scratch
+               and then chains into the dashboard tour. -->
+          <section class="faq-list faq-list--pinned">
+            <div class="faq-item" [class.faq-item--open]="openId() === 'tour-replay'">
+              <button class="faq-question" (click)="toggle('tour-replay')"
+                      [attr.aria-expanded]="openId() === 'tour-replay'">
+                <span>Can I watch the onboarding tour again?</span>
+                <svg class="faq-chevron" xmlns="http://www.w3.org/2000/svg"
+                  width="16" height="16" viewBox="0 0 24 24"
+                  fill="none" stroke="currentColor" stroke-width="2.5"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </button>
+              @if (openId() === 'tour-replay') {
+                <div class="faq-answer">
+                  <p>
+                    Yes —
+                    <a class="faq-replay-link" routerLink="/onboarding" [queryParams]="{ replay: 1 }">
+                      click this link to begin
+                    </a>.
+                    You'll see the welcome cards, followed by tooltips that
+                    point out each major feature on your dashboard.
+                  </p>
+                </div>
+              }
+            </div>
+          </section>
 
           <!-- FAQ list -->
           @if (loading()) {
@@ -158,6 +192,17 @@ import { MobileHeaderComponent } from '../../shared/mobile-header/mobile-header.
         font-family: var(--font-sans);
       }
     }
+    /* Pinned FAQ section sits above the DB-driven list with a small
+       extra bottom gap so the seam between them reads as intentional
+       rather than crowded. */
+    .faq-list--pinned { margin-bottom: 1rem; }
+    .faq-replay-link {
+      color: var(--color-accent);
+      font-weight: 700;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    .faq-replay-link:hover { color: var(--color-accent-dark); }
 
     /* ── Contact link ────────────────────────────────────────────── */
     .support-contact {

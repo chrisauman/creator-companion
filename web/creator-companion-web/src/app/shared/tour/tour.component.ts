@@ -2,7 +2,9 @@ import {
   Component, OnInit, OnDestroy, inject, signal, computed, HostListener
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { ViewportService } from '../../core/services/viewport.service';
+import { SidebarStateService } from '../sidebar/sidebar-state.service';
 import { FocusTrapDirective } from '../focus-trap.directive';
 
 /**
@@ -102,7 +104,7 @@ export interface TourStep {
             <button class="tour__next"
                     type="button"
                     (click)="next()">
-              {{ stepIndex() === steps.length - 1 ? 'Done' : 'Next' }}
+              {{ stepIndex() === steps.length - 1 ? 'Log entry →' : 'Next' }}
             </button>
           </div>
         </div>
@@ -257,50 +259,62 @@ export class TourComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Tour steps. Targets are CSS selectors. Each step picks a desktop
-   * vs. mobile selector at runtime so the spotlight lands on something
-   * the user can actually see at their breakpoint. Centered slides
-   * (target: null) are used for intro / outro and as a graceful
-   * fallback when a target isn't in the DOM.
+   * Tour steps. Six tooltips that walk a fresh user through the major
+   * surfaces of the dashboard chrome — journal, reminders, to-dos,
+   * streak, account, and the "Log Today's Progress" CTA. All targets
+   * live in the sidebar; on mobile the sidebar is a slide-out drawer,
+   * so the tour auto-opens the drawer on start (see `start()`) and
+   * each tooltip points at the same nav element on both breakpoints.
+   *
+   * The final step's "Next" button finalises the tour by routing to
+   * /entry/new — first-time users are walked straight into their
+   * first journal entry without needing to find the button again.
    */
   get steps(): TourStep[] {
     const m = this.isMobile();
+    // On mobile, tooltip placement is forced to 'right' for sidebar
+    // items because the drawer occupies the left edge — placing the
+    // tip to the right of the drawer puts it next to the highlighted
+    // row. For the streak / usercard which sit near the bottom of the
+    // drawer, 'top' would clip; 'right' still works because the drawer
+    // is narrower than the viewport.
+    const placement: TourStep['placement'] = m ? 'right' : 'right';
     return [
       {
-        target: null,
-        title: "Welcome to Creator Companion",
-        body: "A quick 5-step tour of the things that matter most. You can skip anytime.",
-        placement: 'center'
+        target: '.sidebar__nav-item--journal',
+        title: 'Your journal',
+        body: 'Review your journal entries.',
+        placement
       },
       {
-        // Mobile uses the always-visible compose circle in the top
-        // bar; desktop uses the sidebar's "Log Today's Progress" pill.
-        target: m ? '.mobile-header__compose' : '.sidebar__compose',
-        title: "Log today's progress",
-        body: "Tap here every day to log a step in your creative practice. Even one sentence counts.",
-        placement: m ? 'bottom' : 'right'
+        target: '.sidebar__nav-item--reminders',
+        title: 'Daily reminders',
+        body: 'Setup your daily reminders.',
+        placement
       },
       {
-        // Streak module — mobile gets a centered slide (the streak
-        // lives in the closed drawer on mobile, can't spotlight it
-        // without auto-opening which gets messy).
-        target: m ? null : '.sidebar__streak',
-        title: "Your streak",
-        body: "Grows each day you log. Miss a day? You have 48 hours to backlog before it resets. Open the menu (☰) anytime to see your current streak.",
-        placement: m ? 'center' : 'right'
+        target: '.sidebar__nav-item--todos',
+        title: 'To do list',
+        body: 'Add things to your to do list.',
+        placement
       },
       {
-        // Reminders nav — same story; centered on mobile.
-        target: m ? null : '.sidebar__nav-item--reminders',
-        title: "Daily reminders",
-        body: "Set up to 5 push notifications a day for whatever helps your practice. Find them under Reminders in the menu.",
-        placement: m ? 'center' : 'right'
+        target: '.sidebar__streak',
+        title: 'Your streak',
+        body: 'Keep the streak alive and achieve rewards!',
+        placement
       },
       {
-        target: null,
-        title: "You're all set.",
-        body: "You're on a 10-day free trial — full access to everything. Show this tour again anytime from your account settings.",
-        placement: 'center'
+        target: '.sidebar__usercard',
+        title: 'Account & settings',
+        body: 'Update your settings and access account information.',
+        placement
+      },
+      {
+        target: '.sidebar__compose',
+        title: 'Log today\'s entry',
+        body: 'Log today\'s journal entry!',
+        placement
       }
     ];
   }
@@ -392,15 +406,32 @@ export class TourComponent implements OnInit, OnDestroy {
     // Angular automatically.
   }
 
+  private router  = inject(Router);
+  private drawer  = inject(SidebarStateService);
+
   start(): void {
     this.stepIndex.set(0);
     this.visible.set(true);
-    this.updateSpotlight();
+    // On mobile the sidebar is a slide-out drawer; every tour target
+    // lives inside it, so open the drawer up-front so the spotlight
+    // has something to land on. Wait a frame after opening so the
+    // CSS transform animation has begun (otherwise the measured rect
+    // is the off-screen pre-animation position).
+    if (this.isMobile()) {
+      this.drawer.openMobile();
+      requestAnimationFrame(() => requestAnimationFrame(() => this.updateSpotlight()));
+    } else {
+      this.updateSpotlight();
+    }
   }
 
   next(): void {
     if (this.stepIndex() === this.steps.length - 1) {
+      // Final step: route the user straight into composing their first
+      // entry. Finishing the tour also persists the seen flag so it
+      // doesn't re-fire on the next /dashboard load.
       this.finish();
+      this.router.navigate(['/entry/new']);
       return;
     }
     this.stepIndex.update(i => i + 1);
@@ -412,9 +443,11 @@ export class TourComponent implements OnInit, OnDestroy {
   }
 
   /** Closes the tour + persists the "seen" flag so it doesn't
-   *  re-fire on every dashboard load. */
+   *  re-fire on every dashboard load. Closes the mobile drawer too,
+   *  matching what the user would expect after dismissing the tour. */
   private finish(): void {
     this.visible.set(false);
+    if (this.isMobile()) this.drawer.closeMobile();
     try { localStorage.setItem(TourComponent.SEEN_KEY, '1'); }
     catch { /* private mode / quota — fall through, tour just shows again next session */ }
   }

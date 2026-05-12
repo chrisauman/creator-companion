@@ -98,6 +98,18 @@ import { AdminShellComponent } from './admin-shell.component';
               <span>Soft "log today's progress" prompt shown when no entry today.</span>
             </a>
           </li>
+          <li>
+            <!-- Replay the full new-user onboarding flow: cards →
+                 dashboard tour → /entry/new. Routing to /onboarding
+                 fires the cards; clicking through to slide 6 chains
+                 into /dashboard?tour=1 which fires the tour. Safe to
+                 click as an existing user (completeOnboarding is
+                 idempotent server-side). -->
+            <a routerLink="/onboarding" [queryParams]="{ replay: 1 }">
+              <strong>Onboarding flow (cards + tour)</strong>
+              <span>Walks through the six intro cards and the six dashboard tooltips end-to-end.</span>
+            </a>
+          </li>
         </ul>
       </section>
     </app-admin-shell>
