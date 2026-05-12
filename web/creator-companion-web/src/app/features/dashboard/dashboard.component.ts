@@ -169,7 +169,7 @@ import { ActivatedRoute } from '@angular/router';
                     aria-controls="mobile-today-body">
               <span class="today-summary__icon" aria-hidden="true">✨</span>
               <span class="today-summary__label">
-                <span class="today-summary__title">Today's Inspiration</span>
+                <span class="today-summary__title">Today's Spark and Prompts</span>
                 <span class="today-summary__sub">Daily Spark · Prompt · Mood</span>
               </span>
               <svg class="today-summary__chevron"
@@ -1137,7 +1137,7 @@ export class DashboardComponent implements OnInit {
   //                                   Notifications / Todos / Favorites
   rightColumnMode      = signal<'today' | 'reading' | 'composing' | 'editing' | 'notifications' | 'todos' | 'favorites' | 'streak-history'>('today');
 
-  /** Mobile-only collapse state for the "Today's Inspiration" panel
+  /** Mobile-only collapse state for the "Today's Spark and Prompts" panel
    *  (Daily Spark + Daily Prompt + Mood grid). Persisted in
    *  localStorage so the user's open/closed preference survives
    *  reloads. Default is COLLAPSED on first visit — entries below
