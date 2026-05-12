@@ -933,25 +933,28 @@ import { ActivatedRoute } from '@angular/router';
 
     /* ── Entry list ──────────────────────────────────────────────── */
     /* Month divider above each calendar group (e.g. "MAY 2026").
-       Slightly larger on mobile where the eyebrow was getting visually
-       lost; same vertical spacing on both breakpoints so the rhythm
-       matches between phone and desktop. */
+       Hidden on mobile + tablet (<1024px) per the May 2026
+       "simplify the interface" pass — each entry row already shows
+       its own date in the meta line, so the divider was redundant
+       in the narrower layout. Kept on wide desktop where the
+       larger column has room for the section eyebrows and the
+       month context helps scanning long histories. */
     .date-divider {
-      font-size: .8125rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .14em;
-      color: var(--color-text-3);
-      padding: 0 0 .5rem;
-      margin: 1.75rem 0 1rem;
-      border-bottom: 1px solid var(--color-border);
+      display: none;
     }
-    .date-divider--first { margin-top: 1.75rem; }
-    @media (min-width: 768px) {
-      /* Desktop reverts to the smaller size — at the wider column the
-         11px caps eyebrow reads more elegantly; mobile needs more
-         visual weight to anchor the list. */
-      .date-divider { font-size: .6875rem; }
+    @media (min-width: 1024px) {
+      .date-divider {
+        display: block;
+        font-size: .6875rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .14em;
+        color: var(--color-text-3);
+        padding: 0 0 .5rem;
+        margin: 1.75rem 0 1rem;
+        border-bottom: 1px solid var(--color-border);
+      }
+      .date-divider--first { margin-top: 1.75rem; }
     }
 
     /* ── Entry row (Variant B — meta · title · photo) ──────────── */
