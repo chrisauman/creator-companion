@@ -2,6 +2,7 @@
   "buildCommand": "npm run build -- --configuration production",
   "outputDirectory": "dist/creator-companion-web/browser",
   "rewrites": [
+    { "source": "/v1/:path*", "destination": "https://creator-companion-api-production.up.railway.app/v1/:path*" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
