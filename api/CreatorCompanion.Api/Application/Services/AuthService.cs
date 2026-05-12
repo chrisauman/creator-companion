@@ -60,12 +60,20 @@ public class AuthService(AppDbContext db, IConfiguration config, IEmailService e
 
         // Create email verification token (best-effort — email may not send until domain is set up).
         // The plain token is mailed; only the SHA-256 hash is persisted.
+        // We mirror the hash into the legacy `Token` column too — it
+        // pre-exists with a UNIQUE index from before the at-rest-hash
+        // rollout, so writing empty strings here would collide on the
+        // second insert (the unique-constraint outage of May 2026).
+        // The hash is cryptographically unique so the constraint is
+        // satisfied, and storing a hash (not a plain token) preserves
+        // the at-rest security guarantee.
         var verifyPlain = GenerateSecureToken();
+        var verifyHash  = HashToken(verifyPlain);
         var verificationToken = new Domain.Models.EmailVerificationToken
         {
             UserId    = user.Id,
-            Token     = string.Empty,
-            TokenHash = HashToken(verifyPlain),
+            Token     = verifyHash,
+            TokenHash = verifyHash,
             ExpiresAt = DateTime.UtcNow.AddHours(24)
         };
         db.EmailVerificationTokens.Add(verificationToken);
@@ -324,12 +332,15 @@ public class AuthService(AppDbContext db, IConfiguration config, IEmailService e
         db.PasswordResetTokens.RemoveRange(existing);
 
         // Plain token is mailed to the user; only the hash is persisted.
+        // Token column mirrors TokenHash — see EmailVerificationToken
+        // comment for why (legacy UNIQUE index requires unique value).
         var resetPlain = GenerateSecureToken();
+        var resetHash  = HashToken(resetPlain);
         var resetToken = new Domain.Models.PasswordResetToken
         {
             UserId    = user.Id,
-            Token     = string.Empty,
-            TokenHash = HashToken(resetPlain),
+            Token     = resetHash,
+            TokenHash = resetHash,
             ExpiresAt = DateTime.UtcNow.AddHours(1)
         };
         db.PasswordResetTokens.Add(resetToken);
@@ -432,16 +443,28 @@ public class AuthService(AppDbContext db, IConfiguration config, IEmailService e
                 old.RevokedAt = DateTime.UtcNow;
         }
 
-        var refreshDays = config.GetValue<int>("Jwt:RefreshExpiryDays", 30);
+        var refreshDays  = config.GetValue<int>("Jwt:RefreshExpiryDays", 30);
         var refreshPlain = GenerateSecureToken();
+        var refreshHash  = HashToken(refreshPlain);
         var refreshToken = new RefreshToken
         {
             UserId = user.Id,
             // New tokens are stored as SHA-256 digest only — the raw
-            // value is returned to the client (cookie + JSON) but never
-            // persisted. Plain `Token` stays empty for new rows.
-            Token = string.Empty,
-            TokenHash = HashToken(refreshPlain),
+            // refresh value goes to the client (cookie + JSON) and is
+            // NEVER persisted. We mirror the hash into the legacy
+            // `Token` column because that column predates the at-rest
+            // hash rollout and still has a UNIQUE index on it; writing
+            // empty strings here collides on the SECOND login (the
+            // unique-constraint outage of May 2026 that took down
+            // login project-wide). Hash values are cryptographically
+            // unique so the constraint is satisfied, and storing a
+            // hash (not a plain token) preserves the at-rest security
+            // guarantee. The legacy-plain-Token fallback in
+            // RefreshAsync still works for OLD rows written before
+            // this rollout; once those age out (30 days), the Token
+            // column can be dropped entirely.
+            Token = refreshHash,
+            TokenHash = refreshHash,
             ExpiresAt = DateTime.UtcNow.AddDays(refreshDays)
         };
         db.RefreshTokens.Add(refreshToken);
