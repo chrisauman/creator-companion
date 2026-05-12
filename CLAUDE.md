@@ -93,7 +93,13 @@ marketing/                        static HTML/CSS/JS marketing site
 - **Railway** — hosts the **backend API** (the .NET server). Long-running
   process, handles auth, DB queries, push delivery, the reminder worker.
   Postgres also runs on Railway.
-- **Vercel** — *(role to confirm — see TODO at bottom of this file)*
+- **Vercel** — hosts BOTH the **frontend PWA** (project
+  `creator-companion-onti`, custom domain `app.creatorcompanionapp.com`)
+  AND the **marketing site** (separate project, root domain
+  `creatorcompanionapp.com`). The PWA project deploys via CLI from
+  GitHub Actions; the marketing project deploys via Vercel's native
+  GitHub integration. See "Build & deploy" and "Deploy reliability"
+  sections for full details.
 - **Cloudflare R2** — object storage for user media (avatars, future
   attachments). S3-compatible API.
 - **Resend** — transactional email.
@@ -340,10 +346,95 @@ signal AND strips the URL param.
 
 - **Frontend build:** `cd web/creator-companion-web && npx ng build --configuration=production`
 - **Backend build:** `cd api && dotnet build CreatorCompanion.Api/CreatorCompanion.Api.csproj`
-- **Frontend deploy:** *(host TBC — likely Vercel)*, auto-deploy on push to `main`.
-- **Backend deploy:** Railway, auto-deploy on push to `main`.
-- **Marketing deploy:** *(host TBC — likely Vercel)*, auto-deploy on push to `main`.
+- **Frontend deploy:** Vercel project `creator-companion-onti`, custom
+  domain `app.creatorcompanionapp.com`. Auto-deploys on push to
+  `main` via `.github/workflows/deploy.yml` using `vercel deploy
+  --prebuilt --prod` (CLI, not the deploy hook — see below).
+- **Backend deploy:** Railway, auto-deploys on push to `main` via
+  Railway's GitHub App integration.
+- **Marketing deploy:** Vercel project (separate from app project),
+  custom domain `creatorcompanionapp.com`, auto-deploys on push to
+  `main`.
 - **Always build locally before committing** — don't push uncompiled.
+
+## Deploy reliability (read this when something breaks)
+
+The May 2026 saga that produced this section: Vercel's hook→build
+binding for the app project silently corrupted after a GitHub
+disconnect/reconnect — hooks returned `{"state":"PENDING"}` but
+the jobs never materialized as Deployments-tab rows. Combined with
+a few other landmines (monorepo skip-by-path, a phantom EF
+migration, `adduser` missing from the .NET 10 slim image), 9
+commits orphaned silently over a weekend with no visible signal.
+
+The current setup is designed so that can never happen invisibly
+again. Two independent safety nets:
+
+- **Per-push verification.** The `deploy-vercel` job in
+  `.github/workflows/deploy.yml` ends with a step that polls the
+  live site for the `cc-build` meta tag (stamped at build time by
+  `scripts/inject-version.mjs`) and fails red within 10 minutes if
+  the new SHA doesn't reach production. Silent push-time orphan →
+  red workflow → email notification.
+- **Daily independent check.** `.github/workflows/health-check.yml`
+  runs at 14:00 UTC every day plus manually via `workflow_dispatch`.
+  Compares the live web SHA stamp to `main` HEAD AND probes the
+  API `/health` endpoint. Catches anything that drifts between
+  pushes (Vercel project paused, Railway service down, DNS issue,
+  CDN serving stale HTML, token revoked, etc.) — red workflow →
+  email notification.
+
+**If a workflow goes red:**
+
+1. Open the failing run on GitHub Actions and read the step output.
+   The job names and error messages are designed to be self-
+   describing — e.g. `Verify deploy reached production` failing
+   means the deploy step "succeeded" but the new SHA never appeared
+   on production.
+2. The workflow files themselves contain extensive comment blocks
+   with troubleshooting checklists for each known failure mode.
+   Read them in `deploy.yml` and `health-check.yml` before
+   speculating.
+3. If the Vercel CLI step in deploy.yml fails, the error from the
+   CLI is shown verbatim. Common causes: token revoked (recreate
+   at Vercel → avatar → Account Settings → Tokens), `vercel.json`
+   route pattern rejected by CLI's strict path-to-regexp validator
+   (must use named groups, not bare `.*`), or project Root
+   Directory mismatch.
+
+**Required GitHub secrets:**
+
+- `VERCEL_TOKEN` — Personal token, Full Account scope, no expiration.
+- `VERCEL_ORG_ID` — Hobby plan: personal Account ID (from Vercel →
+  Account Settings → General → "Your ID"), not a team ID.
+- `VERCEL_PROJECT_ID` — Project ID for `creator-companion-onti`
+  (Project Settings → General, starts with `prj_`).
+- `RAILWAY_TOKEN` — Used by Railway's GitHub integration; not
+  directly invoked by the workflow but kept here for reference.
+
+The `VERCEL_DEPLOY_HOOK` secret still exists but is unused —
+deploy hooks proved unreliable. Safe to delete after Q3 2026 if
+no further hook-based fallback is needed.
+
+**Things NOT to do (would re-break the chain):**
+
+- Don't reintroduce the Vercel deploy hook as the primary deploy
+  mechanism. It's a less-reliable trigger pipeline than CLI deploy.
+- Don't `cd web/creator-companion-web` before running `vercel`
+  CLI commands in CI — the project's Root Directory setting will
+  double-resolve and the build will fail with "path does not exist."
+- Don't use bare regex patterns like `.*` in `vercel.json` `source`
+  fields outside a named group — Vercel CLI's local validator
+  rejects them even though Vercel's server-side build accepts them.
+  Use `:name(regex)` or `:name*` path-to-regexp v6 syntax.
+- Don't write EF migrations that DropIndex without `IF EXISTS` or
+  CreateIndex without `IF NOT EXISTS` against indexes that may not
+  exist in production. Wrap in raw `migrationBuilder.Sql(…)` with
+  the guards.
+- Don't add packages or commands to the API Dockerfile that aren't
+  in the .NET 10 ASP.NET slim base image (no `adduser`, etc.). Use
+  numeric `USER <uid>` directives instead — Linux doesn't require
+  a passwd entry.
 
 ## Commit conventions
 
@@ -577,11 +668,6 @@ Document here so future audits don't re-spend the cycles deciding.
 
 ## TODO / open questions
 
-- **Vercel's exact role.** Confirm whether Vercel hosts the frontend
-  PWA, the marketing site, both, or something else. Update the
-  Infrastructure and Build & deploy sections accordingly, then remove
-  this TODO. (Marketing now has its own `marketing/vercel.json` with
-  CSP/HSTS, suggesting Vercel hosts at least that.)
 - **Encryption at rest.** Railway Postgres is encrypted at rest per
   their docs; R2 buckets are encrypted at rest per Cloudflare's docs.
   Tokens (refresh / reset / verify) are SHA-256-hashed at rest as of

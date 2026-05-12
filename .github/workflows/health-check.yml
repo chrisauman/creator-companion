@@ -1,0 +1,105 @@
+name: Health Check
+
+# Independent daily verification that production is up AND current.
+# Runs even on days with zero pushes — catches silent drift that
+# push-driven workflows can't see (Vercel project paused, Railway
+# service down, CDN serving stale HTML, etc.).
+#
+# Fails red if either:
+#   1. The live web SHA stamp doesn't match the current main HEAD
+#      (deploy silently failed or rolled back, or CDN is stale).
+#   2. The API /health endpoint isn't returning 200.
+#
+# Red workflow → GitHub emails you (per your notification settings) →
+# you find out within 24h even on weeks with no commits.
+
+on:
+  schedule:
+    # 14:00 UTC = 10am EDT / 7am PDT. Early enough in the workday to
+    # fix before the day gets going, late enough that overnight
+    # maintenance windows (Railway, Cloudflare) have settled.
+    - cron: '0 14 * * *'
+  workflow_dispatch:
+    # Manual trigger button on the Actions tab for ad-hoc checks
+    # ("did my deploy land?" without needing to push).
+
+jobs:
+  health-check:
+    name: Production health check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check live web SHA matches main HEAD
+        env:
+          SITE_URL: https://app.creatorcompanionapp.com
+          REPO: chrisauman/creator-companion
+        run: |
+          # Get main's HEAD SHA without checking out the repo.
+          # `git ls-remote` against a public repo is auth-free.
+          MAIN_FULL=$(git ls-remote https://github.com/$REPO.git main | cut -f1)
+          MAIN_SHORT=${MAIN_FULL:0:7}
+
+          # Single fetch + one retry after 30s. The retry exists so that
+          # if a deploy is mid-flight when this cron fires, we don't
+          # alert on the brief desync window.
+          fetch_live_sha() {
+            curl --silent --max-time 10 "$SITE_URL/" \
+              | sed -n 's/.*name="cc-build" content="\([a-f0-9]*\)".*/\1/p' \
+              | head -1
+          }
+
+          LIVE_SHA=$(fetch_live_sha)
+          echo "Main HEAD:  $MAIN_SHORT"
+          echo "Live SHA:   ${LIVE_SHA:-<none>}"
+
+          if [ "$LIVE_SHA" = "$MAIN_SHORT" ]; then
+            echo "✓ Web is current."
+            exit 0
+          fi
+
+          # First check failed. Wait 30s and try once more in case a
+          # deploy just landed and the CDN is still propagating, or a
+          # new deploy is in progress.
+          echo "Mismatch on first check. Re-checking in 30s in case a deploy is mid-flight…"
+          sleep 30
+          LIVE_SHA=$(fetch_live_sha)
+          echo "Live SHA (retry):   ${LIVE_SHA:-<none>}"
+
+          if [ "$LIVE_SHA" = "$MAIN_SHORT" ]; then
+            echo "✓ Web is current (recovered after retry)."
+            exit 0
+          fi
+
+          if [ -z "$LIVE_SHA" ]; then
+            echo "::error::$SITE_URL is not serving the cc-build meta tag. Site is down, the CDN is stripping the meta, or HTML is being replaced upstream of Vercel. Investigate immediately."
+          else
+            echo "::error::Live SHA ($LIVE_SHA) is behind main HEAD ($MAIN_SHORT). A deploy silently failed or never ran. Check the most recent CI run for main, and Vercel → Deployments for build errors. If recent runs were green, the CDN may be serving stale HTML."
+          fi
+          exit 1
+
+      - name: Check API /health endpoint
+        env:
+          API_URL: https://api.creatorcompanionapp.com
+        run: |
+          # The Railway-hosted .NET API maps GET /health to a 200 OK
+          # with body {"status":"healthy"}. 5xx, timeout, or wrong
+          # body → fail red.
+          HTTP_CODE=$(curl --silent --output /tmp/health.body --write-out '%{http_code}' --max-time 15 "$API_URL/health")
+          BODY=$(cat /tmp/health.body 2>/dev/null || echo "")
+          echo "API status: HTTP $HTTP_CODE"
+          echo "API body:   $BODY"
+
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "::error::$API_URL/health returned $HTTP_CODE. Railway service may be down, mid-restart, or returning an error. Check Railway dashboard for the creator-companion-api service and its recent deploy/runtime logs."
+            exit 1
+          fi
+
+          # Loose match — accept any response that mentions "status"
+          # so future additions to the health response don't break
+          # this check. Stricter than nothing, more flexible than
+          # exact body comparison.
+          if ! echo "$BODY" | grep -q '"status"'; then
+            echo "::error::$API_URL/health returned 200 but the body didn't contain a 'status' field. Something is intercepting the response (proxy, CDN, error page) — investigate."
+            exit 1
+          fi
+
+          echo "✓ API is healthy."
