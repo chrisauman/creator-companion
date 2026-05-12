@@ -170,7 +170,6 @@ import { ActivatedRoute } from '@angular/router';
               <span class="today-summary__icon" aria-hidden="true">✨</span>
               <span class="today-summary__label">
                 <span class="today-summary__title">Today's Spark and Prompts</span>
-                <span class="today-summary__sub">Daily Spark · Prompt · Mood</span>
               </span>
               <svg class="today-summary__chevron"
                    width="18" height="18" viewBox="0 0 24 24"
@@ -950,29 +949,15 @@ import { ActivatedRoute } from '@angular/router';
     .search-results-count { font-size: .75rem; color: var(--color-text-3); margin: 0 0 .75rem; }
 
     /* ── Entry list ──────────────────────────────────────────────── */
-    /* Month divider above each calendar group (e.g. "MAY 2026").
-       Hidden on mobile + tablet (<1024px) per the May 2026
-       "simplify the interface" pass — each entry row already shows
-       its own date in the meta line, so the divider was redundant
-       in the narrower layout. Kept on wide desktop where the
-       larger column has room for the section eyebrows and the
-       month context helps scanning long histories. */
+    /* Month divider above each calendar group (e.g. "MAY 2026") is
+       hidden at every viewport per the May 2026 "simplify the
+       interface" pass — each entry row already shows its own date
+       in the meta line, so the divider was redundant. The
+       groupedEntries() computed is still used for entry ordering
+       so we keep the wrapping <div> in the template; only the
+       label is visually hidden. */
     .date-divider {
       display: none;
-    }
-    @media (min-width: 1024px) {
-      .date-divider {
-        display: block;
-        font-size: .6875rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: .14em;
-        color: var(--color-text-3);
-        padding: 0 0 .5rem;
-        margin: 1.75rem 0 1rem;
-        border-bottom: 1px solid var(--color-border);
-      }
-      .date-divider--first { margin-top: 1.75rem; }
     }
 
     /* ── Entry row (Variant B — meta · title · photo) ──────────── */
