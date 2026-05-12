@@ -500,7 +500,12 @@ import { ActivatedRoute } from '@angular/router';
          column already provides separation. The shared top bars
          (search-bar on the left, reader-top on the right) are sized
          to match (64px) and align horizontally. Each column scrolls
-         independently. */
+         independently.
+
+         Narrow desktop (768–1099px): entries column is fixed-narrow
+         (340–400px) and the right column takes the rest — the right
+         column needs more room here because the today-panel cards
+         have a wider minimum readable size than entry rows do. */
       .work {
         display: grid;
         grid-template-columns: minmax(340px, 400px) 1fr;
@@ -511,6 +516,19 @@ import { ActivatedRoute } from '@angular/router';
         margin: 0 -1.25rem -4rem 0;
         height: 100vh;
         min-height: 600px;
+      }
+    }
+    @media (min-width: 1100px) {
+      /* Wider desktop (1100px+): flip the grow direction. The entries
+         column fills available space; the right column is sized via
+         clamp() so it scales smoothly with the viewport up to a
+         720px cap (the today-panel content's natural max-width). This
+         eliminates the dead gap that previously appeared on wide
+         monitors when the right column was 1fr but its content
+         (.today, margin: 0 auto, max-width: 720px) was centered
+         within a much wider area. */
+      .work {
+        grid-template-columns: 1fr clamp(420px, 36vw, 720px);
       }
       .work__list-col {
         padding: 0 1.25rem 1rem 0;
