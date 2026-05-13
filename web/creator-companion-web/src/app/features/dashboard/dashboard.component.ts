@@ -405,18 +405,16 @@ import { ActivatedRoute } from '@angular/router';
         padding: 0 1.25rem 4rem;
         background: #f7f7f5;
       }
-      /* When the trial banner is the first child of main-content
-         (i.e. the user is in trial and hasn't dismissed), give it a
-         small top inset so it doesn't sit flush with the viewport
-         edge. Targets the banner via :first-child so that when the
-         banner ISN'T rendered, the search bar / today panel still
-         get their flush-to-top treatment. */
-      .main-content > app-trial-banner:first-child {
+      /* Trial banner top inset on desktop. A :first-child qualifier
+         was previously used here, but the dashboard now renders a
+         visually-hidden h1 for screen readers as the first child of
+         main, so :first-child stopped matching the banner. Selecting
+         app-trial-banner directly works because there is only one
+         instance per page and the banner self-hides when not in trial. */
+      .main-content > app-trial-banner {
         display: block;
         /* 3rem so the cyan bar reads as floating in space rather than
-           anchored to the top of the page. Previous iterations at
-           1rem and 2rem still felt cropped against the viewport edge
-           on wide monitors. */
+           anchored to the top of the page. */
         padding-top: 3rem;
       }
     }

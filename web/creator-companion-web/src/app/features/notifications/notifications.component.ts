@@ -652,7 +652,10 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
       text-transform: uppercase; letter-spacing: .14em;
       margin-top: 1.25rem; margin-bottom: .25rem;
     }
-    .reminders-list { display: flex; flex-direction: column; gap: 0; }
+    /* Stale duplicate of .reminders-list previously here was forcing
+       gap: 0, which overrode the cream-card gap defined earlier in
+       this file. The earlier rule (1.25rem gap) is the canonical
+       source of truth — this trailing block has been removed. */
   `]
 })
 export class NotificationsComponent implements OnInit {
