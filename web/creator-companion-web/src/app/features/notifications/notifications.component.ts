@@ -357,18 +357,32 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
     .test-result--ok  { background: rgba(34,197,94,.12); color: #166534; }
     .test-result--err { background: rgba(225,29,72,.10); color: #b91c1c; }
     /* Schedule-rule hint that explains the two silent-skip paths
-       (already journaled today + once per day per slot). Same look as
-       .block__body but with a slight indent and muted tone. */
+       (already journaled today + once per day per slot). Cream
+       gradient + subtle cyan glow matches the Daily Spark hero
+       card so the hint reads as a "tip from your companion" rather
+       than a grey utility box. */
     .reminder-hint {
-      font-size: .8125rem;
-      line-height: 1.5;
-      color: var(--color-text-muted);
-      margin: 0 0 1rem;
-      padding: .5rem .75rem;
-      background: var(--color-surface-2);
-      border-radius: .375rem;
+      position: relative;
+      overflow: hidden;
+      font-size: .875rem;
+      line-height: 1.55;
+      color: var(--color-text);
+      margin: 0 0 1.25rem;
+      padding: .875rem 1.125rem;
+      background: linear-gradient(180deg, #fdfaf2 0%, #f6f1e6 100%);
+      border: 1px solid rgba(190,170,130,.22);
+      border-radius: 16px;
     }
-    .reminder-hint strong { color: var(--color-text); font-weight: 600; }
+    .reminder-hint::before {
+      content: '';
+      position: absolute;
+      top: -40%; right: -20%;
+      width: 220px; height: 220px;
+      background: radial-gradient(circle, rgba(18,196,227,.45) 0%, transparent 65%);
+      opacity: .35;
+      pointer-events: none;
+    }
+    .reminder-hint strong { color: var(--color-text); font-weight: 700; }
     /* Body copy standard. */
     .block__body {
       font-size: 1rem;
@@ -419,12 +433,29 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
     }
     .reminder-tile {
       display: flex; flex-direction: column; gap: 1rem;
-      padding: 1.125rem 1.125rem;
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: 14px;
+      padding: 1.25rem 1.25rem;
+      /* Cream gradient + subtle cyan glow — same visual language as
+         the Daily Spark hero card. Makes each reminder slot read as
+         a warm, on-brand surface instead of a utility form row. */
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(180deg, #fdfaf2 0%, #f6f1e6 100%);
+      border: 1px solid rgba(190,170,130,.22);
+      border-radius: 16px;
       transition: border-color .15s, box-shadow .15s;
     }
+    .reminder-tile::before {
+      content: '';
+      position: absolute;
+      top: -40%; right: -20%;
+      width: 220px; height: 220px;
+      background: radial-gradient(circle, rgba(18,196,227,.45) 0%, transparent 65%);
+      opacity: .35;
+      pointer-events: none;
+    }
+    /* Inner content sits above the radial glow without needing
+       per-element z-index adjustments. */
+    .reminder-tile > * { position: relative; z-index: 1; }
     .reminder-tile:hover {
       border-color: rgba(190,170,130,.42);
     }

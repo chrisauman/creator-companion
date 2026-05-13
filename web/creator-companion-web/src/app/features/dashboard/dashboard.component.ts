@@ -413,11 +413,11 @@ import { ActivatedRoute } from '@angular/router';
          get their flush-to-top treatment. */
       .main-content > app-trial-banner:first-child {
         display: block;
-        /* 2rem (was 1rem) gives the trial banner a clear visual gap
-           from the very top edge of the desktop viewport — at 1rem
-           the cyan bar visually anchored against the page edge and
-           felt cropped. */
-        padding-top: 2rem;
+        /* 3rem so the cyan bar reads as floating in space rather than
+           anchored to the top of the page. Previous iterations at
+           1rem and 2rem still felt cropped against the viewport edge
+           on wide monitors. */
+        padding-top: 3rem;
       }
     }
 
@@ -1061,11 +1061,18 @@ import { ActivatedRoute } from '@angular/router';
       word-break: break-word;
     }
 
-    /* Photo: full natural aspect ratio, no crop. The previous
-       max-height: 480px + overflow:hidden chopped the bottom of
-       portrait photos — defeats the point of attaching the photo.
-       Tall portraits now display at their actual height; the entry
-       card grows to accommodate. */
+    /* Photo: full natural aspect ratio on mobile, capped + cropped
+       on desktop. The dashboard entry list is the ONE surface where
+       we still cap — at desktop widths each row reads inside a
+       narrow ~400px column flanked by a wide right pane, and an
+       uncapped portrait photo can be ~700px tall and push the row
+       below the fold by itself. The standalone view-entry and
+       entry-reader components both show the full image when the
+       user actually opens the entry; this just keeps the index
+       scrollable on wide screens.
+       Mobile preserves the natural-aspect behavior so portrait
+       photos still display in full when the journal is the only
+       column. */
     .entry-row__photo {
       width: 100%;
       display: block;
@@ -1074,6 +1081,13 @@ import { ActivatedRoute } from '@angular/router';
       width: 100%;
       height: auto;
       display: block;
+    }
+    @media (min-width: 768px) {
+      .entry-row__photo {
+        max-height: 480px;
+        overflow: hidden;
+        background: var(--color-bg);
+      }
     }
 
     .load-more-wrap { display: flex; justify-content: center; padding: 1.5rem 0 .5rem; }
