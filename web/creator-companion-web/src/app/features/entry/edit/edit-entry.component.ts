@@ -510,7 +510,7 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
     }
     .cancel-pill:hover {
       background: var(--color-accent);
-      color: #0c0e13;
+      color: #fff;
       border-color: var(--color-accent);
     }
     .reader-top__breadcrumb {
@@ -627,7 +627,7 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
     }
     .editor-actions .btn--primary:hover:not(:disabled) {
       background: var(--color-accent);
-      color: #0c0e13;
+      color: #fff;
       transform: translateY(-1px);
     }
     .editor-actions .btn--danger {

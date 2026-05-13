@@ -461,7 +461,7 @@ import { ActivatedRoute } from '@angular/router';
     }
     .compose-pill:hover {
       background: var(--color-accent);
-      color: #0c0e13;
+      color: #fff;
       transform: translateY(-1px);
     }
 
@@ -780,7 +780,7 @@ import { ActivatedRoute } from '@angular/router';
     }
     .embedded-section .cancel-pill:hover {
       background: var(--color-accent);
-      color: #0c0e13;
+      color: #fff;
       border-color: var(--color-accent);
     }
     .embedded-section .reader-top__breadcrumb {

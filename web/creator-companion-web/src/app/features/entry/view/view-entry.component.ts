@@ -187,7 +187,7 @@ import { MoodIconComponent } from '../../../shared/mood-icon/mood-icon.component
     }
     .cancel-pill:hover {
       background: var(--color-accent);
-      color: #0c0e13;
+      color: #fff;
       border-color: var(--color-accent);
       text-decoration: none;
     }
@@ -248,7 +248,7 @@ import { MoodIconComponent } from '../../../shared/mood-icon/mood-icon.component
     }
     .edit-btn:hover {
       background: var(--color-accent);
-      color: #0c0e13;
+      color: #fff;
       text-decoration: none;
     }
 

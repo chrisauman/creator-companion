@@ -130,7 +130,7 @@ import { FocusTrapDirective } from '../focus-trap.directive';
     }
     .paywall__plan:hover {
       background: #12C4E3;
-      color: #0c0e13;
+      color: #fff;
     }
     .paywall__plan:disabled {
       opacity: .55;
@@ -141,7 +141,7 @@ import { FocusTrapDirective } from '../focus-trap.directive';
       top: -10px;
       right: 12px;
       background: #12C4E3;
-      color: #0c0e13;
+      color: #fff;
       font-size: .6875rem;
       font-weight: 700;
       letter-spacing: .04em;

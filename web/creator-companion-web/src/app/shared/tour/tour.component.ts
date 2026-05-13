@@ -223,7 +223,7 @@ export interface TourStep {
     }
     .tour__next:hover {
       background: #12C4E3;
-      color: #0c0e13;
+      color: #fff;
       transform: translateY(-1px);
     }
 

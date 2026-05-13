@@ -129,13 +129,17 @@ p  { line-height: 1.7; }
 
   &:disabled { opacity: .5; cursor: not-allowed; }
 
-  /* Primary — dark ink pill, hovers cyan. Matches the new design language. */
+  /* Primary — dark ink pill, hovers brand cyan with white text.
+     Hover text is WHITE (not the previous black-on-cyan): black ink
+     on the cyan hue had poor contrast and read as a downgrade from
+     the default-state contrast. CLAUDE.md spec confirms the
+     black-bg-white-text / cyan-bg-white-text pattern. */
   &--primary {
     background: #0c0e13;
     color: #fff;
     &:hover:not(:disabled) {
       background: var(--color-accent);
-      color: #0c0e13;
+      color: #fff;
       transform: translateY(-1px);
     }
   }

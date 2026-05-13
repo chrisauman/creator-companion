@@ -478,7 +478,7 @@ interface PendingImage {
     }
     .cancel-pill:hover {
       background: var(--color-accent);
-      color: #0c0e13;
+      color: #fff;
       border-color: var(--color-accent);
     }
     .reader-top__breadcrumb {
@@ -588,7 +588,7 @@ interface PendingImage {
     }
     .editor-actions .btn--primary:hover:not(:disabled) {
       background: var(--color-accent);
-      color: #0c0e13;
+      color: #fff;
       transform: translateY(-1px);
     }
     .editor-actions .btn--secondary {
