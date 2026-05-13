@@ -125,19 +125,34 @@ import { AdminShellComponent } from './admin-shell.component';
                    prevents a half-typed paste from clobbering a known-
                    good saved cookie on accidental save. -->
               <label class="substack-field">
-                <span class="substack-field__label">Substack session cookie</span>
+                <span class="substack-field__label">Substack cookie header (full)</span>
                 <textarea class="substack-field__input substack-field__input--mono"
-                          rows="3"
-                          placeholder="Paste substack.sid value here (leave blank to keep current)"
+                          rows="6"
+                          placeholder="Paste the full Cookie header value here (leave blank to keep current)"
                           [(ngModel)]="cookieInput"
                           autocomplete="off"
                           spellcheck="false"></textarea>
                 <span class="substack-field__hint">
-                  Open <strong>substack.com</strong>, log in, press F12 →
-                  Application → Cookies → substack.com → copy the
-                  <code>substack.sid</code> value. Saved encrypted at rest.
+                  Substack sits behind Cloudflare, so just <code>substack.sid</code>
+                  isn't enough — we need every cookie the browser sends.
+                  How to grab them: log into <strong>substack.com</strong>
+                  → F12 → Network tab → click any request to
+                  substack.com → Headers → Request Headers → copy the
+                  value after <code>Cookie:</code>. Saved encrypted at rest.
                 </span>
               </label>
+
+              <!-- Cloudflare cf_clearance cookies are IP- and UA-bound
+                   in stricter modes. Surface this risk up-front so the
+                   admin understands why posts may stop working until
+                   they re-paste. -->
+              <div class="substack-callout">
+                <strong>Heads up:</strong> Some of the cookies (notably
+                <code>cf_clearance</code>) are tied to your browser's IP
+                and User-Agent. They may expire or stop working when
+                replayed from Railway's server IP. If posts start
+                failing, re-paste a fresh cookie header.
+              </div>
 
               <label class="substack-field">
                 <span class="substack-field__label">Timezone (IANA id)</span>
@@ -390,6 +405,26 @@ import { AdminShellComponent } from './admin-shell.component';
       margin: 0 0 1.5rem;
       font-size: .9375rem;
       cursor: pointer;
+    }
+
+    /* Inline warning callout used to flag the cf_clearance IP-binding
+       risk so the admin understands why posts may need re-pasting. */
+    .substack-callout {
+      background: rgba(245,158,11,.08);
+      border: 1px solid rgba(245,158,11,.3);
+      color: var(--color-text);
+      padding: .75rem 1rem;
+      border-radius: var(--radius-sm, 8px);
+      font-size: .8125rem;
+      line-height: 1.5;
+      margin: 0 0 1.5rem;
+    }
+    .substack-callout code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: .75rem;
+      background: rgba(0,0,0,.05);
+      padding: 0 .25rem;
+      border-radius: 3px;
     }
 
     /* ── Actions row ───────────────────────────────────────────────── */

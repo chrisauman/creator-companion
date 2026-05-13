@@ -45,7 +45,6 @@ public interface ISubstackPoster
 public class SubstackPoster : ISubstackPoster
 {
     private const string NotesEndpoint = "https://substack.com/api/v1/comment/feed";
-    private const string SessionCookieName = "substack.sid";
 
     private readonly HttpClient _http;
     private readonly ILogger<SubstackPoster> _log;
@@ -58,18 +57,19 @@ public class SubstackPoster : ISubstackPoster
 
     public async Task<SubstackPostResult> PostNoteAsync(string sessionCookie, string body, CancellationToken ct = default)
     {
-        // Build the cookie header. The admin pastes EITHER the bare
-        // value (preferred — cleaner UI) OR a full "substack.sid=..."
-        // pair (in case they copy from "copy as cURL"). Normalize both
-        // shapes to a single Cookie header.
-        var cookieValue = sessionCookie.Trim();
-        var cookieHeader = cookieValue.Contains('=')
-            ? cookieValue
-            : $"{SessionCookieName}={cookieValue}";
+        // The admin pastes the FULL Cookie header value copied out of
+        // their browser's DevTools request (every cookie, joined by
+        // "; "). Substack sits behind Cloudflare and requires not just
+        // substack.sid but cf_clearance, __cf_bm, AWSALBTG, etc. Phase
+        // 1 tried to be clever about normalizing a bare-value paste —
+        // that's gone now because we always need the full header.
+        var cookieHeader = sessionCookie.Trim();
 
-        // Best-guess Notes envelope until we capture the real shape.
-        // Substack Notes are rich-doc backed; a minimal text-only post
-        // is roughly { bodyJson: { type: doc, content: [paragraph] } }.
+        // Best-guess Notes envelope until we capture a real one from
+        // DevTools "Copy as cURL". Substack Notes are ProseMirror-doc
+        // backed; this shape (bodyJson: { type:doc, content:[paragraph
+        // [text]] }) matches their TipTap editor output. tabId/surface
+        // are observed in the wild as required scaffolding.
         var envelope = new
         {
             bodyJson = new
@@ -93,10 +93,24 @@ public class SubstackPoster : ISubstackPoster
 
         using var req = new HttpRequestMessage(HttpMethod.Post, NotesEndpoint);
         req.Headers.Add("Cookie", cookieHeader);
-        // Substack's web client sends these — mirroring them reduces
-        // bot-fingerprint heuristics from outright rejecting us.
-        req.Headers.Add("User-Agent", "Mozilla/5.0 (CreatorCompanion auto-poster)");
+
+        // Browser-mimicking headers. Cloudflare's bot detection scores
+        // requests on header fingerprints (Sec-Fetch-* group, modern
+        // Chrome UA, Origin/Referer pair). Missing them is a strong
+        // signal that the request isn't from a real browser. We can't
+        // reproduce TLS-fingerprint matching here (would need a custom
+        // SocketsHttpHandler), but the header set gets us close.
+        req.Headers.UserAgent.ParseAdd(
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 " +
+            "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36");
         req.Headers.Add("Accept", "application/json, text/plain, */*");
+        req.Headers.Add("Accept-Language", "en-US,en;q=0.9");
+        req.Headers.Add("Origin", "https://substack.com");
+        req.Headers.Add("Referer", "https://substack.com/notes");
+        req.Headers.Add("Sec-Fetch-Dest", "empty");
+        req.Headers.Add("Sec-Fetch-Mode", "cors");
+        req.Headers.Add("Sec-Fetch-Site", "same-origin");
+
         req.Content = JsonContent.Create(envelope);
 
         HttpResponseMessage? resp = null;
