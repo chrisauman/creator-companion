@@ -412,7 +412,10 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
     .reminders-list {
       display: flex;
       flex-direction: column;
-      gap: .75rem;
+      /* 1.25rem matches the gap used between today-panel cards and the
+         motivation-card / push-nudge / today-summary stack — feels
+         consistent with the rest of the app's card rhythm. */
+      gap: 1.25rem;
     }
     .reminder-tile {
       display: flex; flex-direction: column; gap: 1rem;
@@ -435,7 +438,10 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
       background: linear-gradient(180deg, #fdfaf2 0%, #f6f1e6 100%);
       border: 1px solid rgba(190,170,130,.22);
       border-radius: 16px;
-      margin-bottom: 1rem;
+      /* margin-bottom removed — the parent .reminders-list now owns
+         the inter-card spacing via the flex gap, so a per-card margin
+         here would compound and create a bigger gap below the accent
+         card than around the others. */
       position: relative;
       overflow: hidden;
     }
