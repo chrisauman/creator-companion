@@ -510,6 +510,11 @@ export class ApiService {
     return this.http.post<void>(`${this.base}/admin/substack/today/reroll`, {});
   }
 
+  /** Force-fire today's post right now, bypassing the random schedule. */
+  adminSubstackFireNow(): Observable<SubstackTestPostResult> {
+    return this.http.post<SubstackTestPostResult>(`${this.base}/admin/substack/today/fire-now`, {});
+  }
+
   /** Last 60 daily plans, newest first. */
   adminGetSubstackHistory(): Observable<SubstackPlan[]> {
     return this.http.get<SubstackPlan[]>(`${this.base}/admin/substack/history`);

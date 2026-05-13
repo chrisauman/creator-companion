@@ -19,7 +19,8 @@ namespace CreatorCompanion.Api.Api.Controllers;
 public class AdminSubstackController(
     AppDbContext db,
     ISubstackCookieProtector protector,
-    ISubstackPoster poster) : ControllerBase
+    ISubstackPoster poster,
+    ISubstackPostingService posting) : ControllerBase
 {
     /// <summary>Get current settings (cookie never returned).</summary>
     [HttpGet("settings")]
@@ -119,6 +120,22 @@ public class AdminSubstackController(
             .FirstOrDefaultAsync(p => p.Date == today, ct);
 
         return Ok(plan is null ? null : MapPlan(plan));
+    }
+
+    /// <summary>
+    /// Manually fire today's post right now, bypassing the random
+    /// schedule. If today's plan doesn't exist yet, creates one (with
+    /// ScheduledFor=now) and fires it. If today is already Posted,
+    /// returns an error rather than double-posting. Returns the full
+    /// outcome so the UI can show the same success/failure panel as
+    /// the test-post button.
+    /// </summary>
+    [HttpPost("today/fire-now")]
+    public async Task<IActionResult> FireNow(CancellationToken ct)
+    {
+        var result = await posting.FireNowAsync(ct);
+        return Ok(new SubstackTestPostResponse(
+            result.Success, result.StatusCode, result.NoteId, result.ErrorMessage, result.RawResponse));
     }
 
     /// <summary>

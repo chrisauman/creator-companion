@@ -221,17 +221,49 @@ import { AdminShellComponent } from './admin-shell.component';
 
               @if (todayLoading()) {
                 <p class="substack-page__loading">Loading today's plan…</p>
-              } @else if (!s.active) {
-                <p class="substack-empty">
-                  The worker is paused (Active is off in Settings). Turn
-                  it on to schedule a daily post.
-                </p>
               } @else if (!today()) {
+                <!-- No plan row yet. Show context + a Post Now button
+                     so the admin can trigger a one-off without waiting
+                     for the worker's tick. Backend will create the
+                     plan on demand. -->
                 <p class="substack-empty">
-                  No plan for today yet. The worker creates one on its
-                  next tick (within ~60 seconds of midnight local). Check
-                  back in a minute.
+                  No plan for today yet.
+                  @if (s.active) {
+                    The worker creates one on its next tick (within
+                    ~60 seconds). Or post one immediately:
+                  } @else {
+                    The worker is paused (Active is off in Settings).
+                    You can still post one immediately:
+                  }
                 </p>
+                <div class="substack-actions" style="margin-top:1rem">
+                  <button class="btn btn--primary"
+                          type="button"
+                          [disabled]="firingNow() || !s.cookieIsSet"
+                          (click)="fireNow()"
+                          [title]="s.cookieIsSet ? '' : 'Save a cookie on the Settings tab first.'">
+                    {{ firingNow() ? 'Posting…' : 'Post a random spark now' }}
+                  </button>
+                </div>
+                @if (fireResult(); as r) {
+                  <div class="substack-test"
+                       [class.substack-test--ok]="r.success"
+                       [class.substack-test--fail]="!r.success"
+                       style="margin-top:1.25rem">
+                    <div class="substack-test__head">
+                      <strong>{{ r.success ? 'Posted to Substack' : 'Post failed' }}</strong>
+                      @if (r.statusCode != null) {
+                        <span class="substack-test__status">HTTP {{ r.statusCode }}</span>
+                      }
+                    </div>
+                    @if (r.noteId) {
+                      <p class="substack-test__line">Note id: <code>{{ r.noteId }}</code></p>
+                    }
+                    @if (r.errorMessage) {
+                      <p class="substack-test__line">{{ r.errorMessage }}</p>
+                    }
+                  </div>
+                }
               } @else {
                 <div class="substack-today">
                   <div class="substack-today__row">
@@ -274,12 +306,56 @@ import { AdminShellComponent } from './admin-shell.component';
 
                 @if (today()!.status === 'Pending') {
                   <div class="substack-actions" style="margin-top:1.25rem">
+                    <button class="btn btn--primary"
+                            type="button"
+                            [disabled]="firingNow()"
+                            (click)="fireNow()">
+                      {{ firingNow() ? 'Posting…' : 'Post now (skip the schedule)' }}
+                    </button>
                     <button class="btn btn--ghost"
                             type="button"
                             [disabled]="rerolling()"
                             (click)="rerollToday()">
-                      {{ rerolling() ? 'Rerolling…' : 'Reroll today (pick a different spark)' }}
+                      {{ rerolling() ? 'Rerolling…' : 'Reroll (pick a different spark)' }}
                     </button>
+                  </div>
+                }
+
+                <!-- When today is already Posted but the admin wants to
+                     trigger a fresh post anyway: surface "Post now" so
+                     it's discoverable. The endpoint itself will return
+                     "already posted today" if they click — phase 4 can
+                     relax this if testing requires multiple posts per
+                     day. -->
+                @if (today()!.status !== 'Pending') {
+                  <div class="substack-actions" style="margin-top:1.25rem">
+                    <button class="btn btn--ghost"
+                            type="button"
+                            [disabled]="firingNow()"
+                            (click)="fireNow()">
+                      {{ firingNow() ? 'Posting…' : 'Try posting again now' }}
+                    </button>
+                  </div>
+                }
+
+                <!-- Result panel for fireNow, same shape as testPost. -->
+                @if (fireResult(); as r) {
+                  <div class="substack-test"
+                       [class.substack-test--ok]="r.success"
+                       [class.substack-test--fail]="!r.success"
+                       style="margin-top:1.25rem">
+                    <div class="substack-test__head">
+                      <strong>{{ r.success ? 'Posted to Substack' : 'Post failed' }}</strong>
+                      @if (r.statusCode != null) {
+                        <span class="substack-test__status">HTTP {{ r.statusCode }}</span>
+                      }
+                    </div>
+                    @if (r.noteId) {
+                      <p class="substack-test__line">Note id: <code>{{ r.noteId }}</code></p>
+                    }
+                    @if (r.errorMessage) {
+                      <p class="substack-test__line">{{ r.errorMessage }}</p>
+                    }
                   </div>
                 }
               }
@@ -779,6 +855,8 @@ export class AdminSubstackComponent implements OnInit {
   todayLoading   = signal(false);
   todayLoaded    = signal(false);
   rerolling      = signal(false);
+  firingNow      = signal(false);
+  fireResult     = signal<SubstackTestPostResult | null>(null);
 
   history        = signal<SubstackPlan[]>([]);
   historyLoading = signal(false);
@@ -866,6 +944,37 @@ export class AdminSubstackComponent implements OnInit {
       error: err => {
         this.error.set(this.errMsg(err) || 'Could not reroll today.');
         this.rerolling.set(false);
+      }
+    });
+  }
+
+  /**
+   * Synchronously force-fire today's post — bypasses the random
+   * schedule. Creates today's plan if missing, fires it, and re-fetches
+   * so the Today panel updates. The result panel surfaces success or
+   * failure inline (same shape as the Settings tab's Test Post panel).
+   */
+  fireNow(): void {
+    this.firingNow.set(true);
+    this.fireResult.set(null);
+    this.error.set(null);
+    this.api.adminSubstackFireNow().subscribe({
+      next: r => {
+        this.fireResult.set(r);
+        this.firingNow.set(false);
+        // Re-fetch the plan so the Today panel reflects the new Posted
+        // state. eligibleCount may also have decremented by 1.
+        this.loadToday();
+      },
+      error: err => {
+        this.fireResult.set({
+          success: false,
+          statusCode: err?.status ?? null,
+          noteId: null,
+          errorMessage: this.errMsg(err) || 'Could not post now.',
+          rawResponse: null
+        });
+        this.firingNow.set(false);
       }
     });
   }
