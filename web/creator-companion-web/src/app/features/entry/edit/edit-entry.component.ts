@@ -797,11 +797,18 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
     .mood-lock-text { font-size: .8125rem; color: var(--color-text-2); font-weight: 500; text-align: center; }
 
     /* ── Footer / actions ────────────────────────────────────────── */
-    /* word-count (left) · trash-link · Save button (right). */
+    /* word-count (left) · trash-link · Save button (right).
+       Bottom margin gives the Save / Cancel pills breathing room
+       above the gray page background on mobile — without it, the
+       buttons butted right up against the bottom edge of the
+       scroll area and read as cropped. */
     .editor-footer {
       display: flex; align-items: center; gap: 1rem;
-      flex-wrap: wrap; margin-top: 1.5rem;
+      flex-wrap: wrap; margin-top: 1.5rem; margin-bottom: 2rem;
       padding-top: 1rem; border-top: 1px solid var(--color-border);
+    }
+    @media (min-width: 768px) {
+      .editor-footer { margin-bottom: 1rem; }
     }
     .word-count { font-size: .8125rem; color: var(--color-text-3);
       &--warn { color: var(--color-streak); }

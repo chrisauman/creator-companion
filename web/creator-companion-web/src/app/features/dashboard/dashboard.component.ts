@@ -413,7 +413,11 @@ import { ActivatedRoute } from '@angular/router';
          get their flush-to-top treatment. */
       .main-content > app-trial-banner:first-child {
         display: block;
-        padding-top: 1rem;
+        /* 2rem (was 1rem) gives the trial banner a clear visual gap
+           from the very top edge of the desktop viewport — at 1rem
+           the cyan bar visually anchored against the page edge and
+           felt cropped. */
+        padding-top: 2rem;
       }
     }
 
@@ -1057,14 +1061,13 @@ import { ActivatedRoute } from '@angular/router';
       word-break: break-word;
     }
 
-    /* Photo: full-width, capped max-height. Vertical photos show their
-       full natural orientation up to the cap; bottom is clipped only
-       for very tall photos so the entry row stays a reasonable size. */
+    /* Photo: full natural aspect ratio, no crop. The previous
+       max-height: 480px + overflow:hidden chopped the bottom of
+       portrait photos — defeats the point of attaching the photo.
+       Tall portraits now display at their actual height; the entry
+       card grows to accommodate. */
     .entry-row__photo {
       width: 100%;
-      max-height: 480px;
-      overflow: hidden;
-      background: var(--color-bg);
       display: block;
     }
     .entry-row__photo img {

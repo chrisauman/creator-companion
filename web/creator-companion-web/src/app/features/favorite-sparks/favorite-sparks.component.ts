@@ -394,20 +394,18 @@ import { MobileHeaderComponent } from '../../shared/mobile-header/mobile-header.
       overflow: hidden;
       word-break: break-word;
     }
-    /* Photo: full-width, capped height. Bottom is clipped only for
-       very tall photos so cards stay reasonable in size. */
+    /* Photo: full natural aspect ratio, no crop. Removed the prior
+       max-height: 320px + object-fit: cover crop so portrait photos
+       attached to favorited entries show in full — matches the
+       behavior of entries in the main journal and standalone entry
+       view. The card grows to fit the photo. */
     .entry-card__photo {
       width: 100%;
-      max-height: 320px;
-      overflow: hidden;
-      display: flex;
-      justify-content: center;
-      background: var(--color-bg);
+      display: block;
     }
     .entry-card__photo img {
       width: 100%;
-      max-height: 320px;
-      object-fit: cover;
+      height: auto;
       display: block;
     }
 

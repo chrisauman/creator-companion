@@ -403,18 +403,31 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
     .push-active .link-btn { margin-left: .375rem; }
 
     /* ── Reminder tiles ─────────────────────────────────────────── */
-    /* Plain tiles are flat (no surface) with a thin divider between
-       them. The "accent" variant gets the warm cream gradient that
-       matches the Daily Spark hero card. */
+    /* Each reminder sits on its own subtle surface card so the five
+       slots read as five distinct rows rather than one continuous
+       form. Matches the soft-surface treatment used across the app
+       (faq-list rows, motivation-card, today panel cards). The
+       "accent" variant on top of this swaps the surface for the
+       warm cream gradient used on Daily Spark / Daily Prompt. */
+    .reminders-list {
+      display: flex;
+      flex-direction: column;
+      gap: .75rem;
+    }
     .reminder-tile {
       display: flex; flex-direction: column; gap: 1rem;
-      padding: 1rem 0;
-      border-bottom: 1px solid var(--color-border);
+      padding: 1.125rem 1.125rem;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 14px;
+      transition: border-color .15s, box-shadow .15s;
     }
-    .reminders-list .reminder-tile:first-child { padding-top: 0; }
-    .reminders-list .reminder-tile:last-child {
-      padding-bottom: 0;
-      border-bottom: none;
+    .reminder-tile:hover {
+      border-color: rgba(190,170,130,.42);
+    }
+    .reminder-tile:focus-within {
+      border-color: var(--color-accent);
+      box-shadow: 0 0 0 3px var(--color-accent-light);
     }
 
     .reminder-tile--accent {
