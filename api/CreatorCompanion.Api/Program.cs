@@ -187,6 +187,15 @@ try
     builder.Services.AddScoped<IPushSender, WebPushSender>();
     builder.Services.AddHostedService<ReminderBackgroundService>();
 
+    // Substack auto-poster (admin-only marketing tool). Cookie protector
+    // is a singleton — the AES key is read once at startup and the
+    // protect/unprotect operations are stateless past that.
+    builder.Services.AddSingleton<ISubstackCookieProtector, SubstackCookieProtector>();
+    // HttpClient is typed so DI can supply it with retry/timeout policies
+    // later without rewriting consumers. Default timeout (100s) is fine —
+    // a single create-note request should complete in well under a second.
+    builder.Services.AddHttpClient<ISubstackPoster, SubstackPoster>();
+
     // Production safety: required env-driven settings must be set
     // BEFORE the app starts serving traffic. Missing values silently
     // crippled features at runtime (push delivery off, paywall broken,

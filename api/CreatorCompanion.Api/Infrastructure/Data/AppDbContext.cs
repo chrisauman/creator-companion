@@ -30,6 +30,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Faq> Faqs => Set<Faq>();
     public DbSet<DailyPrompt> DailyPrompts => Set<DailyPrompt>();
     public DbSet<ProcessedStripeEvent> ProcessedStripeEvents => Set<ProcessedStripeEvent>();
+    public DbSet<SubstackSettings> SubstackSettings => Set<SubstackSettings>();
+    public DbSet<SubstackDailyPlan> SubstackDailyPlans => Set<SubstackDailyPlan>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -56,5 +58,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.ApplyConfiguration(new PasswordResetTokenConfiguration());
         modelBuilder.ApplyConfiguration(new EmailVerificationTokenConfiguration());
         modelBuilder.ApplyConfiguration(new ProcessedStripeEventConfiguration());
+        modelBuilder.ApplyConfiguration(new SubstackSettingsConfiguration());
+        modelBuilder.ApplyConfiguration(new SubstackDailyPlanConfiguration());
     }
 }

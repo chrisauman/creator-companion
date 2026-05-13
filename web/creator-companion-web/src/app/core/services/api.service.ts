@@ -486,4 +486,39 @@ export class ApiService {
   adminReorderDailyPrompts(ids: string[]): Observable<void> {
     return this.http.post<void>(`${this.base}/admin/daily-prompts/reorder`, { ids });
   }
+
+  // ── Admin: Substack auto-poster ────────────────────────────────────────
+  adminGetSubstackSettings(): Observable<SubstackSettings> {
+    return this.http.get<SubstackSettings>(`${this.base}/admin/substack/settings`);
+  }
+
+  adminUpdateSubstackSettings(payload: { active: boolean; timeZoneId: string; cookie?: string | null }): Observable<SubstackSettings> {
+    return this.http.put<SubstackSettings>(`${this.base}/admin/substack/settings`, payload);
+  }
+
+  adminSubstackTestPost(): Observable<SubstackTestPostResult> {
+    return this.http.post<SubstackTestPostResult>(`${this.base}/admin/substack/test-post`, {});
+  }
+}
+
+// Shape returned by GET/PUT /admin/substack/settings. The actual cookie
+// never leaves the server; only the boolean cookieIsSet does.
+export interface SubstackSettings {
+  active: boolean;
+  timeZoneId: string;
+  cookieIsSet: boolean;
+  lastSuccessAt: string | null;
+  lastFailureAt: string | null;
+  lastFailureMessage: string | null;
+  consecutiveFailures: number;
+  updatedAt: string;
+}
+
+// Outcome of a manual "send a test post now" attempt.
+export interface SubstackTestPostResult {
+  success: boolean;
+  statusCode: number | null;
+  noteId: string | null;
+  errorMessage: string | null;
+  rawResponse: string | null;
 }

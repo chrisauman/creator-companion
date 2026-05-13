@@ -136,6 +136,11 @@ export const routes: Routes = [
     canActivate: [adminGuard],
     loadComponent: () => import('./features/admin/admin-prompts.component').then(m => m.AdminPromptsComponent)
   },
+  {
+    path: 'admin/substack',
+    canActivate: [adminGuard],
+    loadComponent: () => import('./features/admin/admin-substack.component').then(m => m.AdminSubstackComponent)
+  },
 
   {
     path: 'billing/success',

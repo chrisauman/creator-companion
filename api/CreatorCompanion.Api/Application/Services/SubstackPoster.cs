@@ -1,0 +1,150 @@
+using System.Net;
+
+namespace CreatorCompanion.Api.Application.Services;
+
+/// <summary>
+/// Result of a Substack post attempt, surfaced to the admin UI + worker.
+/// </summary>
+public record SubstackPostResult(
+    bool Success,
+    int? StatusCode,
+    string? NoteId,
+    string? ErrorMessage,
+    string? RawResponse  // truncated; useful for diagnosing schema drift
+);
+
+public interface ISubstackPoster
+{
+    /// <summary>
+    /// Attempts to publish a Substack Note containing the given body
+    /// text using the given session cookie. Returns success+noteId on a
+    /// 2xx, otherwise surfaces the status code and response body.
+    /// </summary>
+    Task<SubstackPostResult> PostNoteAsync(string sessionCookie, string body, CancellationToken ct = default);
+}
+
+/// <summary>
+/// Phase-1 implementation: sends a hand-crafted JSON body to the most
+/// commonly observed Substack Notes endpoint
+/// (https://substack.com/api/v1/comment/feed). The exact request shape
+/// is unknown until phase 2 captures a real cURL from the admin's
+/// browser; this implementation is good enough to verify the cookie is
+/// being accepted by Substack (a 200/201 with a body, vs. a 401/403 if
+/// the cookie is bad).
+///
+/// Expected outcomes for a freshly-pasted, valid cookie:
+///   - Best case: post lands and we get a JSON body with an id field.
+///   - Likely case: 400/422 because our envelope is wrong, but the
+///     cookie itself authenticated — proving the auth half of the
+///     pipeline works. We surface the raw response so the admin can
+///     paste it back to me for phase 2.
+///
+/// We deliberately do NOT retry — phase 1 is "does the cookie work."
+/// Retry/backoff lives in the background worker (phase 3).
+/// </summary>
+public class SubstackPoster : ISubstackPoster
+{
+    private const string NotesEndpoint = "https://substack.com/api/v1/comment/feed";
+    private const string SessionCookieName = "substack.sid";
+
+    private readonly HttpClient _http;
+    private readonly ILogger<SubstackPoster> _log;
+
+    public SubstackPoster(HttpClient http, ILogger<SubstackPoster> log)
+    {
+        _http = http;
+        _log  = log;
+    }
+
+    public async Task<SubstackPostResult> PostNoteAsync(string sessionCookie, string body, CancellationToken ct = default)
+    {
+        // Build the cookie header. The admin pastes EITHER the bare
+        // value (preferred — cleaner UI) OR a full "substack.sid=..."
+        // pair (in case they copy from "copy as cURL"). Normalize both
+        // shapes to a single Cookie header.
+        var cookieValue = sessionCookie.Trim();
+        var cookieHeader = cookieValue.Contains('=')
+            ? cookieValue
+            : $"{SessionCookieName}={cookieValue}";
+
+        // Best-guess Notes envelope until we capture the real shape.
+        // Substack Notes are rich-doc backed; a minimal text-only post
+        // is roughly { bodyJson: { type: doc, content: [paragraph] } }.
+        var envelope = new
+        {
+            bodyJson = new
+            {
+                type = "doc",
+                content = new object[]
+                {
+                    new
+                    {
+                        type = "paragraph",
+                        content = new object[]
+                        {
+                            new { type = "text", text = body }
+                        }
+                    }
+                }
+            },
+            tabId = "for-you",
+            surface = "feed"
+        };
+
+        using var req = new HttpRequestMessage(HttpMethod.Post, NotesEndpoint);
+        req.Headers.Add("Cookie", cookieHeader);
+        // Substack's web client sends these — mirroring them reduces
+        // bot-fingerprint heuristics from outright rejecting us.
+        req.Headers.Add("User-Agent", "Mozilla/5.0 (CreatorCompanion auto-poster)");
+        req.Headers.Add("Accept", "application/json, text/plain, */*");
+        req.Content = JsonContent.Create(envelope);
+
+        HttpResponseMessage? resp = null;
+        try
+        {
+            resp = await _http.SendAsync(req, ct);
+            var raw = await resp.Content.ReadAsStringAsync(ct);
+            // Truncate for storage; full body in logs if we need it.
+            var truncated = raw.Length > 1500 ? raw[..1500] + "…" : raw;
+
+            if (!resp.IsSuccessStatusCode)
+            {
+                _log.LogWarning("Substack post failed: {Status} {Body}", (int)resp.StatusCode, truncated);
+                return new SubstackPostResult(
+                    Success: false,
+                    StatusCode: (int)resp.StatusCode,
+                    NoteId: null,
+                    ErrorMessage: resp.StatusCode switch
+                    {
+                        HttpStatusCode.Unauthorized => "Substack rejected the cookie (401). Re-paste a fresh substack.sid.",
+                        HttpStatusCode.Forbidden    => "Substack returned 403 — cookie may be tied to a different account or rate-limited.",
+                        _                           => $"Substack returned {(int)resp.StatusCode}."
+                    },
+                    RawResponse: truncated
+                );
+            }
+
+            // Try to extract a note id without locking ourselves into a
+            // schema — we expect to refine this in phase 2.
+            string? noteId = null;
+            try
+            {
+                using var doc = System.Text.Json.JsonDocument.Parse(raw);
+                if (doc.RootElement.TryGetProperty("id", out var idEl))
+                    noteId = idEl.ToString();
+            }
+            catch { /* best-effort */ }
+
+            return new SubstackPostResult(true, (int)resp.StatusCode, noteId, null, truncated);
+        }
+        catch (Exception ex)
+        {
+            _log.LogError(ex, "Substack post threw");
+            return new SubstackPostResult(false, null, null, ex.Message, null);
+        }
+        finally
+        {
+            resp?.Dispose();
+        }
+    }
+}
