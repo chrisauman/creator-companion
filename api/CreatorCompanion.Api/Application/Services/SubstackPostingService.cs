@@ -17,10 +17,18 @@ public interface ISubstackPostingService
     /// <summary>
     /// Manually fire today's post right now — bypasses the random
     /// fire-time roll. Used by the "Post now" button in the admin UI.
-    /// Creates a plan row if one doesn't exist yet (with ScheduledFor
-    /// = now), or fires today's pending plan. Returns the outcome so
-    /// the UI can surface it inline. Won't post if today is already
-    /// Posted.
+    /// Behaviour by today's plan state:
+    ///   - No plan: pick a spark, create a plan with ScheduledFor=now, fire.
+    ///   - Pending: fire today's plan immediately.
+    ///   - Posted:  drop the existing plan (the spark becomes eligible
+    ///              again, but the picker will almost certainly choose
+    ///              a different one from the remaining pool), then
+    ///              create a new plan and fire. This is the "test
+    ///              again" path — admins explicitly clicking the button
+    ///              after a successful post want a fresh post, not a
+    ///              refusal.
+    ///   - Failed:  drop and retry (same as Posted path).
+    /// Returns the outcome so the UI can surface it inline.
     /// </summary>
     Task<SubstackPostResult> FireNowAsync(CancellationToken ct);
 }
@@ -102,7 +110,22 @@ public class SubstackPostingService : ISubstackPostingService
         var tz = ResolveTimeZone(settings.TimeZoneId);
         var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz));
 
-        // If no plan exists yet, create one with ScheduledFor=now.
+        // If today already has a Posted or Failed plan, drop it so we
+        // can create a fresh one with the new picker. The previously-
+        // posted spark becomes eligible again, but with ~290 unposted
+        // sparks in the pool it almost certainly won't be picked twice.
+        // We don't drop a Pending plan — the admin probably wants to
+        // fire that exact plan rather than swap the spark.
+        var existing = await _db.SubstackDailyPlans
+            .FirstOrDefaultAsync(p => p.Date == today, ct);
+        if (existing is not null && existing.Status != SubstackPlanStatus.Pending)
+        {
+            _db.SubstackDailyPlans.Remove(existing);
+            await _db.SaveChangesAsync(ct);
+        }
+
+        // Now ensure a plan exists (creates one if we just dropped, or
+        // if none existed in the first place).
         await EnsureTodayPlanAsync(today, tz, fireNow: true, ct);
 
         var plan = await _db.SubstackDailyPlans
@@ -112,10 +135,9 @@ public class SubstackPostingService : ISubstackPostingService
         if (plan is null)
             return new SubstackPostResult(false, null, null, "No eligible sparks remaining in the pool. Add more in Content Library.", null);
 
-        if (plan.Status == SubstackPlanStatus.Posted)
-            return new SubstackPostResult(false, null, plan.SubstackNoteId,
-                $"Today's spark already posted at {plan.PostedAt:HH:mm}. Wait until tomorrow or reroll first.", null);
-
+        // Defensive: if a Pending plan somehow exists from a prior tick,
+        // fire it as-is. Otherwise (our fresh one) fire it too. Either
+        // way we're firing.
         return await FireOnePlanAsync(settings, plan, ct);
     }
 
