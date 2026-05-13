@@ -391,8 +391,12 @@ import { ActivatedRoute } from '@angular/router';
     .main-content {
       flex: 1;
       min-width: 0;
-      /* extra bottom padding = nav bar height + safe-area + breathing room */
-      padding: 1rem 1.125rem calc(88px + env(safe-area-inset-bottom, 0px));
+      /* No top padding — the mobile-header (sticky sibling above)
+         already has 1rem of bottom padding inside its own box, so
+         adding another 1rem here stacked to a visible 32px gap below
+         the header. Bottom padding still includes nav-bar height +
+         safe-area for the home indicator. */
+      padding: 0 1.125rem calc(88px + env(safe-area-inset-bottom, 0px));
       background: var(--color-bg);
     }
     @media (min-width: 768px) {

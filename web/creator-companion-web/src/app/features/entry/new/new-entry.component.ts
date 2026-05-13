@@ -449,11 +449,18 @@ interface PendingImage {
     }
 
     /* ── Reader-style top bar ──────────────────────────────────── */
+    /* Top padding mirrors the shared app-mobile-header pattern: add
+       the iOS safe-area-inset on top of 1rem so the back button +
+       breadcrumb don't get eaten by the iPhone status bar / Dynamic
+       Island in PWA-installed mode. Previously the bar rendered
+       exactly at top:0 and the Back pill sat directly under the
+       system clock, unreachable. Falls back cleanly to 1rem on
+       browsers without env() support. */
     .reader-top {
       display: flex;
       align-items: center;
       gap: .5rem;
-      padding: 1rem 1.75rem;
+      padding: calc(env(safe-area-inset-top, 0px) + 1rem) 1.75rem 1rem;
       border-bottom: 1px solid var(--color-border);
       background: var(--color-surface);
       position: sticky; top: 0;

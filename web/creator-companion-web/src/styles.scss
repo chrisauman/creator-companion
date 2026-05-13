@@ -59,6 +59,28 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* iOS Safari auto-zooms when focusing any text input whose font-size
+   is below 16px — a "helpful" accessibility nudge that feels broken
+   because the page stays zoomed afterwards with no way to dismiss it
+   except pinch-zoom. The fix is a hard floor of 16px on all text-
+   bearing inputs at mobile widths.
+
+   Scoped to <768px so desktop is unaffected. !important is necessary
+   because per-component inline styles set font-size lower (.875rem,
+   .9375rem) on search bars, tag inputs, and form fields throughout
+   the app — auditing each one would be much more invasive than this
+   one rule that supersedes them all on the surface where it matters.
+
+   `:not()` excludes input types where font-size doesn't apply or
+   where the zoom isn't triggered (checkboxes, file pickers, etc.). */
+@media (max-width: 767px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="file"]):not([type="range"]):not([type="color"]):not([type="hidden"]),
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
 html {
   font-size: 16px;
   -webkit-font-smoothing: antialiased;

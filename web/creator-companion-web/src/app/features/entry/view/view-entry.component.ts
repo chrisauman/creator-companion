@@ -153,11 +153,15 @@ import { MoodIconComponent } from '../../../shared/mood-icon/mood-icon.component
     }
 
     /* ── Reader-style top bar (works on both mobile and desktop) ── */
+    /* Top padding includes the iOS safe-area-inset so the back button
+       isn't hidden by the iPhone status bar / Dynamic Island in PWA
+       installed mode. env() falls back to 0 on browsers without
+       support, so non-iOS behaviour is unchanged. */
     .reader-top {
       display: flex;
       align-items: center;
       gap: .5rem;
-      padding: .875rem 1.5rem;
+      padding: calc(env(safe-area-inset-top, 0px) + .875rem) 1.5rem .875rem;
       border-bottom: 1px solid var(--color-border);
       background: var(--color-surface);
       position: sticky; top: 0;

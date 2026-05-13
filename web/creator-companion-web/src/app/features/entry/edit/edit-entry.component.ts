@@ -474,7 +474,12 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
     .reader-top {
       display: flex;
       align-items: stretch;
-      height: 64px;
+      /* min-height instead of a fixed height so the bar can grow when
+         iOS PWA's safe-area-inset adds top padding. Without the inset
+         the Back/Save buttons sat under the iPhone status bar /
+         Dynamic Island in installed mode. */
+      min-height: 64px;
+      padding-top: env(safe-area-inset-top, 0px);
       background: var(--color-surface);
       position: sticky; top: 0;
       z-index: 5;

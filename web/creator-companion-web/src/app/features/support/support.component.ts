@@ -158,7 +158,7 @@ import { MobileHeaderComponent } from '../../shared/mobile-header/mobile-header.
           <!-- Contact support -->
           <div class="support-contact">
             <p>Didn't find what you're looking for?</p>
-            <a class="support-contact__link" href="mailto:chris@sanctuarymg.com">
+            <a class="support-contact__link" href="mailto:creatorcompanionsupport@gmail.com">
               Contact Support →
             </a>
           </div>
