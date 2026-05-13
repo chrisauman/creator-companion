@@ -313,27 +313,25 @@ public class SubstackPostingService : ISubstackPostingService
     }
 
     /// <summary>
-    /// Format a spark for posting. Takeaway is the lead. If the
-    /// combined takeaway+content fits in ~240 chars, use both;
-    /// otherwise just the takeaway. Substack Notes have a soft cap
-    /// around ~280 before truncation/tease — 240 leaves headroom.
+    /// Format a spark for posting. Always sends takeaway + full content
+    /// together (separated by a blank line), per project intent: the
+    /// takeaway is the hook and the full content is the explanation —
+    /// they belong together. Substack Notes accept long-form text so
+    /// we no longer truncate. If one of the two is missing we just
+    /// post whichever is present.
     /// </summary>
     private static string BuildPostBody(MotivationEntry spark)
     {
         var takeaway = (spark.Takeaway ?? "").Trim();
         var full     = (spark.FullContent ?? "").Trim();
 
-        if (string.IsNullOrEmpty(takeaway))
-            return string.IsNullOrEmpty(full) ? "(empty spark)" : Truncate(full, 240);
+        if (string.IsNullOrEmpty(takeaway) && string.IsNullOrEmpty(full))
+            return "(empty spark)";
+        if (string.IsNullOrEmpty(takeaway)) return full;
+        if (string.IsNullOrEmpty(full))     return takeaway;
 
-        if (string.IsNullOrEmpty(full)) return takeaway;
-
-        var combined = $"{takeaway}\n\n{full}";
-        return combined.Length <= 240 ? combined : takeaway;
+        return $"{takeaway}\n\n{full}";
     }
-
-    private static string Truncate(string s, int max) =>
-        s.Length <= max ? s : s[..max].TrimEnd() + "…";
 
     private static TimeZoneInfo ResolveTimeZone(string id)
     {

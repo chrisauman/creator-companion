@@ -65,29 +65,42 @@ public class SubstackPoster : ISubstackPoster
         // that's gone now because we always need the full header.
         var cookieHeader = sessionCookie.Trim();
 
-        // Best-guess Notes envelope until we capture a real one from
-        // DevTools "Copy as cURL". Substack Notes are ProseMirror-doc
-        // backed; this shape (bodyJson: { type:doc, content:[paragraph
-        // [text]] }) matches their TipTap editor output. tabId/surface
-        // are observed in the wild as required scaffolding.
+        // Substack Notes use ProseMirror/TipTap docs. A bodyJson is a
+        // doc node containing a list of block nodes (paragraphs). Each
+        // paragraph has inline content (text nodes). We split the body
+        // on blank lines so multi-paragraph posts render as separate
+        // paragraphs in the Substack UI, not one block with literal
+        // "\n\n" characters in it.
+        var paragraphs = body
+            .Replace("\r\n", "\n")
+            .Split("\n\n", StringSplitOptions.None)
+            .Select(p => p.Trim())
+            .Where(p => p.Length > 0)
+            .Select(p => (object) new
+            {
+                type    = "paragraph",
+                content = new object[] { new { type = "text", text = p } }
+            })
+            .ToArray();
+
+        // Edge case: empty input. Send a single empty paragraph rather
+        // than an empty content array — Substack rejects the latter.
+        if (paragraphs.Length == 0)
+        {
+            paragraphs = new object[]
+            {
+                new { type = "paragraph", content = Array.Empty<object>() }
+            };
+        }
+
         var envelope = new
         {
             bodyJson = new
             {
-                type = "doc",
-                content = new object[]
-                {
-                    new
-                    {
-                        type = "paragraph",
-                        content = new object[]
-                        {
-                            new { type = "text", text = body }
-                        }
-                    }
-                }
+                type    = "doc",
+                content = paragraphs
             },
-            tabId = "for-you",
+            tabId   = "for-you",
             surface = "feed"
         };
 
