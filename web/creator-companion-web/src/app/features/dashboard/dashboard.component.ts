@@ -413,9 +413,7 @@ import { ActivatedRoute } from '@angular/router';
          instance per page and the banner self-hides when not in trial. */
       .main-content > app-trial-banner {
         display: block;
-        /* 3rem so the cyan bar reads as floating in space rather than
-           anchored to the top of the page. */
-        padding-top: 3rem;
+        padding-top: 1.5rem;
       }
     }
 
