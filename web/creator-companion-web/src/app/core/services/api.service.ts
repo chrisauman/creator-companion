@@ -499,6 +499,26 @@ export class ApiService {
   adminSubstackTestPost(): Observable<SubstackTestPostResult> {
     return this.http.post<SubstackTestPostResult>(`${this.base}/admin/substack/test-post`, {});
   }
+
+  /** Today's plan row (null if the worker hasn't created one yet). */
+  adminGetSubstackToday(): Observable<SubstackPlan | null> {
+    return this.http.get<SubstackPlan | null>(`${this.base}/admin/substack/today`);
+  }
+
+  /** Drop today's pending plan so the worker rolls a new one next tick. */
+  adminSubstackRerollToday(): Observable<void> {
+    return this.http.post<void>(`${this.base}/admin/substack/today/reroll`, {});
+  }
+
+  /** Last 60 daily plans, newest first. */
+  adminGetSubstackHistory(): Observable<SubstackPlan[]> {
+    return this.http.get<SubstackPlan[]>(`${this.base}/admin/substack/history`);
+  }
+
+  /** How many sparks remain unposted — powers the "running low" warning. */
+  adminGetSubstackEligibleCount(): Observable<{ count: number }> {
+    return this.http.get<{ count: number }>(`${this.base}/admin/substack/eligible-count`);
+  }
 }
 
 // Shape returned by GET/PUT /admin/substack/settings. The actual cookie
@@ -521,4 +541,18 @@ export interface SubstackTestPostResult {
   noteId: string | null;
   errorMessage: string | null;
   rawResponse: string | null;
+}
+
+// One day's plan row. Date is ISO YYYY-MM-DD string from DateOnly.
+// Status is the C# enum name: 'Pending' | 'Posted' | 'Failed'.
+export interface SubstackPlan {
+  id: number;
+  date: string;
+  scheduledFor: string;
+  status: 'Pending' | 'Posted' | 'Failed';
+  postedAt: string | null;
+  substackNoteId: string | null;
+  errorMessage: string | null;
+  sparkId: string;
+  sparkTakeaway: string;
 }

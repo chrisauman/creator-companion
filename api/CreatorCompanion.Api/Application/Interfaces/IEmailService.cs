@@ -27,4 +27,18 @@ public interface IEmailService
     /// User.TrialEndedEmailSentAt flag).
     /// </summary>
     Task SendTrialEndedAsync(string toEmail, string displayName);
+
+    /// <summary>
+    /// Admin alert: the Substack auto-poster failed. Sent on the FIRST
+    /// failure of a streak (consecutive-failure count goes 0 → 1), and
+    /// again every 5 consecutive failures after that so a persistent
+    /// outage gets surfaced without spamming. statusCode/errorBody are
+    /// pasted into the email so the admin can diagnose without logs.
+    /// </summary>
+    Task SendSubstackPostFailedAsync(
+        string toEmail,
+        int?   statusCode,
+        string errorMessage,
+        string? errorBody,
+        bool   isCookieExpired);
 }

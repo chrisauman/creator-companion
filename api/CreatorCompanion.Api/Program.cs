@@ -195,6 +195,10 @@ try
     // later without rewriting consumers. Default timeout (100s) is fine —
     // a single create-note request should complete in well under a second.
     builder.Services.AddHttpClient<ISubstackPoster, SubstackPoster>();
+    // Background worker — pickups today's plan, fires at the rolled
+    // time, records outcome. Independent of ReminderBackgroundService
+    // so a Substack outage can't affect push delivery or trial emails.
+    builder.Services.AddHostedService<SubstackPostingBackgroundService>();
 
     // Production safety: required env-driven settings must be set
     // BEFORE the app starts serving traffic. Missing values silently

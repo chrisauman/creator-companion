@@ -41,3 +41,27 @@ public record SubstackTestPostResponse(
     string? ErrorMessage,
     string? RawResponse
 );
+
+/// <summary>
+/// One row in the History tab. Compact projection of SubstackDailyPlan
+/// + the spark's takeaway snippet so the admin can scan the table
+/// without expanding rows.
+/// </summary>
+public record SubstackPlanResponse(
+    int       Id,
+    DateOnly  Date,
+    DateTime  ScheduledFor,
+    string    Status,              // "Pending" | "Posted" | "Failed"
+    DateTime? PostedAt,
+    string?   SubstackNoteId,
+    string?   ErrorMessage,
+    Guid      SparkId,
+    string    SparkTakeaway
+);
+
+/// <summary>
+/// Count of sparks still eligible to be posted. Used by the Today tab
+/// to warn the admin when the pool is running low — they need to add
+/// new sparks before the picker runs dry.
+/// </summary>
+public record SubstackEligibleSparksResponse(int Count);

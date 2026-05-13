@@ -104,6 +104,105 @@ public class AdminSubstackController(
         ));
     }
 
+    /// <summary>
+    /// Today's plan row, if one exists. Null on no-plan-yet (the worker
+    /// creates it lazily — first tick after midnight local).
+    /// </summary>
+    [HttpGet("today")]
+    public async Task<IActionResult> GetToday(CancellationToken ct)
+    {
+        var settings = await GetOrCreateSettingsAsync(ct);
+        var today = TodayInTz(settings.TimeZoneId);
+
+        var plan = await db.SubstackDailyPlans
+            .Include(p => p.Spark)
+            .FirstOrDefaultAsync(p => p.Date == today, ct);
+
+        return Ok(plan is null ? null : MapPlan(plan));
+    }
+
+    /// <summary>
+    /// Manually reroll today's plan (pick a new spark and a new random
+    /// fire time) — only allowed if today's plan is still Pending.
+    /// Useful if the admin wants to swap the picked spark or shift the
+    /// time before it fires.
+    /// </summary>
+    [HttpPost("today/reroll")]
+    public async Task<IActionResult> RerollToday(CancellationToken ct)
+    {
+        var settings = await GetOrCreateSettingsAsync(ct);
+        var today = TodayInTz(settings.TimeZoneId);
+
+        var plan = await db.SubstackDailyPlans.FirstOrDefaultAsync(p => p.Date == today, ct);
+        if (plan is null)
+            return BadRequest(new { error = "No plan for today yet. The worker creates it on its next tick." });
+        if (plan.Status != SubstackPlanStatus.Pending)
+            return BadRequest(new { error = "Today's post has already been posted or failed; nothing to reroll." });
+
+        // Drop the existing plan and let the next worker tick recreate
+        // it. Simpler than re-implementing the picker logic here, and
+        // keeps the random-pick algorithm in exactly one place.
+        db.SubstackDailyPlans.Remove(plan);
+        await db.SaveChangesAsync(ct);
+        return NoContent();
+    }
+
+    /// <summary>
+    /// History of past plans, newest first. Cap at 60 rows so the
+    /// admin UI doesn't have to deal with pagination yet — 60 days
+    /// of one-post-per-day is plenty of context.
+    /// </summary>
+    [HttpGet("history")]
+    public async Task<IActionResult> GetHistory(CancellationToken ct)
+    {
+        var plans = await db.SubstackDailyPlans
+            .Include(p => p.Spark)
+            .OrderByDescending(p => p.Date)
+            .Take(60)
+            .ToListAsync(ct);
+
+        return Ok(plans.Select(MapPlan));
+    }
+
+    /// <summary>
+    /// Count of sparks not yet posted to Substack. Powers the
+    /// "Running low" warning on the Today tab.
+    /// </summary>
+    [HttpGet("eligible-count")]
+    public async Task<IActionResult> GetEligibleCount(CancellationToken ct)
+    {
+        var postedIds = await db.SubstackDailyPlans
+            .Where(p => p.Status == SubstackPlanStatus.Posted)
+            .Select(p => p.SparkId)
+            .ToListAsync(ct);
+
+        var count = await db.MotivationEntries
+            .Where(s => !postedIds.Contains(s.Id))
+            .CountAsync(ct);
+
+        return Ok(new SubstackEligibleSparksResponse(count));
+    }
+
+    private static DateOnly TodayInTz(string tzId)
+    {
+        TimeZoneInfo tz;
+        try { tz = TimeZoneInfo.FindSystemTimeZoneById(tzId); }
+        catch (TimeZoneNotFoundException) { tz = TimeZoneInfo.Utc; }
+        return DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz));
+    }
+
+    private static SubstackPlanResponse MapPlan(SubstackDailyPlan p) => new(
+        Id:             p.Id,
+        Date:           p.Date,
+        ScheduledFor:   p.ScheduledFor,
+        Status:         p.Status.ToString(),
+        PostedAt:       p.PostedAt,
+        SubstackNoteId: p.SubstackNoteId,
+        ErrorMessage:   p.ErrorMessage,
+        SparkId:        p.SparkId,
+        SparkTakeaway:  p.Spark?.Takeaway ?? "(spark missing)"
+    );
+
     private async Task<SubstackSettings> GetOrCreateSettingsAsync(CancellationToken ct)
     {
         var s = await db.SubstackSettings.FirstOrDefaultAsync(ct);

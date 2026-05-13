@@ -316,4 +316,83 @@ public class ResendEmailService(IResend resend, IConfiguration config, AppDbCont
 
         await resend.EmailSendAsync(message);
     }
+
+    public async Task SendSubstackPostFailedAsync(
+        string toEmail,
+        int?   statusCode,
+        string errorMessage,
+        string? errorBody,
+        bool   isCookieExpired)
+    {
+        var fromEmail = config["Resend:FromEmail"] ?? "noreply@creatorcompanion.app";
+        var appName   = config["App:Name"] ?? "Creator Companion";
+        var appBaseUrl = config["App:BaseUrl"] ?? "https://app.creatorcompanionapp.com";
+
+        var subject = isCookieExpired
+            ? "Substack auto-poster: cookie expired (re-paste needed)"
+            : "Substack auto-poster: post failed";
+
+        // Recovery walkthrough is embedded inline — the admin is most
+        // likely on mobile checking email and won't want to dig through
+        // docs. Same steps as the in-app callout, just self-contained.
+        var recoverySteps = """
+            <ol style="color:#444;line-height:1.8;padding-left:1.25rem">
+              <li>Open <strong>substack.com</strong> in Chrome, log in to your posting account.</li>
+              <li>Press <strong>F12</strong> → <strong>Network</strong> tab.</li>
+              <li>Click any request to substack.com → <strong>Headers</strong> →
+                  <strong>Request Headers</strong>.</li>
+              <li>Find the <code>Cookie:</code> line and copy its full value.</li>
+              <li>Open <a href="{baseUrl}/admin/substack">{baseUrl}/admin/substack</a>
+                  → paste into the cookie field → <strong>Save settings</strong>.</li>
+              <li>Click <strong>Send a test post now</strong> to verify before the worker resumes.</li>
+            </ol>
+            """.Replace("{baseUrl}", appBaseUrl);
+
+        var bodyDetailHtml = string.IsNullOrWhiteSpace(errorBody)
+            ? ""
+            : $"""
+                <details style="margin-top:1rem">
+                  <summary style="cursor:pointer;color:#888;font-size:.85rem">Raw error body</summary>
+                  <pre style="background:#f5f5f5;padding:.75rem;border-radius:4px;font-size:.75rem;
+                              white-space:pre-wrap;word-break:break-all;max-height:300px;overflow:auto">{System.Net.WebUtility.HtmlEncode(errorBody)}</pre>
+                </details>
+                """;
+
+        var message = new EmailMessage
+        {
+            From    = $"{appName} <{fromEmail}>",
+            To      = { toEmail },
+            Subject = subject,
+            HtmlBody = $"""
+                <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:2rem">
+                  <h2 style="margin-bottom:.5rem">Substack auto-poster failed</h2>
+                  <p style="color:#555">
+                    {(isCookieExpired
+                      ? "Your Substack cookie appears to have expired or been rejected. The poster has been paused until you re-paste a fresh one."
+                      : "The Substack auto-poster hit an error trying to publish today's spark.")}
+                  </p>
+
+                  <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:1rem;margin:1.25rem 0">
+                    <p style="margin:.25rem 0;color:#666">
+                      <strong>Status:</strong> {(statusCode.HasValue ? $"HTTP {statusCode}" : "transport error")}
+                    </p>
+                    <p style="margin:.25rem 0;color:#666">
+                      <strong>Error:</strong> {System.Net.WebUtility.HtmlEncode(errorMessage)}
+                    </p>
+                  </div>
+
+                  <h3 style="margin-top:1.5rem;margin-bottom:.5rem;font-size:1rem">How to fix</h3>
+                  {recoverySteps}
+
+                  {bodyDetailHtml}
+
+                  <p style="color:#999;font-size:.8rem;margin-top:2rem">
+                    Sent automatically by the Substack auto-poster background worker.
+                  </p>
+                </div>
+                """
+        };
+
+        await resend.EmailSendAsync(message);
+    }
 }

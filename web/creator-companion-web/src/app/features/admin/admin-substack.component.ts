@@ -1,30 +1,32 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService, SubstackSettings, SubstackTestPostResult } from '../../core/services/api.service';
+import { RouterLink } from '@angular/router';
+import { ApiService, SubstackSettings, SubstackTestPostResult, SubstackPlan } from '../../core/services/api.service';
 import { AdminShellComponent } from './admin-shell.component';
 
 /**
  * Admin-only Substack auto-poster control surface.
  *
- * Phase 1 surface: just the Settings tab.
- *   - Paste the substack.sid cookie (copied from DevTools).
- *   - Set timezone + active toggle.
- *   - "Send a test post now" — verifies the cookie round-trip against
- *     Substack before flipping Active on.
- *
- * The Today and History tabs are stubbed below — phase 3 wires them
- * up. Tab markup stays in place so the IA doesn't shift between phases.
+ * Three tabs:
+ *   - Settings: paste cookie header, timezone, active toggle, health
+ *     summary, "Send a test post now" round-trip.
+ *   - Today: shows the worker's plan for the current day — which
+ *     spark, what time it'll fire, status. Reroll button to swap.
+ *   - History: last 60 days of plans, newest first, with outcome.
  *
  * Why a single component for three tabs (vs. three routes): they share
  * one data source (settings + plan rows), the user mental model is one
  * page, and tab-switching is purely visual. A routed split would
  * trigger fresh API calls per click for no UX gain.
+ *
+ * Tab-switching does lazily fetch today/history on first visit, then
+ * caches in signals — switching back is instant.
  */
 @Component({
   selector: 'app-admin-substack',
   standalone: true,
-  imports: [CommonModule, FormsModule, AdminShellComponent],
+  imports: [CommonModule, FormsModule, RouterLink, AdminShellComponent],
   template: `
     <app-admin-shell active="substack">
       <div class="substack-page">
@@ -42,21 +44,21 @@ import { AdminShellComponent } from './admin-shell.component';
         <nav class="substack-tabs" role="tablist">
           <button class="substack-tabs__btn"
                   [class.substack-tabs__btn--active]="tab() === 'settings'"
-                  (click)="tab.set('settings')"
+                  (click)="switchTab('settings')"
                   role="tab"
                   [attr.aria-selected]="tab() === 'settings'">
             Settings
           </button>
           <button class="substack-tabs__btn"
                   [class.substack-tabs__btn--active]="tab() === 'today'"
-                  (click)="tab.set('today')"
+                  (click)="switchTab('today')"
                   role="tab"
                   [attr.aria-selected]="tab() === 'today'">
             Today
           </button>
           <button class="substack-tabs__btn"
                   [class.substack-tabs__btn--active]="tab() === 'history'"
-                  (click)="tab.set('history')"
+                  (click)="switchTab('history')"
                   role="tab"
                   [attr.aria-selected]="tab() === 'history'">
             History
@@ -213,24 +215,139 @@ import { AdminShellComponent } from './admin-shell.component';
             </section>
           }
 
-          <!-- ── TODAY TAB (stub for phase 3) ──────────────────────── -->
+          <!-- ── TODAY TAB ──────────────────────────────────────────── -->
           @if (tab() === 'today') {
-            <section class="substack-card substack-card--empty">
-              <p class="substack-empty">
-                Today's planned post will appear here once the background
-                worker is wired up (phase 3). For now, you can verify
-                auth via the test post on the Settings tab.
-              </p>
+            <section class="substack-card">
+
+              @if (todayLoading()) {
+                <p class="substack-page__loading">Loading today's plan…</p>
+              } @else if (!s.active) {
+                <p class="substack-empty">
+                  The worker is paused (Active is off in Settings). Turn
+                  it on to schedule a daily post.
+                </p>
+              } @else if (!today()) {
+                <p class="substack-empty">
+                  No plan for today yet. The worker creates one on its
+                  next tick (within ~60 seconds of midnight local). Check
+                  back in a minute.
+                </p>
+              } @else {
+                <div class="substack-today">
+                  <div class="substack-today__row">
+                    <span class="substack-today__label">Date</span>
+                    <span class="substack-today__value">{{ today()!.date }}</span>
+                  </div>
+                  <div class="substack-today__row">
+                    <span class="substack-today__label">Status</span>
+                    <span class="substack-today__value">
+                      <span class="substack-pill"
+                            [class.substack-pill--on]="today()!.status === 'Posted'"
+                            [class.substack-pill--off]="today()!.status === 'Pending'"
+                            [class.substack-pill--fail]="today()!.status === 'Failed'">
+                        {{ today()!.status }}
+                      </span>
+                    </span>
+                  </div>
+                  <div class="substack-today__row">
+                    <span class="substack-today__label">Scheduled for</span>
+                    <span class="substack-today__value">{{ formatStamp(today()!.scheduledFor) }}</span>
+                  </div>
+                  @if (today()!.postedAt) {
+                    <div class="substack-today__row">
+                      <span class="substack-today__label">Posted at</span>
+                      <span class="substack-today__value">{{ formatStamp(today()!.postedAt!) }}</span>
+                    </div>
+                  }
+                  <div class="substack-today__row substack-today__row--block">
+                    <span class="substack-today__label">Spark</span>
+                    <span class="substack-today__value substack-today__value--quote">
+                      "{{ today()!.sparkTakeaway }}"
+                    </span>
+                  </div>
+                  @if (today()!.errorMessage) {
+                    <div class="substack-today__error">
+                      {{ today()!.errorMessage }}
+                    </div>
+                  }
+                </div>
+
+                @if (today()!.status === 'Pending') {
+                  <div class="substack-actions" style="margin-top:1.25rem">
+                    <button class="btn btn--ghost"
+                            type="button"
+                            [disabled]="rerolling()"
+                            (click)="rerollToday()">
+                      {{ rerolling() ? 'Rerolling…' : 'Reroll today (pick a different spark)' }}
+                    </button>
+                  </div>
+                }
+              }
+
+              <!-- Eligible-spark pool status. Shown regardless of plan
+                   state so the admin sees ahead of time when the pool
+                   is running thin. Sub-10 = warn, sub-3 = urgent. -->
+              @if (eligibleCount() !== null) {
+                <div class="substack-pool"
+                     [class.substack-pool--warn]="(eligibleCount() ?? 99) < 10"
+                     [class.substack-pool--urgent]="(eligibleCount() ?? 99) < 3">
+                  <strong>{{ eligibleCount() }}</strong>
+                  unposted spark{{ eligibleCount() === 1 ? '' : 's' }} remaining in the pool.
+                  @if ((eligibleCount() ?? 99) < 10) {
+                    Add more in <a routerLink="/admin/motivation">Content Library</a>
+                    before the worker runs out.
+                  }
+                </div>
+              }
             </section>
           }
 
-          <!-- ── HISTORY TAB (stub for phase 3) ────────────────────── -->
+          <!-- ── HISTORY TAB ────────────────────────────────────────── -->
           @if (tab() === 'history') {
-            <section class="substack-card substack-card--empty">
-              <p class="substack-empty">
-                Posted note history will appear here once the worker has
-                actually posted something.
-              </p>
+            <section class="substack-card">
+              @if (historyLoading()) {
+                <p class="substack-page__loading">Loading history…</p>
+              } @else if (history().length === 0) {
+                <p class="substack-empty">
+                  No posts yet. Once the worker fires its first scheduled
+                  post (or you trigger one via Test Post), it'll show
+                  up here.
+                </p>
+              } @else {
+                <table class="substack-history">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Scheduled</th>
+                      <th>Status</th>
+                      <th>Spark</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (row of history(); track row.id) {
+                      <tr>
+                        <td>{{ row.date }}</td>
+                        <td>{{ formatTime(row.scheduledFor) }}</td>
+                        <td>
+                          <span class="substack-pill"
+                                [class.substack-pill--on]="row.status === 'Posted'"
+                                [class.substack-pill--off]="row.status === 'Pending'"
+                                [class.substack-pill--fail]="row.status === 'Failed'">
+                            {{ row.status }}
+                          </span>
+                        </td>
+                        <td class="substack-history__spark">{{ row.sparkTakeaway }}</td>
+                        <td class="substack-history__error">
+                          @if (row.errorMessage) {
+                            <span [title]="row.errorMessage">{{ truncate(row.errorMessage, 60) }}</span>
+                          }
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              }
             </section>
           }
         }
@@ -343,8 +460,120 @@ import { AdminShellComponent } from './admin-shell.component';
       letter-spacing: .06em;
       text-transform: uppercase;
     }
-    .substack-pill--on  { background: rgba(18,196,227,.15); color: var(--color-accent-dark); }
-    .substack-pill--off { background: var(--color-surface);  color: var(--color-text-3); border: 1px solid var(--color-border); }
+    .substack-pill--on   { background: rgba(18,196,227,.15); color: var(--color-accent-dark); }
+    .substack-pill--off  { background: var(--color-surface);  color: var(--color-text-3); border: 1px solid var(--color-border); }
+    .substack-pill--fail { background: rgba(225,29,72,.1);    color: var(--color-danger, #e11d48); }
+
+    /* ── Today tab ────────────────────────────────────────────────── */
+    .substack-today {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: .5rem;
+      padding: 1.25rem 1.25rem;
+      background: var(--color-surface-2);
+      border-radius: var(--radius-sm, 8px);
+    }
+    .substack-today__row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 1rem;
+      font-size: .9375rem;
+    }
+    .substack-today__row--block {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: .375rem;
+    }
+    .substack-today__label {
+      color: var(--color-text-3);
+      font-weight: 500;
+      font-size: .8125rem;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+    .substack-today__value { color: var(--color-text); }
+    .substack-today__value--quote {
+      font-size: 1.125rem;
+      font-weight: 600;
+      line-height: 1.45;
+      letter-spacing: -.01em;
+      font-style: italic;
+      color: var(--color-text);
+    }
+    .substack-today__error {
+      margin-top: .5rem;
+      padding: .625rem .75rem;
+      background: rgba(225,29,72,.08);
+      border: 1px solid rgba(225,29,72,.2);
+      border-radius: var(--radius-sm, 6px);
+      font-size: .8125rem;
+      color: var(--color-danger, #e11d48);
+      word-break: break-word;
+    }
+
+    /* ── Pool status ──────────────────────────────────────────────── */
+    .substack-pool {
+      margin-top: 1.5rem;
+      padding: .75rem 1rem;
+      background: var(--color-surface-2);
+      border-radius: var(--radius-sm, 6px);
+      font-size: .875rem;
+      color: var(--color-text-2);
+    }
+    .substack-pool a {
+      color: var(--color-accent-dark);
+      font-weight: 600;
+      text-decoration: underline;
+    }
+    .substack-pool--warn {
+      background: rgba(245,158,11,.1);
+      border: 1px solid rgba(245,158,11,.3);
+      color: var(--color-text);
+    }
+    .substack-pool--urgent {
+      background: rgba(225,29,72,.08);
+      border-color: rgba(225,29,72,.3);
+      color: var(--color-text);
+    }
+    .substack-pool strong { color: var(--color-text); }
+
+    /* ── History table ────────────────────────────────────────────── */
+    .substack-history {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .8125rem;
+    }
+    .substack-history th,
+    .substack-history td {
+      text-align: left;
+      padding: .625rem .5rem;
+      border-bottom: 1px solid var(--color-border);
+      vertical-align: top;
+    }
+    .substack-history th {
+      font-size: .6875rem;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--color-text-3);
+      border-bottom: 1px solid var(--color-border);
+    }
+    .substack-history td { color: var(--color-text); }
+    .substack-history__spark {
+      max-width: 240px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .substack-history__error {
+      color: var(--color-danger, #e11d48);
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      cursor: help;
+    }
 
     /* ── Form fields ───────────────────────────────────────────────── */
     .substack-field {
@@ -543,6 +772,20 @@ export class AdminSubstackComponent implements OnInit {
   settings = signal<SubstackSettings | null>(null);
   testResult = signal<SubstackTestPostResult | null>(null);
 
+  // Today + History tab state. Loaded lazily — fetch on first tab visit,
+  // then cache so flipping back is instant. Reroll mutates today's plan
+  // via the API and re-fetches.
+  today          = signal<SubstackPlan | null>(null);
+  todayLoading   = signal(false);
+  todayLoaded    = signal(false);
+  rerolling      = signal(false);
+
+  history        = signal<SubstackPlan[]>([]);
+  historyLoading = signal(false);
+  historyLoaded  = signal(false);
+
+  eligibleCount  = signal<number | null>(null);
+
   // Form inputs. We deliberately don't bind cookie to settings.cookieIsSet
   // — the cookie value never leaves the server, so this field always
   // starts blank and the admin types a fresh paste when they want to
@@ -553,6 +796,89 @@ export class AdminSubstackComponent implements OnInit {
 
   ngOnInit(): void {
     this.load();
+  }
+
+  /**
+   * Tab switcher used by the three tab buttons. Lazy-loads the
+   * relevant data on first visit so we don't fire Today + History
+   * fetches on initial page load when the admin may only want to
+   * touch Settings.
+   */
+  switchTab(t: 'settings' | 'today' | 'history'): void {
+    this.tab.set(t);
+    if (t === 'today'   && !this.todayLoaded())   this.loadToday();
+    if (t === 'history' && !this.historyLoaded()) this.loadHistory();
+  }
+
+  private loadToday(): void {
+    this.todayLoading.set(true);
+    // Fetch the plan + the eligible-count in parallel — both feed the
+    // Today tab. forkJoin would be cleaner but two subscribes is fine
+    // here and avoids the rxjs import.
+    this.api.adminGetSubstackToday().subscribe({
+      next: p => {
+        this.today.set(p);
+        this.todayLoaded.set(true);
+        this.todayLoading.set(false);
+      },
+      error: () => {
+        this.today.set(null);
+        this.todayLoaded.set(true);
+        this.todayLoading.set(false);
+      }
+    });
+    this.api.adminGetSubstackEligibleCount().subscribe({
+      next: r => this.eligibleCount.set(r.count),
+      error: () => {} // non-critical
+    });
+  }
+
+  private loadHistory(): void {
+    this.historyLoading.set(true);
+    this.api.adminGetSubstackHistory().subscribe({
+      next: rows => {
+        this.history.set(rows);
+        this.historyLoaded.set(true);
+        this.historyLoading.set(false);
+      },
+      error: () => {
+        this.history.set([]);
+        this.historyLoaded.set(true);
+        this.historyLoading.set(false);
+      }
+    });
+  }
+
+  rerollToday(): void {
+    this.rerolling.set(true);
+    this.api.adminSubstackRerollToday().subscribe({
+      next: () => {
+        // Force re-fetch — the worker's next tick will create the new
+        // plan, so we may see "null" until then. Clear loaded-flag so
+        // the next visit re-fetches fresh.
+        this.today.set(null);
+        this.todayLoaded.set(false);
+        this.rerolling.set(false);
+        // Refetch immediately; if the worker hasn't ticked yet the user
+        // will see the "no plan yet" message until it does.
+        this.loadToday();
+      },
+      error: err => {
+        this.error.set(this.errMsg(err) || 'Could not reroll today.');
+        this.rerolling.set(false);
+      }
+    });
+  }
+
+  truncate(s: string, max: number): string {
+    return s.length <= max ? s : s.slice(0, max) + '…';
+  }
+
+  formatTime(iso: string): string {
+    try {
+      const d = new Date(iso);
+      return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    } catch { return iso; }
   }
 
   private load(): void {
