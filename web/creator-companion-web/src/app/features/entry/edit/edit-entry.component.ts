@@ -474,19 +474,25 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
        holds an inner row that's max-width 760px and centred so the
        Cancel pill and Save button align horizontally with the title
        and body content below. */
+    /* Padding-based sizing (not fixed height) so this bar matches
+       view-entry's .reader-top exactly: ~52px on mobile, ~56px on
+       desktop. The previous fixed height: 64px stacked an extra ~12px
+       of dead space above the meta row vs the read view.
+       No safe-area-inset-top: the standalone edit-entry route renders
+       <app-mobile-header> above this bar, and that header already
+       owns the iOS chrome inset. */
     .reader-top {
       display: flex;
-      align-items: stretch;
-      /* No safe-area-inset-top: the standalone edit-entry route renders
-         <app-mobile-header> above this bar, and that header already
-         owns the iOS chrome inset. Doubling the inset stacked ~60px of
-         empty space below the mobile-header on iOS. */
-      height: 64px;
+      align-items: center;
+      padding: .875rem 0;
       background: var(--color-surface);
       position: sticky; top: 0;
       z-index: 5;
       box-sizing: border-box;
       flex-shrink: 0;
+    }
+    @media (min-width: 768px) {
+      .reader-top { padding: 1rem 0; }
     }
     .reader-top__inner {
       display: flex;
