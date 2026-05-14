@@ -415,7 +415,18 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
           }
         </section>
 
-        <!-- Export -->
+        <!-- Trash -->
+        <section class="card">
+          <h2 style="margin-bottom:.375rem">Trash</h2>
+          <p class="text-muted text-sm" style="margin-bottom:1.25rem">
+            Deleted entries are kept for 48 hours before being permanently removed.
+          </p>
+          <a routerLink="/trash" class="btn btn--secondary btn--sm">View trash</a>
+        </section>
+
+        <!-- Export your data — moved to sit immediately above Delete
+             account so the destructive action is bracketed by the
+             "save your data first" affordance. -->
         <section class="card">
           <h2 style="margin-bottom:.375rem">Export your data</h2>
           <p class="text-muted text-sm" style="margin-bottom:1.25rem">
@@ -434,47 +445,11 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
           </p>
         </section>
 
-        <!-- Trash -->
-        <section class="card">
-          <h2 style="margin-bottom:.375rem">Trash</h2>
-          <p class="text-muted text-sm" style="margin-bottom:1.25rem">
-            Deleted entries are kept for 48 hours before being permanently removed.
-          </p>
-          <a routerLink="/trash" class="btn btn--secondary btn--sm">View trash</a>
-        </section>
-
-        <!-- Help & Support — uses the standard <h2> + p + button
-             pattern so the title weight matches every other section on
-             this page. The previous .support-card__title (small bold
-             label) read as a row inside another card rather than its
-             own section. -->
-        <section class="card">
-          <h2 style="margin-bottom:.375rem">Help &amp; support</h2>
-          <p class="text-muted text-sm" style="margin-bottom:1.25rem">
-            Browse FAQs or get in touch with our team.
-          </p>
-          <a routerLink="/support" class="btn btn--secondary btn--sm">Get support →</a>
-        </section>
-
-        <!-- Replay welcome tour section removed — replayed onboarding
-             content lives in the FAQ instead. -->
-
-
-        <!-- Sign out -->
-        <div class="signout-inline">
-          <div class="signout-card">
-            <div class="signout-card__left">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                <polyline points="16 17 21 12 16 7"/>
-                <line x1="21" y1="12" x2="9" y2="12"/>
-              </svg>
-              <span>Sign out of Creator Companion</span>
-            </div>
-            <button class="btn btn--secondary btn--sm" (click)="logout()">Sign out</button>
-          </div>
-        </div>
+        <!-- Help & Support section removed — the sidebar nav already
+             carries a Support link.
+             Sign-out section removed — also already in the sidebar.
+             Replay welcome tour section removed earlier; lives in the
+             FAQ now. -->
 
         <!-- Delete account -->
         <section class="card card--danger">
