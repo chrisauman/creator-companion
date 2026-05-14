@@ -35,9 +35,32 @@ import { MobileHeaderComponent } from '../../shared/mobile-header/mobile-header.
           <a routerLink="/dashboard" class="btn btn--secondary" style="margin-top:1rem">Back to journal</a>
         </div>
 
-        <div *ngIf="activeEntries().length === 0 && !loading() && !loadError()" class="empty-state">
-          <p>Trash is empty.</p>
-          <a routerLink="/dashboard" class="btn btn--secondary" style="margin-top:1rem">Back to journal</a>
+        <!-- Empty-state card. The bare "Trash is empty." line + grey
+             background felt unfinished; this gives the empty path the
+             same warm card treatment the rest of the app uses, with a
+             muted icon, a friendly title, and a short note about how
+             trash works (48-hour retention). The CTA is the only way
+             out of the page, so we make it the primary button rather
+             than a ghost secondary. -->
+        <div *ngIf="activeEntries().length === 0 && !loading() && !loadError()" class="empty-card">
+          <div class="empty-card__icon" aria-hidden="true">
+            <svg width="44" height="44" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="1.5"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/>
+              <path d="M10 11v6"/><path d="M14 11v6"/>
+              <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>
+            </svg>
+          </div>
+          <h2 class="empty-card__title">Trash is empty</h2>
+          <p class="empty-card__sub">
+            Deleted entries appear here for 48 hours before being
+            permanently removed. Nothing to recover right now.
+          </p>
+          <a routerLink="/dashboard" class="btn btn--primary empty-card__cta">
+            Back to journal
+          </a>
         </div>
 
         <div *ngIf="loading()" class="empty-state">
@@ -109,6 +132,48 @@ import { MobileHeaderComponent } from '../../shared/mobile-header/mobile-header.
     .topnav__title { font-weight:600; font-size:1rem; }
     .main-content { padding-top:1.5rem; padding-bottom:4rem; }
     .empty-state { text-align:center; padding:3rem 1rem; color:var(--color-text-2); }
+
+    /* Polished empty-state card. Centred on the page, capped to a
+       readable column width, soft surface + border so it reads as
+       its own thing inside the grey/cream main-content background. */
+    .empty-card {
+      max-width: 460px;
+      margin: 3rem auto;
+      padding: 2.5rem 2rem;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg, 16px);
+      text-align: center;
+    }
+    .empty-card__icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 64px; height: 64px;
+      margin-bottom: 1rem;
+      color: var(--color-text-3);
+      background: var(--color-surface-2);
+      border-radius: 50%;
+    }
+    .empty-card__title {
+      font-family: var(--font-sans);
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -.01em;
+      color: var(--color-text);
+      margin: 0 0 .5rem;
+    }
+    .empty-card__sub {
+      font-size: .9375rem;
+      line-height: 1.55;
+      color: var(--color-text-2);
+      margin: 0 auto 1.5rem;
+      max-width: 36ch;
+    }
+    .empty-card__cta {
+      display: inline-block;
+      padding: .625rem 1.5rem;
+    }
     .entry-list { display:flex; flex-direction:column; gap:.75rem; }
     .trash-entry { opacity:.85; }
     .trash-entry__meta {
