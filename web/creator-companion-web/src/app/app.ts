@@ -20,13 +20,21 @@ import { PaywallComponent } from './shared/paywall/paywall.component';
   standalone: true,
   imports: [CommonModule, RouterOutlet, PaywallComponent],
   template: `
-    <!-- Skip-to-main-content link removed per user request — it was
-         flashing visible briefly during initial page load (CSS not yet
-         applied to suppress it). Note: removing this is a minor WCAG
-         2.4.1 ("Bypass Blocks", Level A) regression. The remaining
-         keyboard-nav order on every routed page still lands on the
-         first focusable element after the sidebar/header, just without
-         the named "Skip to main content" shortcut. -->
+    <!-- Skip-to-main-content link for WCAG 2.4.1 ("Bypass Blocks",
+         Level A). Hidden until keyboard-focused. The inline style
+         attribute is intentional and load-bearing — it hides the
+         link from the very first paint, before the external
+         stylesheet finishes loading. The previous CSS-only approach
+         (transform: translateY(-110%)) caused a visible flash on
+         every page load because the link briefly rendered in normal
+         document flow before the CSS suppressed it. CSS in
+         styles.scss handles the :focus state and uses !important to
+         override these inline values when the user tabs to the link. -->
+    <a href="#main"
+       class="skip-link"
+       style="position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden">
+      Skip to main content
+    </a>
     <router-outlet />
     @if (showPaywall()) {
       <app-paywall></app-paywall>
