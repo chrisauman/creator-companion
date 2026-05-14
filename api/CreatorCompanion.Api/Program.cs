@@ -241,6 +241,36 @@ try
         }
     }
 
+    // Boot-time Resend config sanity check. Loud warnings on
+    // misconfig so future "no email ever arrived" incidents surface
+    // on the next deploy instead of after users complain. Doesn't
+    // fail-fast — email sending is treated as best-effort.
+    var resendKey  = builder.Configuration["Resend:ApiKey"];
+    var resendFrom = builder.Configuration["Resend:FromEmail"];
+    if (string.IsNullOrWhiteSpace(resendKey))
+    {
+        SerilogLog.Warning("Resend:ApiKey is not configured. Email sends will fail silently. " +
+                           "Set Resend__ApiKey on Railway with a key from resend.com → API Keys.");
+    }
+    if (string.IsNullOrWhiteSpace(resendFrom))
+    {
+        SerilogLog.Warning("Resend:FromEmail is not configured. Email sends will fail. " +
+                           "Set Resend__FromEmail on Railway, e.g. " +
+                           "\"Creator Companion <noreply@creatorcompanionapp.com>\".");
+    }
+    else if (resendFrom.Contains("onboarding@resend.dev", StringComparison.OrdinalIgnoreCase))
+    {
+        SerilogLog.Warning("Resend:FromEmail is still using the sandbox address " +
+                           "onboarding@resend.dev. This can only send to your Resend account's " +
+                           "signup email. Update to a verified-domain address for production.");
+    }
+    else if (!resendFrom.Contains("creatorcompanionapp.com", StringComparison.OrdinalIgnoreCase))
+    {
+        SerilogLog.Warning("Resend:FromEmail does not appear to use the verified domain " +
+                           "creatorcompanionapp.com. Current value: {From}. Sends may fail if " +
+                           "the domain isn't verified in Resend.", resendFrom);
+    }
+
     var allowedOrigins = builder.Configuration["Cors:AllowedOrigins"]?.Split(',')
         ?? ["http://localhost:4200", "http://192.168.127.165:4200"];
     var isDevEnv = builder.Environment.IsDevelopment();

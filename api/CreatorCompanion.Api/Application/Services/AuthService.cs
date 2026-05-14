@@ -12,7 +12,13 @@ using System.Web;
 
 namespace CreatorCompanion.Api.Application.Services;
 
-public class AuthService(AppDbContext db, IConfiguration config, IEmailService emailService, IAuditService audit, IStorageService storage) : IAuthService
+public class AuthService(
+    AppDbContext db,
+    IConfiguration config,
+    IEmailService emailService,
+    IAuditService audit,
+    IStorageService storage,
+    ILogger<AuthService> logger) : IAuthService
 {
     // Lockout configuration. Per-account counter is persisted on the
     // User row so it survives Railway redeploys and applies globally
@@ -351,11 +357,20 @@ public class AuthService(AppDbContext db, IConfiguration config, IEmailService e
         try
         {
             await emailService.SendPasswordResetAsync(user.Email, resetLink);
+            logger.LogInformation("Sent password reset email to {Email}", user.Email);
         }
         catch (Exception ex)
         {
-            // Log but don't fail — email sending is best-effort until a domain is verified
-            Console.WriteLine($"[WARN] Failed to send password reset email to {user.Email}: {ex.Message}");
+            // Log structured warning so Railway logs surface the real
+            // cause (Resend auth failure / domain unverified / network).
+            // Previously this was Console.WriteLine which got buried in
+            // the firehose and was effectively silent — the May 2026
+            // "no reset email ever arrived" incident burned 15 days
+            // before we noticed.
+            logger.LogWarning(ex,
+                "Failed to send password reset email to {Email}. " +
+                "Check Resend dashboard, Resend__ApiKey and Resend__FromEmail config.",
+                user.Email);
         }
 
         // Return the plain token so the Development handler can surface
