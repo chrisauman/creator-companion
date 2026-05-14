@@ -48,9 +48,6 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
             </span>
           </div>
           @if (user()?.tier === 'Paid') {
-            <p class="text-muted text-sm" style="margin-bottom:.875rem">
-              To cancel your subscription and keep your data, use the billing portal below.
-            </p>
             <button class="btn btn--secondary btn--sm" (click)="openBillingPortal()" [disabled]="portalLoading()">
               {{ portalLoading() ? 'Opening…' : 'Manage billing & subscription' }}
             </button>
