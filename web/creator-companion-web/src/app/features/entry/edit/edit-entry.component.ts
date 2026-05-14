@@ -603,37 +603,39 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
       gap: .875rem;
       flex-wrap: wrap;
       margin: 0 0 .5rem;
+      width: 100%;
     }
-    /* Mobile uses the larger eyebrow (.875rem) per the standalone
-       view-entry pattern. Desktop drops to .6875rem to match the
-       embedded entry-reader's column-3 eyebrow treatment — the same
-       size used by Daily Spark / Daily Prompt headers. The two are
-       sized differently because column-3 has narrower content width
-       on desktop and the larger size felt over-emphasised there. */
+    /* Desktop-first sizing (matches the embedded entry-reader's
+       column-3 eyebrow exactly — .6875rem in --color-accent, mood at
+       .75rem). Mobile overrides via max-width media-query down below.
+       Inverting the default removes any specificity ambiguity vs. the
+       prior min-width override approach. */
     .reading__date {
-      font-size: .875rem;
+      font-size: .6875rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: .14em;
-      color: var(--color-accent-dark);
+      color: var(--color-accent);
     }
     .reading__mood {
       margin-left: auto;
       display: inline-flex;
       align-items: center;
       gap: .375rem;
-      font-size: .875rem;
+      font-size: .75rem;
       font-weight: 500;
       color: var(--color-text-2);
     }
     .reading__mood app-mood-icon { color: var(--color-text-3); }
-    @media (min-width: 768px) {
+    /* Mobile bump — the larger .875rem eyebrow reads better in a
+       full-screen column than the tighter .6875rem column-3 size. */
+    @media (max-width: 767px) {
       .reading__date {
-        font-size: .6875rem;
-        color: var(--color-accent);
+        font-size: .875rem;
+        color: var(--color-accent-dark);
       }
       .reading__mood {
-        font-size: .75rem;
+        font-size: .875rem;
       }
     }
 

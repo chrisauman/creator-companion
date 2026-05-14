@@ -280,10 +280,9 @@ import { MoodIconComponent } from '../../shared/mood-icon/mood-icon.component';
       padding: .75rem 2.5rem 4rem;
       box-sizing: border-box;
     }
-    /* justify-content: space-between anchors the date to the left
-       edge and the mood pill to the right edge of the article width.
-       Matches the desktop view-entry layout where mood is flush right
-       — without this both items packed to the left, looking off-balance. */
+    /* Belt-and-suspenders right-alignment: justify-content on the
+       container PLUS margin-left:auto on the mood. Either one alone
+       should work; together they survive odd flex-wrap edge cases. */
     .reading__date-row {
       display: flex;
       align-items: center;
@@ -291,6 +290,7 @@ import { MoodIconComponent } from '../../shared/mood-icon/mood-icon.component';
       gap: 1rem;
       flex-wrap: wrap;
       margin-bottom: 1rem;
+      width: 100%;
     }
     /* Matches the right-column eyebrow treatment (e.g. "YOUR DAILY
        SPARK"): small, all-caps, tracked, brand cyan. */
@@ -302,6 +302,7 @@ import { MoodIconComponent } from '../../shared/mood-icon/mood-icon.component';
       color: var(--color-accent);
     }
     .reading__mood {
+      margin-left: auto;
       display: inline-flex;
       align-items: center;
       gap: .375rem;
