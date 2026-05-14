@@ -7,11 +7,12 @@ import { AuthService } from '../../core/services/auth.service';
 import { ExportService } from '../../core/services/export.service';
 import { PushService } from '../../core/services/push.service';
 import { TokenService } from '../../core/services/token.service';
-import { User, Capabilities, Tag, StreakStats, Reminder } from '../../core/models/models';
+import { User, Capabilities, Tag, StreakStats, Reminder, Pause } from '../../core/models/models';
 import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
 import { SidebarStateService } from '../../shared/sidebar/sidebar-state.service';
 import { MobileHeaderComponent } from '../../shared/mobile-header/mobile-header.component';
-import { TourComponent } from '../../shared/tour/tour.component';
+// TourComponent import removed alongside the "Replay welcome tour"
+// section — see FAQ for the equivalent recovery path.
 const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your streak alive!";
 
 @Component({
@@ -31,7 +32,14 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
       <main id="main" class="container main-content stack stack--lg" *ngIf="user()">
         <h1 class="sr-only">Account</h1>
 
-        <!-- Plan -->
+        <!-- ── Your plan ────────────────────────────────────────────
+             Slimmed-down section: just the tier badge + the action
+             the user can take. Per-feature caps grid (words / images
+             / journals / backfill / recover) removed — those values
+             rarely change once a user is on a plan and the list felt
+             more like an audit log than a useful surface. Manage-
+             billing / upgrade actions moved to the top of the
+             section instead of being pinned to the bottom. -->
         <section class="card">
           <div class="section-head">
             <h2>Your plan</h2>
@@ -39,133 +47,37 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
               {{ user()!.tier }}
             </span>
           </div>
-          <div class="caps-grid" *ngIf="caps()">
-            <div class="cap-row">
-              <span class="cap-label">Words per entry</span>
-              <span class="cap-value">{{ caps()!.maxWordsPerEntry }}</span>
-            </div>
-            <div class="cap-row">
-              <span class="cap-label">Images per entry</span>
-              <span class="cap-value">{{ caps()!.maxImagesPerEntry }}</span>
-            </div>
-            <div class="cap-row">
-              <span class="cap-label">Journals</span>
-              <span class="cap-value">{{ caps()!.maxDiaries === -1 ? 'Unlimited' : caps()!.maxDiaries }}</span>
-            </div>
-            <div class="cap-row">
-              <span class="cap-label">Backfill entries</span>
-              <span class="cap-value">{{ caps()!.canBackfill ? 'Yes' : 'No' }}</span>
-            </div>
-            <div class="cap-row">
-              <span class="cap-label">Recover deleted entries</span>
-              <span class="cap-value">{{ caps()!.canRecoverDeleted ? 'Yes' : 'No' }}</span>
-            </div>
-            <div class="cap-row cap-row--full">
-              <span class="cap-label">Pause streak</span>
-              @if (caps()!.canUsePause && streak()) {
-                <div class="pause-usage">
-                  <span
-                    class="pause-usage__bar"
-                    [style.width.%]="(streak()!.pauseDaysUsedThisMonth / 10) * 100">
-                  </span>
-                  <span class="pause-usage__label">
-                    {{ streak()!.pauseDaysUsedThisMonth }} of 10 days used this month
-                  </span>
-                </div>
-              } @else {
-                <span class="cap-value">{{ caps()!.canUsePause ? 'Yes' : 'No' }}</span>
-              }
-            </div>
-          </div>
-          @if (user()?.tier === 'Free') {
-            <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid var(--color-border-light)">
-              <p class="text-muted text-sm" style="margin-bottom:.875rem">
-                Upgrade for 5 entries/day, 2,500 words, photos, mood tracking, and all features.
-              </p>
-              <div style="display:flex;gap:.625rem;flex-wrap:wrap">
-                <button class="btn btn--primary btn--sm" (click)="upgrade('monthly')" [disabled]="upgrading()">
-                  {{ upgrading() === 'monthly' ? 'Redirecting…' : 'Upgrade — $3/month' }}
-                </button>
-                <button class="btn btn--secondary btn--sm" (click)="upgrade('annual')" [disabled]="upgrading()">
-                  {{ upgrading() === 'annual' ? 'Redirecting…' : 'Upgrade — $30/year' }}
-                </button>
-              </div>
-              @if (upgradeError()) {
-                <p class="alert alert--error" style="margin-top:.75rem">{{ upgradeError() }}</p>
-              }
-            </div>
-          }
           @if (user()?.tier === 'Paid') {
-            <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid var(--color-border-light)">
-              <p class="text-muted text-sm" style="margin-bottom:.75rem">
-                To cancel your subscription and keep your data, use the billing portal below.
-                Your account will continue to exist on the free plan.
-              </p>
-              <button class="btn btn--secondary btn--sm" (click)="openBillingPortal()" [disabled]="portalLoading()">
-                {{ portalLoading() ? 'Opening…' : 'Manage billing & subscription' }}
+            <p class="text-muted text-sm" style="margin-bottom:.875rem">
+              To cancel your subscription and keep your data, use the billing portal below.
+              Your account will continue to exist on the free plan.
+            </p>
+            <button class="btn btn--secondary btn--sm" (click)="openBillingPortal()" [disabled]="portalLoading()">
+              {{ portalLoading() ? 'Opening…' : 'Manage billing & subscription' }}
+            </button>
+            @if (portalError()) {
+              <p class="alert alert--error" style="margin-top:.75rem">{{ portalError() }}</p>
+            }
+          } @else {
+            <p class="text-muted text-sm" style="margin-bottom:.875rem">
+              Upgrade for 5 entries/day, 2,500 words, photos, mood tracking, and all features.
+            </p>
+            <div style="display:flex;gap:.625rem;flex-wrap:wrap">
+              <button class="btn btn--primary btn--sm" (click)="upgrade('monthly')" [disabled]="upgrading()">
+                {{ upgrading() === 'monthly' ? 'Redirecting…' : 'Upgrade — $3/month' }}
               </button>
-              @if (portalError()) {
-                <p class="alert alert--error" style="margin-top:.75rem">{{ portalError() }}</p>
-              }
+              <button class="btn btn--secondary btn--sm" (click)="upgrade('annual')" [disabled]="upgrading()">
+                {{ upgrading() === 'annual' ? 'Redirecting…' : 'Upgrade — $30/year' }}
+              </button>
             </div>
+            @if (upgradeError()) {
+              <p class="alert alert--error" style="margin-top:.75rem">{{ upgradeError() }}</p>
+            }
           }
         </section>
 
-        <!-- Reminders link -->
-        <section class="card notif-link-card" routerLink="/notifications">
-          <div class="notif-link-inner">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-            </svg>
-            <div>
-              <p class="notif-link-title">Reminders</p>
-              <p class="notif-link-sub">Set daily reminder times and messages</p>
-            </div>
-            <svg class="notif-link-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="9 18 15 12 9 6"/>
-            </svg>
-          </div>
-        </section>
-
-        <!-- Preferences (paid only) -->
-        @if (user()?.tier === 'Paid') {
-          <section class="card">
-            <div class="section-head">
-              <h2>Preferences</h2>
-            </div>
-            <div class="pref-row">
-              <div class="pref-info">
-                <p class="pref-label">Daily Spark</p>
-                <p class="text-sm text-muted">Show a daily insight on creativity, resistance, mastery, and more.</p>
-              </div>
-              <label class="toggle-switch">
-                <input type="checkbox"
-                       [checked]="showMotivation()"
-                       [disabled]="motivationPrefWorking()"
-                       (change)="toggleMotivation()" />
-                <span class="toggle-track"><span class="toggle-thumb"></span></span>
-              </label>
-            </div>
-            <div class="pref-row" style="border-top:1px solid var(--color-border-light);margin-top:.75rem;padding-top:.75rem">
-              <div class="pref-info">
-                <p class="pref-label">Daily Reminders</p>
-                <p class="text-sm text-muted">Show your to-do/next-action list on the dashboard.</p>
-              </div>
-              <label class="toggle-switch">
-                <input type="checkbox"
-                       [checked]="showActionItems()"
-                       [disabled]="actionItemsPrefWorking()"
-                       (change)="toggleActionItems()" />
-                <span class="toggle-track"><span class="toggle-thumb"></span></span>
-              </label>
-            </div>
-          </section>
-        }
-
-        <!-- Profile -->
+        <!-- Profile (moved up directly under Your Plan per the May
+             2026 account-page reorganisation). -->
         <section class="card">
           <h2 style="margin-bottom:1rem">Profile</h2>
 
@@ -261,6 +173,142 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
             </div>
           </div>
         </section>
+
+        <!-- ── Pause your streak ──────────────────────────────────────
+             Its own section with the same h2 + tier-badge-style header
+             treatment as "Your plan". Replaces the previous read-only
+             "X of 10 days used" indicator inside the plan section with
+             a fully functional pause-management UI: start a pause for
+             N days, see active pause status, end early. Paid feature
+             gated by canUsePause; free users see an upsell. -->
+        <section class="card">
+          <div class="section-head">
+            <h2>Pause your streak</h2>
+          </div>
+
+          @if (caps() && !caps()!.canUsePause) {
+            <p class="text-muted text-sm">
+              Pausing your streak is available on the paid plan. Use it
+              when life happens — vacations, illness, emergencies —
+              without losing the progress you've built.
+            </p>
+          } @else if (activePause(); as p) {
+            <!-- Active pause: surface dates + an early-end button. -->
+            <p class="text-sm" style="margin-bottom:.5rem">
+              Your streak is paused from
+              <strong>{{ formatDate(p.startDate) }}</strong>
+              through <strong>{{ formatDate(p.endDate) }}</strong>.
+            </p>
+            @if (p.reason) {
+              <p class="text-sm text-muted" style="margin-bottom:.875rem">
+                Reason: {{ p.reason }}
+              </p>
+            }
+            <button class="btn btn--secondary btn--sm"
+                    type="button"
+                    (click)="endPause()"
+                    [disabled]="pauseWorking()">
+              {{ pauseWorking() ? 'Ending…' : 'End pause early' }}
+            </button>
+            @if (pauseError()) {
+              <p class="alert alert--error" style="margin-top:.75rem">{{ pauseError() }}</p>
+            }
+          } @else {
+            <p class="text-muted text-sm" style="margin-bottom:1rem">
+              Pause your streak for up to 10 days per calendar month.
+              Your current streak is preserved while paused.
+            </p>
+
+            @if (streak()) {
+              <div class="pause-usage" style="margin-bottom:1.25rem">
+                <span class="pause-usage__bar"
+                      [style.width.%]="(streak()!.pauseDaysUsedThisMonth / 10) * 100"></span>
+                <span class="pause-usage__label">
+                  {{ streak()!.pauseDaysUsedThisMonth }} of 10 days used this month
+                </span>
+              </div>
+            }
+
+            @if (pauseDaysRemaining() === 0) {
+              <p class="text-muted text-sm">
+                You've used all 10 pause days for this month. Your pause
+                allowance resets at the start of next month.
+              </p>
+            } @else {
+              <div class="pause-form">
+                <div class="field-group">
+                  <label class="field-label" for="pauseDays">Pause for how many days?</label>
+                  <input id="pauseDays"
+                         type="number"
+                         min="1"
+                         [max]="pauseDaysRemaining()"
+                         class="form-control"
+                         [(ngModel)]="pauseDaysInput"
+                         [disabled]="pauseWorking()" />
+                  <p class="text-xs text-muted" style="margin-top:.25rem">
+                    Up to {{ pauseDaysRemaining() }} day{{ pauseDaysRemaining() === 1 ? '' : 's' }} remaining this month.
+                  </p>
+                </div>
+                <div class="field-group" style="margin-top:.875rem">
+                  <label class="field-label" for="pauseReason">Reason (optional)</label>
+                  <input id="pauseReason"
+                         type="text"
+                         maxlength="200"
+                         class="form-control"
+                         [(ngModel)]="pauseReasonInput"
+                         placeholder="e.g. Vacation, illness, work travel"
+                         [disabled]="pauseWorking()" />
+                </div>
+                <button class="btn btn--primary btn--sm"
+                        type="button"
+                        style="margin-top:1rem"
+                        (click)="startPause()"
+                        [disabled]="pauseWorking() || pauseDaysInput < 1 || pauseDaysInput > pauseDaysRemaining()">
+                  {{ pauseWorking() ? 'Starting…' : 'Start pause' }}
+                </button>
+                @if (pauseError()) {
+                  <p class="alert alert--error" style="margin-top:.75rem">{{ pauseError() }}</p>
+                }
+              </div>
+            }
+          }
+        </section>
+
+        <!-- Preferences (paid only) — moved below Pause to keep the
+             upper section focused on plan + identity + streak. -->
+        @if (user()?.tier === 'Paid') {
+          <section class="card">
+            <div class="section-head">
+              <h2>Preferences</h2>
+            </div>
+            <div class="pref-row">
+              <div class="pref-info">
+                <p class="pref-label">Daily Spark</p>
+                <p class="text-sm text-muted">Show a daily insight on creativity, resistance, mastery, and more.</p>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox"
+                       [checked]="showMotivation()"
+                       [disabled]="motivationPrefWorking()"
+                       (change)="toggleMotivation()" />
+                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              </label>
+            </div>
+            <div class="pref-row" style="border-top:1px solid var(--color-border-light);margin-top:.75rem;padding-top:.75rem">
+              <div class="pref-info">
+                <p class="pref-label">Daily Reminders</p>
+                <p class="text-sm text-muted">Show your to-do/next-action list on the dashboard.</p>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox"
+                       [checked]="showActionItems()"
+                       [disabled]="actionItemsPrefWorking()"
+                       (change)="toggleActionItems()" />
+                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              </label>
+            </div>
+          </section>
+        }
 
         <!-- Export -->
         <section class="card">
@@ -399,28 +447,22 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
           </div>
         </section>
 
-        <!-- Help & Support -->
-        <section class="card support-card">
-          <div class="support-card__inner">
-            <div class="support-card__text">
-              <p class="support-card__title">Help &amp; Support</p>
-              <p class="support-card__sub">Browse FAQs or get in touch with our team.</p>
-            </div>
-            <a routerLink="/support" class="btn btn--ghost btn--sm">Get Support →</a>
-          </div>
+        <!-- Help & Support — uses the standard <h2> + p + button
+             pattern so the title weight matches every other section on
+             this page. The previous .support-card__title (small bold
+             label) read as a row inside another card rather than its
+             own section. -->
+        <section class="card">
+          <h2 style="margin-bottom:.375rem">Help &amp; support</h2>
+          <p class="text-muted text-sm" style="margin-bottom:1.25rem">
+            Browse FAQs or get in touch with our team.
+          </p>
+          <a routerLink="/support" class="btn btn--secondary btn--sm">Get support →</a>
         </section>
 
-        <!-- Replay onboarding tour. Clears the cc_tour_seen flag and
-             reloads to /dashboard so the tour fires again. -->
-        <section class="card support-card">
-          <div class="support-card__inner">
-            <div class="support-card__text">
-              <p class="support-card__title">Replay the welcome tour</p>
-              <p class="support-card__sub">Show the 5-step walkthrough again, in case you missed it.</p>
-            </div>
-            <button type="button" class="btn btn--ghost btn--sm" (click)="replayTour()">Show tour</button>
-          </div>
-        </section>
+        <!-- Replay welcome tour section removed — replayed onboarding
+             content lives in the FAQ instead. -->
+
 
         <!-- Sign out -->
         <div class="signout-inline">
@@ -955,9 +997,31 @@ export class AccountComponent implements OnInit {
   deleting      = signal(false);
   deleteError   = signal('');
 
+  // Streak pause — see startPause() / endPause() further down for the
+  // mutation handlers. activePause is loaded once on ngOnInit and
+  // refreshed after each mutation. pauseDaysRemaining is the per-
+  // calendar-month cap (10) minus what the streak service reports as
+  // already used; clamped at 0 so the form disables instead of going
+  // negative when usage somehow exceeds the cap.
+  activePause     = signal<Pause | null>(null);
+  pauseWorking    = signal(false);
+  pauseError      = signal('');
+  pauseDaysInput  = 1;
+  pauseReasonInput = '';
+  pauseDaysRemaining = computed(() => {
+    const used = this.streak()?.pauseDaysUsedThisMonth ?? 0;
+    return Math.max(0, 10 - used);
+  });
+
   ngOnInit(): void {
     this.auth.loadCapabilities().subscribe(c => this.caps.set(c));
     this.api.getStreak().subscribe({ next: s => this.streak.set(s), error: () => {} });
+    // Hydrate any active pause so the Pause-your-streak section can
+    // render the right state on first paint.
+    this.api.getActivePause().subscribe({
+      next: p => this.activePause.set(p),
+      error: () => this.activePause.set(null)
+    });
     this.api.getMe().subscribe(u => {
       this.auth.setUser(u);
       this.showMotivation.set(u.showMotivation ?? true);
@@ -1356,17 +1420,80 @@ export class AccountComponent implements OnInit {
     this.auth.logout();
   }
 
-  /** Clear the tour-seen flag and bounce to the dashboard so the
-   *  onboarding tour re-fires from step 1. Full-page navigation (not
-   *  router) so the dashboard component re-mounts cleanly and the tour
-   *  re-evaluates its localStorage gate. */
-  replayTour(): void {
-    // Belt-and-suspenders: clear the localStorage flag AND set a URL
-    // param so the tour fires even if localStorage doesn't survive
-    // the reload (iOS PWA quirk). The tour component reads ?tour=1
-    // and force-starts regardless of the seen flag.
-    TourComponent.reset();
-    window.location.href = '/dashboard?tour=1';
+  // replayTour() removed — the section has been moved into the FAQ.
+
+  // ── Streak pause ─────────────────────────────────────────────────
+  // Functional pause start / end UI. Previously the account page only
+  // surfaced a "X of 10 days used" indicator with no way to actually
+  // pause from the account surface (admin was the only consumer of
+  // the createPause / cancelPause endpoints). loadActivePause() runs
+  // in ngOnInit so the section can render the active-pause state on
+  // first paint instead of flashing the start-form before resolving.
+
+  startPause(): void {
+    if (this.pauseWorking()) return;
+    const days = Number(this.pauseDaysInput);
+    if (!Number.isFinite(days) || days < 1) {
+      this.pauseError.set('Choose at least 1 day.');
+      return;
+    }
+    if (days > this.pauseDaysRemaining()) {
+      this.pauseError.set(`You only have ${this.pauseDaysRemaining()} day(s) remaining this month.`);
+      return;
+    }
+    this.pauseWorking.set(true);
+    this.pauseError.set('');
+
+    // StartDate = today (local); EndDate = today + (days - 1) so a
+    // 1-day pause covers just today, a 7-day pause covers today
+    // through the next 6 days. Inclusive on both ends matches user
+    // intuition ("pause for a week").
+    const today = new Date();
+    const todayIso = this.toIsoDate(today);
+    const end = new Date(today);
+    end.setDate(end.getDate() + days - 1);
+    const endIso = this.toIsoDate(end);
+
+    const reason = this.pauseReasonInput.trim() || undefined;
+    this.api.createPause(todayIso, endIso, reason).subscribe({
+      next: p => {
+        this.activePause.set(p);
+        this.pauseDaysInput = 1;
+        this.pauseReasonInput = '';
+        this.pauseWorking.set(false);
+        // Refresh streak so the usage bar reflects the new pause days.
+        this.api.getStreak().subscribe({ next: s => this.streak.set(s) });
+      },
+      error: err => {
+        this.pauseError.set(err?.error?.error || 'Could not start pause.');
+        this.pauseWorking.set(false);
+      }
+    });
+  }
+
+  endPause(): void {
+    const p = this.activePause();
+    if (!p || this.pauseWorking()) return;
+    this.pauseWorking.set(true);
+    this.pauseError.set('');
+    this.api.cancelPause(p.id).subscribe({
+      next: () => {
+        this.activePause.set(null);
+        this.pauseWorking.set(false);
+        this.api.getStreak().subscribe({ next: s => this.streak.set(s) });
+      },
+      error: err => {
+        this.pauseError.set(err?.error?.error || 'Could not end pause.');
+        this.pauseWorking.set(false);
+      }
+    });
+  }
+
+  private toIsoDate(d: Date): string {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
   }
 
   startDelete(): void {
