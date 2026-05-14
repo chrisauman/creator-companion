@@ -153,15 +153,16 @@ import { MoodIconComponent } from '../../../shared/mood-icon/mood-icon.component
     }
 
     /* ── Reader-style top bar (works on both mobile and desktop) ── */
-    /* Top padding includes the iOS safe-area-inset so the back button
-       isn't hidden by the iPhone status bar / Dynamic Island in PWA
-       installed mode. env() falls back to 0 on browsers without
-       support, so non-iOS behaviour is unchanged. */
+    /* No safe-area-inset-top here: this page always renders
+       <app-mobile-header> above the reader-top, and the mobile-header
+       itself owns the safe-area inset. Adding env() to both stacked
+       ~60px of empty space below the mobile-header on iOS — the bug
+       surfaced in the May 2026 entry-view screenshot pass. */
     .reader-top {
       display: flex;
       align-items: center;
       gap: .5rem;
-      padding: calc(env(safe-area-inset-top, 0px) + .875rem) 1.5rem .875rem;
+      padding: .875rem 1.5rem;
       border-bottom: 1px solid var(--color-border);
       background: var(--color-surface);
       position: sticky; top: 0;

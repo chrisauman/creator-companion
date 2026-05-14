@@ -88,18 +88,11 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
         @if (!loading()) {
           <div class="editor-form reading-style">
 
-            <!-- Date eyebrow + mood inline (matches reader's date row).
-                 Tap "Change date" to backfill if paid. -->
-            <div class="reading__date-row">
-              <span class="reading__date">{{ readerDateLabel() }}</span>
-              @if (selectedMood()) {
-                <span class="reading__mood">
-                  <app-mood-icon [mood]="selectedMood()" [size]="14"></app-mood-icon>
-                  {{ selectedMood() }}
-                </span>
-              }
-            </div>
-
+            <!-- Title first, then meta row (date + mood) — mirrors the
+                 view-entry layout exactly so the read/edit transition
+                 feels like the same surface. Previously the date row
+                 sat ABOVE the title, which made edit look noticeably
+                 different from the reader for no good reason. -->
             <!-- Title (visually-hidden label for screen readers) -->
             <label for="edit-entry-title-input" class="sr-only">Entry title</label>
             <input
@@ -112,6 +105,17 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
               maxlength="150"
               [disabled]="saving()"
             />
+
+            <!-- Meta row: full-date label + mood pill (matches reader). -->
+            <div class="reading__date-row">
+              <span class="reading__date">{{ readerDateLabel() }}</span>
+              @if (selectedMood()) {
+                <span class="reading__mood">
+                  <app-mood-icon [mood]="selectedMood()" [size]="14"></app-mood-icon>
+                  {{ selectedMood() }}
+                </span>
+              }
+            </div>
 
             <!-- Formatting toolbar (paid) or lock nudge (free) -->
             @if (canFormatText()) {
@@ -474,12 +478,11 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
     .reader-top {
       display: flex;
       align-items: stretch;
-      /* min-height instead of a fixed height so the bar can grow when
-         iOS PWA's safe-area-inset adds top padding. Without the inset
-         the Back/Save buttons sat under the iPhone status bar /
-         Dynamic Island in installed mode. */
-      min-height: 64px;
-      padding-top: env(safe-area-inset-top, 0px);
+      /* No safe-area-inset-top: the standalone edit-entry route renders
+         <app-mobile-header> above this bar, and that header already
+         owns the iOS chrome inset. Doubling the inset stacked ~60px of
+         empty space below the mobile-header on iOS. */
+      height: 64px;
       background: var(--color-surface);
       position: sticky; top: 0;
       z-index: 5;
@@ -590,28 +593,35 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
       cursor: not-allowed;
     }
 
-    /* ── Reader-style date row + mood (matches reader) ─────────── */
+    /* ── Meta row + mood pill (matches view-entry's .entry-meta) ──
+       Visual styling lifted from view-entry so read and edit modes are
+       visually identical: date in muted grey at body size, mood as a
+       small surface pill. Previously the date was rendered as an
+       uppercase cyan eyebrow + creation time, which read as a
+       different page even though it was the same entry. */
     .reading__date-row {
       display: flex;
       align-items: center;
-      gap: 1rem;
+      gap: .875rem;
       flex-wrap: wrap;
-      margin-bottom: 1rem;
+      margin-bottom: 1.75rem;
     }
     .reading__date {
-      font-size: .6875rem;
-      text-transform: uppercase;
-      letter-spacing: .14em;
-      color: var(--color-accent-dark);
-      font-weight: 700;
+      font-size: .875rem;
+      color: var(--color-text-3);
+      font-weight: 500;
     }
     .reading__mood {
       display: inline-flex;
       align-items: center;
-      gap: .375rem;
-      font-size: .75rem;
-      color: var(--color-text-2);
+      gap: .3rem;
+      font-size: .875rem;
       font-weight: 500;
+      color: var(--color-text-2);
+      background: var(--color-surface-2);
+      border: 1px solid var(--color-border);
+      padding: .2rem .65rem;
+      border-radius: 100px;
     }
     .reading__mood app-mood-icon { color: var(--color-text-3); }
 
@@ -1057,14 +1067,19 @@ export class EditEntryComponent implements OnInit, OnDestroy {
     });
   }
 
-  /** "SUNDAY · 8:54 PM" — date eyebrow above the title (matches reader). */
+  /**
+   * "Wednesday, May 13, 2026" — matches view-entry's entryDateLabel
+   * exactly so the meta row below the title reads identically in
+   * read and edit modes. Previously this returned "WEDNESDAY · 8:54 PM"
+   * (eyebrow caps + creation time), which made the two surfaces feel
+   * disjointed and was the "multiple dates" pain point from the May
+   * 2026 screenshot pass.
+   */
   readerDateLabel(): string {
     if (!this.entry()) return '';
-    const d = new Date(this.entry()!.entryDate + 'T00:00:00');
-    const created = new Date(this.entry()!.createdAt);
-    const weekday = d.toLocaleDateString('en-US', { weekday: 'long' });
-    const time = created.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-    return `${weekday} · ${time}`;
+    return new Date(this.entry()!.entryDate + 'T00:00:00').toLocaleDateString('en-US', {
+      weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
+    });
   }
 
   fullImageUrl(relativeUrl: string): string {
@@ -1121,9 +1136,24 @@ export class EditEntryComponent implements OnInit, OnDestroy {
     });
   }
 
-  /** ✕ button when embedded — discard local edits and return to read view. */
+  /**
+   * Cancel-edit handler.
+   *
+   * Embedded mode (dashboard's desktop right column): emit `canceled`
+   * so the parent dashboard can swap its right column back to reader
+   * mode. The parent is the only thing that knows the prior context.
+   *
+   * Standalone mode (/entry/:id/edit route): there's no parent listening,
+   * so the emit alone did nothing — clicking Cancel was a no-op. Navigate
+   * directly to the read view of the same entry instead. This was a bug
+   * the May 2026 screenshot pass surfaced.
+   */
   cancelEdit(): void {
-    this.canceled.emit();
+    if (this.embedded) {
+      this.canceled.emit();
+    } else {
+      this.router.navigate(['/entry', this.entryId]);
+    }
   }
 
   // ── Image management ─────────────────────────────────────────────────────
