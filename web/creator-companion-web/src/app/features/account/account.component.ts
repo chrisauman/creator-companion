@@ -173,13 +173,159 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
           </div>
         </section>
 
+        <!-- Change password (moved up directly under Profile per the
+             May 2026 account-page reorganisation). -->
+        <section class="card">
+          <h2 style="margin-bottom:1rem">Change password</h2>
+          <div class="password-form">
+            <div class="field-group">
+              <label class="field-label" for="currentPw">Current password</label>
+              <input id="currentPw" type="password" class="new-tag-input"
+                [(ngModel)]="currentPassword"
+                name="currentPw"
+                autocomplete="current-password"
+                placeholder="Current password" />
+            </div>
+            <div class="field-group">
+              <label class="field-label" for="newPw">New password</label>
+              <input id="newPw" type="password" class="new-tag-input"
+                [(ngModel)]="newPassword"
+                name="newPw"
+                autocomplete="new-password"
+                placeholder="At least 8 characters" />
+            </div>
+            <div class="field-group">
+              <label class="field-label" for="confirmPw">Confirm new password</label>
+              <input id="confirmPw" type="password" class="new-tag-input"
+                [(ngModel)]="confirmPassword"
+                name="confirmPw"
+                autocomplete="new-password"
+                placeholder="Repeat new password" />
+            </div>
+            <p class="pw-error" *ngIf="passwordError()">{{ passwordError() }}</p>
+            <p class="pw-success" *ngIf="passwordSuccess()">{{ passwordSuccess() }}</p>
+            <button
+              class="btn btn--primary btn--sm"
+              (click)="changePassword()"
+              [disabled]="changingPassword() || !currentPassword || !newPassword || !confirmPassword">
+              {{ changingPassword() ? 'Saving…' : 'Update password' }}
+            </button>
+          </div>
+        </section>
+
+        <!-- Preferences (paid only) -->
+        @if (user()?.tier === 'Paid') {
+          <section class="card">
+            <div class="section-head">
+              <h2>Preferences</h2>
+            </div>
+            <div class="pref-row">
+              <div class="pref-info">
+                <p class="pref-label">Daily Spark</p>
+                <p class="text-sm text-muted">Show a daily insight on creativity, resistance, mastery, and more.</p>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox"
+                       [checked]="showMotivation()"
+                       [disabled]="motivationPrefWorking()"
+                       (change)="toggleMotivation()" />
+                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              </label>
+            </div>
+            <div class="pref-row" style="border-top:1px solid var(--color-border-light);margin-top:.75rem;padding-top:.75rem">
+              <div class="pref-info">
+                <p class="pref-label">Daily Reminders</p>
+                <p class="text-sm text-muted">Show your to-do/next-action list on the dashboard.</p>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox"
+                       [checked]="showActionItems()"
+                       [disabled]="actionItemsPrefWorking()"
+                       (change)="toggleActionItems()" />
+                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              </label>
+            </div>
+          </section>
+        }
+
+        <!-- Tags (moved up above Pause / Export per the May 2026
+             account reorganisation). -->
+        <section class="card">
+          <div class="section-head">
+            <h2>Your tags</h2>
+            <span class="tag-count-badge" *ngIf="tags().length > 0">{{ tags().length }}</span>
+          </div>
+
+          <!-- Create new tag -->
+          <form class="new-tag-form" (ngSubmit)="submitNewTag()" #newTagForm="ngForm">
+            <input
+              class="new-tag-input"
+              type="text"
+              [(ngModel)]="newTagValue"
+              name="newTag"
+              placeholder="New tag name…"
+              maxlength="50"
+              autocomplete="off"
+              autocorrect="off"
+              autocapitalize="off"
+              spellcheck="false"
+            />
+            <button
+              class="btn btn--primary btn--sm"
+              type="submit"
+              [disabled]="!newTagValue.trim() || creatingTag()"
+            >
+              {{ creatingTag() ? 'Adding…' : '+ Add tag' }}
+            </button>
+          </form>
+
+          <div *ngIf="tags().length === 0 && !tagsLoading()" class="empty-tags-note">
+            Your tag library is empty. Add tags above or attach them to entries when writing.
+          </div>
+
+          <div class="tag-list" *ngIf="tags().length > 0">
+            <div class="tag-row" *ngFor="let tag of tags()">
+              <!-- View mode -->
+              <ng-container *ngIf="editingTagId() !== tag.id">
+                <div class="tag-row__info">
+                  <span class="tag-row__chip">#{{ tag.name }}</span>
+                  <span class="tag-row__count">{{ tag.usageCount }} {{ tag.usageCount === 1 ? 'entry' : 'entries' }}</span>
+                </div>
+                <div class="tag-row__actions">
+                  <button class="tag-action-btn tag-action-btn--edit" (click)="startRename(tag)">Edit</button>
+                  <button class="tag-action-btn tag-action-btn--delete" (click)="confirmDeleteTag(tag)">Delete</button>
+                </div>
+              </ng-container>
+
+              <!-- Edit mode -->
+              <ng-container *ngIf="editingTagId() === tag.id">
+                <input
+                  class="tag-rename-input"
+                  type="text"
+                  [(ngModel)]="renameValue"
+                  (keydown.enter)="submitRename(tag)"
+                  (keydown.escape)="cancelRename()"
+                  autocomplete="off"
+                  #renameInput
+                />
+                <div class="tag-row__actions">
+                  <button class="tag-action-btn tag-action-btn--save" (click)="submitRename(tag)" [disabled]="!renameValue.trim()">Save</button>
+                  <button class="tag-action-btn" (click)="cancelRename()">Cancel</button>
+                </div>
+              </ng-container>
+            </div>
+          </div>
+
+          <p *ngIf="tagError()" class="alert alert--error" style="margin-top:.75rem">{{ tagError() }}</p>
+        </section>
+
         <!-- ── Pause your streak ──────────────────────────────────────
-             Its own section with the same h2 + tier-badge-style header
-             treatment as "Your plan". Replaces the previous read-only
-             "X of 10 days used" indicator inside the plan section with
-             a fully functional pause-management UI: start a pause for
-             N days, see active pause status, end early. Paid feature
-             gated by canUsePause; free users see an upsell. -->
+             Its own section with the same h2 treatment as "Your plan".
+             Replaces the previous read-only "X of 10 days used"
+             indicator inside the plan section with a fully functional
+             pause-management UI: start a pause for N days, see active
+             pause status, end early. Paid feature gated by canUsePause;
+             free users see an upsell. -->
         <section class="card">
           <div class="section-head">
             <h2>Pause your streak</h2>
@@ -192,7 +338,6 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
               without losing the progress you've built.
             </p>
           } @else if (activePause(); as p) {
-            <!-- Active pause: surface dates + an early-end button. -->
             <p class="text-sm" style="margin-bottom:.5rem">
               Your streak is paused from
               <strong>{{ formatDate(p.startDate) }}</strong>
@@ -273,42 +418,6 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
           }
         </section>
 
-        <!-- Preferences (paid only) — moved below Pause to keep the
-             upper section focused on plan + identity + streak. -->
-        @if (user()?.tier === 'Paid') {
-          <section class="card">
-            <div class="section-head">
-              <h2>Preferences</h2>
-            </div>
-            <div class="pref-row">
-              <div class="pref-info">
-                <p class="pref-label">Daily Spark</p>
-                <p class="text-sm text-muted">Show a daily insight on creativity, resistance, mastery, and more.</p>
-              </div>
-              <label class="toggle-switch">
-                <input type="checkbox"
-                       [checked]="showMotivation()"
-                       [disabled]="motivationPrefWorking()"
-                       (change)="toggleMotivation()" />
-                <span class="toggle-track"><span class="toggle-thumb"></span></span>
-              </label>
-            </div>
-            <div class="pref-row" style="border-top:1px solid var(--color-border-light);margin-top:.75rem;padding-top:.75rem">
-              <div class="pref-info">
-                <p class="pref-label">Daily Reminders</p>
-                <p class="text-sm text-muted">Show your to-do/next-action list on the dashboard.</p>
-              </div>
-              <label class="toggle-switch">
-                <input type="checkbox"
-                       [checked]="showActionItems()"
-                       [disabled]="actionItemsPrefWorking()"
-                       (change)="toggleActionItems()" />
-                <span class="toggle-track"><span class="toggle-thumb"></span></span>
-              </label>
-            </div>
-          </section>
-        }
-
         <!-- Export -->
         <section class="card">
           <h2 style="margin-bottom:.375rem">Export your data</h2>
@@ -328,76 +437,6 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
           </p>
         </section>
 
-        <!-- Tags -->
-        <section class="card">
-          <div class="section-head">
-            <h2>Your tags</h2>
-            <span class="tag-count-badge" *ngIf="tags().length > 0">{{ tags().length }}</span>
-          </div>
-
-          <!-- Create new tag -->
-          <form class="new-tag-form" (ngSubmit)="submitNewTag()" #newTagForm="ngForm">
-            <input
-              class="new-tag-input"
-              type="text"
-              [(ngModel)]="newTagValue"
-              name="newTag"
-              placeholder="New tag name…"
-              maxlength="50"
-              autocomplete="off"
-              autocorrect="off"
-              autocapitalize="off"
-              spellcheck="false"
-            />
-            <button
-              class="btn btn--primary btn--sm"
-              type="submit"
-              [disabled]="!newTagValue.trim() || creatingTag()"
-            >
-              {{ creatingTag() ? 'Adding…' : '+ Add tag' }}
-            </button>
-          </form>
-
-          <div *ngIf="tags().length === 0 && !tagsLoading()" class="empty-tags-note">
-            Your tag library is empty. Add tags above or attach them to entries when writing.
-          </div>
-
-          <div class="tag-list" *ngIf="tags().length > 0">
-            <div class="tag-row" *ngFor="let tag of tags()">
-              <!-- View mode -->
-              <ng-container *ngIf="editingTagId() !== tag.id">
-                <div class="tag-row__info">
-                  <span class="tag-row__chip">#{{ tag.name }}</span>
-                  <span class="tag-row__count">{{ tag.usageCount }} {{ tag.usageCount === 1 ? 'entry' : 'entries' }}</span>
-                </div>
-                <div class="tag-row__actions">
-                  <button class="tag-action-btn tag-action-btn--edit" (click)="startRename(tag)">Edit</button>
-                  <button class="tag-action-btn tag-action-btn--delete" (click)="confirmDeleteTag(tag)">Delete</button>
-                </div>
-              </ng-container>
-
-              <!-- Edit mode -->
-              <ng-container *ngIf="editingTagId() === tag.id">
-                <input
-                  class="tag-rename-input"
-                  type="text"
-                  [(ngModel)]="renameValue"
-                  (keydown.enter)="submitRename(tag)"
-                  (keydown.escape)="cancelRename()"
-                  autocomplete="off"
-                  #renameInput
-                />
-                <div class="tag-row__actions">
-                  <button class="tag-action-btn tag-action-btn--save" (click)="submitRename(tag)" [disabled]="!renameValue.trim()">Save</button>
-                  <button class="tag-action-btn" (click)="cancelRename()">Cancel</button>
-                </div>
-              </ng-container>
-            </div>
-          </div>
-
-          <p *ngIf="tagError()" class="alert alert--error" style="margin-top:.75rem">{{ tagError() }}</p>
-        </section>
-
         <!-- Trash -->
         <section class="card">
           <h2 style="margin-bottom:.375rem">Trash</h2>
@@ -405,45 +444,6 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
             Deleted entries are kept for 48 hours before being permanently removed.
           </p>
           <a routerLink="/trash" class="btn btn--secondary btn--sm">View trash</a>
-        </section>
-
-        <!-- Change password -->
-        <section class="card">
-          <h2 style="margin-bottom:1rem">Change password</h2>
-          <div class="password-form">
-            <div class="field-group">
-              <label class="field-label" for="currentPw">Current password</label>
-              <input id="currentPw" type="password" class="new-tag-input"
-                [(ngModel)]="currentPassword"
-                name="currentPw"
-                autocomplete="current-password"
-                placeholder="Current password" />
-            </div>
-            <div class="field-group">
-              <label class="field-label" for="newPw">New password</label>
-              <input id="newPw" type="password" class="new-tag-input"
-                [(ngModel)]="newPassword"
-                name="newPw"
-                autocomplete="new-password"
-                placeholder="At least 8 characters" />
-            </div>
-            <div class="field-group">
-              <label class="field-label" for="confirmPw">Confirm new password</label>
-              <input id="confirmPw" type="password" class="new-tag-input"
-                [(ngModel)]="confirmPassword"
-                name="confirmPw"
-                autocomplete="new-password"
-                placeholder="Repeat new password" />
-            </div>
-            <p class="pw-error" *ngIf="passwordError()">{{ passwordError() }}</p>
-            <p class="pw-success" *ngIf="passwordSuccess()">{{ passwordSuccess() }}</p>
-            <button
-              class="btn btn--primary btn--sm"
-              (click)="changePassword()"
-              [disabled]="changingPassword() || !currentPassword || !newPassword || !confirmPassword">
-              {{ changingPassword() ? 'Saving…' : 'Update password' }}
-            </button>
-          </div>
         </section>
 
         <!-- Help & Support — uses the standard <h2> + p + button
@@ -1443,14 +1443,17 @@ export class AccountComponent implements OnInit {
     this.pauseWorking.set(true);
     this.pauseError.set('');
 
-    // StartDate = today (local); EndDate = today + (days - 1) so a
-    // 1-day pause covers just today, a 7-day pause covers today
-    // through the next 6 days. Inclusive on both ends matches user
-    // intuition ("pause for a week").
+    // The backend rejects endDate <= startDate, so a "1 day" pause
+    // needs end = today + 1 (not today). Conceptually we treat
+    // endDate as exclusive: a pause that starts today and ends
+    // tomorrow covers one day (today). A 7-day pause = today through
+    // 7 days from now. Previously we subtracted 1 to make endDate
+    // inclusive, which made the 1-day case fail validation ("Pause
+    // end date must be after the start date.").
     const today = new Date();
     const todayIso = this.toIsoDate(today);
     const end = new Date(today);
-    end.setDate(end.getDate() + days - 1);
+    end.setDate(end.getDate() + days);
     const endIso = this.toIsoDate(end);
 
     const reason = this.pauseReasonInput.trim() || undefined;
