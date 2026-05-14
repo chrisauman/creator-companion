@@ -284,31 +284,8 @@ textarea.form-control {
   clip: rect(0,0,0,0); white-space: nowrap; border: 0;
 }
 
-/* Skip-to-main-content link — visible only when focused via keyboard
-   Tab. Lets screen-reader and keyboard users jump past the sidebar /
-   mobile header / trial banner on every page load. Required for
-   WCAG 2.4.1 Bypass Blocks (Level A). */
-.skip-link {
-  position: absolute;
-  top: 0;
-  left: 0;
-  background: #0c0e13;
-  color: #fff;
-  padding: .75rem 1rem;
-  border-radius: 0 0 .5rem 0;
-  font-size: .9375rem;
-  font-weight: 600;
-  text-decoration: none;
-  z-index: 9999;
-  transform: translateY(-110%);
-  transition: transform .15s ease;
-}
-.skip-link:focus,
-.skip-link:focus-visible {
-  transform: translateY(0);
-  outline: 2px solid var(--color-accent);
-  outline-offset: 2px;
-}
+/* .skip-link CSS removed alongside the markup in app.ts — see the
+   comment block there for the a11y trade-off. */
 
 // ─── Global accessibility: focus visibility ─────────────────────────────────
 // Browsers strip the default focus ring on many element types when
