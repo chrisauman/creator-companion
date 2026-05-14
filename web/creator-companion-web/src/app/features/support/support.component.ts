@@ -134,10 +134,12 @@ import { MobileHeaderComponent } from '../../shared/mobile-header/mobile-header.
                 <div class="faq-item" [class.faq-item--open]="openId() === faq.id">
                   <button class="faq-question" (click)="toggle(faq.id)"
                           [attr.aria-expanded]="openId() === faq.id">
-                    <span>
-                      <span class="faq-cat-tag">{{ faq.category }}</span>
-                      {{ faq.question }}
-                    </span>
+                    <!-- Category pill removed per the cleaner-look pass —
+                         the category is still used by the filter row above
+                         and the search-text matcher, just not displayed on
+                         each row. faq.category remains on the model for
+                         filter/sort logic to key on. -->
+                    <span>{{ faq.question }}</span>
                     <svg class="faq-chevron" xmlns="http://www.w3.org/2000/svg"
                       width="16" height="16" viewBox="0 0 24 24"
                       fill="none" stroke="currentColor" stroke-width="2.5"
