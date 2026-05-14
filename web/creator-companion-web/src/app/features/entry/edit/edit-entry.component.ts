@@ -633,6 +633,16 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
       margin: 0 auto;
       padding: 2rem 2.5rem 4rem;
     }
+    /* Mobile: match view-entry's .entry-card padding (1.5rem 1.5rem
+       3rem) so the gap above the date and the horizontal gutters read
+       the same on both surfaces. The wider 2.5rem horizontal default
+       is reserved for desktop where it gives the form room to
+       breathe inside the 760px max-width box. */
+    @media (max-width: 767px) {
+      .reading-style {
+        padding: 1.5rem 1.5rem 3rem;
+      }
+    }
 
     /* ── Editor primary actions — match new design language ─────── */
     .editor-actions .btn--primary {
