@@ -277,7 +277,7 @@
               <polyline points="6 9 12 15 18 9"/>
             </svg>
           </button>
-          ${openId === f.id ? `<div class="faq-a">${escapeHtml(f.answer)}</div>` : ''}
+          ${openId === f.id ? `<div class="faq-a">${f.answer}</div>` : ''}
         </div>
       `).join('');
 

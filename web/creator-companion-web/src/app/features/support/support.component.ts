@@ -2,6 +2,7 @@ import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ApiService } from '../../core/services/api.service';
 import { Faq } from '../../core/models/models';
 import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
@@ -77,37 +78,11 @@ import { MobileHeaderComponent } from '../../shared/mobile-header/mobile-header.
             </div>
           </div>
 
-          <!-- Pinned helper card sits above the regular list. Always
-               visible regardless of search/category filter — the tour
-               replay is a universal need. -->
-          @if (!query() && activeCategory() === null) {
-            <section class="faq-list faq-list--pinned">
-              <div class="faq-item" [class.faq-item--open]="openId() === 'tour-replay'">
-                <button class="faq-question" (click)="toggle('tour-replay')"
-                        [attr.aria-expanded]="openId() === 'tour-replay'">
-                  <span>Can I watch the onboarding tour again?</span>
-                  <svg class="faq-chevron" xmlns="http://www.w3.org/2000/svg"
-                    width="16" height="16" viewBox="0 0 24 24"
-                    fill="none" stroke="currentColor" stroke-width="2.5"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="6 9 12 15 18 9"/>
-                  </svg>
-                </button>
-                @if (openId() === 'tour-replay') {
-                  <div class="faq-answer">
-                    <p>
-                      Yes —
-                      <a class="faq-replay-link" routerLink="/onboarding" [queryParams]="{ replay: 1 }">
-                        click this link to begin
-                      </a>.
-                      You'll see the welcome cards, followed by tooltips that
-                      point out each major feature on your dashboard.
-                    </p>
-                  </div>
-                }
-              </div>
-            </section>
-          }
+          <!-- Tour-replay FAQ moved into the database in the
+               SeedTourReplayFaq migration so the admin can edit / sort /
+               unpublish it like every other entry. No more hardcoded
+               pinned section. -->
+
 
           <!-- FAQ list -->
           @if (loading()) {
@@ -148,9 +123,12 @@ import { MobileHeaderComponent } from '../../shared/mobile-header/mobile-header.
                     </svg>
                   </button>
                   @if (openId() === faq.id) {
-                    <div class="faq-answer">
-                      <p>{{ faq.answer }}</p>
-                    </div>
+                    <!-- Answer rendered as HTML (via DomSanitizer) so
+                         admin-authored content can include anchor tags,
+                         line breaks, bold, etc. FAQ content is admin-only
+                         input — no untrusted user content surface — so
+                         bypassSecurityTrustHtml is appropriate here. -->
+                    <div class="faq-answer" [innerHTML]="answerHtml(faq.answer)"></div>
                   }
                 </div>
               }
@@ -375,6 +353,19 @@ import { MobileHeaderComponent } from '../../shared/mobile-header/mobile-header.
 })
 export class SupportComponent implements OnInit {
   private api = inject(ApiService);
+  private sanitizer = inject(DomSanitizer);
+
+  /**
+   * Bypass Angular's default HTML sanitizer for FAQ answers so admin-
+   * authored anchor tags / line breaks / formatting render. FAQ answers
+   * are admin-only content — no untrusted-user-input path — so the
+   * security risk is the admin themselves entering malicious markup,
+   * which is the admin's own footgun. If we ever open FAQ authoring
+   * beyond admins this needs to flip to a tag-allowlist sanitizer.
+   */
+  answerHtml(answer: string): SafeHtml {
+    return this.sanitizer.bypassSecurityTrustHtml(answer);
+  }
 
   faqs           = signal<Faq[]>([]);
   loading        = signal(true);
