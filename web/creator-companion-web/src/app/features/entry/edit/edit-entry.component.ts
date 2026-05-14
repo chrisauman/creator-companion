@@ -46,6 +46,16 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
              + favorite heart. -->
         <div class="reader-top">
           <div class="reader-top__inner">
+            <!-- Back / Cancel pill — mirrors view-entry's Back button
+                 position for visual parity between read and edit.
+                 cancelEdit() handles both embedded (emits canceled
+                 event to dashboard parent) and standalone (router
+                 navigate back to /entry/:id) modes. -->
+            <button class="cancel-pill" type="button" (click)="cancelEdit()">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              Back
+            </button>
             <!-- Empty breadcrumb slot — the date is shown ONCE on the
                  page, in the meta row above the title below. Keeping a
                  named element with flex:1 so the right-side actions
@@ -474,10 +484,10 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
        holds an inner row that's max-width 760px and centred so the
        Cancel pill and Save button align horizontally with the title
        and body content below. */
-    /* Padding-based sizing (not fixed height) so this bar matches
+    /* Sized via padding (not fixed height) so this bar matches
        view-entry's .reader-top exactly: ~52px on mobile, ~56px on
-       desktop. The previous fixed height: 64px stacked an extra ~12px
-       of dead space above the meta row vs the read view.
+       desktop. Border-bottom and background restored so the visual
+       hairline under the bar matches view as well.
        No safe-area-inset-top: the standalone edit-entry route renders
        <app-mobile-header> above this bar, and that header already
        owns the iOS chrome inset. */
@@ -485,6 +495,7 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
       display: flex;
       align-items: center;
       padding: .875rem 0;
+      border-bottom: 1px solid var(--color-border);
       background: var(--color-surface);
       position: sticky; top: 0;
       z-index: 5;
@@ -494,6 +505,10 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
     @media (min-width: 768px) {
       .reader-top { padding: 1rem 0; }
     }
+    /* Horizontal padding matches view-entry's .reader-top exactly:
+       1.5rem on mobile, 1.75rem on desktop. Previously 2.5rem at
+       both widths, which made the Back pill + heart sit farther
+       from the viewport edges than they did on the read view. */
     .reader-top__inner {
       display: flex;
       align-items: center;
@@ -501,8 +516,11 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
       width: 100%;
       max-width: 760px;
       margin: 0 auto;
-      padding: 0 2.5rem;
+      padding: 0 1.5rem;
       box-sizing: border-box;
+    }
+    @media (min-width: 768px) {
+      .reader-top__inner { padding: 0 1.75rem; }
     }
     .cancel-pill {
       display: inline-flex;
