@@ -40,13 +40,30 @@ public class ContentEncryptionMigrator(
     // application writes so existing rows hash the same way new ones do.
     private const string TagHashDomain = "tag:name";
 
-    public Task StartAsync(CancellationToken cancellationToken)
+    public async Task StartAsync(CancellationToken cancellationToken)
     {
-        // Don't block app startup on the migration. Fire-and-forget on
-        // the threadpool; the app serves traffic immediately even if
-        // the bulk job is still running. Log any failures so we know.
-        _ = Task.Run(() => RunSafelyAsync(cancellationToken), cancellationToken);
-        return Task.CompletedTask;
+        // Block startup until the migration completes. Reason: if the
+        // API serves traffic mid-migration, two race conditions arise:
+        //
+        //   1. User creates a tag while the migrator hasn't reached
+        //      that user's rows yet. TagService.SetEntryTagsAsync
+        //      looks up tags by NameHash; existing-but-not-migrated
+        //      tags have NameHash="", so the lookup misses and we
+        //      insert a duplicate. The migrator later encrypts the
+        //      pre-existing tag, leaving two rows for the same tag.
+        //
+        //   2. User updates an entry whose plaintext title/content the
+        //      migrator has loaded into memory but not yet saved.
+        //      EF Core doesn't use optimistic concurrency by default,
+        //      so the migrator's later SaveChangesAsync would overwrite
+        //      the user's just-saved encrypted value with a re-encryption
+        //      of the OLD plaintext — losing the user's edit.
+        //
+        // For a journaling app with hundreds of rows, this completes
+        // in seconds. Worth the brief startup delay to eliminate both
+        // race classes entirely.
+        logger.LogInformation("ContentEncryptionMigrator: starting synchronous bulk pass…");
+        await RunSafelyAsync(cancellationToken);
     }
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
@@ -205,6 +222,11 @@ public class ContentEncryptionMigrator(
         // not yet encrypted, we download bytes from R2, encrypt, and
         // re-upload. Keep the batch small + log progress so the operator
         // can watch it run.
+        //
+        // CRITICAL ORDER: upload-new → SaveChanges (DB now points at
+        // new key) → THEN delete-old. Deleting the old blob before the
+        // DB save commits would orphan the new blob and leave the DB
+        // pointing at a deleted plaintext blob if SaveChanges fails.
         const int batchSize = 50;
         var migratedRows = 0;
         var migratedBlobs = 0;
@@ -218,18 +240,19 @@ public class ContentEncryptionMigrator(
                 .ToListAsync(ct);
             if (batch.Count == 0) break;
 
+            // Per-row record of "old key to delete after SaveChanges
+            // succeeds." Populated during the encrypt pass; replayed
+            // after the DB commit.
+            var pendingDeletes = new List<string>();
+
             foreach (var m in batch)
             {
-                // FileName field
                 if (!encryptor.IsEncrypted(m.FileName))
                 {
                     m.FileName = encryptor.EncryptString(m.FileName);
                     migratedRows++;
                 }
 
-                // Bytes in storage. Fetch, check magic byte, re-encrypt
-                // if needed. Wrap in try so one bad blob doesn't halt
-                // the whole migration — log + continue.
                 try
                 {
                     var raw = await storage.ReadAllBytesAsync(m.StoragePath);
@@ -237,17 +260,9 @@ public class ContentEncryptionMigrator(
                     {
                         var encrypted = encryptor.EncryptBytes(raw);
                         await using var ms = new MemoryStream(encrypted);
-                        // Overwrite at the same storage path via DELETE +
-                        // SaveAsync — Save generates a new key by default,
-                        // so we delete first and persist a new key
-                        // (updating the DB row with the new path).
-                        // Simpler: SaveAsync generates a new path, we
-                        // update the row, then delete the old object.
                         var newPath = await storage.SaveAsync(ms, m.StoragePath, m.ContentType);
-                        var oldPath = m.StoragePath;
+                        pendingDeletes.Add(m.StoragePath); // delete old AFTER save commits
                         m.StoragePath = newPath;
-                        try { await storage.DeleteAsync(oldPath); }
-                        catch { /* best-effort */ }
                         migratedBlobs++;
                     }
                 }
@@ -259,7 +274,26 @@ public class ContentEncryptionMigrator(
                 }
             }
 
+            // Commit DB changes FIRST. Only after this succeeds is it
+            // safe to delete the old plaintext blobs. If SaveChanges
+            // throws, the new ciphertext blobs leak but no data is lost
+            // — the next migrator run finds plaintext, re-encrypts, and
+            // GC of orphan blobs is a separate concern.
             await db.SaveChangesAsync(ct);
+
+            foreach (var oldPath in pendingDeletes)
+            {
+                try { await storage.DeleteAsync(oldPath); }
+                catch (Exception ex)
+                {
+                    // Best-effort: an orphan plaintext blob is bad for
+                    // disk usage but the DB row already points at the
+                    // ciphertext so the privacy promise still holds.
+                    logger.LogWarning(ex,
+                        "ContentEncryptionMigrator: failed to delete old blob {Path}.", oldPath);
+                }
+            }
+
             skip += batch.Count;
         }
         if (migratedRows > 0 || migratedBlobs > 0)
