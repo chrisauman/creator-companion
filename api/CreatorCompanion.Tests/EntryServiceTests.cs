@@ -36,8 +36,10 @@ public class EntryServiceTests
         var entitlements = new EntitlementService(db, limitsOptions);
         var streak       = new StreakService(db);
         var storage      = new NullStorageService();
-        var tagSvc       = new TagService(db);
-        return new EntryService(db, entitlements, streak, storage, tagSvc);
+        var encryptor    = TestEncryptors.BuildEncryptor();
+        var tagSvc       = new TagService(db, encryptor);
+        var urlSigner    = TestEncryptors.BuildUrlSigner();
+        return new EntryService(db, entitlements, streak, storage, tagSvc, encryptor, urlSigner);
     }
 
     // Stub that satisfies IStorageService without any real I/O
@@ -47,6 +49,7 @@ public class EntryServiceTests
             => Task.FromResult(fileName);
         public Task DeleteAsync(string storagePath) => Task.CompletedTask;
         public string GetUrl(string storagePath) => $"/v1/media/file/{storagePath}";
+        public Task<byte[]> ReadAllBytesAsync(string storagePath) => Task.FromResult(Array.Empty<byte>());
     }
 
     // ── Create ───────────────────────────────────────────────────────────────
@@ -268,7 +271,7 @@ public class EntryServiceTests
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
         // Create a draft
-        var draftSvc = new DraftService(db);
+        var draftSvc = new DraftService(db, TestEncryptors.BuildEncryptor());
         await draftSvc.UpsertAsync(user.Id,
             new UpsertDraftRequest(journal.Id, today, "Draft content in progress here.", null));
 

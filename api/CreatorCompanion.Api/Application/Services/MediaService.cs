@@ -10,7 +10,9 @@ public class MediaService(
     AppDbContext db,
     IStorageService storage,
     IEntitlementService entitlements,
-    IImageProcessor imageProcessor) : IMediaService
+    IImageProcessor imageProcessor,
+    IEntryEncryptor encryptor,
+    IMediaUrlSigner urlSigner) : IMediaService
 {
     private static readonly HashSet<string> AllowedTypes = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -108,22 +110,37 @@ public class MediaService(
             {
                 storedContentType = processedType;
                 storedFileName    = Path.ChangeExtension(file.FileName, ".jpg");
-                storedBytes       = processed.Length;
-                storagePath       = await storage.SaveAsync(processed, storedFileName, processedType);
+
+                // Encrypt the processed bytes before they hit R2 — see
+                // EntryEncryptor.EncryptBytes for the 0x01-magic +
+                // nonce + cipher + tag format. R2 only ever sees
+                // ciphertext blobs; without the master key the bytes
+                // are useless even with full storage access.
+                var plainBytes = await StreamToBytesAsync(processed);
+                storedBytes = plainBytes.Length; // original size on the media row
+                var encrypted = encryptor.EncryptBytes(plainBytes);
+                await using var encStream = new MemoryStream(encrypted);
+                storagePath = await storage.SaveAsync(encStream, storedFileName, processedType);
             }
         }
         else
         {
             await using var stream = file.OpenReadStream();
-            storagePath = await storage.SaveAsync(stream, file.FileName, file.ContentType);
-            storedBytes = file.Length;
+            var plainBytes = await StreamToBytesAsync(stream);
+            storedBytes = plainBytes.Length;
+            var encrypted = encryptor.EncryptBytes(plainBytes);
+            await using var encStream = new MemoryStream(encrypted);
+            storagePath = await storage.SaveAsync(encStream, file.FileName, file.ContentType);
         }
 
         var media = new EntryMedia
         {
             EntryId       = entryId,
             UserId        = userId,
-            FileName      = storedFileName,
+            // FileName can leak (e.g. "therapy_session.jpg") — encrypt
+            // it the same way as entry titles. We display the decrypted
+            // form when returning MediaSummary.
+            FileName      = encryptor.EncryptString(storedFileName),
             ContentType   = storedContentType,
             FileSizeBytes = storedBytes,
             StoragePath   = storagePath
@@ -133,8 +150,19 @@ public class MediaService(
         await db.SaveChangesAsync();
         if (tx is not null) await tx.CommitAsync();
 
-        return new MediaSummary(media.Id, media.FileName, media.ContentType,
-            media.FileSizeBytes, media.TakenAt, storage.GetUrl(media.StoragePath));
+        // URL points at the authenticated decrypting endpoint with a
+        // signed token. Browser <img src> fetches via this URL; the
+        // controller validates the token, fetches ciphertext from R2,
+        // decrypts, and serves the plaintext bytes.
+        return new MediaSummary(media.Id, storedFileName, media.ContentType,
+            media.FileSizeBytes, media.TakenAt, urlSigner.BuildSignedUrl(media.Id, media.UserId));
+    }
+
+    private static async Task<byte[]> StreamToBytesAsync(Stream s)
+    {
+        await using var ms = new MemoryStream();
+        await s.CopyToAsync(ms);
+        return ms.ToArray();
     }
 
     /// <summary>

@@ -187,6 +187,24 @@ try
     builder.Services.AddScoped<IPushSender, WebPushSender>();
     builder.Services.AddHostedService<ReminderBackgroundService>();
 
+    // Server-side encryption for at-rest user content (entry title +
+    // body, draft text, tag names, image bytes). Key from
+    // Entry__EncryptionKey env var. Singleton because the key load
+    // is one-shot and the AesGcm calls are stateless past that.
+    // See EntryEncryptor for the threat model — covers DB leaks and
+    // admin-DB-access, does NOT cover server compromise (that needs
+    // E2EE which we deliberately deferred).
+    builder.Services.AddSingleton<IEntryEncryptor, EntryEncryptor>();
+    // Signed image-serve URLs so <img> tags can fetch ciphertext-on-R2
+    // through an authenticated decrypting endpoint without needing a
+    // JWT header. HMAC tokens bind (mediaId, userId, expiry).
+    builder.Services.AddSingleton<IMediaUrlSigner, MediaUrlSigner>();
+    // One-shot bulk encryption pass on startup — encrypts any legacy
+    // plaintext content (entries, drafts, tag names + hashes, media
+    // bytes) so DB-leak protection is complete after the May 2026
+    // privacy migration. Idempotent + safe to run on every boot.
+    builder.Services.AddHostedService<ContentEncryptionMigrator>();
+
     // Substack auto-poster (admin-only marketing tool). Cookie protector
     // is a singleton — the AES key is read once at startup and the
     // protect/unprotect operations are stateless past that.
@@ -269,6 +287,17 @@ try
         SerilogLog.Warning("Resend:FromEmail does not appear to use the verified domain " +
                            "creatorcompanionapp.com. Current value: {From}. Sends may fail if " +
                            "the domain isn't verified in Resend.", resendFrom);
+    }
+
+    // Entry encryption key check. Same rationale as the Resend keys —
+    // surface misconfig at boot rather than at first write attempt.
+    var entryKey = builder.Configuration["Entry:EncryptionKey"];
+    if (string.IsNullOrWhiteSpace(entryKey))
+    {
+        SerilogLog.Warning("Entry:EncryptionKey is not configured. User-content encryption " +
+                           "is DISABLED — entry writes and reads will fail on the encryption " +
+                           "code path. Generate `openssl rand -base64 32` and set the " +
+                           "`Entry__EncryptionKey` env var on Railway.");
     }
 
     var allowedOrigins = builder.Configuration["Cors:AllowedOrigins"]?.Split(',')

@@ -6,8 +6,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CreatorCompanion.Api.Application.Services;
 
-public class DraftService(AppDbContext db) : IDraftService
+public class DraftService(AppDbContext db, IEntryEncryptor encryptor) : IDraftService
 {
+    // Drafts hold in-progress entry text — same privacy posture as
+    // published entries. Encrypt ContentText at rest using the same
+    // master key as Entry.ContentText. MapToResponse decrypts before
+    // returning to the client (transparent for legacy plaintext rows).
+
     public async Task<DraftResponse> UpsertAsync(Guid userId, UpsertDraftRequest request)
     {
         var journal = await db.Journals
@@ -27,14 +32,14 @@ public class DraftService(AppDbContext db) : IDraftService
                 UserId = userId,
                 JournalId = request.JournalId,
                 EntryDate = request.EntryDate,
-                ContentText = request.ContentText,
+                ContentText = encryptor.EncryptString(request.ContentText),
                 Metadata = request.Metadata ?? "{}"
             };
             db.Drafts.Add(draft);
         }
         else
         {
-            draft.ContentText = request.ContentText;
+            draft.ContentText = encryptor.EncryptString(request.ContentText);
             draft.Metadata = request.Metadata ?? draft.Metadata;
             draft.UpdatedAt = DateTime.UtcNow;
         }
@@ -69,7 +74,7 @@ public class DraftService(AppDbContext db) : IDraftService
         }
     }
 
-    private static DraftResponse MapToResponse(Draft draft) =>
+    private DraftResponse MapToResponse(Draft draft) =>
         new(draft.Id, draft.JournalId, draft.EntryDate,
-            draft.ContentText, draft.Metadata, draft.UpdatedAt);
+            encryptor.DecryptString(draft.ContentText), draft.Metadata, draft.UpdatedAt);
 }

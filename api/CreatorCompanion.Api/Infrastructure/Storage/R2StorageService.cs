@@ -52,6 +52,15 @@ public class R2StorageService : IStorageService, IDisposable
         await _client.DeleteObjectAsync(_bucket, storagePath);
     }
 
+    public async Task<byte[]> ReadAllBytesAsync(string storagePath)
+    {
+        var resp = await _client.GetObjectAsync(_bucket, storagePath);
+        await using var src = resp.ResponseStream;
+        await using var ms = new MemoryStream();
+        await src.CopyToAsync(ms);
+        return ms.ToArray();
+    }
+
     public string GetUrl(string storagePath)
     {
         // Guard: if storagePath is already an absolute URL (e.g. legacy row), return as-is.

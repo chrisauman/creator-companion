@@ -414,6 +414,18 @@ public class AdminController(AppDbContext db, IAuditService audit) : ControllerB
         return Ok(new { sent, failed, message = $"Sent to {sent} device(s). {failed} failed/expired." });
     }
 
+    /// <summary>
+    /// Admin view of a user's entries: METADATA ONLY. We do NOT return
+    /// any of the user's writing — not title, not content, not preview,
+    /// not tags, not mood. Admin tooling sees only the dates, sources,
+    /// and counts needed to support account management (e.g. "they
+    /// have 47 entries since Jan 1"). Per the privacy promise: site
+    /// admins cannot view your entry content. This endpoint enforces
+    /// that promise at the API layer — there is no admin code path
+    /// that returns entry content fields. The May 2026 privacy pass
+    /// removed Preview + WordCount (both leaked plaintext of the
+    /// underlying content text).
+    /// </summary>
     [HttpGet("users/{id:guid}/entries")]
     public async Task<IActionResult> GetUserEntries(Guid id, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
     {
@@ -431,22 +443,12 @@ public class AdminController(AppDbContext db, IAuditService audit) : ControllerB
                 e.Id,
                 e.EntryDate,
                 e.CreatedAt,
-                e.ContentText,
-                Source = e.EntrySource.ToString()
+                Source = e.EntrySource.ToString(),
+                MediaCount = e.Media.Count(m => m.DeletedAt == null)
             })
             .ToListAsync();
 
-        var mapped = entries.Select(e => new
-        {
-            e.Id,
-            e.EntryDate,
-            e.CreatedAt,
-            Preview = e.ContentText.Length > 120 ? e.ContentText.Substring(0, 120) + "…" : e.ContentText,
-            WordCount = e.ContentText.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length,
-            e.Source
-        }).ToList();
-
-        return Ok(new { total, page, pageSize, entries = mapped });
+        return Ok(new { total, page, pageSize, entries });
     }
 }
 

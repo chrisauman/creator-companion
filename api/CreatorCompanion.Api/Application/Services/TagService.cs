@@ -6,19 +6,45 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CreatorCompanion.Api.Application.Services;
 
-public class TagService(AppDbContext db) : ITagService
+/// <summary>
+/// Tag CRUD on top of encrypted Tag.Name. Lookup-by-name is done
+/// against the deterministic NameHash column (not the encrypted
+/// blob, which has random nonces and can't be uniqued). Display
+/// always goes through DecryptString. Legacy plaintext Name rows
+/// from before the May 2026 migration are decrypted transparently
+/// (DecryptString returns as-is when not prefixed).
+/// </summary>
+public class TagService(AppDbContext db, IEntryEncryptor encryptor) : ITagService
 {
+    // Domain string for the per-purpose deterministic hash so a tag
+    // name and an entry title that happen to be the same plaintext
+    // produce different hashes.
+    private const string HashDomain = "tag:name";
+
     public async Task<List<TagResponse>> GetUserTagsAsync(Guid userId)
     {
-        return await db.Tags
+        var rows = await db.Tags
             .Where(t => t.UserId == userId)
-            .OrderBy(t => t.Name)
-            .Select(t => new TagResponse(
+            .Select(t => new
+            {
                 t.Id,
                 t.Name,
                 t.Color,
-                t.EntryTags.Count))
+                UsageCount = t.EntryTags.Count
+            })
             .ToListAsync();
+
+        // Decrypt + sort by plaintext name in-memory. Sort can't run
+        // server-side on an encrypted column, but tag counts per user
+        // are tiny (<50 typical) so this is fine.
+        return rows
+            .Select(t => new TagResponse(
+                t.Id,
+                encryptor.DecryptString(t.Name),
+                t.Color,
+                t.UsageCount))
+            .OrderBy(t => t.Name, StringComparer.Ordinal)
+            .ToList();
     }
 
     public async Task<TagResponse> CreateAsync(Guid userId, string name)
@@ -27,16 +53,21 @@ public class TagService(AppDbContext db) : ITagService
         if (string.IsNullOrEmpty(normalized))
             throw new InvalidOperationException("Tag name cannot be empty.");
 
-        var exists = await db.Tags
-            .AnyAsync(t => t.UserId == userId && t.Name == normalized);
+        var hash = encryptor.DeterministicHash(normalized, HashDomain);
+        var exists = await db.Tags.AnyAsync(t => t.UserId == userId && t.NameHash == hash);
         if (exists)
             throw new InvalidOperationException($"You already have a tag named \"{normalized}\".");
 
-        var tag = new Tag { UserId = userId, Name = normalized };
+        var tag = new Tag
+        {
+            UserId = userId,
+            Name = encryptor.EncryptString(normalized),
+            NameHash = hash
+        };
         db.Tags.Add(tag);
         await db.SaveChangesAsync();
 
-        return new TagResponse(tag.Id, tag.Name, tag.Color, 0);
+        return new TagResponse(tag.Id, normalized, tag.Color, 0);
     }
 
     public async Task<TagResponse> RenameAsync(Guid userId, Guid tagId, string newName)
@@ -49,16 +80,18 @@ public class TagService(AppDbContext db) : ITagService
         if (string.IsNullOrEmpty(normalized))
             throw new InvalidOperationException("Tag name cannot be empty.");
 
+        var newHash = encryptor.DeterministicHash(normalized, HashDomain);
         var conflict = await db.Tags
-            .AnyAsync(t => t.UserId == userId && t.Name == normalized && t.Id != tagId);
+            .AnyAsync(t => t.UserId == userId && t.NameHash == newHash && t.Id != tagId);
         if (conflict)
             throw new InvalidOperationException($"You already have a tag named \"{normalized}\".");
 
-        tag.Name = normalized;
+        tag.Name = encryptor.EncryptString(normalized);
+        tag.NameHash = newHash;
         await db.SaveChangesAsync();
 
         var usageCount = await db.EntryTags.CountAsync(et => et.TagId == tagId);
-        return new TagResponse(tag.Id, tag.Name, tag.Color, usageCount);
+        return new TagResponse(tag.Id, normalized, tag.Color, usageCount);
     }
 
     public async Task DeleteAsync(Guid userId, Guid tagId)
@@ -75,7 +108,6 @@ public class TagService(AppDbContext db) : ITagService
     public async Task<List<string>> SetEntryTagsAsync(
         Guid userId, Guid entryId, List<string> tagNames, int maxTags)
     {
-        // Normalize and deduplicate
         var normalized = tagNames
             .Select(Normalize)
             .Where(n => !string.IsNullOrEmpty(n))
@@ -86,21 +118,32 @@ public class TagService(AppDbContext db) : ITagService
             throw new InvalidOperationException(
                 $"You can add up to {maxTags} tags per entry on your current plan.");
 
-        // Get or create Tag records for each name
+        // Hash each plaintext to find existing tags. Hash lookup is
+        // server-side and fast (unique index on (UserId, NameHash)).
+        var hashes = normalized
+            .Select(n => encryptor.DeterministicHash(n, HashDomain))
+            .ToList();
+
         var existingTags = await db.Tags
-            .Where(t => t.UserId == userId && normalized.Contains(t.Name))
+            .Where(t => t.UserId == userId && hashes.Contains(t.NameHash))
             .ToListAsync();
+        var existingHashSet = existingTags.Select(t => t.NameHash).ToHashSet();
 
-        var existingNames = existingTags.Select(t => t.Name).ToHashSet();
-
-        foreach (var name in normalized.Where(n => !existingNames.Contains(n)))
+        // Create new tags for any plaintext that doesn't have a
+        // matching hash row yet.
+        for (var i = 0; i < normalized.Count; i++)
         {
-            var newTag = new Tag { UserId = userId, Name = name };
+            if (existingHashSet.Contains(hashes[i])) continue;
+            var newTag = new Tag
+            {
+                UserId = userId,
+                Name = encryptor.EncryptString(normalized[i]),
+                NameHash = hashes[i]
+            };
             db.Tags.Add(newTag);
             existingTags.Add(newTag);
         }
 
-        // Replace all EntryTags for this entry
         var current = await db.EntryTags
             .Where(et => et.EntryId == entryId)
             .ToListAsync();
@@ -115,11 +158,16 @@ public class TagService(AppDbContext db) : ITagService
 
     public async Task<List<string>> GetEntryTagNamesAsync(Guid entryId)
     {
-        return await db.EntryTags
+        // Pull encrypted names from DB, decrypt + sort client-side.
+        var encryptedNames = await db.EntryTags
             .Where(et => et.EntryId == entryId)
-            .OrderBy(et => et.Tag.Name)
             .Select(et => et.Tag.Name)
             .ToListAsync();
+
+        return encryptedNames
+            .Select(n => encryptor.DecryptString(n))
+            .OrderBy(n => n, StringComparer.Ordinal)
+            .ToList();
     }
 
     /// <summary>Lowercase, strip spaces.</summary>

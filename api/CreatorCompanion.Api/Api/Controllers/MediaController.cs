@@ -1,14 +1,23 @@
 using System.Security.Claims;
 using CreatorCompanion.Api.Application.Interfaces;
+using CreatorCompanion.Api.Application.Services;
+using CreatorCompanion.Api.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace CreatorCompanion.Api.Api.Controllers;
 
 [ApiController]
 [Route("v1/media")]
 [Authorize]
-public class MediaController(IMediaService mediaService, IWebHostEnvironment env) : ControllerBase
+public class MediaController(
+    IMediaService mediaService,
+    IWebHostEnvironment env,
+    AppDbContext db,
+    IStorageService storage,
+    IEntryEncryptor encryptor,
+    IMediaUrlSigner urlSigner) : ControllerBase
 {
     private Guid UserId => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)
         ?? User.FindFirstValue("sub")!);
@@ -40,6 +49,53 @@ public class MediaController(IMediaService mediaService, IWebHostEnvironment env
         {
             return NotFound(new { error = ex.Message });
         }
+    }
+
+    /// <summary>
+    /// Serve a decrypted image to the browser. The URL carries a
+    /// short-lived HMAC token (?t=...) in lieu of a JWT bearer header,
+    /// since &lt;img src&gt; requests don't include Authorization.
+    /// The token binds (mediaId, userId, expiry) — see MediaUrlSigner.
+    /// We fetch the ciphertext from storage, decrypt with the master
+    /// key, and stream the plaintext bytes back. Legacy plaintext
+    /// uploads from before the May 2026 encryption migration are
+    /// passed through unchanged (the magic-byte check on the blob
+    /// disambiguates encrypted from legacy).
+    /// </summary>
+    [HttpGet("{mediaId:guid}")]
+    [AllowAnonymous]
+    public async Task<IActionResult> Serve(Guid mediaId, [FromQuery(Name = "t")] string? token)
+    {
+        if (string.IsNullOrEmpty(token)) return Unauthorized();
+
+        var (ok, signedMediaId, signedUserId) = urlSigner.ValidateToken(token);
+        if (!ok || signedMediaId != mediaId) return Unauthorized();
+
+        var media = await db.EntryMedia
+            .Where(m => m.Id == mediaId && m.UserId == signedUserId && m.DeletedAt == null)
+            .Select(m => new { m.StoragePath, m.ContentType, m.FileName })
+            .FirstOrDefaultAsync();
+
+        if (media is null) return NotFound();
+
+        byte[] bytes;
+        try
+        {
+            var raw = await storage.ReadAllBytesAsync(media.StoragePath);
+            bytes = encryptor.DecryptBytes(raw); // transparent for legacy plaintext blobs
+        }
+        catch (Exception)
+        {
+            return NotFound();
+        }
+
+        // Decrypt the filename for the Content-Disposition header so
+        // a "Save image as…" preserves the original name. Browsers
+        // also use this for thumbnail tooltips on some platforms.
+        var plainFileName = encryptor.DecryptString(media.FileName);
+
+        Response.Headers.CacheControl = "private, max-age=86400"; // browser caches 24h
+        return File(bytes, media.ContentType, plainFileName);
     }
 
     // Serve local files in dev — replaced by CDN/Blob URLs in production.

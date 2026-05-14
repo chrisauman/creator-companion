@@ -32,4 +32,10 @@ public class LocalStorageService(IWebHostEnvironment env) : IStorageService
 
     public string GetUrl(string storagePath) =>
         $"/v1/media/file/{Uri.EscapeDataString(storagePath)}";
+
+    public async Task<byte[]> ReadAllBytesAsync(string storagePath)
+    {
+        var fullPath = Path.Combine(_basePath, storagePath);
+        return await File.ReadAllBytesAsync(fullPath);
+    }
 }

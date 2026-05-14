@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using CreatorCompanion.Api.Application.DTOs;
 using CreatorCompanion.Api.Application.Interfaces;
+using CreatorCompanion.Api.Application.Services;
 using CreatorCompanion.Api.Domain.Enums;
 using CreatorCompanion.Api.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
@@ -30,7 +31,8 @@ namespace CreatorCompanion.Api.Api.Controllers;
 [Authorize]
 public class FavoritesController(
     AppDbContext db,
-    IStorageService storage) : ControllerBase
+    IEntryEncryptor encryptor,
+    IMediaUrlSigner urlSigner) : ControllerBase
 {
     private const int DefaultTake = 25;
     private const int MaxTake     = 100;
@@ -170,6 +172,7 @@ public class FavoritesController(
             {
                 e.Id,
                 e.JournalId,
+                e.UserId,
                 e.EntryDate,
                 e.CreatedAt,
                 e.Title,
@@ -179,10 +182,12 @@ public class FavoritesController(
                 e.Mood,
                 e.IsFavorited,
                 MediaCount = e.Media.Count(m => m.DeletedAt == null),
-                FirstImagePath = e.Media
+                // MediaId (not StoragePath) — used to build a signed
+                // URL pointing at the authenticated decrypting endpoint.
+                FirstMediaId = e.Media
                     .Where(m => m.DeletedAt == null)
                     .OrderBy(m => m.CreatedAt)
-                    .Select(m => m.StoragePath)
+                    .Select(m => (Guid?)m.Id)
                     .FirstOrDefault()
             })
             .ToListAsync();
@@ -192,24 +197,34 @@ public class FavoritesController(
             .Select(et => new { et.EntryId, et.Tag.Name })
             .ToListAsync();
 
+        // Tag.Name is encrypted ciphertext after May 2026 — decrypt
+        // in memory before mapping into the response.
         var tagMap = tagData
             .GroupBy(t => t.EntryId)
-            .ToDictionary(g => g.Key, g => g.Select(t => t.Name).OrderBy(n => n).ToList());
+            .ToDictionary(
+                g => g.Key,
+                g => g.Select(t => encryptor.DecryptString(t.Name))
+                      .OrderBy(n => n)
+                      .ToList());
 
         return raw.ToDictionary(e => e.Id, e =>
         {
-            var preview = StripMarkdown(e.ContentText);
+            // Decrypt-on-read for favorited entries — same pattern as
+            // EntryService.GetListAsync. StripMarkdown needs plaintext.
+            var plainTitle   = encryptor.DecryptString(e.Title);
+            var plainContent = encryptor.DecryptString(e.ContentText);
+            var preview = StripMarkdown(plainContent);
             preview = preview.Length > 120 ? preview.Substring(0, 120) + "…" : preview;
             return new EntryListItem(
                 e.Id,
                 e.JournalId,
                 e.EntryDate,
                 e.CreatedAt,
-                e.Title,
+                plainTitle,
                 preview,
                 e.EntrySource,
                 e.MediaCount,
-                e.FirstImagePath != null ? storage.GetUrl(e.FirstImagePath) : null,
+                e.FirstMediaId.HasValue ? urlSigner.BuildSignedUrl(e.FirstMediaId.Value, e.UserId) : null,
                 e.DeletedAt,
                 e.Mood,
                 tagMap.TryGetValue(e.Id, out var t) ? t : new List<string>(),

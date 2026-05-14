@@ -226,13 +226,23 @@ import { AdminShellComponent } from './admin-shell.component';
             } @else if (entries().length === 0) {
               <p class="text-muted text-sm">No entries yet.</p>
             } @else {
+              <!-- Metadata-only entry list. The admin sees ONLY the
+                   date + source + image count. No title, no preview,
+                   no content. Per the privacy promise: site admins
+                   cannot view user entry content from the admin tools.
+                   This panel exists for account-management context
+                   (when a user logged, how many entries they have,
+                   whether they're a heavy or light user) — not for
+                   reading their writing. -->
               <div class="entries-list">
                 @for (e of entries(); track e.id) {
                   <div class="entry-row card">
                     <div class="entry-row__meta text-sm text-muted">
-                      {{ e.entryDate | date:'mediumDate' }} · {{ e.wordCount }} words · {{ e.source }}
+                      {{ e.entryDate | date:'mediumDate' }} · {{ e.source }}
+                      @if (e.mediaCount > 0) {
+                        · {{ e.mediaCount }} image{{ e.mediaCount === 1 ? '' : 's' }}
+                      }
                     </div>
-                    <p class="entry-row__preview text-sm">{{ e.preview }}</p>
                   </div>
                 }
               </div>

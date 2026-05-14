@@ -14,8 +14,15 @@ public class EntryService(
     IEntitlementService entitlements,
     IStreakService streak,
     IStorageService storage,
-    ITagService tags) : IEntryService
+    ITagService tags,
+    IEntryEncryptor encryptor,
+    IMediaUrlSigner urlSigner) : IEntryService
 {
+    // Domain-separation strings for the deterministic-hash helper —
+    // keeping these in one place makes it obvious which fields use
+    // which hash domain and prevents accidental cross-domain reuse.
+    private const string HashDomainTitle = "entry:title";
+    private const string HashDomainTag   = "tag:name";
     // Lock the HTML sanitizer down to an explicit allowlist rather than
     // relying on the default. Entry content is rendered as HTML in the
     // dashboard reader, view-entry, embedded reader, and the favorites
@@ -98,15 +105,24 @@ public class EntryService(
         }
 
         var isBackfill = request.EntryDate < today;
+
+        // Build the entry with PLAINTEXT title + sanitized content, then
+        // encrypt right before persisting. Sanitization MUST happen on
+        // plaintext (HtmlSanitizer wouldn't make sense on ciphertext);
+        // word-count enforcement above also operates on the request's
+        // plaintext, which is what we want.
+        var plainTitle = string.IsNullOrWhiteSpace(request.Title)
+            ? GenerateTitle(request.ContentText)
+            : request.Title.Trim();
+        var plainContent = SanitizeContent(request.ContentText);
+
         var entry = new Entry
         {
             UserId = userId,
             JournalId = request.JournalId,
             EntryDate = request.EntryDate,
-            Title = string.IsNullOrWhiteSpace(request.Title)
-                ? GenerateTitle(request.ContentText)
-                : request.Title.Trim(),
-            ContentText = SanitizeContent(request.ContentText),
+            Title       = encryptor.EncryptString(plainTitle),
+            ContentText = encryptor.EncryptString(plainContent),
             Mood = request.Mood,
             EntrySource = isBackfill ? EntrySource.Backfill : EntrySource.Direct,
             Metadata = request.Metadata ?? "{}"
@@ -189,10 +205,12 @@ public class EntryService(
         var user = await db.Users.FindAsync(userId)!;
         entitlements.EnforceWordLimit(user!, request.ContentText);
 
-        entry.Title = string.IsNullOrWhiteSpace(request.Title)
+        // Same plaintext-first-then-encrypt pattern as CreateAsync.
+        var plainTitleUpdate = string.IsNullOrWhiteSpace(request.Title)
             ? GenerateTitle(request.ContentText)
             : request.Title.Trim();
-        entry.ContentText = SanitizeContent(request.ContentText);
+        entry.Title       = encryptor.EncryptString(plainTitleUpdate);
+        entry.ContentText = encryptor.EncryptString(SanitizeContent(request.ContentText));
         if (request.Mood != null) entry.Mood = request.Mood;
         entry.Metadata = request.Metadata ?? entry.Metadata;
         entry.UpdatedAt = DateTime.UtcNow;
@@ -240,7 +258,14 @@ public class EntryService(
             query = query.Where(e => e.DeletedAt != null);
 
         if (tagName != null)
-            query = query.Where(e => e.EntryTags.Any(et => et.Tag.Name == tagName));
+        {
+            // Filter by tag NAME — Tag.Name is now ciphertext, so we
+            // can't equality-match against the encrypted column. Hash
+            // the plaintext using the same deterministic-hash function
+            // TagService uses on write, then match by NameHash.
+            var tagHash = encryptor.DeterministicHash(tagName, HashDomainTag);
+            query = query.Where(e => e.EntryTags.Any(et => et.Tag.NameHash == tagHash));
+        }
 
         var orderedQuery = query
             .OrderByDescending(e => e.EntryDate)
@@ -255,6 +280,7 @@ public class EntryService(
             {
                 e.Id,
                 e.JournalId,
+                e.UserId,
                 e.EntryDate,
                 e.CreatedAt,
                 e.Title,
@@ -264,15 +290,21 @@ public class EntryService(
                 e.Mood,
                 e.IsFavorited,
                 MediaCount = e.Media.Count(m => m.DeletedAt == null),
-                FirstImagePath = e.Media
+                // Take MediaId (not StoragePath) so we can build a
+                // signed URL pointing at the decrypting endpoint. The
+                // raw storage path is now ciphertext in R2 — useless
+                // to the browser directly.
+                FirstMediaId = e.Media
                     .Where(m => m.DeletedAt == null)
                     .OrderBy(m => m.CreatedAt)
-                    .Select(m => m.StoragePath)
+                    .Select(m => (Guid?)m.Id)
                     .FirstOrDefault()
             })
             .ToListAsync();
 
-        // Load all tags for these entries in one query
+        // Load all tags for these entries in one query. Names are
+        // encrypted ciphertext at this point — decrypt them in memory
+        // before mapping into the result.
         var entryIds = raw.Select(e => e.Id).ToList();
         var entryTagData = await db.EntryTags
             .Where(et => entryIds.Contains(et.EntryId))
@@ -281,21 +313,34 @@ public class EntryService(
 
         var tagMap = entryTagData
             .GroupBy(t => t.EntryId)
-            .ToDictionary(g => g.Key, g => g.Select(t => t.Name).OrderBy(n => n).ToList());
+            .ToDictionary(
+                g => g.Key,
+                g => g.Select(t => encryptor.DecryptString(t.Name))
+                      .OrderBy(n => n)
+                      .ToList());
 
+        // Decrypt title + content per row before generating the preview.
+        // The preview snippet (StripMarkdown + truncate) needs plaintext,
+        // so decrypt must happen first. Decryption is transparent for
+        // legacy plaintext rows (no encrypted prefix → returned as-is).
         return raw.Select(e => {
-            var preview = StripMarkdown(e.ContentText);
+            var plainTitle   = encryptor.DecryptString(e.Title);
+            var plainContent = encryptor.DecryptString(e.ContentText);
+            var preview = StripMarkdown(plainContent);
             preview = preview.Length > 120 ? preview.Substring(0, 120) + "…" : preview;
             return new EntryListItem(
             e.Id,
             e.JournalId,
             e.EntryDate,
             e.CreatedAt,
-            e.Title,
+            plainTitle,
             preview,
             e.EntrySource,
             e.MediaCount,
-            e.FirstImagePath != null ? storage.GetUrl(e.FirstImagePath) : null,
+            // Signed URL pointing at the authenticated decrypting
+            // endpoint, so the entries list's thumbnails work without
+            // an Authorization header on the <img> request.
+            e.FirstMediaId.HasValue ? urlSigner.BuildSignedUrl(e.FirstMediaId.Value, e.UserId) : null,
             e.DeletedAt,
             e.Mood,
             tagMap.TryGetValue(e.Id, out var t) ? t : [],
@@ -502,22 +547,32 @@ public class EntryService(
             .Select(m => new { m.Id, m.FileName, m.ContentType, m.FileSizeBytes, m.TakenAt, m.StoragePath })
             .ToListAsync();
 
+        // Decrypt-on-read. Decrypt is transparent for legacy plaintext
+        // rows (returns as-is when the encrypted prefix isn't present),
+        // so this is safe even before the bulk-encryption migration
+        // job has run.
         return new EntryResponse(
             entry.Id,
             entry.JournalId,
             entry.EntryDate,
             entry.CreatedAt,
             entry.UpdatedAt,
-            entry.Title,
-            entry.ContentText,
+            encryptor.DecryptString(entry.Title),
+            encryptor.DecryptString(entry.ContentText),
             entry.Mood,
             entry.IsFavorited,
             entry.EntrySource,
             entry.Visibility,
             entry.Metadata,
+            // Decrypted filename + signed image URL. The URL routes
+            // through the authenticated /v1/media/{id} endpoint which
+            // fetches ciphertext from storage, decrypts, and serves
+            // plaintext bytes. We don't expose the raw R2 URL anymore.
             media.Select(m => new MediaSummary(
-                m.Id, m.FileName, m.ContentType, m.FileSizeBytes, m.TakenAt,
-                storage.GetUrl(m.StoragePath)
+                m.Id,
+                encryptor.DecryptString(m.FileName),
+                m.ContentType, m.FileSizeBytes, m.TakenAt,
+                urlSigner.BuildSignedUrl(m.Id, entry.UserId)
             )).ToList(),
             tagNames);
     }

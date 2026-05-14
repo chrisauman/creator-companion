@@ -20,6 +20,7 @@ public class AuthServiceTests
         public Task SendAccountDeletionConfirmationAsync(string toEmail, string displayName) => Task.CompletedTask;
         public Task SendTrialEndingSoonAsync(string toEmail, string displayName, int daysLeft) => Task.CompletedTask;
         public Task SendTrialEndedAsync(string toEmail, string displayName) => Task.CompletedTask;
+        public Task SendSubstackPostFailedAsync(string toEmail, int? statusCode, string errorMessage, string? errorBody, bool isCookieExpired) => Task.CompletedTask;
     }
 
     private sealed class NullAuditService : IAuditService
@@ -33,6 +34,7 @@ public class AuthServiceTests
             Task.FromResult($"stub/{Guid.NewGuid()}_{fileName}");
         public Task DeleteAsync(string storagePath) => Task.CompletedTask;
         public string GetUrl(string storagePath) => $"https://stub/{storagePath}";
+        public Task<byte[]> ReadAllBytesAsync(string storagePath) => Task.FromResult(Array.Empty<byte>());
     }
 
     private static AuthService Build(AppDbContext db)
@@ -47,7 +49,8 @@ public class AuthServiceTests
                 ["Jwt:RefreshExpiryDays"] = "30"
             })
             .Build();
-        return new AuthService(db, config, new NullEmailService(), new NullAuditService(), new NullStorageService());
+        return new AuthService(db, config, new NullEmailService(), new NullAuditService(), new NullStorageService(),
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<AuthService>.Instance);
     }
 
     private static RegisterRequest NewRegister(
