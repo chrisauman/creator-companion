@@ -605,11 +605,11 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
       margin: 0 0 .5rem;
       width: 100%;
     }
-    /* Desktop-first sizing (matches the embedded entry-reader's
-       column-3 eyebrow exactly — .6875rem in --color-accent, mood at
-       .75rem). Mobile overrides via max-width media-query down below.
-       Inverting the default removes any specificity ambiguity vs. the
-       prior min-width override approach. */
+    /* One sizing for all viewports — matches the embedded entry-reader's
+       column-3 eyebrow exactly (.6875rem in --color-accent, mood at
+       .75rem). Mobile no longer gets a larger bump; the user prefers
+       consistency between the journal entry page (mobile standalone)
+       and the dashboard entry reader (desktop embedded). */
     .reading__date {
       font-size: .6875rem;
       font-weight: 700;
@@ -627,17 +627,6 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
       color: var(--color-text-2);
     }
     .reading__mood app-mood-icon { color: var(--color-text-3); }
-    /* Mobile bump — the larger .875rem eyebrow reads better in a
-       full-screen column than the tighter .6875rem column-3 size. */
-    @media (max-width: 767px) {
-      .reading__date {
-        font-size: .875rem;
-        color: var(--color-accent-dark);
-      }
-      .reading__mood {
-        font-size: .875rem;
-      }
-    }
 
     .reading-style {
       max-width: 760px;

@@ -291,11 +291,11 @@ import { MoodIconComponent } from '../../../shared/mood-icon/mood-icon.component
 
     /* ── Entry typography ────────────────────────────────────────── */
     /* Meta row above the title acts as the date eyebrow for the
-       headline. Mood gets margin-left:auto so it pushes flush to
-       the right edge — matches the May 2026 mock. justify-content
-       space-between would also work, but margin-left:auto keeps the
-       behaviour correct when there's no mood (the row collapses
-       gracefully rather than centering the lone date). */
+       headline. Sizing matches the dashboard's embedded entry-reader
+       so the standalone /entry/:id page and the in-column view read
+       the same on every breakpoint. Belt-and-suspenders right-align:
+       justify-content space-between on the row + margin-left:auto on
+       the mood. */
     .entry-meta {
       display: flex;
       align-items: center;
@@ -303,20 +303,21 @@ import { MoodIconComponent } from '../../../shared/mood-icon/mood-icon.component
       gap: .875rem;
       margin: 0 0 .5rem;
       flex-wrap: wrap;
+      width: 100%;
     }
     .entry-meta__date {
-      font-size: .875rem;
+      font-size: .6875rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: .14em;
-      color: var(--color-accent-dark);
+      color: var(--color-accent);
     }
     .entry-meta__mood {
       margin-left: auto;
       display: inline-flex;
       align-items: center;
       gap: .375rem;
-      font-size: .875rem;
+      font-size: .75rem;
       font-weight: 500;
       color: var(--color-text-2);
     }
