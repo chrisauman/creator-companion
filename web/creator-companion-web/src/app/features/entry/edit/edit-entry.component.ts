@@ -46,9 +46,11 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
              + favorite heart. -->
         <div class="reader-top">
           <div class="reader-top__inner">
-            <div class="reader-top__breadcrumb">
-              {{ monthYearLabel() }} · <strong>{{ weekdayDayLabel() }}</strong>
-            </div>
+            <!-- Empty breadcrumb slot — the date is shown ONCE on the
+                 page, in the meta row above the title below. Keeping a
+                 named element with flex:1 so the right-side actions
+                 stay anchored to the right edge regardless. -->
+            <div class="reader-top__breadcrumb"></div>
             <!-- Toolbar holds the heart only (right-aligned) — Save
                  lives at the bottom of the form, mirroring where Edit
                  sits on the read view. -->
@@ -597,6 +599,7 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
     .reading__date-row {
       display: flex;
       align-items: center;
+      justify-content: space-between;
       gap: .875rem;
       flex-wrap: wrap;
       margin: 0 0 .5rem;
