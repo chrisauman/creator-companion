@@ -72,10 +72,10 @@ import { MoodIconComponent } from '../../../shared/mood-icon/mood-icon.component
         @if (!loading() && entry()) {
           <article class="entry-card">
 
-            <!-- Title -->
-            <h1 class="entry-title">{{ entry()!.title }}</h1>
-
-            <!-- Meta row: date + mood -->
+            <!-- Meta row first: date eyebrow on the left, mood pushed
+                 right. Title sits below. This ordering mirrors the
+                 reader pattern requested in the May 2026 design pass —
+                 the date acts as a label above the headline. -->
             <div class="entry-meta">
               <span class="entry-meta__date">{{ entryDateLabel() }}</span>
               @if (entry()!.mood) {
@@ -85,6 +85,9 @@ import { MoodIconComponent } from '../../../shared/mood-icon/mood-icon.component
                 </span>
               }
             </div>
+
+            <!-- Title -->
+            <h1 class="entry-title">{{ entry()!.title }}</h1>
 
             <!-- Backfill notice -->
             @if (entry()!.entrySource === 1) {
@@ -287,21 +290,42 @@ import { MoodIconComponent } from '../../../shared/mood-icon/mood-icon.component
     }
 
     /* ── Entry typography ────────────────────────────────────────── */
+    /* Meta row above the title acts as the date eyebrow for the
+       headline. Mood gets margin-left:auto so it pushes flush to
+       the right edge — matches the May 2026 mock. justify-content
+       space-between would also work, but margin-left:auto keeps the
+       behaviour correct when there's no mood (the row collapses
+       gracefully rather than centering the lone date). */
+    .entry-meta {
+      display: flex;
+      align-items: center;
+      gap: .875rem;
+      margin: 0 0 .5rem;
+      flex-wrap: wrap;
+    }
+    .entry-meta__date {
+      font-size: .875rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .14em;
+      color: var(--color-accent-dark);
+    }
+    .entry-meta__mood {
+      margin-left: auto;
+      display: inline-flex;
+      align-items: center;
+      gap: .375rem;
+      font-size: .875rem;
+      font-weight: 500;
+      color: var(--color-text-2);
+    }
+    .entry-meta__mood app-mood-icon { color: var(--color-text-3); }
+    /* Title sits below the meta row. Margin-bottom drives the gap to
+       the rest of the article body. */
     .entry-title {
       font-size: clamp(1.375rem, 5vw, 2rem);
       font-weight: 800; line-height: 1.2;
-      color: var(--color-text); margin: 0 0 .875rem;
-    }
-    .entry-meta {
-      display: flex; align-items: center; gap: .875rem;
-      margin-bottom: 1.75rem; flex-wrap: wrap;
-    }
-    .entry-meta__date { font-size: .875rem; color: var(--color-text-3); font-weight: 500; }
-    .entry-meta__mood {
-      font-size: .875rem; font-weight: 500; color: var(--color-text-2);
-      background: var(--color-surface-2); border: 1px solid var(--color-border);
-      padding: .2rem .65rem; border-radius: 100px;
-      display: flex; align-items: center; gap: .3rem;
+      color: var(--color-text); margin: 0 0 1.75rem;
     }
     .entry-backfill-notice {
       font-size: .8125rem; color: var(--color-text-3);

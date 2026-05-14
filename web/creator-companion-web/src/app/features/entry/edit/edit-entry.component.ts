@@ -88,11 +88,19 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
         @if (!loading()) {
           <div class="editor-form reading-style">
 
-            <!-- Title first, then meta row (date + mood) — mirrors the
-                 view-entry layout exactly so the read/edit transition
-                 feels like the same surface. Previously the date row
-                 sat ABOVE the title, which made edit look noticeably
-                 different from the reader for no good reason. -->
+            <!-- Meta row above the title (date eyebrow + right-aligned
+                 mood). Mirrors the reader so read ↔ edit feels like
+                 the same surface. -->
+            <div class="reading__date-row">
+              <span class="reading__date">{{ readerDateLabel() }}</span>
+              @if (selectedMood()) {
+                <span class="reading__mood">
+                  <app-mood-icon [mood]="selectedMood()" [size]="14"></app-mood-icon>
+                  {{ selectedMood() }}
+                </span>
+              }
+            </div>
+
             <!-- Title (visually-hidden label for screen readers) -->
             <label for="edit-entry-title-input" class="sr-only">Entry title</label>
             <input
@@ -105,17 +113,6 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
               maxlength="150"
               [disabled]="saving()"
             />
-
-            <!-- Meta row: full-date label + mood pill (matches reader). -->
-            <div class="reading__date-row">
-              <span class="reading__date">{{ readerDateLabel() }}</span>
-              @if (selectedMood()) {
-                <span class="reading__mood">
-                  <app-mood-icon [mood]="selectedMood()" [size]="14"></app-mood-icon>
-                  {{ selectedMood() }}
-                </span>
-              }
-            </div>
 
             <!-- Formatting toolbar (paid) or lock nudge (free) -->
             @if (canFormatText()) {
@@ -593,35 +590,32 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
       cursor: not-allowed;
     }
 
-    /* ── Meta row + mood pill (matches view-entry's .entry-meta) ──
-       Visual styling lifted from view-entry so read and edit modes are
-       visually identical: date in muted grey at body size, mood as a
-       small surface pill. Previously the date was rendered as an
-       uppercase cyan eyebrow + creation time, which read as a
-       different page even though it was the same entry. */
+    /* ── Meta row above the title (matches view-entry's .entry-meta)
+       Date eyebrow on the left in uppercase cyan; mood pushed to the
+       right edge via margin-left: auto. Identical to the reader's
+       .entry-meta so read/edit feels like the same surface. */
     .reading__date-row {
       display: flex;
       align-items: center;
       gap: .875rem;
       flex-wrap: wrap;
-      margin-bottom: 1.75rem;
+      margin: 0 0 .5rem;
     }
     .reading__date {
       font-size: .875rem;
-      color: var(--color-text-3);
-      font-weight: 500;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .14em;
+      color: var(--color-accent-dark);
     }
     .reading__mood {
+      margin-left: auto;
       display: inline-flex;
       align-items: center;
-      gap: .3rem;
+      gap: .375rem;
       font-size: .875rem;
       font-weight: 500;
       color: var(--color-text-2);
-      background: var(--color-surface-2);
-      border: 1px solid var(--color-border);
-      padding: .2rem .65rem;
-      border-radius: 100px;
     }
     .reading__mood app-mood-icon { color: var(--color-text-3); }
 
@@ -1068,12 +1062,11 @@ export class EditEntryComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * "Wednesday, May 13, 2026" — matches view-entry's entryDateLabel
-   * exactly so the meta row below the title reads identically in
-   * read and edit modes. Previously this returned "WEDNESDAY · 8:54 PM"
-   * (eyebrow caps + creation time), which made the two surfaces feel
-   * disjointed and was the "multiple dates" pain point from the May
-   * 2026 screenshot pass.
+   * "Wednesday, May 13, 2026" — same string view-entry's
+   * entryDateLabel returns. CSS upper-cases it into the eyebrow
+   * style so we don't have to deal with locale issues from
+   * .toUpperCase() in JS (locale-aware uppercasing is broken for
+   * some languages, e.g. Turkish dotless i).
    */
   readerDateLabel(): string {
     if (!this.entry()) return '';
