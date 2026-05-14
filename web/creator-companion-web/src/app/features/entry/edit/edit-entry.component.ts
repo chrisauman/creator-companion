@@ -604,6 +604,12 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
       flex-wrap: wrap;
       margin: 0 0 .5rem;
     }
+    /* Mobile uses the larger eyebrow (.875rem) per the standalone
+       view-entry pattern. Desktop drops to .6875rem to match the
+       embedded entry-reader's column-3 eyebrow treatment — the same
+       size used by Daily Spark / Daily Prompt headers. The two are
+       sized differently because column-3 has narrower content width
+       on desktop and the larger size felt over-emphasised there. */
     .reading__date {
       font-size: .875rem;
       font-weight: 700;
@@ -621,6 +627,15 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
       color: var(--color-text-2);
     }
     .reading__mood app-mood-icon { color: var(--color-text-3); }
+    @media (min-width: 768px) {
+      .reading__date {
+        font-size: .6875rem;
+        color: var(--color-accent);
+      }
+      .reading__mood {
+        font-size: .75rem;
+      }
+    }
 
     .reading-style {
       max-width: 760px;

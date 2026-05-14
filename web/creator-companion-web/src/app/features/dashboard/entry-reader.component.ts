@@ -280,9 +280,14 @@ import { MoodIconComponent } from '../../shared/mood-icon/mood-icon.component';
       padding: .75rem 2.5rem 4rem;
       box-sizing: border-box;
     }
+    /* justify-content: space-between anchors the date to the left
+       edge and the mood pill to the right edge of the article width.
+       Matches the desktop view-entry layout where mood is flush right
+       — without this both items packed to the left, looking off-balance. */
     .reading__date-row {
       display: flex;
       align-items: center;
+      justify-content: space-between;
       gap: 1rem;
       flex-wrap: wrap;
       margin-bottom: 1rem;
