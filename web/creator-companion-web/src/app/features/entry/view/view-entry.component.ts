@@ -33,9 +33,13 @@ import { MoodIconComponent } from '../../../shared/mood-icon/mood-icon.component
             Back
           </a>
           @if (entry()) {
-            <div class="reader-top__breadcrumb">
-              {{ monthYearLabel() }} · <strong>{{ weekdayDayLabel() }}</strong>
-            </div>
+            <!-- Breadcrumb intentionally empty — the entry's full date
+                 lives below in the cyan meta row above the title.
+                 Showing it here too duplicated the date in two colours
+                 on the same screen. Same treatment as edit-entry's
+                 top bar. The empty div keeps flex:1 so the heart
+                 stays anchored to the right edge. -->
+            <div class="reader-top__breadcrumb"></div>
             <div class="reader-top__actions">
               <!-- Top reader bar carries only the favorite toggle — Edit
                    lives at the bottom of the entry to match the embedded
