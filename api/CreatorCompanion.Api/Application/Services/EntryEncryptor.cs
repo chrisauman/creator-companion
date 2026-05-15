@@ -157,13 +157,21 @@ public class EntryEncryptor : IEntryEncryptor
         if (string.IsNullOrEmpty(plaintext)) return plaintext ?? string.Empty;
         if (IsEncrypted(plaintext)) return plaintext; // idempotent — already wrapped
 
-        var key = RequireKey();
+        // Legacy fallback: when Entry:EncryptionKey isn't set, write paths
+        // store plaintext (same on-disk shape as before the May 2026
+        // encryption rollout). The ContentEncryptionMigrator picks these
+        // rows up on the next startup after a key is configured and
+        // re-writes them as ciphertext. Throwing here instead would break
+        // every write the moment the encryption code deploys before the
+        // env var lands — exactly the rollout gap we hit.
+        if (_key is null) return plaintext;
+
         var nonce = RandomNumberGenerator.GetBytes(NonceLen);
         var plainBytes = Encoding.UTF8.GetBytes(plaintext);
         var cipher = new byte[plainBytes.Length];
         var tag = new byte[TagLen];
 
-        using var gcm = new AesGcm(key, TagLen);
+        using var gcm = new AesGcm(_key, TagLen);
         gcm.Encrypt(nonce, plainBytes, cipher, tag);
 
         var packed = new byte[nonce.Length + cipher.Length + tag.Length];
@@ -204,12 +212,16 @@ public class EntryEncryptor : IEntryEncryptor
         if (plaintext.Length == 0) return plaintext;
         if (IsEncryptedBytes(plaintext)) return plaintext;
 
-        var key = RequireKey();
+        // Same legacy fallback as EncryptString: when the key isn't
+        // set, store raw bytes. ContentEncryptionMigrator backfills
+        // ciphertext after the key is configured.
+        if (_key is null) return plaintext;
+
         var nonce = RandomNumberGenerator.GetBytes(NonceLen);
         var cipher = new byte[plaintext.Length];
         var tag = new byte[TagLen];
 
-        using var gcm = new AesGcm(key, TagLen);
+        using var gcm = new AesGcm(_key, TagLen);
         gcm.Encrypt(nonce, plaintext, cipher, tag);
 
         // 0x01 magic + nonce + cipher + tag
@@ -251,10 +263,22 @@ public class EntryEncryptor : IEntryEncryptor
         // contexts (tag name + entry title, say) produces different
         // hashes. Without server access an attacker has only opaque
         // base64; with server access they have everything anyway.
-        var key = RequireKey();
+        //
+        // Legacy fallback: when the key isn't configured we fall back
+        // to a plain SHA-256 over the same material so the column stays
+        // stable, bounded, and uniqueness still works. The
+        // ContentEncryptionMigrator re-hashes everything with HMAC once
+        // the key is set, so the legacy-mode hashes are transient.
         var normalised = input.Trim().ToLowerInvariant();
         var material = Encoding.UTF8.GetBytes(purpose + ":" + normalised);
-        using var hmac = new HMACSHA256(key);
+
+        if (_key is null)
+        {
+            using var sha = SHA256.Create();
+            return Convert.ToBase64String(sha.ComputeHash(material));
+        }
+
+        using var hmac = new HMACSHA256(_key);
         var hash = hmac.ComputeHash(material);
         return Convert.ToBase64String(hash);
     }
