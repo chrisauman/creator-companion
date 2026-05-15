@@ -1,6 +1,8 @@
-import { Component, EventEmitter, Output, OnInit, input, inject, signal, computed } from '@angular/core';
+import { Component, DestroyRef, EventEmitter, Output, OnInit, input, inject, signal, computed } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../core/services/api.service';
+import { StreakRefreshService } from '../../core/services/streak-refresh.service';
 import { StreakStats } from '../../core/models/models';
 
 /**
@@ -164,6 +166,8 @@ import { StreakStats } from '../../core/models/models';
 })
 export class DailyReminderCardComponent implements OnInit {
   private api = inject(ApiService);
+  private streakRefresh = inject(StreakRefreshService);
+  private destroyRef = inject(DestroyRef);
 
   /** True when running under `?preview=daily-reminder`. Forces visibility,
    *  ignoring real streak state. */
@@ -210,11 +214,21 @@ export class DailyReminderCardComponent implements OnInit {
 
   ngOnInit(): void {
     if (!this.preview()) {
-      this.api.getStreak().subscribe({
-        next: s => this.stats.set(s),
-        error: () => {}
-      });
+      this.loadStats();
+      // Refetch on each entry mutation so logging today's entry hides
+      // this card immediately, and so a backfill rolls the streak math
+      // forward without a reload.
+      this.streakRefresh.events$
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe(() => this.loadStats());
     }
+  }
+
+  private loadStats(): void {
+    this.api.getStreak().subscribe({
+      next: s => this.stats.set(s),
+      error: () => {}
+    });
   }
 
   onWriteToday(): void {

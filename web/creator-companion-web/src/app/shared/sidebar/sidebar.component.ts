@@ -1,4 +1,5 @@
-import { Component, Input, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, DestroyRef, Input, OnInit, inject, signal, computed } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
@@ -8,6 +9,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { ViewportService } from '../../core/services/viewport.service';
 import { StreakStats } from '../../core/models/models';
 import { SidebarStateService } from './sidebar-state.service';
+import { StreakRefreshService } from '../../core/services/streak-refresh.service';
 import { TierIconComponent } from '../tier-icon/tier-icon.component';
 import { getMilestoneProgress, MilestoneProgress } from '../../core/constants/milestones';
 
@@ -881,6 +883,8 @@ export class SidebarComponent implements OnInit {
   private auth     = inject(AuthService);
   private router   = inject(Router);
   private drawer   = inject(SidebarStateService);
+  private streakRefresh = inject(StreakRefreshService);
+  private destroyRef    = inject(DestroyRef);
 
   /** Mobile-drawer state — read from the shared service. */
   mobileOpen = this.drawer.mobileOpen;
@@ -1059,11 +1063,15 @@ export class SidebarComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.api.getStreak().subscribe({
-      next: s => this.streak.set(s),
-      error: () => this.streak.set({ currentStreak: 0, longestStreak: 0, totalEntries: 0,
-        totalMediaCount: 0, totalActiveDays: 0, isPaused: false, pauseDaysUsedThisMonth: 0 })
-    });
+    this.loadStreak();
+
+    // Refetch the sidebar streak number whenever any entry mutation
+    // anywhere in the app fires the streak-refresh pulse (compose save,
+    // edit save, edit delete). Keeps the "Best N" / current streak
+    // numbers honest without a page reload after a backfill.
+    this.streakRefresh.events$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.loadStreak());
 
     // Show the Favorites link only if the user has saved at least one
     // item — sparks OR entries. Uses the unified endpoint with take=1
@@ -1085,5 +1093,13 @@ export class SidebarComponent implements OnInit {
     if (typeof window !== 'undefined') {
       window.addEventListener('resize', () => this.viewportWidth.set(window.innerWidth));
     }
+  }
+
+  private loadStreak(): void {
+    this.api.getStreak().subscribe({
+      next: s => this.streak.set(s),
+      error: () => this.streak.set({ currentStreak: 0, longestStreak: 0, totalEntries: 0,
+        totalMediaCount: 0, totalActiveDays: 0, isPaused: false, pauseDaysUsedThisMonth: 0 })
+    });
   }
 }

@@ -13,6 +13,7 @@ import { MILESTONES, getMilestoneIndex, Milestone } from '../../core/constants/m
 import { PushService } from '../../core/services/push.service';
 import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
 import { SidebarStateService } from '../../shared/sidebar/sidebar-state.service';
+import { StreakRefreshService } from '../../core/services/streak-refresh.service';
 import { MobileHeaderComponent } from '../../shared/mobile-header/mobile-header.component';
 import { MoodIconComponent } from '../../shared/mood-icon/mood-icon.component';
 import { TodayPanelComponent } from './today-panel.component';
@@ -1127,6 +1128,7 @@ export class DashboardComponent implements OnInit {
   private router = inject(Router);
   private route  = inject(ActivatedRoute);
   sidebarState   = inject(SidebarStateService);
+  private streakRefresh = inject(StreakRefreshService);
   private destroyRef = inject(DestroyRef);
 
   isAdmin = this.tokens.isAdmin.bind(this.tokens);
@@ -1363,10 +1365,16 @@ export class DashboardComponent implements OnInit {
       if (this.loading()) this.loading.set(false);
     }, 20000);
 
-    this.api.getStreak().subscribe({
-      next: s => { this.streak.set(s); this.checkMilestoneCelebration(s.currentStreak); },
-      error: () => this.streak.set({ currentStreak: 0, longestStreak: 0, totalEntries: 0, totalMediaCount: 0, totalActiveDays: 0, isPaused: false, pauseDaysUsedThisMonth: 0 })
-    });
+    this.loadStreak();
+
+    // Listen for the app-wide "streak may have changed" pulse fired
+    // by entry mutations (compose save / edit save / edit delete).
+    // Without this, a backfill that revives the streak leaves the
+    // sidebar / urgency cards / milestone-celebration logic stuck
+    // on stale data until the user manually reloads.
+    this.streakRefresh.events$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.loadStreak());
 
     this.api.getTodayMotivation().subscribe({
       next: m => this.motivation.set(m),
@@ -1794,6 +1802,10 @@ export class DashboardComponent implements OnInit {
     this.rightColumnMode.set('today');
     this.scrollRightColumnToTop();
     this.refreshEntries();
+    // Fans out to sidebar / threatened banner / daily-reminder card / our
+    // own streak signal so a successful backfill immediately reflects in
+    // the streak number and hides the urgency cards.
+    this.streakRefresh.notify();
   }
 
   /** Called when the embedded EditEntryComponent emits `saved`. Reload the
@@ -1808,6 +1820,7 @@ export class DashboardComponent implements OnInit {
     }
     this.rightColumnMode.set('reading');
     this.refreshEntries();
+    this.streakRefresh.notify();
   }
 
   /** Called when the embedded EditEntryComponent emits `deleted`. Drop back
@@ -1818,11 +1831,22 @@ export class DashboardComponent implements OnInit {
     this.rightColumnMode.set('today');
     this.scrollRightColumnToTop();
     this.refreshEntries();
+    this.streakRefresh.notify();
   }
 
   /** Cancel from edit goes back to reading the same entry. */
   returnToReading(): void {
     this.rightColumnMode.set('reading');
+  }
+
+  /** Refetches /streak into the dashboard's signal. Pulled out so the
+   *  initial load and the post-mutation refresh both go through one path. */
+  private loadStreak(): void {
+    this.api.getStreak().subscribe({
+      next: s => { this.streak.set(s); this.checkMilestoneCelebration(s.currentStreak); },
+      error: () => this.streak.set({ currentStreak: 0, longestStreak: 0, totalEntries: 0,
+        totalMediaCount: 0, totalActiveDays: 0, isPaused: false, pauseDaysUsedThisMonth: 0 })
+    });
   }
 
   /** Reload the visible entry list so newly saved entries appear immediately. */
