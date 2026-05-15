@@ -31,6 +31,7 @@ namespace CreatorCompanion.Api.Api.Controllers;
 [Authorize]
 public class FavoritesController(
     AppDbContext db,
+    IStorageService storage,
     IEntryEncryptor encryptor,
     IMediaUrlSigner urlSigner) : ControllerBase
 {
@@ -182,12 +183,18 @@ public class FavoritesController(
                 e.Mood,
                 e.IsFavorited,
                 MediaCount = e.Media.Count(m => m.DeletedAt == null),
-                // MediaId (not StoragePath) — used to build a signed
-                // URL pointing at the authenticated decrypting endpoint.
+                // Both MediaId AND StoragePath so we can pick the
+                // right image URL strategy (signed when key configured,
+                // direct legacy URL when not — see BuildMediaUrl).
                 FirstMediaId = e.Media
                     .Where(m => m.DeletedAt == null)
                     .OrderBy(m => m.CreatedAt)
                     .Select(m => (Guid?)m.Id)
+                    .FirstOrDefault(),
+                FirstMediaPath = e.Media
+                    .Where(m => m.DeletedAt == null)
+                    .OrderBy(m => m.CreatedAt)
+                    .Select(m => m.StoragePath)
                     .FirstOrDefault()
             })
             .ToListAsync();
@@ -224,7 +231,14 @@ public class FavoritesController(
                 preview,
                 e.EntrySource,
                 e.MediaCount,
-                e.FirstMediaId.HasValue ? urlSigner.BuildSignedUrl(e.FirstMediaId.Value, e.UserId) : null,
+                // Signed URL when encryption is configured, direct
+                // storage URL fallback when not (matches EntryService's
+                // BuildMediaUrl helper).
+                e.FirstMediaId.HasValue && e.FirstMediaPath is not null
+                    ? (encryptor.IsConfigured
+                        ? urlSigner.BuildSignedUrl(e.FirstMediaId.Value, e.UserId)
+                        : storage.GetUrl(e.FirstMediaPath))
+                    : null,
                 e.DeletedAt,
                 e.Mood,
                 tagMap.TryGetValue(e.Id, out var t) ? t : new List<string>(),

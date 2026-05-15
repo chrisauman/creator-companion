@@ -290,14 +290,21 @@ public class EntryService(
                 e.Mood,
                 e.IsFavorited,
                 MediaCount = e.Media.Count(m => m.DeletedAt == null),
-                // Take MediaId (not StoragePath) so we can build a
-                // signed URL pointing at the decrypting endpoint. The
-                // raw storage path is now ciphertext in R2 — useless
-                // to the browser directly.
+                // Take BOTH MediaId and StoragePath so we can pick the
+                // right URL strategy at materialization time:
+                //   - encryption configured: signed URL through the
+                //     decrypting endpoint
+                //   - encryption NOT configured: direct storage URL
+                //     (legacy plaintext blobs still served as before)
                 FirstMediaId = e.Media
                     .Where(m => m.DeletedAt == null)
                     .OrderBy(m => m.CreatedAt)
                     .Select(m => (Guid?)m.Id)
+                    .FirstOrDefault(),
+                FirstMediaPath = e.Media
+                    .Where(m => m.DeletedAt == null)
+                    .OrderBy(m => m.CreatedAt)
+                    .Select(m => m.StoragePath)
                     .FirstOrDefault()
             })
             .ToListAsync();
@@ -337,10 +344,13 @@ public class EntryService(
             preview,
             e.EntrySource,
             e.MediaCount,
-            // Signed URL pointing at the authenticated decrypting
-            // endpoint, so the entries list's thumbnails work without
-            // an Authorization header on the <img> request.
-            e.FirstMediaId.HasValue ? urlSigner.BuildSignedUrl(e.FirstMediaId.Value, e.UserId) : null,
+            // Image URL: signed URL through the decrypting endpoint
+            // when encryption is configured, otherwise the legacy
+            // direct storage URL. This keeps the entries page loading
+            // for users who deployed the encryption code but haven't
+            // set Entry:EncryptionKey yet (blobs are still plaintext
+            // in storage in that case).
+            BuildMediaUrl(e.FirstMediaId, e.FirstMediaPath, e.UserId),
             e.DeletedAt,
             e.Mood,
             tagMap.TryGetValue(e.Id, out var t) ? t : [],
@@ -371,6 +381,24 @@ public class EntryService(
         return cut > 0
             ? plain.Substring(0, cut) + "…"
             : plain.Substring(0, 60) + "…";
+    }
+
+    /// <summary>
+    /// Pick the right image URL strategy. When encryption is
+    /// configured we route through the authenticated decrypting
+    /// endpoint via a signed URL — required because R2 blobs are
+    /// ciphertext. When NOT configured (legacy mode, key not yet
+    /// set on Railway), fall back to the direct storage URL so
+    /// existing plaintext blobs continue to display normally. This
+    /// graceful fallback prevents the entries list from breaking
+    /// during the rollout window between deploying the encryption
+    /// code and setting the env var.
+    /// </summary>
+    private string? BuildMediaUrl(Guid? mediaId, string? storagePath, Guid userId)
+    {
+        if (!mediaId.HasValue || storagePath is null) return null;
+        if (!encryptor.IsConfigured) return storage.GetUrl(storagePath);
+        return urlSigner.BuildSignedUrl(mediaId.Value, userId);
     }
 
     private static string StripMarkdown(string text)
@@ -564,15 +592,14 @@ public class EntryService(
             entry.EntrySource,
             entry.Visibility,
             entry.Metadata,
-            // Decrypted filename + signed image URL. The URL routes
-            // through the authenticated /v1/media/{id} endpoint which
-            // fetches ciphertext from storage, decrypts, and serves
-            // plaintext bytes. We don't expose the raw R2 URL anymore.
+            // Decrypted filename + image URL via the same routing
+            // helper used elsewhere (signed URL when encryption is
+            // configured, direct storage URL as fallback).
             media.Select(m => new MediaSummary(
                 m.Id,
                 encryptor.DecryptString(m.FileName),
                 m.ContentType, m.FileSizeBytes, m.TakenAt,
-                urlSigner.BuildSignedUrl(m.Id, entry.UserId)
+                BuildMediaUrl(m.Id, m.StoragePath, entry.UserId)!
             )).ToList(),
             tagNames);
     }

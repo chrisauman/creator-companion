@@ -56,6 +56,16 @@ public interface IEntryEncryptor
 
     /// <summary>True if the binary blob begins with the encrypted magic byte.</summary>
     bool IsEncryptedBytes(byte[]? value);
+
+    /// <summary>
+    /// True if Entry:EncryptionKey is configured and valid. Callers
+    /// that build dependent infrastructure (e.g. signed media URLs)
+    /// check this to fall back to a legacy code path when the key
+    /// isn't set yet — avoids hard failures during the rollout
+    /// window between deploying the encryption code and setting the
+    /// env var.
+    /// </summary>
+    bool IsConfigured { get; }
 }
 
 /// <summary>
@@ -139,6 +149,8 @@ public class EntryEncryptor : IEntryEncryptor
 
     public bool IsEncryptedBytes(byte[]? value) =>
         value is { Length: > NonceLen + TagLen } && value[0] == MagicByte;
+
+    public bool IsConfigured => _key is not null;
 
     public string EncryptString(string? plaintext)
     {

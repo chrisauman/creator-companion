@@ -97,6 +97,14 @@ public class MediaService(
         string storedContentType = file.ContentType;
         string storedFileName    = file.FileName;
 
+        // Encryption is conditional on Entry:EncryptionKey being set.
+        // When the key isn't configured (legacy mode), we save plaintext
+        // bytes + plaintext filename — same behaviour as before the
+        // May 2026 privacy pass. This avoids breaking uploads during
+        // the rollout window between deploying the encryption code
+        // and setting the env var.
+        var encrypt = encryptor.IsConfigured;
+
         if (imageProcessor.CanProcess(file.ContentType))
         {
             // Decode → auto-orient → resize → re-encode as JPEG. This
@@ -111,36 +119,48 @@ public class MediaService(
                 storedContentType = processedType;
                 storedFileName    = Path.ChangeExtension(file.FileName, ".jpg");
 
-                // Encrypt the processed bytes before they hit R2 — see
-                // EntryEncryptor.EncryptBytes for the 0x01-magic +
-                // nonce + cipher + tag format. R2 only ever sees
-                // ciphertext blobs; without the master key the bytes
-                // are useless even with full storage access.
-                var plainBytes = await StreamToBytesAsync(processed);
-                storedBytes = plainBytes.Length; // original size on the media row
-                var encrypted = encryptor.EncryptBytes(plainBytes);
-                await using var encStream = new MemoryStream(encrypted);
-                storagePath = await storage.SaveAsync(encStream, storedFileName, processedType);
+                if (encrypt)
+                {
+                    var plainBytes = await StreamToBytesAsync(processed);
+                    storedBytes = plainBytes.Length;
+                    var encrypted = encryptor.EncryptBytes(plainBytes);
+                    await using var encStream = new MemoryStream(encrypted);
+                    storagePath = await storage.SaveAsync(encStream, storedFileName, processedType);
+                }
+                else
+                {
+                    storedBytes = processed.Length;
+                    storagePath = await storage.SaveAsync(processed, storedFileName, processedType);
+                }
             }
         }
         else
         {
             await using var stream = file.OpenReadStream();
-            var plainBytes = await StreamToBytesAsync(stream);
-            storedBytes = plainBytes.Length;
-            var encrypted = encryptor.EncryptBytes(plainBytes);
-            await using var encStream = new MemoryStream(encrypted);
-            storagePath = await storage.SaveAsync(encStream, file.FileName, file.ContentType);
+            if (encrypt)
+            {
+                var plainBytes = await StreamToBytesAsync(stream);
+                storedBytes = plainBytes.Length;
+                var encrypted = encryptor.EncryptBytes(plainBytes);
+                await using var encStream = new MemoryStream(encrypted);
+                storagePath = await storage.SaveAsync(encStream, file.FileName, file.ContentType);
+            }
+            else
+            {
+                storedBytes = file.Length;
+                storagePath = await storage.SaveAsync(stream, file.FileName, file.ContentType);
+            }
         }
 
         var media = new EntryMedia
         {
             EntryId       = entryId,
             UserId        = userId,
-            // FileName can leak (e.g. "therapy_session.jpg") — encrypt
-            // it the same way as entry titles. We display the decrypted
-            // form when returning MediaSummary.
-            FileName      = encryptor.EncryptString(storedFileName),
+            // Encrypt FileName only when configured — EncryptString
+            // returns plaintext as-is if not configured, but only when
+            // input is empty or already wrapped. We need the same
+            // legacy fallback explicitly.
+            FileName      = encrypt ? encryptor.EncryptString(storedFileName) : storedFileName,
             ContentType   = storedContentType,
             FileSizeBytes = storedBytes,
             StoragePath   = storagePath
@@ -150,12 +170,14 @@ public class MediaService(
         await db.SaveChangesAsync();
         if (tx is not null) await tx.CommitAsync();
 
-        // URL points at the authenticated decrypting endpoint with a
-        // signed token. Browser <img src> fetches via this URL; the
-        // controller validates the token, fetches ciphertext from R2,
-        // decrypts, and serves the plaintext bytes.
+        // URL strategy mirrors EntryService.BuildMediaUrl: signed URL
+        // through the decrypting endpoint when encryption is on,
+        // direct storage URL when off (legacy mode).
+        var url = encrypt
+            ? urlSigner.BuildSignedUrl(media.Id, media.UserId)
+            : storage.GetUrl(media.StoragePath);
         return new MediaSummary(media.Id, storedFileName, media.ContentType,
-            media.FileSizeBytes, media.TakenAt, urlSigner.BuildSignedUrl(media.Id, media.UserId));
+            media.FileSizeBytes, media.TakenAt, url);
     }
 
     private static async Task<byte[]> StreamToBytesAsync(Stream s)
