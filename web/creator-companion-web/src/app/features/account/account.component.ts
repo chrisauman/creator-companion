@@ -317,16 +317,34 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
         </section>
 
         <!-- ── Pause your streak ──────────────────────────────────────
-             Its own section with the same h2 treatment as "Your plan".
-             Replaces the previous read-only "X of 10 days used"
-             indicator inside the plan section with a fully functional
-             pause-management UI: start a pause for N days, see active
-             pause status, end early. Paid feature gated by canUsePause;
-             free users see an upsell. -->
+             Layout (May 2026 revision):
+               1. Header
+               2. Usage bar (always visible — even during an active pause)
+               3. Either:
+                    a) free-tier upsell, or
+                    b) active-pause status + End-early button, or
+                    c) start-pause form
+
+             Reason field removed per user request. Past pauses not
+             displayed (we only ever surface the current status).
+             Single-day pauses display as "paused on May 12, 2026";
+             multi-day as "paused May 12 through May 18, 2026". -->
         <section class="card">
           <div class="section-head">
             <h2>Pause your streak</h2>
           </div>
+
+          <!-- Usage bar — always visible. Shows X of 10 days used this
+               month, regardless of whether a pause is active or not. -->
+          @if (streak() && caps()?.canUsePause) {
+            <div class="pause-usage" style="margin-bottom:1.25rem">
+              <span class="pause-usage__bar"
+                    [style.width.%]="(streak()!.pauseDaysUsedThisMonth / 10) * 100"></span>
+              <span class="pause-usage__label">
+                {{ streak()!.pauseDaysUsedThisMonth }} of 10 days used this month
+              </span>
+            </div>
+          }
 
           @if (caps() && !caps()!.canUsePause) {
             <p class="text-muted text-sm">
@@ -335,16 +353,16 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
               without losing the progress you've built.
             </p>
           } @else if (activePause(); as p) {
-            <p class="text-sm" style="margin-bottom:.5rem">
-              Your streak is paused from
-              <strong>{{ formatDate(p.startDate) }}</strong>
-              through <strong>{{ formatDate(p.endDate) }}</strong>.
+            <p class="text-sm" style="margin-bottom:.875rem">
+              @if (isSingleDayPause(p)) {
+                Your streak is paused on
+                <strong>{{ formatDate(p.startDate) }}</strong>.
+              } @else {
+                Your streak is paused from
+                <strong>{{ formatDate(p.startDate) }}</strong>
+                through <strong>{{ formatDate(p.endDate) }}</strong>.
+              }
             </p>
-            @if (p.reason) {
-              <p class="text-sm text-muted" style="margin-bottom:.875rem">
-                Reason: {{ p.reason }}
-              </p>
-            }
             <button class="btn btn--secondary btn--sm"
                     type="button"
                     (click)="endPause()"
@@ -359,16 +377,6 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
               Pause your streak for up to 10 days per calendar month.
               Your current streak is preserved while paused.
             </p>
-
-            @if (streak()) {
-              <div class="pause-usage" style="margin-bottom:1.25rem">
-                <span class="pause-usage__bar"
-                      [style.width.%]="(streak()!.pauseDaysUsedThisMonth / 10) * 100"></span>
-                <span class="pause-usage__label">
-                  {{ streak()!.pauseDaysUsedThisMonth }} of 10 days used this month
-                </span>
-              </div>
-            }
 
             @if (pauseDaysRemaining() === 0) {
               <p class="text-muted text-sm">
@@ -389,16 +397,6 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
                   <p class="text-xs text-muted" style="margin-top:.25rem">
                     Up to {{ pauseDaysRemaining() }} day{{ pauseDaysRemaining() === 1 ? '' : 's' }} remaining this month.
                   </p>
-                </div>
-                <div class="field-group" style="margin-top:.875rem">
-                  <label class="field-label" for="pauseReason">Reason (optional)</label>
-                  <input id="pauseReason"
-                         type="text"
-                         maxlength="200"
-                         class="form-control"
-                         [(ngModel)]="pauseReasonInput"
-                         placeholder="e.g. Vacation, illness, work travel"
-                         [disabled]="pauseWorking()" />
                 </div>
                 <button class="btn btn--primary btn--sm"
                         type="button"
@@ -978,11 +976,21 @@ export class AccountComponent implements OnInit {
   pauseWorking    = signal(false);
   pauseError      = signal('');
   pauseDaysInput  = 1;
-  pauseReasonInput = '';
   pauseDaysRemaining = computed(() => {
     const used = this.streak()?.pauseDaysUsedThisMonth ?? 0;
     return Math.max(0, 10 - used);
   });
+
+  /**
+   * True when an active pause covers exactly one calendar day
+   * (startDate == endDate). Drives the "paused on X" vs "paused from
+   * X through Y" template branch. The dates come back from the API
+   * as ISO yyyy-MM-dd strings — compare verbatim, no Date parsing
+   * needed (which would otherwise pull in timezone ambiguity).
+   */
+  isSingleDayPause(p: Pause): boolean {
+    return p.startDate === p.endDate;
+  }
 
   ngOnInit(): void {
     this.auth.loadCapabilities().subscribe(c => this.caps.set(c));
@@ -1415,25 +1423,25 @@ export class AccountComponent implements OnInit {
     this.pauseWorking.set(true);
     this.pauseError.set('');
 
-    // The backend rejects endDate <= startDate, so a "1 day" pause
-    // needs end = today + 1 (not today). Conceptually we treat
-    // endDate as exclusive: a pause that starts today and ends
-    // tomorrow covers one day (today). A 7-day pause = today through
-    // 7 days from now. Previously we subtracted 1 to make endDate
-    // inclusive, which made the 1-day case fail validation ("Pause
-    // end date must be after the start date.").
+    // endDate is INCLUSIVE everywhere on the backend (streak math,
+    // monthly-limit count, etc). A "1 day" pause = start==end. A
+    // "7 day" pause = start, end = start+6. Previously sent
+    // exclusive endDate which the backend interpreted as one day
+    // longer than intended — the user's 1-day pause got stored as
+    // 2 days and counted double against the 10-day monthly limit.
     const today = new Date();
     const todayIso = this.toIsoDate(today);
     const end = new Date(today);
-    end.setDate(end.getDate() + days);
+    end.setDate(end.getDate() + days - 1);
     const endIso = this.toIsoDate(end);
 
-    const reason = this.pauseReasonInput.trim() || undefined;
-    this.api.createPause(todayIso, endIso, reason).subscribe({
+    // Reason field removed from the UI per the May 2026 simplification;
+    // we no longer collect or store a reason for the pause. The API
+    // still accepts an optional reason, we just don't send one.
+    this.api.createPause(todayIso, endIso).subscribe({
       next: p => {
         this.activePause.set(p);
         this.pauseDaysInput = 1;
-        this.pauseReasonInput = '';
         this.pauseWorking.set(false);
         // Refresh streak so the usage bar reflects the new pause days.
         this.api.getStreak().subscribe({ next: s => this.streak.set(s) });

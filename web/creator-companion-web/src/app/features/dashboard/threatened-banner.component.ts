@@ -187,6 +187,12 @@ export class ThreatenedBannerComponent implements OnInit {
     if (s.currentStreak <= 0) return false;
     if (!s.lastEntryDate) return false;
 
+    // Suppress entirely during an active pause — the user has
+    // deliberately stepped back, telling them "you missed yesterday"
+    // contradicts what they intentionally signed up for. Once the
+    // pause ends, the banner can fire again on its normal rules.
+    if (s.isPaused) return false;
+
     const today    = this.todayIso();
     const lastIso  = s.lastEntryDate.slice(0, 10);
     // Threatened iff last entry was strictly before yesterday (= the

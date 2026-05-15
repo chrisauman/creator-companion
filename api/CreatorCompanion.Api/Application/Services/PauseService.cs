@@ -52,8 +52,13 @@ public class PauseService(AppDbContext db, IEntitlementService entitlement) : IP
 
         var endDate = request.EndDate ?? request.StartDate.AddDays(DefaultPauseDays);
 
-        if (endDate <= request.StartDate)
-            throw new InvalidOperationException("Pause end date must be after the start date.");
+        // endDate is INCLUSIVE — a single-day pause has start == end and
+        // covers exactly that day. Allowing same-day pauses is required
+        // because the May 2026 UI sends startDate=today, endDate=today
+        // for a "1 day" pause and the streak / monthly-limit math
+        // already counts endDate inclusively (end - start + 1).
+        if (endDate < request.StartDate)
+            throw new InvalidOperationException("Pause end date cannot be before the start date.");
 
         // Enforce 10-day monthly limit: check each calendar month the pause spans
         await EnforceMonthlyLimitAsync(userId, request.StartDate, endDate);
@@ -76,12 +81,46 @@ public class PauseService(AppDbContext db, IEntitlementService entitlement) : IP
 
     public async Task<PauseResponse?> GetActivePauseAsync(Guid userId)
     {
+        var user = await db.Users.FindAsync(userId)
+            ?? throw new InvalidOperationException("User not found.");
+
+        var userTz = TimeZoneInfo.FindSystemTimeZoneById(user.TimeZoneId);
+        var today  = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, userTz));
+
+        // A pause is "active" iff status=Active AND today is still
+        // within [StartDate, EndDate] (endDate inclusive). Previously
+        // we only checked Status — so an expired pause with status
+        // still set to Active (we never auto-completed them) showed
+        // up to the UI as ongoing, leaving the "End pause early"
+        // button visible days after it had ended.
+        //
+        // Also auto-complete expired Active rows opportunistically so
+        // the table doesn't accumulate stale Active rows forever. We
+        // only update rows we see in this call — the StreakService
+        // tolerates Active rows in the past, so this is cleanup, not
+        // correctness.
         var pause = await db.Pauses
             .Where(p => p.UserId == userId && p.Status == PauseStatus.Active)
             .OrderByDescending(p => p.CreatedAt)
             .FirstOrDefaultAsync();
 
-        return pause is null ? null : ToResponse(pause);
+        if (pause is null) return null;
+
+        if (pause.EndDate < today)
+        {
+            pause.Status = PauseStatus.Expired;
+            await db.SaveChangesAsync();
+            return null;
+        }
+
+        if (pause.StartDate > today)
+        {
+            // Pause scheduled in the future — not yet active.
+            // Surface it so the UI can show "starts on ..." if it
+            // wants; current behaviour is to treat as active.
+        }
+
+        return ToResponse(pause);
     }
 
     public async Task CancelPauseAsync(Guid userId, Guid pauseId)
