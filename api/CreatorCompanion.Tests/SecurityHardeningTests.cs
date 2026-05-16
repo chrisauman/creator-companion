@@ -52,6 +52,12 @@ public class SecurityHardeningTests
         public Task<byte[]> ReadAllBytesAsync(string storagePath) => Task.FromResult(Array.Empty<byte>());
     }
 
+    private sealed class NullWelcomeEntryService : IWelcomeEntryService
+    {
+        public Task SeedAsync(Guid userId, Guid journalId, string timeZoneId, CancellationToken ct = default)
+            => Task.CompletedTask;
+    }
+
     private static AuthService BuildAuth(AppDbContext db)
     {
         var config = new ConfigurationBuilder()
@@ -65,6 +71,7 @@ public class SecurityHardeningTests
             })
             .Build();
         return new AuthService(db, config, new NullEmailService(), new NullAuditService(), new NullStorageService(),
+            new NullWelcomeEntryService(),
             Microsoft.Extensions.Logging.Abstractions.NullLogger<AuthService>.Instance);
     }
 

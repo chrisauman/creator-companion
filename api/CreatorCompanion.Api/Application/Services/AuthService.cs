@@ -18,6 +18,7 @@ public class AuthService(
     IEmailService emailService,
     IAuditService audit,
     IStorageService storage,
+    IWelcomeEntryService welcomeEntry,
     ILogger<AuthService> logger) : IAuthService
 {
     // Lockout configuration. Per-account counter is persisted on the
@@ -145,6 +146,11 @@ public class AuthService(
         // Send welcome email (best-effort)
         try { await emailService.SendWelcomeAsync(user.Email, user.FirstName); }
         catch (Exception ex) { Console.WriteLine($"[WARN] Failed to send welcome email to {user.Email}: {ex.Message}"); }
+
+        // Seed the brand-new account with a "Hello World" entry so the
+        // journal isn't empty on first visit. Service swallows its own
+        // failures — registration succeeds either way.
+        await welcomeEntry.SeedAsync(user.Id, journal.Id, user.TimeZoneId);
 
         return result;
     }

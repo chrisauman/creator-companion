@@ -174,6 +174,7 @@ try
     builder.Services.AddScoped<IDraftService, DraftService>();
     builder.Services.AddScoped<IJournalService, JournalService>();
     builder.Services.AddScoped<IMediaService, MediaService>();
+    builder.Services.AddScoped<IWelcomeEntryService, WelcomeEntryService>();
     // Image processing — used by MediaService and the avatar upload
     // endpoint to downscale + recompress before saving.
     builder.Services.AddSingleton<IImageProcessor, ImageSharpProcessor>();
