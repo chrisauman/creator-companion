@@ -415,8 +415,12 @@ import { ActivatedRoute } from '@angular/router';
          visually-hidden h1 for screen readers as the first child of
          main, so :first-child stopped matching the banner. Selecting
          app-trial-banner directly works because there is only one
-         instance per page and the banner self-hides when not in trial. */
-      .main-content > app-trial-banner {
+         instance per page and the banner self-hides when not in trial.
+         The :has(.trial-banner) qualifier ensures the host element
+         collapses to zero height when the banner is dismissed —
+         without it, the padding-top stayed on the now-empty host and
+         left a phantom gap above the search bar. */
+      .main-content > app-trial-banner:has(.trial-banner) {
         display: block;
         padding-top: 1.5rem;
       }
