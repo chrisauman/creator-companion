@@ -274,7 +274,7 @@ signal AND strips the URL param.
 
 - **10-day free trial** on signup. After expiration: locked out
   unless subscribed.
-- **Single paid plan**: $5/month or $50/year (Stripe).
+- **Single paid plan**: $5.99/month or $49.99/year (Stripe).
 - **Source of truth**: `EntitlementService.HasAccess(user)` =
   `HasActiveSubscription(user) || IsInTrial(user)`.
   Subscription is "active" iff `User.Tier == Paid` (Stripe webhook

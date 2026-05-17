@@ -26,7 +26,7 @@ import { AuthService } from '../../../core/services/auth.service';
              Stripe Checkout happens after the trial ends, not at signup. -->
         <div class="plan-summary">
           <strong>10-day free trial</strong> — every feature, no credit card.
-          After your trial, keep going for $5/month or $50/year.
+          After your trial, keep going for $5.99/month or $49.99/year.
         </div>
 
         <div *ngIf="error()" class="alert alert--error">{{ error() }}</div>
