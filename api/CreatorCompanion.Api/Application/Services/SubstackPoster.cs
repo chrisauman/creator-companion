@@ -93,8 +93,21 @@ public class SubstackPoster : ISubstackPoster
             };
         }
 
+        // Substack's Notes API expects BOTH a rich `bodyJson` (TipTap doc
+        // for full rendering) AND a plain-text `body` (for lightweight
+        // preview rendering — mobile feed cards, push notifications,
+        // email digests, etc.). Without `body`, desktop renders fine
+        // (it walks bodyJson client-side) but the mobile app shows a
+        // blank-text card — which is exactly the regression we saw
+        // after the May 13 commit removed the 240-char truncation and
+        // started posting longer multi-paragraph content. The plain
+        // text uses literal "\n\n" between paragraphs to match what
+        // Substack's own web composer ships.
+        var plainBody = body.Replace("\r\n", "\n").Trim();
+
         var envelope = new
         {
+            body     = plainBody,
             bodyJson = new
             {
                 type    = "doc",
