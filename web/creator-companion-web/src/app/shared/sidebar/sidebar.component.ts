@@ -94,18 +94,40 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
         }
       </div>
 
-      <!-- New Entry button (cyan; full pill expanded, just + icon collapsed) -->
-      <a class="sidebar__compose"
-         [class.sidebar__compose--collapsed]="collapsed()"
-         [routerLink]="['/dashboard']"
-         [queryParams]="{compose: 1}"
-         [title]="collapsed() ? 'Log Today\\'s Progress' : null">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-             stroke-width="2.4" stroke-linecap="round">
-          <path d="M12 5v14M5 12h14"/>
-        </svg>
-        <span class="sidebar__compose-label" *ngIf="!collapsed()">Log Today's Progress</span>
-      </a>
+      <!-- New Entry button (cyan; full pill expanded, just + icon
+           collapsed). When the user is in read-only mode (trial
+           expired + no subscription, OR admin paywall preview) we
+           swap the routerLink for a plain button that shows a small
+           Subscribe-to-unlock tooltip. We don't outright remove the
+           CTA — leaving the visual anchor in place reminds the user
+           where their primary action used to live and what they get
+           back by subscribing. -->
+      @if (readOnly()) {
+        <button class="sidebar__compose sidebar__compose--locked"
+                [class.sidebar__compose--collapsed]="collapsed()"
+                type="button"
+                disabled
+                title="Subscribe to unlock writing">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="5" y="11" width="14" height="9" rx="2"/>
+            <path d="M8 11V8a4 4 0 0 1 8 0v3"/>
+          </svg>
+          <span class="sidebar__compose-label" *ngIf="!collapsed()">Subscribe to unlock</span>
+        </button>
+      } @else {
+        <a class="sidebar__compose"
+           [class.sidebar__compose--collapsed]="collapsed()"
+           [routerLink]="['/dashboard']"
+           [queryParams]="{compose: 1}"
+           [title]="collapsed() ? 'Log Today\\'s Progress' : null">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2.4" stroke-linecap="round">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+          <span class="sidebar__compose-label" *ngIf="!collapsed()">Log Today's Progress</span>
+        </a>
+      }
 
       <!-- Nav -->
       <nav class="sidebar__nav">
@@ -695,6 +717,22 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
       margin: 0 auto 1rem;
       border-radius: 50%;
     }
+    /* Locked variant — same footprint as the cyan compose CTA so the
+       sidebar doesn't reflow, but greyed and clearly non-interactive.
+       Lock icon replaces the plus. Cursor + opacity tell the user it
+       isn't clickable; the title attribute carries the "Subscribe to
+       unlock" explanation. */
+    .sidebar__compose--locked {
+      background: rgba(255,255,255,.08);
+      color: rgba(255,255,255,.55);
+      border: 1px dashed rgba(255,255,255,.2);
+      cursor: not-allowed;
+    }
+    .sidebar__compose--locked:hover {
+      background: rgba(255,255,255,.08);
+      color: rgba(255,255,255,.55);
+      transform: none;
+    }
     .sidebar__compose-label { white-space: nowrap; }
     /* Mobile drawer has plenty of horizontal room — bump the compose
        button up to a more inviting size. Larger text, fatter padding,
@@ -885,6 +923,11 @@ export class SidebarComponent implements OnInit {
   private drawer   = inject(SidebarStateService);
   private streakRefresh = inject(StreakRefreshService);
   private destroyRef    = inject(DestroyRef);
+
+  /** Mirror of AuthService.isReadOnly. Drives the locked variant of
+   *  the New Entry compose button so the cyan CTA isn't presented to
+   *  a user who can't actually act on it. */
+  readOnly = this.auth.isReadOnly;
 
   /** Mobile-drawer state — read from the shared service. */
   mobileOpen = this.drawer.mobileOpen;

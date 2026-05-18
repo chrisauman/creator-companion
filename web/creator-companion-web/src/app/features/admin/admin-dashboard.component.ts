@@ -99,6 +99,19 @@ import { AdminShellComponent } from './admin-shell.component';
             </a>
           </li>
           <li>
+            <!-- Simulates a trial-expired user logging in. Paywall
+                 appears as a takeover; click "Just browse my entries"
+                 to flip into read-only mode (write buttons locked,
+                 Daily Spark + Daily Prompt hidden, urgency cards
+                 hidden). Navigate away from /dashboard to exit
+                 preview. Honors only admin sessions — non-admins
+                 with the URL ignored. -->
+            <a routerLink="/dashboard" [queryParams]="{ preview: 'paywall' }">
+              <strong>Paywall + read-only mode</strong>
+              <span>What a trial-expired user sees: full paywall, then read-only browse.</span>
+            </a>
+          </li>
+          <li>
             <!-- Replay the full new-user onboarding flow: cards →
                  dashboard tour → /entry/new. Routing to /onboarding
                  fires the cards; clicking through to slide 6 chains

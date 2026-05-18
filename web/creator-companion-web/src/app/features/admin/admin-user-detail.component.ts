@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
 import { AdminShellComponent } from './admin-shell.component';
+import { getPlanDisplay } from '../../core/utils/plan';
 
 @Component({
   selector: 'app-admin-user-detail',
@@ -23,7 +24,12 @@ import { AdminShellComponent } from './admin-shell.component';
           <div class="card user-card">
             <div class="card-header">
               <h2>{{ user().firstName }} {{ user().lastName }}</h2>
-              <span class="badge" [class.badge--paid]="user().tier === 'Paid'">{{ user().tier }}</span>
+              <span class="badge"
+                    [class.badge--paid]="userPlan().state === 'paid'"
+                    [class.badge--trial]="userPlan().state === 'trial'"
+                    [class.badge--expired]="userPlan().state === 'trial-expired'">
+                {{ userPlan().detailedLabel }}
+              </span>
             </div>
             <p class="text-muted text-sm" style="margin-bottom:1.25rem">{{ user().email }}</p>
 
@@ -307,6 +313,11 @@ import { AdminShellComponent } from './admin-shell.component';
     .badge { display: inline-block; padding: .15rem .5rem; border-radius: 999px; font-size: .7rem;
              font-weight: 600; background: var(--color-surface); color: var(--color-text-muted); }
     .badge--paid { background: #d4f0e0; color: #166534; }
+    /* Matches the trial / expired palettes used by the account page and
+       admin user list — kept consistent so every surface that shows a
+       plan badge reads the same way. */
+    .badge--trial { background: #e6f9fd; color: #0a6e80; }
+    .badge--expired { background: #fff1f2; color: #9f1239; }
 
     .entries-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 1rem; }
     .entries-header h3 { font-size: 1rem; margin: 0; }
@@ -335,6 +346,9 @@ export class AdminUserDetailComponent implements OnInit {
   private router = inject(Router);
 
   user           = signal<any>(null);
+  /** Plan label derived from the user's tier + trialEndsAt. Same single
+   *  source of truth as the rest of the app — see core/utils/plan.ts. */
+  userPlan       = computed(() => getPlanDisplay(this.user()));
   entries        = signal<any[]>([]);
   entryTotal     = signal(0);
   loading        = signal(true);

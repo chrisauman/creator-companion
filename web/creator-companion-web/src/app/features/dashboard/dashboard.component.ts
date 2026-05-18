@@ -194,6 +194,7 @@ import { ActivatedRoute } from '@angular/router';
                 (composeBlank)="composeBlank()"
                 (favoriteSpark)="toggleSparkFavorite()"
                 (expandSpark)="expandSpark()"
+                (subscribe)="subscribeFromPromo($event)"
               ></app-today-panel>
             </div>
           </div>
@@ -298,6 +299,7 @@ import { ActivatedRoute } from '@angular/router';
                 (composeBlank)="composeBlank()"
                 (favoriteSpark)="toggleSparkFavorite()"
                 (expandSpark)="expandSpark()"
+                (subscribe)="subscribeFromPromo($event)"
               ></app-today-panel>
             }
             @case ('reading') {
@@ -1758,6 +1760,26 @@ export class DashboardComponent implements OnInit {
   }
   composeBlank(): void {
     this.openCompose({});
+  }
+
+  /**
+   * Handler for the today-panel's read-only subscribe promo. The promo
+   * shows when the user is trial-expired (or admin paywall preview).
+   * Same flow as the paywall: fetch publishable price IDs, then open
+   * a Stripe Checkout session. Mirrors PaywallComponent.subscribe.
+   */
+  subscribeFromPromo(plan: 'monthly' | 'yearly'): void {
+    this.api.getStripeConfig().subscribe({
+      next: cfg => {
+        const priceId = plan === 'yearly' ? cfg.annualPriceId : cfg.monthlyPriceId;
+        if (!priceId) return;
+        this.api.createCheckoutSession(priceId).subscribe({
+          next: res => { window.location.href = res.url; },
+          error: () => { /* no-op — promo is best-effort */ }
+        });
+      },
+      error: () => {}
+    });
   }
 
   /**

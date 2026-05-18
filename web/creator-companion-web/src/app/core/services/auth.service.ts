@@ -15,6 +15,22 @@ export class AuthService {
   private _user         = signal<User | null>(null);
   private _capabilities = signal<Capabilities | null>(null);
 
+  /** Set when the user clicks "Just browse my entries" on the paywall.
+   *  Hides the takeover so they can scroll their own data and export.
+   *  Reset whenever capabilities are invalidated (which happens on
+   *  every 402 from the server) so any write attempt re-pops the
+   *  paywall via the normal flow. Not persisted across reloads —
+   *  every fresh session gets one chance at the conversion CTA. */
+  private _paywallDismissed = signal(false);
+
+  /** Admin-only preview toggle. When true, the rest of the app behaves
+   *  as if hasAccess were false — paywall appears, daily-rotation
+   *  cards hide, write buttons lock — without actually changing the
+   *  admin's subscription or trial state. Driven by ?preview=paywall
+   *  on dashboard URLs (see app.ts route effect). Only honored when
+   *  TokenService.isAdmin() is true. */
+  private _paywallPreview = signal(false);
+
   // Shared in-flight refresh — any caller that arrives while a refresh is
   // already in progress gets the same Observable instead of firing a second
   // HTTP request. This prevents token-rotation race conditions when the guard
@@ -25,6 +41,36 @@ export class AuthService {
   readonly user         = this._user.asReadonly();
   readonly capabilities = this._capabilities.asReadonly();
   readonly isLoggedIn   = computed(() => !!this._user());
+
+  /**
+   * True iff the user should see the full-screen paywall takeover.
+   * - Real users: capabilities loaded AND hasAccess false AND they
+   *   haven't dismissed it via "Just browse my entries."
+   * - Admin preview: paywall preview flag is on AND not dismissed
+   *   (preview can be dismissed too, to test the read-only-mode
+   *   experience that real trial-expired users land in).
+   * App.ts renders <app-paywall> off this signal.
+   */
+  readonly showPaywall = computed(() => {
+    if (this._paywallDismissed()) return false;
+    if (this._paywallPreview())   return true;
+    const caps = this._capabilities();
+    return !!caps && !caps.hasAccess;
+  });
+
+  /**
+   * True iff the app should render in "read-only" mode — daily-
+   * rotation cards (Spark, Prompt, threatened banner, daily reminder)
+   * hidden, every write button disabled with a Subscribe tooltip.
+   * Distinct from showPaywall because read-only persists even after
+   * the user dismisses the takeover, until either they subscribe or
+   * the server flips hasAccess back to true.
+   */
+  readonly isReadOnly = computed(() => {
+    if (this._paywallPreview()) return true;
+    const caps = this._capabilities();
+    return !!caps && !caps.hasAccess;
+  });
 
   register(firstName: string, lastName: string, email: string, password: string, timeZoneId: string): Observable<AuthResponse> {
     return this.api.register(firstName, lastName, email, password, timeZoneId).pipe(
@@ -76,6 +122,32 @@ export class AuthService {
 
   invalidateCapabilities(): void {
     this._capabilities.set(null);
+    // Any time capabilities are invalidated (usually a 402 from the
+    // interceptor signalling a write attempt under a stale read-only
+    // state), reset the dismiss flag so the paywall comes back on
+    // the next capabilities load if hasAccess is still false. This is
+    // what makes "user clicks New Entry while in read-only mode" pop
+    // the paywall back instead of silently failing.
+    this._paywallDismissed.set(false);
+  }
+
+  /** User clicked "Just browse my entries" on the paywall. Hides the
+   *  takeover until capabilities are next invalidated. */
+  dismissPaywall(): void {
+    this._paywallDismissed.set(true);
+  }
+
+  /** Admin-only: toggle the preview state that simulates a trial-
+   *  expired user. Caller is responsible for checking isAdmin —
+   *  this service doesn't gate it because TokenService isn't a
+   *  dependency here. Called by the route effect in app.ts when
+   *  ?preview=paywall is present and the current user is admin. */
+  setPaywallPreview(enabled: boolean): void {
+    this._paywallPreview.set(enabled);
+    // Always reset the dismiss flag when toggling preview — admins
+    // expect each entry into preview to start with the paywall, not
+    // remembered "dismissed" state from a prior preview.
+    this._paywallDismissed.set(false);
   }
 
   /** Fire-and-forget revoke that survives the imminent navigation.

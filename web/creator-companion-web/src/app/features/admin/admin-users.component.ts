@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
 import { AdminShellComponent } from './admin-shell.component';
+import { getPlanDisplay } from '../../core/utils/plan';
 
 @Component({
   selector: 'app-admin-users',
@@ -47,7 +48,15 @@ import { AdminShellComponent } from './admin-shell.component';
                   </td>
                   <td class="text-muted">{{ u.email }}</td>
                   <td>
-                    <span class="badge" [class.badge--paid]="u.tier === 'Paid'">{{ u.tier }}</span>
+                    <!-- Plan label is computed from (tier + trialEndsAt) so
+                         trial users read as "Free trial" with their day count
+                         instead of the raw "Free" tier value. See plan.ts. -->
+                    <span class="badge"
+                          [class.badge--paid]="planFor(u).state === 'paid'"
+                          [class.badge--trial]="planFor(u).state === 'trial'"
+                          [class.badge--expired]="planFor(u).state === 'trial-expired'">
+                      {{ planFor(u).label }}
+                    </span>
                   </td>
                   <td>
                     <span class="badge" [class.badge--active]="u.isActive" [class.badge--inactive]="!u.isActive">
@@ -85,6 +94,12 @@ import { AdminShellComponent } from './admin-shell.component';
     .admin-table tbody tr:hover { background: var(--color-surface); }
     .badge { display: inline-block; padding: .15rem .5rem; border-radius: 999px; font-size: .7rem; font-weight: 600; background: var(--color-surface); color: var(--color-text-muted); }
     .badge--paid { background: #d4f0e0; color: #166534; }
+    /* Trial state: brand-cyan-leaning. Same palette as the dashboard
+       trial banner and the account-page trial badge. */
+    .badge--trial { background: #e6f9fd; color: #0a6e80; }
+    /* Trial expired: rose, matches the .badge--inactive treatment to
+       signal "needs attention" without screaming. */
+    .badge--expired { background: #fff1f2; color: #9f1239; }
     .badge--admin { background: #fde68a; color: #92400e; margin-left: .35rem; }
     .badge--active { background: #d4f0e0; color: #166534; }
     .badge--inactive { background: #fee2e2; color: #991b1b; }
@@ -93,6 +108,12 @@ import { AdminShellComponent } from './admin-shell.component';
 })
 export class AdminUsersComponent implements OnInit {
   private api = inject(ApiService);
+
+  /** Wrapper around getPlanDisplay so we can call it from the template
+   *  per-row. The row data is `any` here (admin user list shape comes
+   *  from the API anonymous object) but the helper only reads `tier`
+   *  and `trialEndsAt`, both of which the admin endpoint returns. */
+  planFor(u: any) { return getPlanDisplay(u); }
 
   users    = signal<any[]>([]);
   total    = signal(0);

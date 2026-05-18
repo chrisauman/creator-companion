@@ -8,6 +8,7 @@ import { ExportService } from '../../core/services/export.service';
 import { PushService } from '../../core/services/push.service';
 import { TokenService } from '../../core/services/token.service';
 import { User, Capabilities, Tag, StreakStats, Reminder, Pause } from '../../core/models/models';
+import { getPlanDisplay } from '../../core/utils/plan';
 import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
 import { SidebarStateService } from '../../shared/sidebar/sidebar-state.service';
 import { MobileHeaderComponent } from '../../shared/mobile-header/mobile-header.component';
@@ -43,11 +44,20 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
         <section class="card">
           <div class="section-head">
             <h2>Your plan</h2>
-            <span class="tier-badge" [class.tier-badge--paid]="user()!.tier === 'Paid'">
-              {{ user()!.tier }}
+            <!-- Computed plan label from tier + trialEndsAt rather than the
+                 raw "Free"/"Paid" tier field. Surfacing "Free" to the user
+                 in any state was the bug: tier=Free + trial active should
+                 read as "Free trial — N days left", and tier=Free + trial
+                 expired should read as "Trial expired." Only tier=Paid
+                 shows the plain "Paid" badge. -->
+            <span class="tier-badge"
+                  [class.tier-badge--paid]="plan().state === 'paid'"
+                  [class.tier-badge--trial]="plan().state === 'trial'"
+                  [class.tier-badge--expired]="plan().state === 'trial-expired'">
+              {{ plan().detailedLabel }}
             </span>
           </div>
-          @if (user()?.tier === 'Paid') {
+          @if (plan().state === 'paid') {
             <button class="btn btn--secondary btn--sm" (click)="openBillingPortal()" [disabled]="portalLoading()">
               {{ portalLoading() ? 'Opening…' : 'Manage billing & subscription' }}
             </button>
@@ -56,14 +66,18 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
             }
           } @else {
             <p class="text-muted text-sm" style="margin-bottom:.875rem">
-              Upgrade for 5 entries/day, 2,500 words, photos, mood tracking, and all features.
+              @if (plan().state === 'trial') {
+                Subscribe before your trial ends to keep your creative practice going without interruption.
+              } @else {
+                Your free trial has ended. Subscribe to keep journaling and pick up where you left off.
+              }
             </p>
             <div style="display:flex;gap:.625rem;flex-wrap:wrap">
               <button class="btn btn--primary btn--sm" (click)="upgrade('monthly')" [disabled]="upgrading()">
-                {{ upgrading() === 'monthly' ? 'Redirecting…' : 'Upgrade — $3/month' }}
+                {{ upgrading() === 'monthly' ? 'Redirecting…' : 'Subscribe — $5.99/month' }}
               </button>
               <button class="btn btn--secondary btn--sm" (click)="upgrade('annual')" [disabled]="upgrading()">
-                {{ upgrading() === 'annual' ? 'Redirecting…' : 'Upgrade — $30/year' }}
+                {{ upgrading() === 'annual' ? 'Redirecting…' : 'Subscribe — $49.99/year' }}
               </button>
             </div>
             @if (upgradeError()) {
@@ -598,6 +612,20 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
       background:var(--color-accent-light); color:var(--color-accent);
       border-color:var(--color-accent);
     }
+    /* Trial users: brand-cyan-leaning so the countdown reads as
+       "you're already on the full experience" rather than as a warning.
+       Tone matches the trial banner on dashboard. */
+    .tier-badge--trial {
+      background:#e6f9fd; color:#0a6e80;
+      border-color:#5cd6ea;
+    }
+    /* Trial-expired: rose to match the danger token (--color-danger,
+       rose-600) used by favorited-heart and link-btn--danger. Reserved
+       red for genuine urgency. */
+    .tier-badge--expired {
+      background:#fff1f2; color:#9f1239;
+      border-color:#fda4af;
+    }
     .caps-grid { display:flex; flex-direction:column; gap:.625rem; }
     .cap-row, .profile-row {
       display:flex; align-items:center; justify-content:space-between;
@@ -911,6 +939,9 @@ export class AccountComponent implements OnInit {
   readonly defaultReminderMessage = DEFAULT_REMINDER_MESSAGE;
 
   user      = this.auth.user;
+  /** Derived plan display — see core/utils/plan.ts. Single source of
+   *  truth for "what should this user see for their plan state." */
+  plan      = computed(() => getPlanDisplay(this.user()));
   caps      = signal<Capabilities | null>(null);
   streak    = signal<StreakStats | null>(null);
   exporting = signal(false);

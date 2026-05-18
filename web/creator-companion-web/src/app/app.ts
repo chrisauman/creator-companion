@@ -1,7 +1,9 @@
-import { Component, computed, effect, inject } from '@angular/core';
+import { Component, effect, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterOutlet } from '@angular/router';
+import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { filter } from 'rxjs/operators';
 import { AuthService } from './core/services/auth.service';
+import { TokenService } from './core/services/token.service';
 import { PaywallComponent } from './shared/paywall/paywall.component';
 
 /**
@@ -42,7 +44,14 @@ import { PaywallComponent } from './shared/paywall/paywall.component';
   `
 })
 export class App {
-  private auth = inject(AuthService);
+  private auth   = inject(AuthService);
+  private tokens = inject(TokenService);
+  private router = inject(Router);
+
+  /** Mirror of AuthService.showPaywall — kept here as a thin reference
+   *  rather than recomputed locally so the dismissal + preview logic
+   *  lives in one place (the service). */
+  showPaywall = this.auth.showPaywall;
 
   constructor() {
     // Load capabilities whenever the user signal changes. Fires once
@@ -55,14 +64,20 @@ export class App {
         this.auth.loadCapabilities().subscribe({ error: () => {} });
       }
     });
-  }
 
-  /** Paywall overlay is visible when capabilities have loaded and
-   *  hasAccess is false. While capabilities are still loading we
-   *  suppress the paywall to avoid a flash on every page load. */
-  showPaywall = computed(() => {
-    const caps = this.auth.capabilities();
-    if (!caps) return false;
-    return !caps.hasAccess;
-  });
+    // Admin-only paywall preview toggle. When ?preview=paywall is in
+    // the URL AND the current user is an admin, flip the paywall into
+    // preview mode so the admin can walk through what a trial-expired
+    // user sees without changing their own subscription/trial state.
+    // Removing the param (or navigating somewhere without it) clears
+    // preview. Non-admin users with the param in the URL are ignored —
+    // it's never honored for them.
+    this.router.events
+      .pipe(filter(e => e instanceof NavigationEnd))
+      .subscribe(() => {
+        const params = new URL(window.location.href).searchParams;
+        const wantsPreview = params.get('preview') === 'paywall' && this.tokens.isAdmin();
+        this.auth.setPaywallPreview(wantsPreview);
+      });
+  }
 }

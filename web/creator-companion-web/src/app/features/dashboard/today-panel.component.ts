@@ -2,6 +2,7 @@ import { Component, EventEmitter, Input, Output, OnInit, inject, signal } from '
 import { CommonModule } from '@angular/common';
 import { MotivationEntry } from '../../core/models/models';
 import { ApiService } from '../../core/services/api.service';
+import { AuthService } from '../../core/services/auth.service';
 import { MoodIconComponent, SUPPORTED_MOOD_KEYS } from '../../shared/mood-icon/mood-icon.component';
 import { DASHBOARD_PROMPTS, pickRandomPrompt } from './dashboard-prompts';
 import { ThreatenedBannerComponent } from './threatened-banner.component';
@@ -24,6 +25,42 @@ import { DailyReminderCardComponent } from './daily-reminder-card.component';
   imports: [CommonModule, MoodIconComponent, ThreatenedBannerComponent, DailyReminderCardComponent],
   template: `
     <div class="today">
+
+      <!-- Read-only mode (trial expired + no subscription, or admin
+           paywall preview): the entire today panel reduces to one
+           subscribe-promo card. We don't show fresh daily content
+           (Spark, Prompt, Mood starter) because the value of "log
+           in daily for new inspiration" is exactly what the
+           subscription unlocks. The user can still scroll their own
+           entries on the rest of the page; this column just stops
+           giving them new free content. -->
+      @if (readOnly()) {
+        <div class="readonly-promo">
+          <span class="readonly-promo__eyebrow">Subscribe to continue</span>
+          <p class="readonly-promo__quote">
+            Your free trial has ended. Subscribe to unlock today's Daily
+            Spark, your prompt rotation, and writing new entries.
+          </p>
+          <div class="readonly-promo__plans">
+            <button class="readonly-promo__plan readonly-promo__plan--month"
+                    type="button"
+                    (click)="subscribe.emit('monthly')">
+              <span class="readonly-promo__price">$5.99</span>
+              <span class="readonly-promo__period">per month</span>
+            </button>
+            <button class="readonly-promo__plan readonly-promo__plan--year"
+                    type="button"
+                    (click)="subscribe.emit('yearly')">
+              <span class="readonly-promo__flag">Save $22</span>
+              <span class="readonly-promo__price">$49.99</span>
+              <span class="readonly-promo__period">per year</span>
+            </button>
+          </div>
+          <p class="readonly-promo__fineprint">
+            Your existing entries are safe and visible either way.
+          </p>
+        </div>
+      } @else {
 
       <!-- Streak threatened banner — always rendered first so it sits
            at the top of the Today column when active. The component
@@ -161,6 +198,8 @@ import { DailyReminderCardComponent } from './daily-reminder-card.component';
         </div>
 
       </div>
+
+      } <!-- end @else (not readOnly) -->
     </div>
   `,
   styles: [`
@@ -169,6 +208,109 @@ import { DailyReminderCardComponent } from './daily-reminder-card.component';
       padding: .75rem 1.5rem 3rem;
       max-width: 720px;
       margin: 0 auto;
+    }
+
+    /* ── Read-only subscribe promo (replaces Spark + Prompt + Mood
+       starter when the user has no access). Same visual family as
+       the spark-hero / hero-card so column 3 still reads as a
+       coherent surface, but with a clearer conversion CTA. */
+    .readonly-promo {
+      background: linear-gradient(180deg, #fdfaf2 0%, #f6f1e6 100%);
+      color: var(--color-text);
+      border: 1px solid rgba(190,170,130,.22);
+      border-radius: 20px;
+      padding: 1.75rem 1.5rem 1.5rem;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 1rem;
+    }
+    .readonly-promo::before {
+      content: '';
+      position: absolute;
+      top: -30%; right: -20%;
+      width: 320px; height: 320px;
+      background: radial-gradient(circle, rgba(18,196,227,.55) 0%, transparent 65%);
+      opacity: .35;
+      pointer-events: none;
+    }
+    .readonly-promo__eyebrow {
+      display: inline-flex; align-items: center; gap: .5rem;
+      font-size: .6875rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .14em;
+      color: var(--color-accent-dark);
+      margin-bottom: 1rem;
+      position: relative;
+    }
+    .readonly-promo__eyebrow::before {
+      content: '';
+      width: 7px; height: 7px;
+      background: #12C4E3; border-radius: 50%;
+      box-shadow: 0 0 10px rgba(18,196,227,.6);
+      animation: pulse 2.5s ease-in-out infinite;
+    }
+    .readonly-promo__quote {
+      font-family: var(--font-sans);
+      font-size: 1.1875rem;
+      line-height: 1.45;
+      font-weight: 600;
+      color: var(--color-text);
+      position: relative;
+      margin: 0 0 1.25rem;
+      letter-spacing: -.01em;
+    }
+    .readonly-promo__plans {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: .625rem;
+      position: relative;
+      margin-bottom: .75rem;
+    }
+    .readonly-promo__plan {
+      position: relative;
+      background: #0c0e13;
+      color: #fff;
+      border: none;
+      border-radius: .75rem;
+      padding: 1rem .75rem;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background .15s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: .125rem;
+    }
+    .readonly-promo__plan:hover { background: #12C4E3; }
+    .readonly-promo__price {
+      font-family: var(--font-sans);
+      font-size: 1.5rem;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -.02em;
+    }
+    .readonly-promo__period {
+      font-size: .75rem;
+      opacity: .85;
+    }
+    .readonly-promo__flag {
+      position: absolute;
+      top: -8px;
+      right: 10px;
+      background: #12C4E3;
+      color: #fff;
+      font-size: .625rem;
+      font-weight: 700;
+      letter-spacing: .04em;
+      padding: .2rem .45rem;
+      border-radius: 999px;
+    }
+    .readonly-promo__fineprint {
+      font-size: .8125rem;
+      color: var(--color-text-2);
+      margin: .25rem 0 0;
+      position: relative;
     }
     /* When rendered inline on mobile (in dashboard.component), drop padding
        so the cards align to the page edges and use consistent gaps. */
@@ -573,7 +715,13 @@ import { DailyReminderCardComponent } from './daily-reminder-card.component';
   `]
 })
 export class TodayPanelComponent implements OnInit {
-  private api = inject(ApiService);
+  private api  = inject(ApiService);
+  private auth = inject(AuthService);
+
+  /** When true, the whole today panel collapses into a single subscribe
+   *  promo card — daily-rotation content (Spark, Prompt, Mood starter)
+   *  is gated until the user pays. See template @if. */
+  readOnly = this.auth.isReadOnly;
 
   @Input() motivation: MotivationEntry | null = null;
   @Input() canFavorite: boolean = false;
@@ -598,6 +746,10 @@ export class TodayPanelComponent implements OnInit {
   /** Forwarded from the embedded threatened-banner — payload is
    *  yesterday's ISO date so the dashboard can pre-fill the composer. */
   @Output() backlogYesterday = new EventEmitter<string>();
+  /** Fires when the user clicks one of the plan buttons on the
+   *  read-only promo card. Dashboard handles the actual Stripe
+   *  Checkout redirect (same path the paywall uses). */
+  @Output() subscribe = new EventEmitter<'monthly' | 'yearly'>();
 
   readonly moodKeys = SUPPORTED_MOOD_KEYS;
 

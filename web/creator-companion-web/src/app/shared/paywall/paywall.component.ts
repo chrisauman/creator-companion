@@ -39,7 +39,7 @@ import { FocusTrapDirective } from '../focus-trap.directive';
                   type="button"
                   [disabled]="loading()"
                   (click)="subscribe('monthly')">
-            <span class="paywall__plan-price">$5</span>
+            <span class="paywall__plan-price">$5.99</span>
             <span class="paywall__plan-period">per month</span>
           </button>
 
@@ -47,8 +47,8 @@ import { FocusTrapDirective } from '../focus-trap.directive';
                   type="button"
                   [disabled]="loading()"
                   (click)="subscribe('yearly')">
-            <span class="paywall__plan-flag">Save $10</span>
-            <span class="paywall__plan-price">$50</span>
+            <span class="paywall__plan-flag">Save $22</span>
+            <span class="paywall__plan-price">$49.99</span>
             <span class="paywall__plan-period">per year</span>
           </button>
         </div>
@@ -61,7 +61,17 @@ import { FocusTrapDirective } from '../focus-trap.directive';
           <p class="paywall__error">{{ error() }}</p>
         }
 
+        <!-- Two-action escape hatch: subscribe is the goal, but users
+             must always be able to step back and look at the data they
+             already own. "Just browse my entries" dismisses the
+             takeover and renders the dashboard in read-only mode —
+             every write button is grayed with a Subscribe tooltip,
+             daily-rotation content (Spark, Prompt) is hidden, and any
+             write attempt re-pops the paywall via the 402 interceptor.
+             "Sign out" is kept for users who want to leave entirely. -->
         <div class="paywall__skip">
+          <button type="button" (click)="browseReadOnly()">Just browse my entries</button>
+          <span aria-hidden="true">·</span>
           <button type="button" (click)="signOut()">Sign out</button>
         </div>
       </div>
@@ -241,5 +251,13 @@ export class PaywallComponent {
 
   signOut(): void {
     this.auth.logout();
+  }
+
+  /** Dismisses the paywall and flips the app into read-only mode so
+   *  the user can scroll their existing entries, export, or delete
+   *  the account. Any write attempt server-side will 402 and
+   *  re-trigger the paywall via the auth interceptor. */
+  browseReadOnly(): void {
+    this.auth.dismissPaywall();
   }
 }
