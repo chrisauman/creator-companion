@@ -308,6 +308,7 @@ import { ActivatedRoute } from '@angular/router';
                 [loading]="selectedEntryLoading()"
                 [loadError]="selectedEntryError()"
                 [canFavorite]="isPaid()"
+                [readOnly]="readOnly()"
                 (returnToToday)="returnToToday()"
                 (edit)="editSelectedEntry()"
                 (toggleFavorite)="toggleSelectedFavorite()"
@@ -1147,6 +1148,9 @@ export class DashboardComponent implements OnInit {
 
   streak     = signal<StreakStats | null>(null);
   isPaid     = signal(false);
+  /** Mirror of AuthService.isReadOnly — passed down to children so each
+   *  write affordance can self-lock without re-injecting AuthService. */
+  readOnly   = this.auth.isReadOnly;
   showCelebration    = signal(false);
   celebrationMilestone = signal<Milestone | null>(null);
 

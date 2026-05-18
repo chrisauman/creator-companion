@@ -930,6 +930,17 @@ export class NewEntryComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly MAX_BYTES = 15 * 1024 * 1024;
 
   ngOnInit(): void {
+    // Read-only users (trial expired, no subscription, OR admin
+    // paywall preview) shouldn't be able to start composing — the
+    // sidebar CTA already locks out, but a deep link or back nav
+    // can still land them here. Bounce to dashboard where the
+    // read-only mode + promo card make the right next step
+    // obvious. The save path is 402-gated server-side too.
+    if (this.auth.isReadOnly()) {
+      this.router.navigate(['/dashboard']);
+      return;
+    }
+
     // Apply initialDate first so any subsequent draft fetches use the
     // correct date. Used by the streak-threatened banner to backlog
     // yesterday's entry — opens the composer already pointed at the

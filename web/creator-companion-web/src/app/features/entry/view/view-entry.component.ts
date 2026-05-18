@@ -44,17 +44,20 @@ import { MoodIconComponent } from '../../../shared/mood-icon/mood-icon.component
               <!-- Top reader bar carries only the favorite toggle — Edit
                    lives at the bottom of the entry to match the embedded
                    reader's pattern on desktop. The two surfaces should
-                   feel identical. -->
-              <button class="reader-icon-btn"
-                [class.reader-icon-btn--fav-active]="isFavorited()"
-                [title]="isFavorited() ? 'Remove from favorites' : 'Add to favorites'"
-                (click)="toggleFavorite()" [disabled]="favoriteLoading()">
-                <svg width="14" height="14" viewBox="0 0 24 24"
-                  [attr.fill]="isFavorited() ? 'currentColor' : 'none'"
-                  stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-                </svg>
-              </button>
+                   feel identical. Hidden in read-only mode (any
+                   favorite write returns 402 anyway). -->
+              @if (!readOnly()) {
+                <button class="reader-icon-btn"
+                  [class.reader-icon-btn--fav-active]="isFavorited()"
+                  [title]="isFavorited() ? 'Remove from favorites' : 'Add to favorites'"
+                  (click)="toggleFavorite()" [disabled]="favoriteLoading()">
+                  <svg width="14" height="14" viewBox="0 0 24 24"
+                    [attr.fill]="isFavorited() ? 'currentColor' : 'none'"
+                    stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                  </svg>
+                </button>
+              }
             </div>
           } @else {
             <div class="reader-top__breadcrumb"></div>
@@ -124,18 +127,22 @@ import { MoodIconComponent } from '../../../shared/mood-icon/mood-icon.component
 
             <!-- Footer — right-aligned primary Edit CTA. Black ink with
                  white text matches the canonical primary-button treatment
-                 used everywhere else in the app (Save, Create Entry, etc.). -->
-            <div class="entry-footer">
-              <a class="btn btn--primary btn--sm entry-footer__edit"
-                 [routerLink]="['/entry', entryId, 'edit']">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M12 20h9"/>
-                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/>
-                </svg>
-                Edit entry
-              </a>
-            </div>
+                 used everywhere else in the app (Save, Create Entry, etc.).
+                 Hidden in read-only mode — the entry body still renders,
+                 just no edit path until subscription. -->
+            @if (!readOnly()) {
+              <div class="entry-footer">
+                <a class="btn btn--primary btn--sm entry-footer__edit"
+                   [routerLink]="['/entry', entryId, 'edit']">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                       stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 20h9"/>
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/>
+                  </svg>
+                  Edit entry
+                </a>
+              </div>
+            }
 
           </article>
         }
@@ -405,6 +412,7 @@ export class ViewEntryComponent implements OnInit {
   private sanitizer = inject(DomSanitizer);
 
   readonly getMoodEmoji = getMoodEmoji;
+  readonly readOnly = this.auth.isReadOnly;
 
   entryId  = '';
   entry    = signal<Entry | null>(null);

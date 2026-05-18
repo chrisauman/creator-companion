@@ -788,6 +788,12 @@ export class TodayPanelComponent implements OnInit {
   currentPrompt = signal<string>(this.prompts()[Math.floor(Math.random() * this.prompts().length)]);
 
   ngOnInit(): void {
+    // Read-only mode hides the prompt card entirely; skip the fetch
+    // so we don't pull fresh rotating content for a user who can't
+    // see it. Belt-and-suspenders with the server-side EnforceAccess
+    // check on /v1/daily-prompts.
+    if (this.readOnly()) return;
+
     this.api.getDailyPrompts().subscribe({
       next: prompts => {
         if (prompts.length === 0) return; // keep hardcoded fallback

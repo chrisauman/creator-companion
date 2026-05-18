@@ -86,6 +86,16 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
           }
         </section>
 
+        <!-- Profile / password / preferences / reminders / pause:
+             every section between "Your plan" and "Your tags" is a
+             write surface that's gated server-side anyway. We hide
+             the whole stack in read-only mode and keep just the
+             tag-library (read-only view), export-data, and delete-
+             account sections. That gives users a clear menu:
+             subscribe via the plan CTA, look back at their library,
+             grab their data, or leave entirely. -->
+        @if (!readOnly()) {
+
         <!-- Profile (moved up directly under Your Plan per the May
              2026 account-page reorganisation). -->
         <section class="card">
@@ -259,6 +269,8 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
           </section>
         }
 
+        } <!-- end @if (!readOnly) — write-section block -->
+
         <!-- Tags (moved up above Pause / Export per the May 2026
              account reorganisation). -->
         <section class="card">
@@ -267,28 +279,34 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
             <span class="tag-count-badge" *ngIf="tags().length > 0">{{ tags().length }}</span>
           </div>
 
-          <!-- Create new tag -->
-          <form class="new-tag-form" (ngSubmit)="submitNewTag()" #newTagForm="ngForm">
-            <input
-              class="new-tag-input"
-              type="text"
-              [(ngModel)]="newTagValue"
-              name="newTag"
-              placeholder="New tag name…"
-              maxlength="50"
-              autocomplete="off"
-              autocorrect="off"
-              autocapitalize="off"
-              spellcheck="false"
-            />
-            <button
-              class="btn btn--primary btn--sm"
-              type="submit"
-              [disabled]="!newTagValue.trim() || creatingTag()"
-            >
-              {{ creatingTag() ? 'Adding…' : '+ Add tag' }}
-            </button>
-          </form>
+          <!-- Create new tag — hidden in read-only mode. Existing tags
+               still render below so the user can scan what they have.
+               Note: trial users (plan.state === 'trial') CAN write —
+               read-only only kicks in when trial expired AND no paid
+               sub, OR admin paywall preview. -->
+          @if (!readOnly()) {
+            <form class="new-tag-form" (ngSubmit)="submitNewTag()" #newTagForm="ngForm">
+              <input
+                class="new-tag-input"
+                type="text"
+                [(ngModel)]="newTagValue"
+                name="newTag"
+                placeholder="New tag name…"
+                maxlength="50"
+                autocomplete="off"
+                autocorrect="off"
+                autocapitalize="off"
+                spellcheck="false"
+              />
+              <button
+                class="btn btn--primary btn--sm"
+                type="submit"
+                [disabled]="!newTagValue.trim() || creatingTag()"
+              >
+                {{ creatingTag() ? 'Adding…' : '+ Add tag' }}
+              </button>
+            </form>
+          }
 
           <div *ngIf="tags().length === 0 && !tagsLoading()" class="empty-tags-note">
             Your tag library is empty. Add tags above or attach them to entries when writing.
@@ -302,13 +320,19 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
                   <span class="tag-row__chip">#{{ tag.name }}</span>
                   <span class="tag-row__count">{{ tag.usageCount }} {{ tag.usageCount === 1 ? 'entry' : 'entries' }}</span>
                 </div>
-                <div class="tag-row__actions">
-                  <button class="tag-action-btn tag-action-btn--edit" (click)="startRename(tag)">Edit</button>
-                  <button class="tag-action-btn tag-action-btn--delete" (click)="confirmDeleteTag(tag)">Delete</button>
-                </div>
+                <!-- Edit / Delete only when user has write access. The
+                     chip + usage count still renders so they can see
+                     their library before subscribing. -->
+                @if (!readOnly()) {
+                  <div class="tag-row__actions">
+                    <button class="tag-action-btn tag-action-btn--edit" (click)="startRename(tag)">Edit</button>
+                    <button class="tag-action-btn tag-action-btn--delete" (click)="confirmDeleteTag(tag)">Delete</button>
+                  </div>
+                }
               </ng-container>
 
-              <!-- Edit mode -->
+              <!-- Edit mode (only reachable when paid since Edit button
+                   is hidden above otherwise) -->
               <ng-container *ngIf="editingTagId() === tag.id">
                 <input
                   class="tag-rename-input"
@@ -342,7 +366,11 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
              Reason field removed per user request. Past pauses not
              displayed (we only ever surface the current status).
              Single-day pauses display as "paused on May 12, 2026";
-             multi-day as "paused May 12 through May 18, 2026". -->
+             multi-day as "paused May 12 through May 18, 2026".
+
+             Hidden in read-only mode — a paused streak doesn't make
+             sense for a user who can't write anyway. -->
+        @if (!readOnly()) {
         <section class="card">
           <div class="section-head">
             <h2>Pause your streak</h2>
@@ -426,6 +454,7 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
             }
           }
         </section>
+        } <!-- end @if (!readOnly) — pause section -->
 
         <!-- Trash -->
         <section class="card">
@@ -942,6 +971,10 @@ export class AccountComponent implements OnInit {
   /** Derived plan display — see core/utils/plan.ts. Single source of
    *  truth for "what should this user see for their plan state." */
   plan      = computed(() => getPlanDisplay(this.user()));
+  /** True when the user has no access (trial expired w/o sub) OR the
+   *  admin paywall preview is active. Drives which sections of the
+   *  account page are write-locked vs. read-only. */
+  readOnly  = this.auth.isReadOnly;
   caps      = signal<Capabilities | null>(null);
   streak    = signal<StreakStats | null>(null);
   exporting = signal(false);

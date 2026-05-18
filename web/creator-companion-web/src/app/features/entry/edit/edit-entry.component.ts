@@ -974,6 +974,18 @@ export class EditEntryComponent implements OnInit, OnDestroy {
   private readonly MAX_BYTES = 15 * 1024 * 1024;
 
   ngOnInit(): void {
+    // Read-only users (trial expired, no subscription) shouldn't be
+    // on the edit screen at all — the entry-reader and view-entry
+    // pages already hide the Edit affordance, but a deep link or
+    // back-button arrival should also bounce. Redirect to dashboard
+    // where the read-only mode + paywall promo make the next step
+    // obvious. The auth interceptor + capabilities recheck handle
+    // the server side: any save attempt 402s and re-pops the paywall.
+    if (this.auth.isReadOnly()) {
+      this.router.navigate(['/dashboard']);
+      return;
+    }
+
     // When embedded, the dashboard provides the entry id directly.
     this.entryId = this.embedded
       ? (this.entryIdInput ?? '')

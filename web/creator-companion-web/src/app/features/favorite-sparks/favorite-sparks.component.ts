@@ -2,6 +2,7 @@ import { Component, EventEmitter, Input, OnInit, Output, inject, signal } from '
 import { CommonModule, DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
+import { AuthService } from '../../core/services/auth.service';
 import { FavoriteItem, EntryListItem, MotivationEntry } from '../../core/models/models';
 import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
 import { SidebarStateService } from '../../shared/sidebar/sidebar-state.service';
@@ -86,15 +87,22 @@ import { MobileHeaderComponent } from '../../shared/mobile-header/mobile-header.
                       <p class="spark-takeaway">{{ spark.takeaway }}</p>
                     </div>
                     <div class="spark-actions" (click)="$event.stopPropagation()">
-                      <button class="spark-unfavorite"
-                        title="Remove from favorites"
-                        (click)="unfavoriteSpark(spark.id)">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                          fill="currentColor" stroke="currentColor" stroke-width="2"
-                          stroke-linecap="round" stroke-linejoin="round">
-                          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-                        </svg>
-                      </button>
+                      <!-- Unfavorite button hidden in read-only mode —
+                           any unfavorite API call would 402, and
+                           letting the user click and bounce is
+                           worse UX than just not showing it. They
+                           can still read their saved sparks. -->
+                      @if (!readOnly()) {
+                        <button class="spark-unfavorite"
+                          title="Remove from favorites"
+                          (click)="unfavoriteSpark(spark.id)">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                            fill="currentColor" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                          </svg>
+                        </button>
+                      }
                       <button class="spark-toggle" [attr.aria-expanded]="expandedId() === spark.id" [attr.aria-label]="(expandedId() === spark.id) ? 'Hide spark details' : 'Show spark details'">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
                           fill="none" stroke="currentColor" stroke-width="2.5"
@@ -124,17 +132,24 @@ import { MobileHeaderComponent } from '../../shared/mobile-header/mobile-header.
                     <div class="entry-card__meta">
                       <span class="entry-card__label">Journal Entry</span>
                       <span class="entry-card__date">{{ entry.entryDate | date:'MMM d, y' }}</span>
-                      <button class="entry-card__heart"
-                              type="button"
-                              title="Remove from favorites"
-                              aria-label="Remove from favorites"
-                              (click)="$event.stopPropagation(); unfavoriteEntry(entry.id)">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                          fill="currentColor" stroke="currentColor" stroke-width="2"
-                          stroke-linecap="round" stroke-linejoin="round">
-                          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-                        </svg>
-                      </button>
+                      <!-- Unfavorite button hidden in read-only mode
+                           (same reasoning as the spark unfavorite
+                           button above). The entry is still listed
+                           and clickable; only the unfavorite action
+                           goes away. -->
+                      @if (!readOnly()) {
+                        <button class="entry-card__heart"
+                                type="button"
+                                title="Remove from favorites"
+                                aria-label="Remove from favorites"
+                                (click)="$event.stopPropagation(); unfavoriteEntry(entry.id)">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                            fill="currentColor" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                          </svg>
+                        </button>
+                      }
                     </div>
                     <p class="entry-card__title">{{ entryHeadline(entry) }}</p>
                   </div>
@@ -518,7 +533,13 @@ import { MobileHeaderComponent } from '../../shared/mobile-header/mobile-header.
 })
 export class FavoriteSparksComponent implements OnInit {
   private api    = inject(ApiService);
+  private auth   = inject(AuthService);
   private router = inject(Router);
+
+  /** Read-only state drives whether the unfavorite heart appears on
+   *  each card. The list itself is always viewable — the user owns
+   *  the data and should be able to revisit what they saved. */
+  readOnly = this.auth.isReadOnly;
   /** Mobile topbar hamburger → opens slide-in sidebar drawer. */
   protected sidebarState = inject(SidebarStateService);
 

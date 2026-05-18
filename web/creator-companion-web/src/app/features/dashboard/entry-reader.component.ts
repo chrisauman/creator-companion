@@ -44,7 +44,11 @@ import { MoodIconComponent } from '../../shared/mood-icon/mood-icon.component';
           <div class="reader-top__breadcrumb"></div>
 
           <div class="reader-top__actions">
-            @if (entry && canFavorite) {
+            <!-- Favorite heart: visible only when entry loaded, user
+                 is paid-tier capable, AND we're not in read-only
+                 mode. Read-only users can still read the entry; the
+                 heart re-appears once they subscribe. -->
+            @if (entry && canFavorite && !readOnly) {
               <button class="icon-btn-round"
                       type="button"
                       [class.icon-btn-round--fav-active]="entry.isFavorited"
@@ -120,8 +124,10 @@ import { MoodIconComponent } from '../../shared/mood-icon/mood-icon.component';
 
             <!-- Edit lives at the bottom of the entry, right-aligned —
                  a quieter "I'm done reading, want to change something"
-                 affordance than a big top-right button. -->
-            <div class="reading__edit-row">
+                 affordance than a big top-right button. Hidden in
+                 read-only mode (any write would 402 anyway, and we
+                 don't want to surface UI that can't act). -->
+            <div class="reading__edit-row" *ngIf="!readOnly">
               <button class="edit-btn" type="button" (click)="edit.emit()">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                      stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -431,6 +437,11 @@ export class EntryReaderComponent implements OnChanges {
   @Input() loading: boolean = false;
   @Input() loadError: boolean = false;
   @Input() canFavorite: boolean = false;
+  /** When true (trial expired w/o subscription, OR admin paywall
+   *  preview), the favorite heart and edit affordance are hidden.
+   *  The entry body still renders so the user can read their own
+   *  data. Set by the dashboard from AuthService.isReadOnly. */
+  @Input() readOnly: boolean = false;
 
   @Output() returnToToday = new EventEmitter<void>();
   @Output() edit = new EventEmitter<void>();

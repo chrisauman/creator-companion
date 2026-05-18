@@ -5,6 +5,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { ApiService } from '../../core/services/api.service';
+import { AuthService } from '../../core/services/auth.service';
 import { ActionItem } from '../../core/models/models';
 
 /**
@@ -51,21 +52,26 @@ import { ActionItem } from '../../core/models/models';
     <div class="todo-list">
 
       <!-- Persistent add input. Always visible at the top so users can
-           jot something without ceremony. Disabled at the cap. -->
-      <div class="todo-list__add" [class.todo-list__add--disabled]="atCap()">
-        <span class="todo-list__add-plus" aria-hidden="true">+</span>
-        <input class="todo-list__add-input"
-               type="text"
-               [(ngModel)]="newText"
-               (keydown.enter)="submitAdd()"
-               (keydown.escape)="cancelAdd()"
-               [placeholder]="atCap() ? 'List is full' : 'Add an item'"
-               [disabled]="atCap() || saving()"
-               maxlength="150">
-        @if (newText.length > 0 && newText.length >= 120) {
-          <span class="todo-list__char-count">{{ 150 - newText.length }}</span>
-        }
-      </div>
+           jot something without ceremony. Disabled at the cap. Hidden
+           entirely in read-only mode (trial expired w/o sub) — the
+           list below still renders so the user can see their items,
+           they just can't add until they subscribe. -->
+      @if (!readOnly()) {
+        <div class="todo-list__add" [class.todo-list__add--disabled]="atCap()">
+          <span class="todo-list__add-plus" aria-hidden="true">+</span>
+          <input class="todo-list__add-input"
+                 type="text"
+                 [(ngModel)]="newText"
+                 (keydown.enter)="submitAdd()"
+                 (keydown.escape)="cancelAdd()"
+                 [placeholder]="atCap() ? 'List is full' : 'Add an item'"
+                 [disabled]="atCap() || saving()"
+                 maxlength="150">
+          @if (newText.length > 0 && newText.length >= 120) {
+            <span class="todo-list__char-count">{{ 150 - newText.length }}</span>
+          }
+        </div>
+      }
       @if (atCap()) {
         <p class="todo-list__cap-note">
           Complete or delete some items to add more.
@@ -101,10 +107,13 @@ import { ActionItem } from '../../core/models/models';
                 </svg>
               </span>
 
-              <!-- Round checkbox -->
+              <!-- Round checkbox. Disabled (not hidden) in read-only
+                   mode so the row layout doesn't shift; the user can
+                   still see what's on their list. -->
               <button class="todo-list__check"
                       type="button"
                       (click)="toggle(item)"
+                      [disabled]="readOnly()"
                       title="Mark complete"
                       aria-label="Mark complete">
                 <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
@@ -117,6 +126,8 @@ import { ActionItem } from '../../core/models/models';
                    lines (matching how the .text span renders at rest)
                    instead of horizontally scrolling on a single line.
                    Auto-resizes via autoSize() on each input event. -->
+              <!-- Text or inline edit. In read-only mode click-to-edit
+                   is suppressed; the text just renders as plain. -->
               @if (editingId() === item.id) {
                 <textarea class="todo-list__edit-input"
                           [(ngModel)]="editText"
@@ -128,32 +139,35 @@ import { ActionItem } from '../../core/models/models';
                           maxlength="150"></textarea>
               } @else {
                 <span class="todo-list__text"
-                      (click)="startEdit(item)">{{ item.text }}</span>
+                      (click)="readOnly() ? null : startEdit(item)">{{ item.text }}</span>
               }
 
-              <!-- Desktop: hover-X delete (right edge). -->
-              <button class="todo-list__delete"
-                      type="button"
-                      (click)="deleteItem(item)"
-                      title="Delete"
-                      aria-label="Delete item">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                     stroke="currentColor" stroke-width="2"
-                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <line x1="18" y1="6" x2="6" y2="18"/>
-                  <line x1="6"  y1="6" x2="18" y2="18"/>
-                </svg>
-              </button>
+              <!-- Delete affordances hidden in read-only mode. -->
+              @if (!readOnly()) {
+                <!-- Desktop: hover-X delete (right edge). -->
+                <button class="todo-list__delete"
+                        type="button"
+                        (click)="deleteItem(item)"
+                        title="Delete"
+                        aria-label="Delete item">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                       stroke="currentColor" stroke-width="2"
+                       stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6"  y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
 
-              <!-- Mobile: swipe-revealed Delete tile (sits behind the row,
-                   visible only when swiped left). -->
-              <button class="todo-list__swipe-delete"
-                      type="button"
-                      (click)="deleteItem(item)"
-                      [attr.aria-hidden]="revealedItemId() !== item.id"
-                      [attr.tabindex]="revealedItemId() === item.id ? 0 : -1">
-                Delete
-              </button>
+                <!-- Mobile: swipe-revealed Delete tile (sits behind the row,
+                     visible only when swiped left). -->
+                <button class="todo-list__swipe-delete"
+                        type="button"
+                        (click)="deleteItem(item)"
+                        [attr.aria-hidden]="revealedItemId() !== item.id"
+                        [attr.tabindex]="revealedItemId() === item.id ? 0 : -1">
+                  Delete
+                </button>
+              }
             </li>
           }
         </ul>
@@ -223,6 +237,7 @@ import { ActionItem } from '../../core/models/models';
                   <button class="todo-list__check todo-list__check--done"
                           type="button"
                           (click)="toggle(item)"
+                          [disabled]="readOnly()"
                           title="Restore"
                           aria-label="Restore item">
                     <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
@@ -234,26 +249,30 @@ import { ActionItem } from '../../core/models/models';
 
                   <span class="todo-list__text todo-list__text--done">{{ item.text }}</span>
 
-                  <button class="todo-list__delete"
-                          type="button"
-                          (click)="deleteItem(item)"
-                          title="Delete"
-                          aria-label="Delete item">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                         stroke="currentColor" stroke-width="2"
-                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <line x1="18" y1="6" x2="6" y2="18"/>
-                      <line x1="6"  y1="6" x2="18" y2="18"/>
-                    </svg>
-                  </button>
+                  <!-- Delete affordances on completed items also hidden
+                       in read-only mode. -->
+                  @if (!readOnly()) {
+                    <button class="todo-list__delete"
+                            type="button"
+                            (click)="deleteItem(item)"
+                            title="Delete"
+                            aria-label="Delete item">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                           stroke="currentColor" stroke-width="2"
+                           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6"  y1="6" x2="18" y2="18"/>
+                      </svg>
+                    </button>
 
-                  <button class="todo-list__swipe-delete"
-                          type="button"
-                          (click)="deleteItem(item)"
-                          [attr.aria-hidden]="revealedItemId() !== item.id"
-                          [attr.tabindex]="revealedItemId() === item.id ? 0 : -1">
-                    Delete
-                  </button>
+                    <button class="todo-list__swipe-delete"
+                            type="button"
+                            (click)="deleteItem(item)"
+                            [attr.aria-hidden]="revealedItemId() !== item.id"
+                            [attr.tabindex]="revealedItemId() === item.id ? 0 : -1">
+                      Delete
+                    </button>
+                  }
                 </li>
               }
             </ul>
@@ -667,7 +686,13 @@ import { ActionItem } from '../../core/models/models';
   `]
 })
 export class ActionItemsCardComponent implements OnInit {
-  private api = inject(ApiService);
+  private api  = inject(ApiService);
+  private auth = inject(AuthService);
+
+  /** Drives the in-row write locks (add input hidden, checkboxes
+   *  disabled, delete/edit hidden). The list itself still renders so
+   *  the user keeps visibility into what they've got. */
+  readOnly = this.auth.isReadOnly;
   private host: ElementRef<HTMLElement> = inject(ElementRef);
 
   // ── Data ─────────────────────────────────────────────────────────
