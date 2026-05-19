@@ -32,6 +32,25 @@ export const authInterceptor: HttpInterceptorFn = (
 
       if (err.status !== 401) return throwError(() => err);
 
+      // ── Auth-endpoint passthrough ─────────────────────────────────────────
+      // 401 on the auth endpoints themselves (login, register, refresh,
+      // password-reset) means "those credentials are wrong" — NOT "your
+      // session expired." Trying to refresh against the same endpoint that
+      // just rejected you produces a cascading failure that surfaces in
+      // the login form as "Couldn't reach the server" (because the refresh
+      // error overrides the original 401 by the time it reaches the
+      // component). Pass the 401 through unchanged so login/register
+      // forms can show their real "Email or password is incorrect" message.
+      const url = req.url.toLowerCase();
+      const isAuthEndpoint =
+        url.includes('/auth/login')           ||
+        url.includes('/auth/register')        ||
+        url.includes('/auth/refresh')         ||
+        url.includes('/auth/forgot-password') ||
+        url.includes('/auth/reset-password')  ||
+        url.includes('/auth/verify-email');
+      if (isAuthEndpoint) return throwError(() => err);
+
       // ── Race-condition guard ──────────────────────────────────────────────
       // The auth guard fires a background refresh on page load. By the time a
       // 401 bounces back from the API, that refresh may have already completed
