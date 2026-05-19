@@ -13,7 +13,7 @@ public class ResendEmailService(IResend resend, IConfiguration config, AppDbCont
         <h2 style="margin-bottom:.5rem">Welcome, {displayName}!</h2>
         <p style="color:#555">You've taken the first step. Creator Companion is your private space to show up, write, and build a creative practice that sticks.</p>
         <h3 style="margin-top:1.5rem;margin-bottom:.5rem">A few things to try first:</h3>
-        <ul style="color:#555;line-height:2">
+        <ul style="color:#555;line-height:2;padding-left:1.25rem;margin:.25rem 0 1rem">
           <li><strong>Write your first entry</strong> — head to the dashboard and start today's entry</li>
           <li><strong>Set a daily reminder</strong> — a nudge at the right time makes all the difference</li>
           <li><strong>Check your Daily Spark</strong> — a fresh creative insight every day to fuel your work</li>
