@@ -38,7 +38,7 @@ public class ResendEmailService(IResend resend, IConfiguration config, AppDbCont
                      This link expires in <strong>24 hours</strong>.</p>
                   <a href="{verifyLink}"
                      style="display:inline-block;margin:1.5rem 0;padding:.75rem 1.5rem;
-                            background:#6c63ff;color:#fff;border-radius:8px;
+                            background:#0c0e13;color:#fff;border-radius:8px;
                             text-decoration:none;font-weight:600">
                     Verify email
                   </a>
@@ -69,7 +69,7 @@ public class ResendEmailService(IResend resend, IConfiguration config, AppDbCont
                      This link expires in <strong>1 hour</strong>.</p>
                   <a href="{resetLink}"
                      style="display:inline-block;margin:1.5rem 0;padding:.75rem 1.5rem;
-                            background:#6c63ff;color:#fff;border-radius:8px;
+                            background:#0c0e13;color:#fff;border-radius:8px;
                             text-decoration:none;font-weight:600">
                     Reset password
                   </a>
@@ -108,7 +108,7 @@ public class ResendEmailService(IResend resend, IConfiguration config, AppDbCont
                   <p style="color:#555">Keep showing up. That's all it takes.</p>
                   <a href="https://app.creatorcompanionapp.com/dashboard"
                      style="display:inline-block;margin:1.5rem 0;padding:.75rem 1.5rem;
-                            background:#6c63ff;color:#fff;border-radius:8px;
+                            background:#0c0e13;color:#fff;border-radius:8px;
                             text-decoration:none;font-weight:600">
                     Go to dashboard
                   </a>
@@ -139,7 +139,7 @@ public class ResendEmailService(IResend resend, IConfiguration config, AppDbCont
                      have been signed out as a security precaution.</p>
                   <p style="color:#555">If you didn't make this change, please
                      <a href="https://app.creatorcompanionapp.com/forgot-password"
-                        style="color:#6c63ff">reset your password immediately</a>
+                        style="color:#12C4E3">reset your password immediately</a>
                      and contact support.</p>
                   <p style="color:#999;font-size:.85rem;margin-top:2rem">
                     This is an automated security notification from {appName}.
@@ -172,7 +172,7 @@ public class ResendEmailService(IResend resend, IConfiguration config, AppDbCont
                   <div style="margin-top:2rem">
                     <a href="https://app.creatorcompanionapp.com/dashboard"
                        style="display:inline-block;padding:.75rem 1.5rem;
-                              background:#6c63ff;color:#fff;border-radius:8px;
+                              background:#0c0e13;color:#fff;border-radius:8px;
                               text-decoration:none;font-weight:600">
                       Go to dashboard
                     </a>
