@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using CreatorCompanion.Api.Application.DTOs;
+using CreatorCompanion.Api.Application.Interfaces;
 using CreatorCompanion.Api.Domain.Models;
 using CreatorCompanion.Api.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
@@ -11,7 +12,7 @@ namespace CreatorCompanion.Api.Api.Controllers;
 [ApiController]
 [Route("v1/reminders")]
 [Authorize]
-public class RemindersController(AppDbContext db) : ControllerBase
+public class RemindersController(AppDbContext db, IEntitlementService entitlements) : ControllerBase
 {
     /// <summary>How many reminder slots every user is normalised to.</summary>
     private const int SlotCount = 5;
@@ -73,6 +74,8 @@ public class RemindersController(AppDbContext db) : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateReminderRequest request)
     {
+        await EnforceAccessAsync();  // 402 if trial expired and no active sub
+
         if (!IsPaid)
             return BadRequest(new { error = "Custom reminders are available on the Paid plan." });
 
@@ -116,6 +119,8 @@ public class RemindersController(AppDbContext db) : ControllerBase
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateReminderRequest request)
     {
+        await EnforceAccessAsync();  // 402 if trial expired and no active sub
+
         var reminder = await db.Reminders.FirstOrDefaultAsync(r => r.Id == id && r.UserId == UserId);
         if (reminder is null) return NotFound();
 
@@ -156,6 +161,8 @@ public class RemindersController(AppDbContext db) : ControllerBase
     [HttpPost("auto-enable-first")]
     public async Task<IActionResult> AutoEnableFirst()
     {
+        await EnforceAccessAsync();  // 402 if trial expired and no active sub
+
         var anyEnabled = await db.Reminders.AnyAsync(r => r.UserId == UserId && r.IsEnabled);
         if (anyEnabled) return NoContent();
 
@@ -182,6 +189,8 @@ public class RemindersController(AppDbContext db) : ControllerBase
     [HttpPost("reset")]
     public async Task<IActionResult> Reset()
     {
+        await EnforceAccessAsync();  // 402 if trial expired and no active sub
+
         var existing = await db.Reminders
             .Where(r => r.UserId == UserId)
             .ToListAsync();
@@ -224,6 +233,8 @@ public class RemindersController(AppDbContext db) : ControllerBase
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {
+        await EnforceAccessAsync();  // 402 if trial expired and no active sub
+
         var reminder = await db.Reminders.FirstOrDefaultAsync(r => r.Id == id && r.UserId == UserId);
         if (reminder is null) return NotFound();
 
@@ -240,6 +251,22 @@ public class RemindersController(AppDbContext db) : ControllerBase
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Throws NoAccessException (→ 402 Payment Required via the global
+    /// filter) when the caller has no access (trial expired AND no
+    /// active subscription). Applied to every write endpoint on this
+    /// controller so a trial-expired user can't reconfigure pushes
+    /// that the background worker is already refusing to fire for
+    /// them. Reads (GET) stay open so the UI can still render their
+    /// existing reminder slots behind the paywall takeover.
+    /// </summary>
+    private async Task EnforceAccessAsync()
+    {
+        var user = await db.Users.FindAsync(UserId)
+            ?? throw new InvalidOperationException("User not found.");
+        entitlements.EnforceAccess(user);
+    }
 
     /// <summary>
     /// Keeps the default reminder in sync with custom reminder activity.

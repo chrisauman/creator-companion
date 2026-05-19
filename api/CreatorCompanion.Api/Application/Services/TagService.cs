@@ -14,7 +14,7 @@ namespace CreatorCompanion.Api.Application.Services;
 /// from before the May 2026 migration are decrypted transparently
 /// (DecryptString returns as-is when not prefixed).
 /// </summary>
-public class TagService(AppDbContext db, IEntryEncryptor encryptor) : ITagService
+public class TagService(AppDbContext db, IEntryEncryptor encryptor, IEntitlementService entitlements) : ITagService
 {
     // Domain string for the per-purpose deterministic hash so a tag
     // name and an entry title that happen to be the same plaintext
@@ -49,6 +49,13 @@ public class TagService(AppDbContext db, IEntryEncryptor encryptor) : ITagServic
 
     public async Task<TagResponse> CreateAsync(Guid userId, string name)
     {
+        // 402 if trial expired and no active sub. SetEntryTagsAsync (the
+        // entry-write path) doesn't need its own gate because EntryService
+        // already enforced access before we get here.
+        var user = await db.Users.FindAsync(userId)
+            ?? throw new InvalidOperationException("User not found.");
+        entitlements.EnforceAccess(user);
+
         var normalized = Normalize(name);
         if (string.IsNullOrEmpty(normalized))
             throw new InvalidOperationException("Tag name cannot be empty.");
@@ -72,6 +79,10 @@ public class TagService(AppDbContext db, IEntryEncryptor encryptor) : ITagServic
 
     public async Task<TagResponse> RenameAsync(Guid userId, Guid tagId, string newName)
     {
+        var user = await db.Users.FindAsync(userId)
+            ?? throw new InvalidOperationException("User not found.");
+        entitlements.EnforceAccess(user);  // 402 if trial expired and no active sub
+
         var tag = await db.Tags
             .FirstOrDefaultAsync(t => t.Id == tagId && t.UserId == userId)
             ?? throw new InvalidOperationException("Tag not found.");
@@ -96,6 +107,10 @@ public class TagService(AppDbContext db, IEntryEncryptor encryptor) : ITagServic
 
     public async Task DeleteAsync(Guid userId, Guid tagId)
     {
+        var user = await db.Users.FindAsync(userId)
+            ?? throw new InvalidOperationException("User not found.");
+        entitlements.EnforceAccess(user);  // 402 if trial expired and no active sub
+
         var tag = await db.Tags
             .FirstOrDefaultAsync(t => t.Id == tagId && t.UserId == userId)
             ?? throw new InvalidOperationException("Tag not found.");
