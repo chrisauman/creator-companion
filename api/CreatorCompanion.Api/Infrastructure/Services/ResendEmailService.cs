@@ -173,6 +173,9 @@ public class ResendEmailService(IResend resend, IConfiguration config, AppDbCont
             .Replace("{displayName}", displayName)
             .Replace("{username}",    displayName);
 
+        // Normalize admin-authored HTML for email rendering.
+        content = NormalizeEmailHtml(content);
+
         var message = new EmailMessage
         {
             From    = $"{appName} <{fromEmail}>",
@@ -406,5 +409,49 @@ public class ResendEmailService(IResend resend, IConfiguration config, AppDbCont
         };
 
         await resend.EmailSendAsync(message);
+    }
+
+    // ── HTML normalisation for admin-authored templates ──────────────
+    /// <summary>
+    /// Patches admin-authored HTML so it renders consistently in email
+    /// clients. The admin's contenteditable editor produces raw tags
+    /// (e.g. plain &lt;ul&gt; from the "List" toolbar button), and email
+    /// clients then apply their own defaults — most notably a
+    /// padding-left of around 40px on lists, which makes bullets look
+    /// deeply indented compared to the surrounding body text. We
+    /// inject inline styles on common block tags so the output matches
+    /// the hand-written defaults without forcing the admin editor to
+    /// understand inline styling.
+    ///
+    /// The negative lookahead (?![^&gt;]*\bstyle=) means "only inject
+    /// when the tag has no existing style attribute" — so future hand-
+    /// authored markup with explicit styles is left alone. Style
+    /// blocks (&lt;style&gt;...&lt;/style&gt;) are unreliable in email
+    /// clients, so inline-only is the right posture.
+    /// </summary>
+    private static string NormalizeEmailHtml(string html)
+    {
+        if (string.IsNullOrWhiteSpace(html)) return html;
+
+        // Lists: tighten padding so bullets sit just inside the body
+        // text margin, not 40px in. Matches both <ul> and <ol>.
+        html = System.Text.RegularExpressions.Regex.Replace(
+            html,
+            @"<(ul|ol)(?![^>]*\bstyle=)",
+            "<$1 style=\"padding-left:1.25rem;margin:.25rem 0 1rem;line-height:1.6;color:#555\"",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+        // Paragraphs: ensure consistent muted-grey body colour even
+        // when the admin didn't set it explicitly. Without this, dark-
+        // mode email clients flip to white-on-black and the unstyled
+        // paragraphs read as bright white, which doesn't match the
+        // styled defaults around them.
+        html = System.Text.RegularExpressions.Regex.Replace(
+            html,
+            @"<p(?![^>]*\bstyle=)>",
+            "<p style=\"color:#555;line-height:1.6;margin:.5rem 0\">",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+        return html;
     }
 }
