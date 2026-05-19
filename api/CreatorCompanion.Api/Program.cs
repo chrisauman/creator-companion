@@ -206,21 +206,14 @@ try
     // privacy migration. Idempotent + safe to run on every boot.
     builder.Services.AddHostedService<ContentEncryptionMigrator>();
 
-    // Substack auto-poster (admin-only marketing tool). Cookie protector
-    // is a singleton — the AES key is read once at startup and the
-    // protect/unprotect operations are stateless past that.
-    builder.Services.AddSingleton<ISubstackCookieProtector, SubstackCookieProtector>();
-    // HttpClient is typed so DI can supply it with retry/timeout policies
-    // later without rewriting consumers. Default timeout (100s) is fine —
-    // a single create-note request should complete in well under a second.
-    builder.Services.AddHttpClient<ISubstackPoster, SubstackPoster>();
-    // Shared post-firing logic used by both the background worker and
-    // the admin "Post now" endpoint. Scoped so it gets a fresh
-    // DbContext per worker tick / per HTTP request.
+    // Daily-spark reminder pipeline (admin-only). Used to be the
+    // Substack auto-poster — cookie protector + typed HttpClient +
+    // poster were removed alongside the pivot to "email the admin the
+    // daily spark for manual posting" (see SubstackPostingService
+    // header comment for the why). Class + table names kept as
+    // "Substack*" because Substack is the only consumer today; rename
+    // when we add a second platform (Bluesky/Mastodon/Threads).
     builder.Services.AddScoped<ISubstackPostingService, SubstackPostingService>();
-    // Background worker — calls into ISubstackPostingService every 60s.
-    // Independent of ReminderBackgroundService so a Substack outage
-    // can't affect push delivery or trial emails.
     builder.Services.AddHostedService<SubstackPostingBackgroundService>();
 
     // Production safety: required env-driven settings must be set

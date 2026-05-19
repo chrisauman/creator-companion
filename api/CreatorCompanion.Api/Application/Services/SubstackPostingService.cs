@@ -5,6 +5,21 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CreatorCompanion.Api.Application.Services;
 
+/// <summary>
+/// Outcome of a "send today's spark" attempt — emailed or (historically)
+/// posted. NoteId + RawResponse linger from the cookie-poster era; they
+/// stay nullable so old admin-history rows that DO have a real Substack
+/// note id keep deserialising cleanly, but new sends never populate
+/// them (no platform-side artefact when the action is just an email).
+/// </summary>
+public record SubstackPostResult(
+    bool    Success,
+    int?    StatusCode,
+    string? NoteId,
+    string? ErrorMessage,
+    string? RawResponse
+);
+
 public interface ISubstackPostingService
 {
     /// <summary>
@@ -15,30 +30,45 @@ public interface ISubstackPostingService
     Task TickAsync(CancellationToken ct);
 
     /// <summary>
-    /// Manually fire today's post right now — bypasses the random
-    /// fire-time roll. Used by the "Post now" button in the admin UI.
+    /// Manually fire today's reminder right now — bypasses the daily
+    /// schedule. Used by the "Send now" button in the admin UI.
     /// Behaviour by today's plan state:
     ///   - No plan: pick a spark, create a plan with ScheduledFor=now, fire.
     ///   - Pending: fire today's plan immediately.
-    ///   - Posted:  drop the existing plan (the spark becomes eligible
-    ///              again, but the picker will almost certainly choose
-    ///              a different one from the remaining pool), then
-    ///              create a new plan and fire. This is the "test
-    ///              again" path — admins explicitly clicking the button
-    ///              after a successful post want a fresh post, not a
-    ///              refusal.
-    ///   - Failed:  drop and retry (same as Posted path).
+    ///   - Sent:    drop the existing plan, pick a fresh spark, fire.
+    ///              (Use case: admin wants a re-send because they lost
+    ///              the email or want a different spark.)
+    ///   - Failed:  drop and retry (same as Sent path).
     /// Returns the outcome so the UI can surface it inline.
     /// </summary>
     Task<SubstackPostResult> FireNowAsync(CancellationToken ct);
 }
 
 /// <summary>
-/// Single source of truth for the Substack post-firing pipeline.
-/// Both the background worker (SubstackPostingBackgroundService) and
-/// the admin "Post now" endpoint delegate here so the picker, plan
-/// creation, post envelope, and failure handling are defined in
-/// exactly one place.
+/// Single source of truth for the daily-spark reminder pipeline.
+///
+/// History — this used to actually POST notes to Substack via a
+/// stolen browser session cookie. That broke roughly weekly when
+/// Substack rotated the cookie, leaving every retry to fail with 401.
+/// Substack has no public posting API, so cookie-stealing was the
+/// only option and it wasn't sustainable.
+///
+/// Current behaviour — instead of posting, we EMAIL the admin
+/// (chris@sanctuarymg.com) one spark per day so they can paste it
+/// into Substack Notes themselves. The plan-tracking + never-repeat
+/// picker + admin UI all stay intact: the only thing that changed is
+/// the action taken when the schedule fires (HTTP post → email send).
+///
+/// Class + table names are still "Substack*" because Substack is the
+/// only platform using this pipeline today. When we add a real API-
+/// based platform (Bluesky, Mastodon, Threads) the natural next step
+/// is to extract IPlatformPoster and rename. YAGNI until then —
+/// renaming for an abstraction with one concrete user is busywork.
+///
+/// Schedule — fires once daily at 07:00 America/New_York (auto-handles
+/// EST/EDT). The previous random 06:00–22:00 window made sense when
+/// the audience was Substack readers (human-looking cadence); for an
+/// email to yourself, predictable beats random.
 ///
 /// Scoped DI lifetime — gets a fresh DbContext per worker tick (or
 /// per HTTP request). The worker creates its own scope around each
@@ -46,39 +76,43 @@ public interface ISubstackPostingService
 /// </summary>
 public class SubstackPostingService : ISubstackPostingService
 {
-    private const int WindowStartHourLocal = 6;
-    private const int WindowEndHourLocal   = 22;
+    // Fixed daily send time. America/New_York handles DST automatically
+    // (EST in winter, EDT in summer) so the user always gets the email
+    // at "7am their time" without us having to do anything when the
+    // clocks change.
+    private const string ScheduleTimeZoneId = "America/New_York";
+    private const int    ScheduleHourLocal  = 7;
+
+    // Hardcoded recipient. The user is the sole admin and the email is
+    // a fully personal "post this to Substack today" reminder, so DB-
+    // driven recipient lookup is overkill. If/when more admins exist,
+    // swap to a Users query (IsAdmin && IsActive).
+    private const string RecipientEmail = "chris@sanctuarymg.com";
 
     private static readonly Random Rng = new();
     private static readonly object RngLock = new();
 
     private readonly AppDbContext _db;
-    private readonly ISubstackCookieProtector _protector;
-    private readonly ISubstackPoster _poster;
     private readonly IEmailService _email;
     private readonly ILogger<SubstackPostingService> _log;
 
     public SubstackPostingService(
         AppDbContext db,
-        ISubstackCookieProtector protector,
-        ISubstackPoster poster,
         IEmailService email,
         ILogger<SubstackPostingService> log)
     {
-        _db        = db;
-        _protector = protector;
-        _poster    = poster;
-        _email     = email;
-        _log       = log;
+        _db    = db;
+        _email = email;
+        _log   = log;
     }
 
     public async Task TickAsync(CancellationToken ct)
     {
         var settings = await _db.SubstackSettings.FirstOrDefaultAsync(ct);
-        if (settings is null || !settings.Active || string.IsNullOrWhiteSpace(settings.CookieEncrypted))
+        if (settings is null || !settings.Active)
             return;
 
-        var tz = ResolveTimeZone(settings.TimeZoneId);
+        var tz = ResolveTimeZone(ScheduleTimeZoneId);
         var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz));
 
         await EnsureTodayPlanAsync(today, tz, fireNow: false, ct);
@@ -100,22 +134,19 @@ public class SubstackPostingService : ISubstackPostingService
         var settings = await _db.SubstackSettings.FirstOrDefaultAsync(ct);
         if (settings is null)
             return new SubstackPostResult(false, null, null, "No settings row — visit Settings tab first.", null);
-        if (string.IsNullOrWhiteSpace(settings.CookieEncrypted))
-            return new SubstackPostResult(false, null, null, "No cookie saved — paste a cookie header on the Settings tab first.", null);
-        // Note: we deliberately do NOT require Active=true here. The
-        // admin should be able to test-fire from this button without
-        // committing to the daily cadence. The worker still respects
-        // Active for its own ticks.
 
-        var tz = ResolveTimeZone(settings.TimeZoneId);
+        // Active=false no longer blocks fire-now. The admin clicking
+        // "Send now" wants the email regardless of the daily-cadence
+        // toggle.
+        var tz = ResolveTimeZone(ScheduleTimeZoneId);
         var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz));
 
         // If today already has a Posted or Failed plan, drop it so we
-        // can create a fresh one with the new picker. The previously-
-        // posted spark becomes eligible again, but with ~290 unposted
+        // can create a fresh one with the picker. The previously-sent
+        // spark becomes eligible again, but with hundreds of unposted
         // sparks in the pool it almost certainly won't be picked twice.
-        // We don't drop a Pending plan — the admin probably wants to
-        // fire that exact plan rather than swap the spark.
+        // Don't drop a Pending plan — admin probably wants to fire that
+        // exact plan rather than swap the spark.
         var existing = await _db.SubstackDailyPlans
             .FirstOrDefaultAsync(p => p.Date == today, ct);
         if (existing is not null && existing.Status != SubstackPlanStatus.Pending)
@@ -135,9 +166,6 @@ public class SubstackPostingService : ISubstackPostingService
         if (plan is null)
             return new SubstackPostResult(false, null, null, "No eligible sparks remaining in the pool. Add more in Content Library.", null);
 
-        // Defensive: if a Pending plan somehow exists from a prior tick,
-        // fire it as-is. Otherwise (our fresh one) fire it too. Either
-        // way we're firing.
         return await FireOnePlanAsync(settings, plan, ct);
     }
 
@@ -151,9 +179,9 @@ public class SubstackPostingService : ISubstackPostingService
         var sparkId = await PickSparkIdAsync(ct);
         if (sparkId is null) return; // pool dry — caller handles
 
-        // For the daily-cadence path, roll a random minute inside the
-        // 06:00–22:00 local window. For force-fire, schedule for now
-        // so the very next firing pass picks it up.
+        // For the daily-cadence path, schedule for 07:00 local. For
+        // force-fire (admin "Send now" button), schedule for now so
+        // the very next tick of the firing loop picks it up.
         DateTime utcFire;
         if (fireNow)
         {
@@ -161,11 +189,8 @@ public class SubstackPostingService : ISubstackPostingService
         }
         else
         {
-            int minute;
-            lock (RngLock) minute = Rng.Next((WindowEndHourLocal - WindowStartHourLocal) * 60);
             var localFire = new DateTime(today.Year, today.Month, today.Day,
-                                         WindowStartHourLocal, 0, 0, DateTimeKind.Unspecified)
-                            .AddMinutes(minute);
+                                         ScheduleHourLocal, 0, 0, DateTimeKind.Unspecified);
             utcFire = TimeZoneInfo.ConvertTimeToUtc(localFire, tz);
         }
 
@@ -190,6 +215,11 @@ public class SubstackPostingService : ISubstackPostingService
 
     /// <summary>
     /// Picks one spark Id not yet referenced by a Posted plan row.
+    /// (Status name kept as "Posted" for backwards compatibility with
+    /// existing rows — semantically now means "sent in a reminder email
+    /// to the admin so won't be picked again." Renaming the enum
+    /// would force a destructive migration on a column that has
+    /// hundreds of existing values; not worth it.)
     /// Uses Postgres random() in production; falls back to client-side
     /// pick on in-memory provider (tests).
     /// </summary>
@@ -229,9 +259,13 @@ public class SubstackPostingService : ISubstackPostingService
     }
 
     /// <summary>
-    /// Sends one plan to Substack and persists the outcome. Returns
-    /// the raw poster result so the caller (worker or controller) can
-    /// surface it.
+    /// Emails today's plan to the admin recipient and persists the
+    /// outcome. Returns a structured result so the caller (worker or
+    /// controller) can surface it the same way the old HTTP-post path
+    /// did. NoteId is always null now (no platform-side artefact when
+    /// sending an email — keep the field nullable for back-compat with
+    /// existing rows that have real Substack note IDs from the old
+    /// auto-poster era).
     /// </summary>
     private async Task<SubstackPostResult> FireOnePlanAsync(
         SubstackSettings settings,
@@ -247,54 +281,39 @@ public class SubstackPostingService : ISubstackPostingService
             return new SubstackPostResult(false, null, null, err, null);
         }
 
-        string cookie;
-        try { cookie = _protector.Unprotect(settings.CookieEncrypted!); }
+        try
+        {
+            await _email.SendDailySparkReminderAsync(
+                RecipientEmail,
+                plan.Spark.Takeaway ?? "(no takeaway)",
+                plan.Spark.FullContent);
+        }
         catch (Exception ex)
         {
-            await RecordFailureAsync(settings, plan, null,
-                $"Could not decrypt stored cookie: {ex.Message}", null, isCookieExpired: true, ct);
-            return new SubstackPostResult(false, null, null, "Could not decrypt stored cookie. Re-paste it.", null);
+            await RecordFailureAsync(settings, plan, ex.Message, ct);
+            return new SubstackPostResult(false, null, null, ex.Message, null);
         }
 
-        var body = BuildPostBody(plan.Spark);
-        var result = await _poster.PostNoteAsync(cookie, body, ct);
+        plan.Status         = SubstackPlanStatus.Posted;
+        plan.PostedAt       = DateTime.UtcNow;
+        plan.SubstackNoteId = null;
+        plan.ErrorMessage   = null;
 
-        if (result.Success)
-        {
-            plan.Status         = SubstackPlanStatus.Posted;
-            plan.PostedAt       = DateTime.UtcNow;
-            plan.SubstackNoteId = result.NoteId;
-            plan.ErrorMessage   = null;
+        settings.LastSuccessAt       = DateTime.UtcNow;
+        settings.LastFailureMessage  = null;
+        settings.ConsecutiveFailures = 0;
+        settings.UpdatedAt           = DateTime.UtcNow;
 
-            settings.LastSuccessAt       = DateTime.UtcNow;
-            settings.LastFailureMessage  = null;
-            settings.ConsecutiveFailures = 0;
-            settings.UpdatedAt           = DateTime.UtcNow;
+        await _db.SaveChangesAsync(ct);
+        _log.LogInformation("Daily-spark reminder emailed for plan {PlanId}.", plan.Id);
 
-            await _db.SaveChangesAsync(ct);
-            _log.LogInformation("Substack post succeeded for plan {PlanId} (note {NoteId}).", plan.Id, result.NoteId);
-        }
-        else
-        {
-            var isCookieExpired = result.StatusCode is 401 or 403;
-            await RecordFailureAsync(settings, plan,
-                result.StatusCode,
-                result.ErrorMessage ?? "Unknown failure.",
-                result.RawResponse,
-                isCookieExpired,
-                ct);
-        }
-
-        return result;
+        return new SubstackPostResult(true, 200, null, null, null);
     }
 
     private async Task RecordFailureAsync(
         SubstackSettings settings,
         SubstackDailyPlan plan,
-        int? statusCode,
         string errorMessage,
-        string? rawBody,
-        bool isCookieExpired,
         CancellationToken ct)
     {
         var truncated = errorMessage.Length > 1500 ? errorMessage[..1500] + "…" : errorMessage;
@@ -307,52 +326,14 @@ public class SubstackPostingService : ISubstackPostingService
         settings.ConsecutiveFailures += 1;
         settings.UpdatedAt           = DateTime.UtcNow;
 
-        if (isCookieExpired) settings.Active = false;
-
         await _db.SaveChangesAsync(ct);
 
-        var shouldEmail = settings.ConsecutiveFailures == 1 ||
-                          settings.ConsecutiveFailures % 5 == 0;
-        if (!shouldEmail) return;
+        _log.LogWarning("Daily-spark email send failed for plan {PlanId}: {Error}", plan.Id, truncated);
 
-        var adminEmail = await _db.Users
-            .Where(u => u.IsAdmin && u.IsActive)
-            .OrderBy(u => u.CreatedAt)
-            .Select(u => u.Email)
-            .FirstOrDefaultAsync(ct);
-
-        if (string.IsNullOrWhiteSpace(adminEmail)) return;
-
-        try
-        {
-            await _email.SendSubstackPostFailedAsync(adminEmail, statusCode, truncated, rawBody, isCookieExpired);
-        }
-        catch
-        {
-            // Don't let an email failure cascade — the persisted plan
-            // row already carries the error message.
-        }
-    }
-
-    /// <summary>
-    /// Format a spark for posting. Always sends takeaway + full content
-    /// together (separated by a blank line), per project intent: the
-    /// takeaway is the hook and the full content is the explanation —
-    /// they belong together. Substack Notes accept long-form text so
-    /// we no longer truncate. If one of the two is missing we just
-    /// post whichever is present.
-    /// </summary>
-    private static string BuildPostBody(MotivationEntry spark)
-    {
-        var takeaway = (spark.Takeaway ?? "").Trim();
-        var full     = (spark.FullContent ?? "").Trim();
-
-        if (string.IsNullOrEmpty(takeaway) && string.IsNullOrEmpty(full))
-            return "(empty spark)";
-        if (string.IsNullOrEmpty(takeaway)) return full;
-        if (string.IsNullOrEmpty(full))     return takeaway;
-
-        return $"{takeaway}\n\n{full}";
+        // No admin-alert email on failure — the failure IS an email
+        // failure, so we can't reliably send another one to report it.
+        // The admin UI surfaces LastFailureMessage on the Settings tab
+        // and ErrorMessage on the History tab; that's enough.
     }
 
     private static TimeZoneInfo ResolveTimeZone(string id)

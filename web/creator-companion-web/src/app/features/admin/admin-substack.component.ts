@@ -6,22 +6,24 @@ import { ApiService, SubstackSettings, SubstackTestPostResult, SubstackPlan } fr
 import { AdminShellComponent } from './admin-shell.component';
 
 /**
- * Admin-only Substack auto-poster control surface.
+ * Admin-only Substack daily-reminder-email control surface.
+ *
+ * History — used to be a Substack auto-poster (paste cookie → background
+ * worker calls Substack's create-note endpoint daily). The cookie expired
+ * roughly weekly and there's no real Substack posting API, so we pivoted
+ * to emailing the admin the daily spark for manual posting. The plan-
+ * tracking + never-repeat picker + admin UI all survived the pivot; the
+ * cookie paste UI, timezone picker, and HTTP-poster did not.
  *
  * Three tabs:
- *   - Settings: paste cookie header, timezone, active toggle, health
- *     summary, "Send a test post now" round-trip.
- *   - Today: shows the worker's plan for the current day — which
- *     spark, what time it'll fire, status. Reroll button to swap.
+ *   - Settings: on/off toggle + health summary. Schedule (7am ET) and
+ *     recipient (chris@sanctuarymg.com) are hardcoded server-side.
+ *   - Today: shows today's planned spark, status, and a "send now"
+ *     override that bypasses the 7am schedule.
  *   - History: last 60 days of plans, newest first, with outcome.
  *
- * Why a single component for three tabs (vs. three routes): they share
- * one data source (settings + plan rows), the user mental model is one
- * page, and tab-switching is purely visual. A routed split would
- * trigger fresh API calls per click for no UX gain.
- *
- * Tab-switching does lazily fetch today/history on first visit, then
- * caches in signals — switching back is instant.
+ * Tab-switching lazy-fetches today/history on first visit, then caches
+ * in signals — switching back is instant.
  */
 @Component({
   selector: 'app-admin-substack',
@@ -32,12 +34,13 @@ import { AdminShellComponent } from './admin-shell.component';
       <div class="substack-page">
 
         <header class="substack-page__header">
-          <h2 class="substack-page__title">Substack Auto-Poster</h2>
+          <h2 class="substack-page__title">Substack Daily Reminder Email</h2>
           <p class="substack-page__sub">
-            Posts one spark per day to your Substack Notes feed at a
-            random time between 6 AM and 10 PM in your timezone. A spark
-            is never reposted — the picker excludes anything already
-            published. Phase 1: paste your cookie and verify auth.
+            Emails you one spark per day at <strong>7:00 AM Eastern Time</strong>
+            so you can paste it into Substack Notes manually. A spark is
+            never repeated — the picker excludes anything already sent.
+            (Auto-posting via session cookie was abandoned; Substack has
+            no public posting API and the cookies expired weekly.)
           </p>
         </header>
 
@@ -79,9 +82,9 @@ import { AdminShellComponent } from './admin-shell.component';
           @if (tab() === 'settings') {
             <section class="substack-card">
 
-              <!-- Health row — surface the worker's last outcome up-top
-                   so the admin reads it before scrolling. Mutes when
-                   there's no history yet (fresh install). -->
+              <!-- Health row — worker's last outcome up-top so the admin
+                   reads it before scrolling. Cookie row is gone with the
+                   cookie field; everything else stays. -->
               <div class="substack-health">
                 <div class="substack-health__row">
                   <span class="substack-health__label">Status</span>
@@ -94,14 +97,12 @@ import { AdminShellComponent } from './admin-shell.component';
                   </span>
                 </div>
                 <div class="substack-health__row">
-                  <span class="substack-health__label">Cookie</span>
-                  <span class="substack-health__value">
-                    @if (s.cookieIsSet) {
-                      <span class="substack-pill substack-pill--on">Saved</span>
-                    } @else {
-                      <span class="substack-pill substack-pill--off">Not set</span>
-                    }
-                  </span>
+                  <span class="substack-health__label">Schedule</span>
+                  <span class="substack-health__value">7:00 AM Eastern (daily)</span>
+                </div>
+                <div class="substack-health__row">
+                  <span class="substack-health__label">Recipient</span>
+                  <span class="substack-health__value">chris&#64;sanctuarymg.com</span>
                 </div>
                 <div class="substack-health__row">
                   <span class="substack-health__label">Last success</span>
@@ -121,55 +122,9 @@ import { AdminShellComponent } from './admin-shell.component';
                 }
               </div>
 
-              <!-- Cookie paste field. We never echo the stored value
-                   back — the field is always empty on load, and only
-                   gets written if the admin types something new. This
-                   prevents a half-typed paste from clobbering a known-
-                   good saved cookie on accidental save. -->
-              <label class="substack-field">
-                <span class="substack-field__label">Substack cookie header (full)</span>
-                <textarea class="substack-field__input substack-field__input--mono"
-                          rows="6"
-                          placeholder="Paste the full Cookie header value here (leave blank to keep current)"
-                          [(ngModel)]="cookieInput"
-                          autocomplete="off"
-                          spellcheck="false"></textarea>
-                <span class="substack-field__hint">
-                  Substack sits behind Cloudflare, so just <code>substack.sid</code>
-                  isn't enough — we need every cookie the browser sends.
-                  How to grab them: log into <strong>substack.com</strong>
-                  → F12 → Network tab → click any request to
-                  substack.com → Headers → Request Headers → copy the
-                  value after <code>Cookie:</code>. Saved encrypted at rest.
-                </span>
-              </label>
-
-              <!-- Cloudflare cf_clearance cookies are IP- and UA-bound
-                   in stricter modes. Surface this risk up-front so the
-                   admin understands why posts may stop working until
-                   they re-paste. -->
-              <div class="substack-callout">
-                <strong>Heads up:</strong> Some of the cookies (notably
-                <code>cf_clearance</code>) are tied to your browser's IP
-                and User-Agent. They may expire or stop working when
-                replayed from Railway's server IP. If posts start
-                failing, re-paste a fresh cookie header.
-              </div>
-
-              <label class="substack-field">
-                <span class="substack-field__label">Timezone (IANA id)</span>
-                <input class="substack-field__input"
-                       type="text"
-                       placeholder="America/Los_Angeles"
-                       [(ngModel)]="tzInput" />
-                <span class="substack-field__hint">
-                  Used to compute the 6 AM – 10 PM local posting window.
-                </span>
-              </label>
-
               <label class="substack-toggle">
                 <input type="checkbox" [(ngModel)]="activeInput" />
-                <span>Active — let the worker post once per day</span>
+                <span>Active — email me one spark per day at 7am ET</span>
               </label>
 
               <div class="substack-actions">
@@ -179,39 +134,7 @@ import { AdminShellComponent } from './admin-shell.component';
                         (click)="save()">
                   {{ saving() ? 'Saving…' : 'Save settings' }}
                 </button>
-                <button class="btn btn--ghost"
-                        type="button"
-                        [disabled]="testing() || !s.cookieIsSet"
-                        (click)="testPost()"
-                        [title]="s.cookieIsSet ? '' : 'Save a cookie first.'">
-                  {{ testing() ? 'Posting…' : 'Send a test post now' }}
-                </button>
               </div>
-
-              @if (testResult(); as r) {
-                <div class="substack-test"
-                     [class.substack-test--ok]="r.success"
-                     [class.substack-test--fail]="!r.success">
-                  <div class="substack-test__head">
-                    <strong>{{ r.success ? 'Test post succeeded' : 'Test post failed' }}</strong>
-                    @if (r.statusCode != null) {
-                      <span class="substack-test__status">HTTP {{ r.statusCode }}</span>
-                    }
-                  </div>
-                  @if (r.noteId) {
-                    <p class="substack-test__line">Note id: <code>{{ r.noteId }}</code></p>
-                  }
-                  @if (r.errorMessage) {
-                    <p class="substack-test__line">{{ r.errorMessage }}</p>
-                  }
-                  @if (r.rawResponse) {
-                    <details class="substack-test__raw">
-                      <summary>Raw response</summary>
-                      <pre>{{ r.rawResponse }}</pre>
-                    </details>
-                  }
-                </div>
-              }
             </section>
           }
 
@@ -230,19 +153,18 @@ import { AdminShellComponent } from './admin-shell.component';
                   No plan for today yet.
                   @if (s.active) {
                     The worker creates one on its next tick (within
-                    ~60 seconds). Or post one immediately:
+                    ~60 seconds). Or send one immediately:
                   } @else {
                     The worker is paused (Active is off in Settings).
-                    You can still post one immediately:
+                    You can still send one immediately:
                   }
                 </p>
                 <div class="substack-actions" style="margin-top:1rem">
                   <button class="btn btn--primary"
                           type="button"
-                          [disabled]="firingNow() || !s.cookieIsSet"
-                          (click)="fireNow()"
-                          [title]="s.cookieIsSet ? '' : 'Save a cookie on the Settings tab first.'">
-                    {{ firingNow() ? 'Posting…' : 'Post a random spark now' }}
+                          [disabled]="firingNow()"
+                          (click)="fireNow()">
+                    {{ firingNow() ? 'Sending…' : 'Send today\\'s spark to me now' }}
                   </button>
                 </div>
                 @if (fireResult(); as r) {
@@ -251,14 +173,8 @@ import { AdminShellComponent } from './admin-shell.component';
                        [class.substack-test--fail]="!r.success"
                        style="margin-top:1.25rem">
                     <div class="substack-test__head">
-                      <strong>{{ r.success ? 'Posted to Substack' : 'Post failed' }}</strong>
-                      @if (r.statusCode != null) {
-                        <span class="substack-test__status">HTTP {{ r.statusCode }}</span>
-                      }
+                      <strong>{{ r.success ? 'Reminder email sent' : 'Send failed' }}</strong>
                     </div>
-                    @if (r.noteId) {
-                      <p class="substack-test__line">Note id: <code>{{ r.noteId }}</code></p>
-                    }
                     @if (r.errorMessage) {
                       <p class="substack-test__line">{{ r.errorMessage }}</p>
                     }
@@ -287,7 +203,7 @@ import { AdminShellComponent } from './admin-shell.component';
                   </div>
                   @if (today()!.postedAt) {
                     <div class="substack-today__row">
-                      <span class="substack-today__label">Posted at</span>
+                      <span class="substack-today__label">Sent at</span>
                       <span class="substack-today__value">{{ formatStamp(today()!.postedAt!) }}</span>
                     </div>
                   }
@@ -310,7 +226,7 @@ import { AdminShellComponent } from './admin-shell.component';
                             type="button"
                             [disabled]="firingNow()"
                             (click)="fireNow()">
-                      {{ firingNow() ? 'Posting…' : 'Post now (skip the schedule)' }}
+                      {{ firingNow() ? 'Sending…' : 'Send now (skip the 7am schedule)' }}
                     </button>
                     <button class="btn btn--ghost"
                             type="button"
@@ -321,38 +237,31 @@ import { AdminShellComponent } from './admin-shell.component';
                   </div>
                 }
 
-                <!-- When today is already Posted but the admin wants to
-                     trigger a fresh post anyway: surface "Post now" so
-                     it's discoverable. The endpoint itself will return
-                     "already posted today" if they click — phase 4 can
-                     relax this if testing requires multiple posts per
-                     day. -->
+                <!-- When today is already Sent (status "Posted" in DB
+                     for back-compat) but the admin wants to re-send.
+                     fireNow drops the existing plan and picks a fresh
+                     spark — useful if the email got lost or the admin
+                     wants a different one. -->
                 @if (today()!.status !== 'Pending') {
                   <div class="substack-actions" style="margin-top:1.25rem">
                     <button class="btn btn--ghost"
                             type="button"
                             [disabled]="firingNow()"
                             (click)="fireNow()">
-                      {{ firingNow() ? 'Posting…' : 'Try posting again now' }}
+                      {{ firingNow() ? 'Sending…' : 'Re-send (fresh spark)' }}
                     </button>
                   </div>
                 }
 
-                <!-- Result panel for fireNow, same shape as testPost. -->
+                <!-- Result panel for fireNow. -->
                 @if (fireResult(); as r) {
                   <div class="substack-test"
                        [class.substack-test--ok]="r.success"
                        [class.substack-test--fail]="!r.success"
                        style="margin-top:1.25rem">
                     <div class="substack-test__head">
-                      <strong>{{ r.success ? 'Posted to Substack' : 'Post failed' }}</strong>
-                      @if (r.statusCode != null) {
-                        <span class="substack-test__status">HTTP {{ r.statusCode }}</span>
-                      }
+                      <strong>{{ r.success ? 'Reminder email sent' : 'Send failed' }}</strong>
                     </div>
-                    @if (r.noteId) {
-                      <p class="substack-test__line">Note id: <code>{{ r.noteId }}</code></p>
-                    }
                     @if (r.errorMessage) {
                       <p class="substack-test__line">{{ r.errorMessage }}</p>
                     }
@@ -368,7 +277,7 @@ import { AdminShellComponent } from './admin-shell.component';
                      [class.substack-pool--warn]="(eligibleCount() ?? 99) < 10"
                      [class.substack-pool--urgent]="(eligibleCount() ?? 99) < 3">
                   <strong>{{ eligibleCount() }}</strong>
-                  unposted spark{{ eligibleCount() === 1 ? '' : 's' }} remaining in the pool.
+                  unsent spark{{ eligibleCount() === 1 ? '' : 's' }} remaining in the pool.
                   @if ((eligibleCount() ?? 99) < 10) {
                     Add more in <a routerLink="/admin/motivation">Content Library</a>
                     before the worker runs out.
@@ -385,9 +294,9 @@ import { AdminShellComponent } from './admin-shell.component';
                 <p class="substack-page__loading">Loading history…</p>
               } @else if (history().length === 0) {
                 <p class="substack-empty">
-                  No posts yet. Once the worker fires its first scheduled
-                  post (or you trigger one via Test Post), it'll show
-                  up here.
+                  No reminders sent yet. Once the worker fires its first
+                  scheduled send (7am ET) — or you trigger one via the
+                  Today tab — it'll show up here.
                 </p>
               } @else {
                 <table class="substack-history">
@@ -842,10 +751,13 @@ export class AdminSubstackComponent implements OnInit {
 
   loading = signal(true);
   saving  = signal(false);
-  testing = signal(false);
   error   = signal<string | null>(null);
 
   settings = signal<SubstackSettings | null>(null);
+  // testResult kept (instead of removed) only for type-import survival —
+  // the actual test-post button is gone with the cookie pipeline.
+  // Reserved for re-use if we ever add a "send a synthetic test email"
+  // button.
   testResult = signal<SubstackTestPostResult | null>(null);
 
   // Today + History tab state. Loaded lazily — fetch on first tab visit,
@@ -864,12 +776,8 @@ export class AdminSubstackComponent implements OnInit {
 
   eligibleCount  = signal<number | null>(null);
 
-  // Form inputs. We deliberately don't bind cookie to settings.cookieIsSet
-  // — the cookie value never leaves the server, so this field always
-  // starts blank and the admin types a fresh paste when they want to
-  // rotate it.
-  cookieInput = '';
-  tzInput = 'UTC';
+  // Only form input left after the pivot — the schedule/timezone/
+  // recipient are all server-hardcoded now.
   activeInput = false;
 
   ngOnInit(): void {
@@ -996,7 +904,6 @@ export class AdminSubstackComponent implements OnInit {
     this.api.adminGetSubstackSettings().subscribe({
       next: s => {
         this.settings.set(s);
-        this.tzInput = s.timeZoneId;
         this.activeInput = s.active;
         this.loading.set(false);
       },
@@ -1010,47 +917,16 @@ export class AdminSubstackComponent implements OnInit {
   save(): void {
     this.saving.set(true);
     this.error.set(null);
-    this.testResult.set(null);
     this.api.adminUpdateSubstackSettings({
-      active:     this.activeInput,
-      timeZoneId: this.tzInput.trim() || 'UTC',
-      cookie:     this.cookieInput.trim() || null,
+      active: this.activeInput,
     }).subscribe({
       next: s => {
         this.settings.set(s);
-        // Clear the textarea on success so a refresh doesn't accidentally
-        // resubmit the stale paste.
-        this.cookieInput = '';
         this.saving.set(false);
       },
       error: err => {
         this.error.set(this.errMsg(err) || 'Could not save settings.');
         this.saving.set(false);
-      }
-    });
-  }
-
-  testPost(): void {
-    this.testing.set(true);
-    this.testResult.set(null);
-    this.error.set(null);
-    this.api.adminSubstackTestPost().subscribe({
-      next: r => {
-        this.testResult.set(r);
-        this.testing.set(false);
-      },
-      error: err => {
-        // Non-2xx from our own API (e.g. 400 "no cookie set") — surface
-        // it as the test result rather than the top-level error banner
-        // since it's about the test itself.
-        this.testResult.set({
-          success: false,
-          statusCode: err?.status ?? null,
-          noteId: null,
-          errorMessage: this.errMsg(err) || 'Could not run test post.',
-          rawResponse: null
-        });
-        this.testing.set(false);
       }
     });
   }

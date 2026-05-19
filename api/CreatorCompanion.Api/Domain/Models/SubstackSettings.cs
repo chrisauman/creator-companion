@@ -1,35 +1,30 @@
 namespace CreatorCompanion.Api.Domain.Models;
 
 /// <summary>
-/// Singleton-ish settings row for the automated Substack Notes poster.
+/// Singleton-ish settings row for the daily-spark reminder pipeline.
 /// Only one row is ever expected (Id=1 by convention). Holds the
-/// encrypted session cookie, scheduling window, and last-known health
-/// state for the background worker. The Active toggle gates the whole
-/// pipeline — flipped to false automatically on a 401 from Substack so
-/// we stop hammering until the admin re-pastes a fresh cookie.
+/// active toggle and the last-known health state for the background
+/// worker.
+///
+/// History — this used to store the AES-GCM-encrypted Substack session
+/// cookie + admin's local timezone for the random 6am–10pm posting
+/// window. That cookie-stealing path was abandoned (cookies expired
+/// weekly and there's no real Substack posting API). The reminder now
+/// runs at a hardcoded 7am America/New_York; the TimeZoneId and
+/// CookieEncrypted columns are scheduled for removal in the next
+/// migration. Plan history (SubstackDailyPlans) is preserved untouched
+/// — those rows still represent "this spark was sent."
 /// </summary>
 public class SubstackSettings
 {
     public int Id { get; set; }
 
     /// <summary>
-    /// AES-GCM-encrypted Substack session cookie value (the substack.sid
-    /// cookie copied out of the admin's browser DevTools). Stored as
-    /// base64 of the ciphertext+nonce+tag bundle. Null until the admin
-    /// pastes one in.
-    /// </summary>
-    public string? CookieEncrypted { get; set; }
-
-    /// <summary>
-    /// IANA tz id (e.g. "America/Los_Angeles") used to compute the local
-    /// 06:00–22:00 posting window. Defaults to UTC.
-    /// </summary>
-    public string TimeZoneId { get; set; } = "UTC";
-
-    /// <summary>
-    /// Master kill-switch. False until the admin pastes a cookie and
-    /// explicitly enables. Auto-flipped to false by the worker on 401
-    /// so failed-auth doesn't loop indefinitely.
+    /// Master toggle. False until the admin explicitly enables. When
+    /// true, the worker fires one reminder email per day at 07:00
+    /// America/New_York. The historical "auto-flip to false on 401"
+    /// path is gone — email sends don't have an auth-expired failure
+    /// mode equivalent to a stale cookie.
     /// </summary>
     public bool Active { get; set; } = false;
 
@@ -38,7 +33,7 @@ public class SubstackSettings
     public string? LastFailureMessage { get; set; }
 
     /// <summary>
-    /// Resets to 0 on each successful post. Used to surface "this is on
+    /// Resets to 0 on each successful send. Used to surface "this is on
     /// fire" in the admin UI without grepping logs.
     /// </summary>
     public int ConsecutiveFailures { get; set; } = 0;

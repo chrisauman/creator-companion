@@ -9,20 +9,25 @@ using Microsoft.EntityFrameworkCore;
 namespace CreatorCompanion.Api.Api.Controllers;
 
 /// <summary>
-/// Admin-only controller for the Substack auto-poster's settings and
-/// the one-shot "send a test post" round-trip. The actual scheduled
-/// posting lives in a separate background worker (added in phase 3).
+/// Admin-only controller for the daily-spark reminder pipeline. The
+/// background worker (SubstackPostingBackgroundService) calls into
+/// ISubstackPostingService daily at 07:00 ET to email today's spark
+/// to the admin for manual posting to Substack. This controller exposes
+/// the on/off toggle, history of past sends, and a "send now" override.
+///
+/// History — this used to also expose a cookie-paste endpoint (so the
+/// admin could keep refreshing the Substack session cookie) and a
+/// test-post endpoint (that hit Substack's API directly). Both removed
+/// when we pivoted from auto-posting to email reminders.
 /// </summary>
 [ApiController]
 [Route("v1/admin/substack")]
 [Authorize(Roles = "Admin")]
 public class AdminSubstackController(
     AppDbContext db,
-    ISubstackCookieProtector protector,
-    ISubstackPoster poster,
     ISubstackPostingService posting) : ControllerBase
 {
-    /// <summary>Get current settings (cookie never returned).</summary>
+    /// <summary>Get current settings (active toggle + health snapshot).</summary>
     [HttpGet("settings")]
     public async Task<IActionResult> GetSettings(CancellationToken ct)
     {
@@ -31,78 +36,19 @@ public class AdminSubstackController(
     }
 
     /// <summary>
-    /// Update settings. Cookie is optional — only overwritten if a non-
-    /// empty value is supplied. Setting the cookie resets the failure
-    /// counter on the assumption that the admin is intervening to fix
-    /// whatever broke.
+    /// Update settings. Only the active toggle is editable — schedule
+    /// + timezone + recipient are now hardcoded server-side (7am ET to
+    /// chris@sanctuarymg.com). The cookie field is gone; if the request
+    /// still sends one (stale frontend) we ignore it silently.
     /// </summary>
     [HttpPut("settings")]
     public async Task<IActionResult> UpdateSettings([FromBody] UpdateSubstackSettingsRequest req, CancellationToken ct)
     {
         var s = await GetOrCreateSettingsAsync(ct);
-
-        s.Active     = req.Active;
-        s.TimeZoneId = req.TimeZoneId.Trim();
-
-        if (!string.IsNullOrWhiteSpace(req.Cookie))
-        {
-            try
-            {
-                s.CookieEncrypted = protector.Protect(req.Cookie.Trim());
-            }
-            catch (InvalidOperationException ex)
-            {
-                // Most common case: Substack:EncryptionKey not configured.
-                // Surface the exact message from the protector so the admin
-                // can act on it without grepping logs.
-                return StatusCode(503, new { error = ex.Message });
-            }
-            s.ConsecutiveFailures = 0;
-            s.LastFailureMessage = null;
-        }
-
+        s.Active    = req.Active;
         s.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
         return Ok(Map(s));
-    }
-
-    /// <summary>
-    /// One-shot smoke test. Decrypts the stored cookie, sends a
-    /// hardcoded test note to Substack, and returns the full outcome so
-    /// the admin can verify auth before turning on Active. Does NOT
-    /// touch settings on failure — the test is read-only against
-    /// state, the only side effect is whatever Substack records.
-    /// </summary>
-    [HttpPost("test-post")]
-    public async Task<IActionResult> TestPost(CancellationToken ct)
-    {
-        var s = await GetOrCreateSettingsAsync(ct);
-        if (string.IsNullOrWhiteSpace(s.CookieEncrypted))
-            return BadRequest(new { error = "No Substack cookie has been saved yet. Paste one in Settings first." });
-
-        string cookie;
-        try
-        {
-            cookie = protector.Unprotect(s.CookieEncrypted);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { error = $"Stored cookie could not be decrypted ({ex.Message}). Re-paste it in Settings." });
-        }
-
-        var body = $"Test post from Creator Companion — {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}Z. " +
-                   $"If you see this on your Substack Notes feed, auth is working. " +
-                   $"If you don't, the request shape needs updating in phase 2.";
-
-        var result = await poster.PostNoteAsync(cookie, body, ct);
-
-        return Ok(new SubstackTestPostResponse(
-            result.Success,
-            result.StatusCode,
-            result.NoteId,
-            result.ErrorMessage,
-            result.RawResponse
-        ));
     }
 
     /// <summary>
@@ -112,23 +58,19 @@ public class AdminSubstackController(
     [HttpGet("today")]
     public async Task<IActionResult> GetToday(CancellationToken ct)
     {
-        var settings = await GetOrCreateSettingsAsync(ct);
-        var today = TodayInTz(settings.TimeZoneId);
-
+        var today = TodayInScheduleTz();
         var plan = await db.SubstackDailyPlans
             .Include(p => p.Spark)
             .FirstOrDefaultAsync(p => p.Date == today, ct);
-
         return Ok(plan is null ? null : MapPlan(plan));
     }
 
     /// <summary>
-    /// Manually fire today's post right now, bypassing the random
-    /// schedule. If today's plan doesn't exist yet, creates one (with
-    /// ScheduledFor=now) and fires it. If today is already Posted,
-    /// returns an error rather than double-posting. Returns the full
-    /// outcome so the UI can show the same success/failure panel as
-    /// the test-post button.
+    /// Manually fire today's reminder right now, bypassing the 07:00
+    /// schedule. Creates a plan if today doesn't have one. If today is
+    /// already Sent, drops it and picks a fresh spark so the admin can
+    /// re-test or re-receive. Returns the outcome so the UI can show
+    /// success/failure inline.
     /// </summary>
     [HttpPost("today/fire-now")]
     public async Task<IActionResult> FireNow(CancellationToken ct)
@@ -139,22 +81,19 @@ public class AdminSubstackController(
     }
 
     /// <summary>
-    /// Manually reroll today's plan (pick a new spark and a new random
-    /// fire time) — only allowed if today's plan is still Pending.
-    /// Useful if the admin wants to swap the picked spark or shift the
-    /// time before it fires.
+    /// Manually reroll today's plan (pick a new spark) — only allowed
+    /// if today's plan is still Pending. Useful if the admin wants to
+    /// swap the picked spark before the 7am send fires.
     /// </summary>
     [HttpPost("today/reroll")]
     public async Task<IActionResult> RerollToday(CancellationToken ct)
     {
-        var settings = await GetOrCreateSettingsAsync(ct);
-        var today = TodayInTz(settings.TimeZoneId);
-
+        var today = TodayInScheduleTz();
         var plan = await db.SubstackDailyPlans.FirstOrDefaultAsync(p => p.Date == today, ct);
         if (plan is null)
             return BadRequest(new { error = "No plan for today yet. The worker creates it on its next tick." });
         if (plan.Status != SubstackPlanStatus.Pending)
-            return BadRequest(new { error = "Today's post has already been posted or failed; nothing to reroll." });
+            return BadRequest(new { error = "Today's reminder has already been sent or failed; nothing to reroll." });
 
         // Drop the existing plan and let the next worker tick recreate
         // it. Simpler than re-implementing the picker logic here, and
@@ -167,7 +106,7 @@ public class AdminSubstackController(
     /// <summary>
     /// History of past plans, newest first. Cap at 60 rows so the
     /// admin UI doesn't have to deal with pagination yet — 60 days
-    /// of one-post-per-day is plenty of context.
+    /// of one-send-per-day is plenty of context.
     /// </summary>
     [HttpGet("history")]
     public async Task<IActionResult> GetHistory(CancellationToken ct)
@@ -182,8 +121,8 @@ public class AdminSubstackController(
     }
 
     /// <summary>
-    /// Count of sparks not yet posted to Substack. Powers the
-    /// "Running low" warning on the Today tab.
+    /// Count of sparks not yet sent. Powers the "Running low" warning
+    /// on the Today tab.
     /// </summary>
     [HttpGet("eligible-count")]
     public async Task<IActionResult> GetEligibleCount(CancellationToken ct)
@@ -200,10 +139,17 @@ public class AdminSubstackController(
         return Ok(new SubstackEligibleSparksResponse(count));
     }
 
-    private static DateOnly TodayInTz(string tzId)
+    // ── Helpers ─────────────────────────────────────────────────────
+
+    /// <summary>
+    /// "Today" in the schedule's hardcoded timezone (America/New_York).
+    /// Kept as a local helper so the controller doesn't need to import
+    /// the constant from the posting service.
+    /// </summary>
+    private static DateOnly TodayInScheduleTz()
     {
         TimeZoneInfo tz;
-        try { tz = TimeZoneInfo.FindSystemTimeZoneById(tzId); }
+        try { tz = TimeZoneInfo.FindSystemTimeZoneById("America/New_York"); }
         catch (TimeZoneNotFoundException) { tz = TimeZoneInfo.Utc; }
         return DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz));
     }
@@ -233,8 +179,6 @@ public class AdminSubstackController(
 
     private static SubstackSettingsResponse Map(SubstackSettings s) => new(
         Active:              s.Active,
-        TimeZoneId:          s.TimeZoneId,
-        CookieIsSet:         !string.IsNullOrEmpty(s.CookieEncrypted),
         LastSuccessAt:       s.LastSuccessAt,
         LastFailureAt:       s.LastFailureAt,
         LastFailureMessage:  s.LastFailureMessage,

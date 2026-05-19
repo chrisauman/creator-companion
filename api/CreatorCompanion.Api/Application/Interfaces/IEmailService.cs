@@ -29,16 +29,16 @@ public interface IEmailService
     Task SendTrialEndedAsync(string toEmail, string displayName);
 
     /// <summary>
-    /// Admin alert: the Substack auto-poster failed. Sent on the FIRST
-    /// failure of a streak (consecutive-failure count goes 0 → 1), and
-    /// again every 5 consecutive failures after that so a persistent
-    /// outage gets surfaced without spamming. statusCode/errorBody are
-    /// pasted into the email so the admin can diagnose without logs.
+    /// Daily-spark reminder for manual posting to Substack (or any
+    /// platform without an API). Sends one spark per day to the admin
+    /// recipient, picked by the SubstackPostingService never-repeat
+    /// rotation. The email contains the spark text in a copy-friendly
+    /// block so the admin can paste it straight into the target
+    /// platform. Replaces the older auto-poster + cookie path, which
+    /// broke whenever Substack rotated its session cookie.
     /// </summary>
-    Task SendSubstackPostFailedAsync(
+    Task SendDailySparkReminderAsync(
         string toEmail,
-        int?   statusCode,
-        string errorMessage,
-        string? errorBody,
-        bool   isCookieExpired);
+        string takeaway,
+        string? fullContent);
 }

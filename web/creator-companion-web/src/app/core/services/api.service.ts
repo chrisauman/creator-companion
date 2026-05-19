@@ -497,17 +497,17 @@ export class ApiService {
     return this.http.post<void>(`${this.base}/admin/daily-prompts/reorder`, { ids });
   }
 
-  // ── Admin: Substack auto-poster ────────────────────────────────────────
+  // ── Admin: Substack daily-spark reminder email ─────────────────────────
+  // (Used to be an auto-poster via stolen browser cookie; pivoted to
+  // emailing the admin the daily spark for manual posting. Endpoint
+  // paths kept as /substack/* so existing bookmarks survive — rename
+  // when we add the second platform.)
   adminGetSubstackSettings(): Observable<SubstackSettings> {
     return this.http.get<SubstackSettings>(`${this.base}/admin/substack/settings`);
   }
 
-  adminUpdateSubstackSettings(payload: { active: boolean; timeZoneId: string; cookie?: string | null }): Observable<SubstackSettings> {
+  adminUpdateSubstackSettings(payload: { active: boolean }): Observable<SubstackSettings> {
     return this.http.put<SubstackSettings>(`${this.base}/admin/substack/settings`, payload);
-  }
-
-  adminSubstackTestPost(): Observable<SubstackTestPostResult> {
-    return this.http.post<SubstackTestPostResult>(`${this.base}/admin/substack/test-post`, {});
   }
 
   /** Today's plan row (null if the worker hasn't created one yet). */
@@ -520,9 +520,9 @@ export class ApiService {
     return this.http.post<void>(`${this.base}/admin/substack/today/reroll`, {});
   }
 
-  /** Force-fire today's post right now, bypassing the random schedule. */
-  adminSubstackFireNow(): Observable<SubstackTestPostResult> {
-    return this.http.post<SubstackTestPostResult>(`${this.base}/admin/substack/today/fire-now`, {});
+  /** Force-fire today's reminder email right now, bypassing the 7am schedule. */
+  adminSubstackFireNow(): Observable<SubstackSendResult> {
+    return this.http.post<SubstackSendResult>(`${this.base}/admin/substack/today/fire-now`, {});
   }
 
   /** Last 60 daily plans, newest first. */
@@ -530,18 +530,16 @@ export class ApiService {
     return this.http.get<SubstackPlan[]>(`${this.base}/admin/substack/history`);
   }
 
-  /** How many sparks remain unposted — powers the "running low" warning. */
+  /** How many sparks remain unsent — powers the "running low" warning. */
   adminGetSubstackEligibleCount(): Observable<{ count: number }> {
     return this.http.get<{ count: number }>(`${this.base}/admin/substack/eligible-count`);
   }
 }
 
-// Shape returned by GET/PUT /admin/substack/settings. The actual cookie
-// never leaves the server; only the boolean cookieIsSet does.
+// Settings shape — shrunk after the pivot. Schedule, timezone, and cookie
+// fields are gone (all hardcoded server-side: 7am ET, chris@sanctuarymg.com).
 export interface SubstackSettings {
   active: boolean;
-  timeZoneId: string;
-  cookieIsSet: boolean;
   lastSuccessAt: string | null;
   lastFailureAt: string | null;
   lastFailureMessage: string | null;
@@ -549,14 +547,18 @@ export interface SubstackSettings {
   updatedAt: string;
 }
 
-// Outcome of a manual "send a test post now" attempt.
-export interface SubstackTestPostResult {
+// Outcome of a manual "send today's reminder now" attempt.
+// statusCode + noteId + rawResponse are vestigial from the auto-poster
+// era; current send path always returns 200 / null / null on success.
+export interface SubstackSendResult {
   success: boolean;
   statusCode: number | null;
   noteId: string | null;
   errorMessage: string | null;
   rawResponse: string | null;
 }
+// Back-compat alias — component still imports the old name.
+export type SubstackTestPostResult = SubstackSendResult;
 
 // One day's plan row. Date is ISO YYYY-MM-DD string from DateOnly.
 // Status is the C# enum name: 'Pending' | 'Posted' | 'Failed'.

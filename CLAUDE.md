@@ -704,6 +704,21 @@ Document here so future audits don't re-spend the cycles deciding.
   issued at registration regardless of email verification. Policy
   decision: require verified email before granting trial / before
   allowing writes?
+- **Multi-platform daily-spark posting.** Today's pipeline
+  (`SubstackPostingService` + `SubstackDailyPlans` table) emails the
+  daily spark to chris@sanctuarymg.com at 7am ET for manual posting
+  to Substack — chosen because Substack has no public posting API
+  and cookie-stealing broke weekly. When we add a platform that DOES
+  have an API (Bluesky/AT Protocol, Mastodon, Threads), extract
+  `IPlatformPoster` with `PostAsync(spark) → result`, add a
+  `Platform` enum column to `SubstackSettings` + `SubstackDailyPlans`
+  (default `Substack` for existing rows), rename tables to `Platform*`
+  in the same migration. Per-platform never-repeat tracking falls
+  out for free because the plan table is already keyed by (Date,
+  Platform). Substack's poster implementation becomes "email the
+  admin," others actually POST. Schedule + recipient still hardcoded
+  per-platform unless we need per-admin config later. Don't
+  pre-build the abstraction — wait for the second consumer (YAGNI).
 
 ## How to update this file
 

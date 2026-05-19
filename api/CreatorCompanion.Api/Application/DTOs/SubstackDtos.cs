@@ -3,14 +3,12 @@ using System.ComponentModel.DataAnnotations;
 namespace CreatorCompanion.Api.Application.DTOs;
 
 /// <summary>
-/// Settings shape returned to the admin UI. CookieIsSet is a boolean
-/// stand-in — the real value never leaves the server, so the UI can
-/// only see "we have one" / "we don't" and let the admin overwrite.
+/// Settings shape returned to the admin UI. Shrunk after the cookie-
+/// poster pivot: schedule + timezone + cookie are gone (all hardcoded
+/// server-side now). Only the on/off toggle and health snapshot remain.
 /// </summary>
 public record SubstackSettingsResponse(
     bool      Active,
-    string    TimeZoneId,
-    bool      CookieIsSet,
     DateTime? LastSuccessAt,
     DateTime? LastFailureAt,
     string?   LastFailureMessage,
@@ -19,20 +17,18 @@ public record SubstackSettingsResponse(
 );
 
 /// <summary>
-/// Update payload. Cookie is optional — sending null/empty leaves the
-/// existing stored value untouched (so the admin can change timezone
-/// or active without re-pasting). Sending a non-empty value overwrites
-/// the encrypted cookie and resets ConsecutiveFailures.
+/// Update payload — just the on/off toggle. Schedule + recipient are
+/// no longer admin-configurable.
 /// </summary>
 public record UpdateSubstackSettingsRequest(
-    bool   Active,
-    [Required, MaxLength(80)] string TimeZoneId,
-    string? Cookie
+    bool Active
 );
 
 /// <summary>
-/// Outcome of POST /v1/admin/substack/test-post. Mirrors
-/// SubstackPostResult but with admin-friendly framing.
+/// Outcome of POST /v1/admin/substack/today/fire-now. Mirrors
+/// SubstackPostResult but with admin-friendly framing. Kept as
+/// "TestPostResponse" for backwards-compat with the existing
+/// frontend; rename when we touch the admin UI for the next batch.
 /// </summary>
 public record SubstackTestPostResponse(
     bool    Success,
@@ -60,7 +56,7 @@ public record SubstackPlanResponse(
 );
 
 /// <summary>
-/// Count of sparks still eligible to be posted. Used by the Today tab
+/// Count of sparks still eligible to be sent. Used by the Today tab
 /// to warn the admin when the pool is running low — they need to add
 /// new sparks before the picker runs dry.
 /// </summary>
