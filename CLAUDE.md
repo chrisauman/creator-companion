@@ -286,6 +286,27 @@ signal AND strips the URL param.
   paywall renders.
 - **Reads stay open** during trial expiration so users see their
   existing data while deciding to subscribe.
+- **What's gated vs open** (audit pass May 2026):
+  - **Gated (402 if no access):** entries (create/edit/delete/favorite),
+    journals, image uploads, action-item creation, pause creation,
+    motivation/daily-prompt favorites, reminder writes (POST/PUT/
+    DELETE/reset/auto-enable-first), tag writes (create/rename/
+    delete), draft upsert.
+  - **Open during lockout (deliberate):** all reads, account self-
+    service (profile/email/password/preferences/photo), push
+    subscription register/unregister/test, pause cancellation,
+    existing action-item edit/toggle/reorder/delete, draft discard.
+    Rationale: managing your account or cleaning up existing items
+    isn't "creating new content" — locking it punishes users mid-
+    subscribe-decision.
+  - **Worker-side**: `ReminderBackgroundService.ProcessOneAsync`
+    also skips firing for no-access users (HasAccess check at top)
+    so trial-expired users don't get scheduled pushes for reminders
+    they configured pre-expiry. Resumes automatically on subscribe.
+  - **Don't ungate account self-service.** Profile/email/password/
+    preferences/photo MUST stay open during lockout — a locked-out
+    user still needs to update their card details or change their
+    email to subscribe.
 - **Trial lifecycle emails** fired by `ReminderBackgroundService.
   ProcessTrialEmailsAsync`: 3-day reminder, 1-day reminder,
   trial-ended notification. Each deduped via its own column on
