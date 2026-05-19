@@ -195,33 +195,92 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
         </section>
 
         <!-- Change password (moved up directly under Profile per the
-             May 2026 account-page reorganisation). -->
+             May 2026 account-page reorganisation). Each field wraps
+             the input in a .pw-input-wrap so we can position a show/hide
+             eye-icon toggle inside the input's right padding. The
+             current-password requirement stays — it's a real account-
+             takeover defense against session hijacking (someone in your
+             unlocked browser can't lock you out without knowing the
+             current pw). Masking hindered verification, not security;
+             the eye toggle fixes verification without weakening the
+             defense. -->
         <section class="card">
           <h2 style="margin-bottom:1rem">Change password</h2>
           <div class="password-form">
             <div class="field-group">
               <label class="field-label" for="currentPw">Current password</label>
-              <input id="currentPw" type="password" class="new-tag-input"
-                [(ngModel)]="currentPassword"
-                name="currentPw"
-                autocomplete="current-password"
-                placeholder="Current password" />
+              <div class="pw-input-wrap">
+                <input id="currentPw" [type]="showCurrentPw() ? 'text' : 'password'" class="new-tag-input"
+                  [(ngModel)]="currentPassword"
+                  name="currentPw"
+                  autocomplete="current-password"
+                  placeholder="Current password" />
+                <button type="button" class="pw-input-wrap__toggle"
+                        (click)="showCurrentPw.set(!showCurrentPw())"
+                        [attr.aria-label]="showCurrentPw() ? 'Hide password' : 'Show password'"
+                        [title]="showCurrentPw() ? 'Hide password' : 'Show password'">
+                  <svg *ngIf="!showCurrentPw()" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                  <svg *ngIf="showCurrentPw()" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                    <line x1="1" y1="1" x2="23" y2="23"/>
+                  </svg>
+                </button>
+              </div>
             </div>
             <div class="field-group">
               <label class="field-label" for="newPw">New password</label>
-              <input id="newPw" type="password" class="new-tag-input"
-                [(ngModel)]="newPassword"
-                name="newPw"
-                autocomplete="new-password"
-                placeholder="At least 8 characters" />
+              <div class="pw-input-wrap">
+                <input id="newPw" [type]="showNewPw() ? 'text' : 'password'" class="new-tag-input"
+                  [(ngModel)]="newPassword"
+                  name="newPw"
+                  autocomplete="new-password"
+                  placeholder="At least 8 characters" />
+                <button type="button" class="pw-input-wrap__toggle"
+                        (click)="showNewPw.set(!showNewPw())"
+                        [attr.aria-label]="showNewPw() ? 'Hide password' : 'Show password'"
+                        [title]="showNewPw() ? 'Hide password' : 'Show password'">
+                  <svg *ngIf="!showNewPw()" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                  <svg *ngIf="showNewPw()" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                    <line x1="1" y1="1" x2="23" y2="23"/>
+                  </svg>
+                </button>
+              </div>
             </div>
             <div class="field-group">
               <label class="field-label" for="confirmPw">Confirm new password</label>
-              <input id="confirmPw" type="password" class="new-tag-input"
-                [(ngModel)]="confirmPassword"
-                name="confirmPw"
-                autocomplete="new-password"
-                placeholder="Repeat new password" />
+              <div class="pw-input-wrap">
+                <input id="confirmPw" [type]="showConfirmPw() ? 'text' : 'password'" class="new-tag-input"
+                  [(ngModel)]="confirmPassword"
+                  name="confirmPw"
+                  autocomplete="new-password"
+                  placeholder="Repeat new password" />
+                <button type="button" class="pw-input-wrap__toggle"
+                        (click)="showConfirmPw.set(!showConfirmPw())"
+                        [attr.aria-label]="showConfirmPw() ? 'Hide password' : 'Show password'"
+                        [title]="showConfirmPw() ? 'Hide password' : 'Show password'">
+                  <svg *ngIf="!showConfirmPw()" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                  <svg *ngIf="showConfirmPw()" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                    <line x1="1" y1="1" x2="23" y2="23"/>
+                  </svg>
+                </button>
+              </div>
             </div>
             <p class="pw-error" *ngIf="passwordError()">{{ passwordError() }}</p>
             <p class="pw-success" *ngIf="passwordSuccess()">{{ passwordSuccess() }}</p>
@@ -745,6 +804,35 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
     .pw-error { font-size:.875rem; color:var(--color-danger, #dc2626); margin:0; }
     .pw-success { font-size:.875rem; color:#166534; margin:0; }
 
+    /* Show/hide toggle on password inputs. The wrap is relatively
+       positioned so the eye button can sit absolutely inside the
+       input's right padding. Extra padding-right on the input
+       reserves space so typed chars don't render under the icon. */
+    .pw-input-wrap { position: relative; display: block; }
+    .pw-input-wrap .new-tag-input { padding-right: 2.5rem; width: 100%; box-sizing: border-box; }
+    .pw-input-wrap__toggle {
+      position: absolute;
+      top: 50%;
+      right: .5rem;
+      transform: translateY(-50%);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      color: var(--color-text-3);
+      border-radius: 4px;
+    }
+    .pw-input-wrap__toggle:hover { color: var(--color-text); background: rgba(0,0,0,.04); }
+    .pw-input-wrap__toggle:focus-visible {
+      outline: 2px solid var(--color-accent);
+      outline-offset: 1px;
+    }
+
     /* Notifications link card */
     .notif-link-card {
       cursor: pointer;
@@ -990,6 +1078,11 @@ export class AccountComponent implements OnInit {
   changingPassword = signal(false);
   passwordError    = signal('');
   passwordSuccess  = signal('');
+  // Per-field show/hide toggles. Independent so e.g. you can reveal
+  // your typed new password without unmasking the current one.
+  showCurrentPw = signal(false);
+  showNewPw     = signal(false);
+  showConfirmPw = signal(false);
 
   // Tag management
   tags         = signal<Tag[]>([]);
