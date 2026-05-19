@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using CreatorCompanion.Api.Application.DTOs;
 using CreatorCompanion.Api.Application.Interfaces;
+using CreatorCompanion.Api.Application.Services;
 using CreatorCompanion.Api.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -246,6 +247,219 @@ public class UsersController(AppDbContext db, IStorageService storage, IImagePro
         }
 
         return NoContent();
+    }
+
+    /// <summary>
+    /// Streams a complete archive of the user's data as a single ZIP:
+    /// <c>export.json</c> at the root (full structured data — journals,
+    /// entries, tags, media metadata + per-file manifest) plus
+    /// <c>images/&lt;date&gt;_&lt;entry-id&gt;/&lt;filename&gt;</c> for every
+    /// attached photo. Lets a user walk away with everything they put in,
+    /// including the photo binaries — the existing /export-as-json path only
+    /// emits media counts, leaving R2-hosted images unreachable after
+    /// signed URLs expire.
+    ///
+    /// Streaming-write pattern: the ZIP is written directly to
+    /// <c>Response.Body</c> via <c>ZipArchive</c>, with each image fetched
+    /// from R2 and dropped into the zip one at a time. Memory stays
+    /// bounded regardless of total archive size (heavy users could have
+    /// hundreds of MB of images).
+    ///
+    /// Encryption: image bytes and filenames in R2 / the DB are encrypted
+    /// when <c>Entry__EncryptionKey</c> is set. <c>DecryptBytes</c> and
+    /// <c>DecryptString</c> are both no-ops on unencrypted legacy values,
+    /// so the same code handles both rollout modes.
+    ///
+    /// Failure mode: per-file errors (R2 unreachable, decrypt failure)
+    /// don't abort the whole export. The file is skipped and added to a
+    /// <c>missingImages</c> array in <c>export.json</c> so the user can
+    /// see what wasn't recovered.
+    /// </summary>
+    [HttpGet("me/export")]
+    public async Task ExportArchive([FromServices] IEntryEncryptor encryptor)
+    {
+        var user = await db.Users.FindAsync(UserId);
+        if (user is null)
+        {
+            Response.StatusCode = StatusCodes.Status404NotFound;
+            return;
+        }
+
+        var journals = await db.Journals
+            .Where(j => j.UserId == UserId && j.DeletedAt == null)
+            .OrderBy(j => j.CreatedAt)
+            .ToListAsync();
+
+        // Pull entries with their media + tags eager-loaded. DeletedAt
+        // filter excludes soft-deleted entries — they're in trash and
+        // about to be hard-deleted by the 48h purge anyway; including
+        // them in an export of "your data" would be confusing.
+        var entries = await db.Entries
+            .Include(e => e.Media.Where(m => m.DeletedAt == null))
+            .Include(e => e.EntryTags).ThenInclude(et => et.Tag)
+            .Where(e => e.UserId == UserId && e.DeletedAt == null)
+            .OrderBy(e => e.EntryDate).ThenBy(e => e.CreatedAt)
+            .ToListAsync();
+
+        var allTags = await db.Tags
+            .Where(t => t.UserId == UserId)
+            .Select(t => new { t.Id, EncryptedName = t.Name, t.CreatedAt })
+            .ToListAsync();
+
+        // Build the JSON shape. Decrypts every field that needs it.
+        var exportJson = new
+        {
+            exportedAt   = DateTime.UtcNow,
+            user         = new {
+                user.Id, user.FirstName, user.LastName, user.Email,
+                tier      = user.Tier.ToString(),
+                user.CreatedAt, user.TrialEndsAt, user.TimeZoneId
+            },
+            journals     = journals.Select(j => new { j.Id, j.Name, j.IsDefault, j.CreatedAt }),
+            tags         = allTags.Select(t => new {
+                t.Id,
+                name = encryptor.DecryptString(t.EncryptedName),
+                t.CreatedAt
+            }),
+            entries      = entries.Select(e => new {
+                e.Id,
+                journal   = journals.FirstOrDefault(j => j.Id == e.JournalId)?.Name ?? "Unknown",
+                date      = e.EntryDate,
+                e.CreatedAt, e.UpdatedAt,
+                title     = encryptor.DecryptString(e.Title),
+                content   = encryptor.DecryptString(e.ContentText),
+                e.Mood, e.IsFavorited,
+                source    = e.EntrySource.ToString(),
+                tags      = e.EntryTags.Select(et => encryptor.DecryptString(et.Tag.Name)).OrderBy(n => n),
+                media     = e.Media.Select(m => new {
+                    m.Id,
+                    filename     = encryptor.DecryptString(m.FileName),
+                    m.ContentType,
+                    m.FileSizeBytes,
+                    m.TakenAt,
+                    // Where to find this file inside the ZIP:
+                    archivePath  = BuildArchivePath(e, m, encryptor)
+                })
+            }),
+            // Populated as we stream — each image we fail to fetch lands here.
+            missingImages = new List<object>()
+        };
+
+        // We need a mutable list for missingImages, so capture it first.
+        var missingImages = (List<object>)exportJson.GetType().GetProperty("missingImages")!.GetValue(exportJson)!;
+
+        Response.ContentType = "application/zip";
+        Response.Headers.ContentDisposition =
+            $"attachment; filename=\"creator-companion-export-{DateOnly.FromDateTime(DateTime.UtcNow):yyyy-MM-dd}.zip\"";
+
+        await using var zip = new System.IO.Compression.ZipArchive(
+            Response.Body,
+            System.IO.Compression.ZipArchiveMode.Create,
+            leaveOpen: false);
+
+        // Add each image first so we know exactly what's missing before
+        // we serialize the JSON manifest. Sequential reads keep memory
+        // bounded and avoid hammering R2 (parallel would be faster but
+        // risks rate-limiting on heavy accounts; revisit if exports
+        // become slow for users with 500+ photos).
+        foreach (var entry in entries)
+        {
+            foreach (var media in entry.Media)
+            {
+                var archivePath = BuildArchivePath(entry, media, encryptor);
+                try
+                {
+                    var rawBytes  = await storage.ReadAllBytesAsync(media.StoragePath);
+                    var plainBytes = encryptor.DecryptBytes(rawBytes);
+                    var zipEntry  = zip.CreateEntry(
+                        archivePath,
+                        System.IO.Compression.CompressionLevel.NoCompression); // jpegs are already compressed
+                    await using var es = zipEntry.Open();
+                    await es.WriteAsync(plainBytes);
+                }
+                catch (Exception ex)
+                {
+                    missingImages.Add(new {
+                        mediaId   = media.Id,
+                        entryId   = entry.Id,
+                        archivePath,
+                        reason    = ex.GetType().Name
+                    });
+                }
+            }
+        }
+
+        // Now write the JSON manifest. The missingImages list reflects
+        // whatever we just failed to fetch, so the user knows exactly
+        // which files (if any) weren't included.
+        var jsonEntry = zip.CreateEntry(
+            "export.json",
+            System.IO.Compression.CompressionLevel.Optimal);
+        await using (var es = jsonEntry.Open())
+        {
+            var json = System.Text.Json.JsonSerializer.Serialize(
+                exportJson,
+                new System.Text.Json.JsonSerializerOptions
+                {
+                    WriteIndented = true,
+                    DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+                });
+            await es.WriteAsync(System.Text.Encoding.UTF8.GetBytes(json));
+        }
+
+        // Optional: include a plain-text README so a non-technical user
+        // opening the zip understands what they have.
+        var readmeEntry = zip.CreateEntry(
+            "README.txt",
+            System.IO.Compression.CompressionLevel.Optimal);
+        await using (var es = readmeEntry.Open())
+        {
+            var readme = $"""
+                CREATOR COMPANION — DATA EXPORT
+                Exported: {DateTime.UtcNow:yyyy-MM-dd HH:mm} UTC
+
+                This archive contains everything you put into Creator Companion:
+                  export.json   — All journals, entries, tags, and media metadata
+                  images/       — Every photo you attached, organized by entry date
+
+                Image folder names are <entry-date>_<entry-id> so you can match
+                each photo back to its journal entry. The export.json file's
+                "media" arrays include the exact archivePath inside this zip
+                where each photo lives.
+
+                If any photos couldn't be fetched at export time (network
+                glitch, encryption mismatch), they'll be listed in the
+                "missingImages" array at the bottom of export.json.
+
+                Your data is yours. Take it wherever you want.
+                """;
+            await es.WriteAsync(System.Text.Encoding.UTF8.GetBytes(readme));
+        }
+    }
+
+    /// <summary>Builds the in-zip path for an entry's media file.
+    /// Format: <c>images/yyyy-MM-dd_&lt;entry-id-no-dashes&gt;/&lt;filename&gt;</c>.</summary>
+    private static string BuildArchivePath(
+        CreatorCompanion.Api.Domain.Models.Entry entry,
+        CreatorCompanion.Api.Domain.Models.EntryMedia media,
+        IEntryEncryptor encryptor)
+    {
+        var safeFile = SanitizeForZipPath(encryptor.DecryptString(media.FileName));
+        return $"images/{entry.EntryDate:yyyy-MM-dd}_{entry.Id:N}/{safeFile}";
+    }
+
+    /// <summary>Strips characters that would break ZIP entry paths or
+    /// confuse extraction tools. ZIP itself permits most chars, but
+    /// some Windows extractors choke on colons / slashes / null bytes
+    /// in entry names. We normalize to a safe subset and fall back to
+    /// "image.jpg" if the decrypted filename ends up empty.</summary>
+    private static string SanitizeForZipPath(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "image.jpg";
+        var cleaned = new string(name.Select(c =>
+            char.IsLetterOrDigit(c) || c == '.' || c == '-' || c == '_' ? c : '_'
+        ).ToArray());
+        return string.IsNullOrWhiteSpace(cleaned) ? "image.jpg" : cleaned;
     }
 
     [HttpDelete("me")]

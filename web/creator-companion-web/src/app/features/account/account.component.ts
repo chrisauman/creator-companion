@@ -526,13 +526,20 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
 
         <!-- Export your data — moved to sit immediately above Delete
              account so the destructive action is bracketed by the
-             "save your data first" affordance. -->
+             "save your data first" affordance. Three options:
+              · Full archive (ZIP with JSON + every photo binary) — the
+                most complete "leave the app with everything" path
+              · JSON only — quick metadata dump, no images
+              · Plain text — date-stamped entries for human reading -->
         <section class="card">
           <h2 style="margin-bottom:.375rem">Export your data</h2>
           <p class="text-muted text-sm" style="margin-bottom:1.25rem">
             Download all your entries. Your data always belongs to you.
           </p>
           <div class="export-actions">
+            <button class="btn btn--primary" (click)="exportArchive()" [disabled]="archiving()">
+              {{ archiving() ? 'Preparing archive…' : 'Download full archive (.zip)' }}
+            </button>
             <button class="btn btn--secondary" (click)="exportJson()" [disabled]="exporting()">
               Export as JSON
             </button>
@@ -540,8 +547,19 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
               Export as Text
             </button>
           </div>
-          <p *ngIf="exporting()" class="text-muted text-sm" style="margin-top:.75rem">
+          <p class="text-muted text-sm" style="margin-top:.75rem">
+            The full archive includes <strong>every photo</strong> you've
+            attached, organized by entry date. JSON and Text exports are
+            metadata-only (no images).
+          </p>
+          <p *ngIf="exporting()" class="text-muted text-sm" style="margin-top:.5rem">
             Preparing export…
+          </p>
+          <p *ngIf="archiving()" class="text-muted text-sm" style="margin-top:.5rem">
+            Streaming archive — this can take a minute for accounts with many photos…
+          </p>
+          <p *ngIf="archiveError()" class="alert alert--error" style="margin-top:.75rem">
+            {{ archiveError() }}
           </p>
         </section>
 
@@ -1066,6 +1084,12 @@ export class AccountComponent implements OnInit {
   caps      = signal<Capabilities | null>(null);
   streak    = signal<StreakStats | null>(null);
   exporting = signal(false);
+  // Separate state from `exporting` because the archive flow can take
+  // 30+ seconds and we want JSON/text buttons to stay enabled while the
+  // archive streams (and vice-versa). Error message stays visible
+  // until the user retries — silent failures are worse than ugly ones.
+  archiving    = signal(false);
+  archiveError = signal('');
   upgrading    = signal<'monthly' | 'annual' | null>(null);
   upgradeError = signal('');
   portalLoading = signal(false);
@@ -1540,6 +1564,32 @@ export class AccountComponent implements OnInit {
     this.exporting.set(true);
     this.exporter.exportJson();
     setTimeout(() => this.exporting.set(false), 2000);
+  }
+
+  /** Full-archive export. Hits the server, streams a ZIP back as a
+   *  blob, triggers a browser download. Independent of `exporting` so
+   *  other export buttons stay usable during the (potentially long)
+   *  archive request. */
+  exportArchive(): void {
+    this.archiving.set(true);
+    this.archiveError.set('');
+    this.exporter.exportFullArchive().subscribe({
+      next: blob => {
+        this.exporter.triggerArchiveDownload(blob);
+        this.archiving.set(false);
+      },
+      error: err => {
+        this.archiving.set(false);
+        // Most likely failure modes: 401 (token expired mid-request),
+        // 500 (R2 down, encryption error). Surface a friendly message
+        // rather than the raw HttpErrorResponse.
+        this.archiveError.set(
+          err?.status === 401
+            ? 'Your session expired. Sign in again and retry.'
+            : 'Could not build your archive. Try again in a moment, or contact support if it keeps failing.'
+        );
+      }
+    });
   }
 
   exportText(): void {

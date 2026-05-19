@@ -1,11 +1,15 @@
 import { Injectable, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { Observable, switchMap, map } from 'rxjs';
 import { ApiService } from './api.service';
+import { environment } from '../../../environments/environment';
 import { Entry, Journal } from '../models/models';
 
 @Injectable({ providedIn: 'root' })
 export class ExportService {
-  private api = inject(ApiService);
+  private api  = inject(ApiService);
+  private http = inject(HttpClient);
+  private apiBase = environment.apiBaseUrl;
 
   exportJson(): void {
     this.api.getJournals().pipe(
@@ -87,6 +91,34 @@ export class ExportService {
         'text/plain'
       );
     });
+  }
+
+  /**
+   * Full-archive export: hits GET /v1/users/me/export which streams a
+   * ZIP containing export.json + every photo binary. The ZIP comes
+   * back as a blob; we trigger a browser download via the same
+   * blob-URL pattern used for the JSON/text exports. Authentication
+   * piggybacks on the HttpClient's interceptor (Bearer token).
+   *
+   * Returns an Observable so the caller can show progress / disable
+   * the button while the export streams. For a user with hundreds of
+   * photos this can take 30+ seconds — sequential R2 reads server-side.
+   */
+  exportFullArchive(): Observable<Blob> {
+    return this.http.get(`${this.apiBase}/users/me/export`, {
+      responseType: 'blob',
+    });
+  }
+
+  /** Convenience: trigger a download from the blob returned by
+   *  exportFullArchive. Filename embeds today's date. */
+  triggerArchiveDownload(blob: Blob): void {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `creator-companion-export-${this.dateStamp()}.zip`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   private stripHtml(html: string): string {
