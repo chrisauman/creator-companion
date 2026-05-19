@@ -415,37 +415,50 @@ public class ResendEmailService(IResend resend, IConfiguration config, AppDbCont
     /// <summary>
     /// Patches admin-authored HTML so it renders consistently in email
     /// clients. The admin's contenteditable editor produces raw tags
-    /// (e.g. plain &lt;ul&gt; from the "List" toolbar button), and email
-    /// clients then apply their own defaults — most notably a
-    /// padding-left of around 40px on lists, which makes bullets look
-    /// deeply indented compared to the surrounding body text. We
-    /// inject inline styles on common block tags so the output matches
-    /// the hand-written defaults without forcing the admin editor to
-    /// understand inline styling.
+    /// from toolbar buttons (e.g. &lt;ul&gt; from "List"), and email
+    /// clients then apply their own defaults — most notably ~40px of
+    /// padding-left or margin-left on lists, which makes bullets look
+    /// deeply indented compared to the surrounding body text.
     ///
-    /// The negative lookahead (?![^&gt;]*\bstyle=) means "only inject
-    /// when the tag has no existing style attribute" — so future hand-
-    /// authored markup with explicit styles is left alone. Style
-    /// blocks (&lt;style&gt;...&lt;/style&gt;) are unreliable in email
-    /// clients, so inline-only is the right posture.
+    /// Strategy: force-rewrite the opening tag with our own style
+    /// attribute on every &lt;ul&gt;/&lt;ol&gt;. The admin editor
+    /// doesn't produce custom inline styles, so we don't lose anything
+    /// by overwriting — and force-replace beats inject-when-missing
+    /// because browsers' execCommand sometimes silently adds a style
+    /// attribute (margin-left: 40px) that would block a lookahead-
+    /// gated injector. Use px units (rem support is inconsistent across
+    /// email clients — Outlook treats the root as undefined). The
+    /// !important flag is honoured on inline styles in every major
+    /// email client (it's the &lt;style&gt; block that's iffy).
+    ///
+    /// For &lt;p&gt; we still inject only when no style attribute
+    /// exists — paragraphs rarely come with surprise styles, and we
+    /// want to preserve any deliberate custom-coloured paragraph.
     /// </summary>
     private static string NormalizeEmailHtml(string html)
     {
         if (string.IsNullOrWhiteSpace(html)) return html;
 
-        // Lists: tighten padding so bullets sit just inside the body
-        // text margin, not 40px in. Matches both <ul> and <ol>.
+        const string ListStyle =
+            "padding:0 0 0 18px !important;margin:8px 0 !important;" +
+            "line-height:1.6;color:#555;list-style-position:outside";
+
+        // Force-replace the opening tag (with or without an existing
+        // style attribute). Captures the tag name (ul|ol) and any
+        // existing attributes other than style, then re-emits with
+        // our style appended.
         html = System.Text.RegularExpressions.Regex.Replace(
             html,
-            @"<(ul|ol)(?![^>]*\bstyle=)",
-            "<$1 style=\"padding-left:1.25rem;margin:.25rem 0 1rem;line-height:1.6;color:#555\"",
+            @"<(ul|ol)\b[^>]*>",
+            m =>
+            {
+                var tag = m.Groups[1].Value.ToLowerInvariant();
+                return $"<{tag} style=\"{ListStyle}\">";
+            },
             System.Text.RegularExpressions.RegexOptions.IgnoreCase);
 
-        // Paragraphs: ensure consistent muted-grey body colour even
-        // when the admin didn't set it explicitly. Without this, dark-
-        // mode email clients flip to white-on-black and the unstyled
-        // paragraphs read as bright white, which doesn't match the
-        // styled defaults around them.
+        // Inject paragraph styles only when missing — admin may
+        // intentionally style a paragraph differently in the future.
         html = System.Text.RegularExpressions.Regex.Replace(
             html,
             @"<p(?![^>]*\bstyle=)>",
