@@ -157,9 +157,21 @@ public class ResendEmailService(IResend resend, IConfiguration config, AppDbCont
         var appName   = config["App:Name"] ?? "Creator Companion";
 
         var template = await db.EmailTemplates.FirstOrDefaultAsync(t => t.Key == "welcome");
-        var subject  = template?.Subject ?? DefaultWelcomeSubject;
-        var content  = (template?.HtmlContent ?? DefaultWelcomeContent)
-                           .Replace("{displayName}", displayName);
+
+        // Treat empty/whitespace as "not customised" — without this guard
+        // an admin who saved Subject but forgot to fill the body would
+        // send an empty-bodied welcome email. The `??` alone wouldn't
+        // catch this because an empty string is not null.
+        var subject     = string.IsNullOrWhiteSpace(template?.Subject)     ? DefaultWelcomeSubject : template!.Subject;
+        var rawContent  = string.IsNullOrWhiteSpace(template?.HtmlContent) ? DefaultWelcomeContent : template!.HtmlContent;
+
+        // Accept both {displayName} (legacy / default content) and
+        // {username} (what the admin help text told users to type).
+        // The admin UI label says {username}; the code historically
+        // used {displayName}. Sub both so neither author gets surprised.
+        var content = rawContent
+            .Replace("{displayName}", displayName)
+            .Replace("{username}",    displayName);
 
         var message = new EmailMessage
         {

@@ -46,7 +46,8 @@ const TEMPLATES = [
             <div class="field">
               <label>Body content</label>
               <p class="text-muted text-sm" style="margin-bottom:.5rem">
-                Use <code>&#123;username&#125;</code> to insert the recipient's name.
+                Use <code>&#123;username&#125;</code> or <code>&#123;displayName&#125;</code>
+                to insert the recipient's first name.
               </p>
 
               <!-- Formatting toolbar -->
@@ -67,13 +68,25 @@ const TEMPLATES = [
               </div>
             </div>
 
+            @if (!isCustom() && !loading()) {
+              <p class="text-muted text-sm" style="margin-top:.5rem">
+                Currently using the built-in default. Edit and save to
+                customise.
+              </p>
+            }
+
             <div class="editor-footer">
-              @if (saved()) {
-                <span class="action-msg text-success">Saved!</span>
-              }
-              @if (saveError()) {
-                <span class="action-msg text-danger">Failed to save.</span>
-              }
+              @if (saved())     { <span class="action-msg text-success">Saved!</span> }
+              @if (saveError()) { <span class="action-msg text-danger">Failed to save.</span> }
+              @if (testSent())  { <span class="action-msg text-success">Test sent to {{ testSentTo() }}.</span> }
+              @if (testError()) { <span class="action-msg text-danger">Test failed: {{ testError() }}</span> }
+
+              <button class="btn btn--secondary"
+                      [disabled]="sendingTest() || saving()"
+                      (click)="sendTest()"
+                      title="Sends the SAVED template to your own admin email">
+                {{ sendingTest() ? 'Sending…' : 'Send test to me' }}
+              </button>
               <button class="btn btn--primary" [disabled]="saving()" (click)="save()">
                 {{ saving() ? 'Saving…' : 'Save template' }}
               </button>
@@ -186,11 +199,22 @@ export class AdminEmailsComponent implements OnInit {
   @ViewChild('editor') editorRef!: ElementRef<HTMLDivElement>;
 
   templates = TEMPLATES;
-  activeKey  = signal('welcome');
-  loading    = signal(true);
-  saving     = signal(false);
-  saved      = signal(false);
-  saveError  = signal(false);
+  activeKey   = signal('welcome');
+  loading     = signal(true);
+  saving      = signal(false);
+  saved       = signal(false);
+  saveError   = signal(false);
+  // Tracks whether the loaded template is a custom-saved row or the
+  // built-in default. UI uses this to show "Currently using built-in
+  // default" — without it admins thought the editor was broken when
+  // it was just unedited.
+  isCustom    = signal(false);
+  // Test-send state. Separate signals from save() so a failed test
+  // doesn't clobber a successful save banner and vice versa.
+  sendingTest = signal(false);
+  testSent    = signal(false);
+  testSentTo  = signal('');
+  testError   = signal<string | null>(null);
 
   subject = '';
 
@@ -211,9 +235,17 @@ export class AdminEmailsComponent implements OnInit {
     this.loading.set(true);
     this.saved.set(false);
     this.saveError.set(false);
+    this.testSent.set(false);
+    this.testError.set(null);
     this.api.adminGetEmailTemplate(key).subscribe({
       next: t => {
-        this.subject = t.subject;
+        // Backend now returns the built-in default when no custom
+        // row exists, with `isCustom=false`. Pre-populating the
+        // editor with default content means admins can SEE what's
+        // being sent today and edit from there, instead of staring
+        // at an empty form and assuming the email is broken.
+        this.subject = t.subject ?? '';
+        this.isCustom.set(!!t.isCustom);
         this.loading.set(false);
         setTimeout(() => {
           if (this.editorRef) {
@@ -222,12 +254,37 @@ export class AdminEmailsComponent implements OnInit {
         });
       },
       error: () => {
-        // Template doesn't exist yet — start with empty content
+        // True 404 only if backend has no default for this key either.
         this.subject = '';
+        this.isCustom.set(false);
         this.loading.set(false);
         setTimeout(() => {
           if (this.editorRef) this.editorRef.nativeElement.innerHTML = '';
         });
+      }
+    });
+  }
+
+  sendTest() {
+    this.testSent.set(false);
+    this.testError.set(null);
+    this.sendingTest.set(true);
+    this.api.adminSendTestEmail(this.activeKey()).subscribe({
+      next: r => {
+        this.sendingTest.set(false);
+        this.testSent.set(true);
+        this.testSentTo.set(r.to);
+        // Auto-clear the success banner so it doesn't sit forever.
+        // Errors stay until the admin retries — they need to read them.
+        setTimeout(() => this.testSent.set(false), 6000);
+      },
+      error: err => {
+        this.sendingTest.set(false);
+        // The backend returns 500 with { error: "<resend message>" }
+        // for delivery failures — surface that verbatim so the admin
+        // can debug (bad API key, unverified domain, rate-limit, etc).
+        const msg = err?.error?.error ?? err?.message ?? 'Unknown error';
+        this.testError.set(msg);
       }
     });
   }

@@ -435,6 +435,16 @@ export class ApiService {
     return this.http.put<any>(`${this.base}/admin/email-templates/${key}`, { subject, htmlContent });
   }
 
+  /**
+   * Sends the currently-saved template to the admin's own email so they
+   * can verify Resend delivery + rendering. Backend uses the persisted
+   * template (not the unsaved form state) — save first, then test.
+   */
+  adminSendTestEmail(key: string): Observable<{ sent: boolean; to: string }> {
+    return this.http.post<{ sent: boolean; to: string }>(
+      `${this.base}/admin/email-templates/${key}/send-test`, {});
+  }
+
   // ── FAQs (public, authenticated) ────────────────────────────────────────
   getFaqs(): Observable<Faq[]> {
     return this.http.get<Faq[]>(`${this.base}/faq`);
