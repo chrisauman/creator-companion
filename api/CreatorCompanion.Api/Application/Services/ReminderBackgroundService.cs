@@ -65,8 +65,9 @@ public class ReminderBackgroundService(
     private async Task ProcessRemindersAsync(CancellationToken ct)
     {
         using var scope  = scopeFactory.CreateScope();
-        var db     = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        var sender = scope.ServiceProvider.GetRequiredService<IPushSender>();
+        var db           = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var sender       = scope.ServiceProvider.GetRequiredService<IPushSender>();
+        var entitlements = scope.ServiceProvider.GetRequiredService<IEntitlementService>();
 
         // Load admin config (singleton row — fall back to defaults if missing)
         var config = await db.ReminderConfigs.FindAsync([1], ct) ?? new ReminderConfig();
@@ -89,7 +90,7 @@ public class ReminderBackgroundService(
             if (ct.IsCancellationRequested) break;
             try
             {
-                var sent = await ProcessOneAsync(db, sender, config, reminder, utcNow, ct);
+                var sent = await ProcessOneAsync(db, sender, entitlements, config, reminder, utcNow, ct);
                 if (sent) await db.SaveChangesAsync(ct);
             }
             catch (OperationCanceledException) { break; }
@@ -103,11 +104,26 @@ public class ReminderBackgroundService(
     private async Task<bool> ProcessOneAsync(
         AppDbContext db,
         IPushSender sender,
+        IEntitlementService entitlements,
         ReminderConfig config,
         Reminder reminder,
         DateTime utcNow,
         CancellationToken ct)
     {
+        // Skip silently when the user has no access (trial expired AND no
+        // active subscription). Continuing to fire user-configured
+        // reminders for someone who can't use the app is annoying-bordering
+        // -on-spam — they can't act on the reminder, and the trial-ended
+        // emails (ProcessTrialEmailsAsync) already cover the "remind them
+        // to subscribe" angle. Resumes automatically once they subscribe
+        // because hasAccess flips true. No flag flip on the reminder row
+        // itself, so their config survives the gap untouched.
+        if (!entitlements.HasAccess(reminder.User))
+        {
+            logger.LogDebug("ReminderSkip: {ReminderId} — user has no access (trial expired, no sub).", reminder.Id);
+            return false;
+        }
+
         // Bad/legacy TZ IDs would 500 the entire tick; fall through to
         // UTC and continue. ThreatenedOneAsync already does this; the
         // main reminder path used to crash here.
