@@ -146,16 +146,23 @@ internal static class EmailDefaults
     {
         "welcome" => (
             "Welcome to Creator Companion — let's get started",
+            // Kept in sync with ResendEmailService.DefaultWelcomeContent.
+            // When you change one, change the other — the admin editor
+            // shows THIS string in the textarea, but the live send uses
+            // the other one. Mismatch = admin "sees" content that won't
+            // actually go out. Both get wrapped in the same branded
+            // shell at send time, so structural styles here should
+            // mirror what the live default uses.
             """
-            <h2 style="margin-bottom:.5rem">Welcome, {displayName}!</h2>
-            <p style="color:#555">You've taken the first step. Creator Companion is your private space to show up, write, and build a creative practice that sticks.</p>
-            <h3 style="margin-top:1.5rem;margin-bottom:.5rem">A few things to try first:</h3>
-            <ul style="color:#555;line-height:2;padding-left:1.25rem;margin:.25rem 0 1rem">
+            <h2 style="margin:0 0 .5rem;font-size:1.25rem;font-weight:700;letter-spacing:-.01em;color:#0c0e13">Welcome, {displayName}!</h2>
+            <p style="color:#555;line-height:1.6;margin:.5rem 0">You've taken the first step. Creator Companion is your private space to show up, write, and build a creative practice that sticks.</p>
+            <h3 style="margin:1.5rem 0 .5rem;font-size:1rem;font-weight:700;color:#0c0e13">A few things to try first:</h3>
+            <ul style="color:#555;line-height:1.8;padding:0 0 0 18px;margin:.25rem 0 1rem">
               <li><strong>Write your first entry</strong> — head to the dashboard and start today's entry</li>
               <li><strong>Set a daily reminder</strong> — a nudge at the right time makes all the difference</li>
               <li><strong>Check your Daily Spark</strong> — a fresh creative insight every day to fuel your work</li>
             </ul>
-            <p style="color:#555">Consistency is the skill. See you tomorrow.</p>
+            <p style="color:#555;line-height:1.6;margin:.5rem 0">Consistency is the skill. See you tomorrow.</p>
             """
         ),
         _ => (null, null)
