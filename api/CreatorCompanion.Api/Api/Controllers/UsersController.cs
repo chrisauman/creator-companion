@@ -348,93 +348,115 @@ public class UsersController(AppDbContext db, IStorageService storage, IImagePro
         // We need a mutable list for missingImages, so capture it first.
         var missingImages = (List<object>)exportJson.GetType().GetProperty("missingImages")!.GetValue(exportJson)!;
 
+        // Build the ZIP in a MemoryStream first, then copy the complete,
+        // valid archive to Response.Body. The earlier version wrote
+        // directly to Response.Body, but ASP.NET's response stream isn't
+        // seekable — and ZipArchive in Create mode against a non-seekable
+        // stream emits data descriptors that macOS Archive Utility (and
+        // a handful of older Windows tools) reject as "bad message"
+        // (Error 94). Building in memory gives ZipArchive a seekable
+        // target so it can write a fully-formed central directory at the
+        // end of the file, which every extractor understands.
+        //
+        // Memory cost: bounded by the user's total image size. For a
+        // typical journaling account (<200 MB of photos) this is fine.
+        // If we ever hit users with multi-GB archives we'd switch to a
+        // temp file as the intermediate.
+        await using var buffer = new MemoryStream();
+        using (var zip = new System.IO.Compression.ZipArchive(
+            buffer,
+            System.IO.Compression.ZipArchiveMode.Create,
+            leaveOpen: true))
+        {
+            // Add each image first so we know exactly what's missing before
+            // we serialize the JSON manifest. Sequential reads keep R2
+            // happy (parallel would be faster but risks rate-limiting on
+            // heavy accounts; revisit if exports get slow for users
+            // with 500+ photos).
+            foreach (var entry in entries)
+            {
+                foreach (var media in entry.Media)
+                {
+                    var archivePath = BuildArchivePath(entry, media, encryptor);
+                    try
+                    {
+                        var rawBytes  = await storage.ReadAllBytesAsync(media.StoragePath);
+                        var plainBytes = encryptor.DecryptBytes(rawBytes);
+                        var zipEntry  = zip.CreateEntry(
+                            archivePath,
+                            System.IO.Compression.CompressionLevel.NoCompression); // jpegs are already compressed
+                        await using var es = zipEntry.Open();
+                        await es.WriteAsync(plainBytes);
+                    }
+                    catch (Exception ex)
+                    {
+                        missingImages.Add(new {
+                            mediaId   = media.Id,
+                            entryId   = entry.Id,
+                            archivePath,
+                            reason    = ex.GetType().Name
+                        });
+                    }
+                }
+            }
+
+            // Now write the JSON manifest. The missingImages list reflects
+            // whatever we just failed to fetch, so the user knows exactly
+            // which files (if any) weren't included.
+            var jsonEntry = zip.CreateEntry(
+                "export.json",
+                System.IO.Compression.CompressionLevel.Optimal);
+            await using (var es = jsonEntry.Open())
+            {
+                var json = System.Text.Json.JsonSerializer.Serialize(
+                    exportJson,
+                    new System.Text.Json.JsonSerializerOptions
+                    {
+                        WriteIndented = true,
+                        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+                    });
+                await es.WriteAsync(System.Text.Encoding.UTF8.GetBytes(json));
+            }
+
+            // Plain-text README so a non-technical user opening the zip
+            // understands what they have.
+            var readmeEntry = zip.CreateEntry(
+                "README.txt",
+                System.IO.Compression.CompressionLevel.Optimal);
+            await using (var es = readmeEntry.Open())
+            {
+                var readme = $"""
+                    CREATOR COMPANION — DATA EXPORT
+                    Exported: {DateTime.UtcNow:yyyy-MM-dd HH:mm} UTC
+
+                    This archive contains everything you put into Creator Companion:
+                      export.json   — All journals, entries, tags, and media metadata
+                      images/       — Every photo you attached, organized by entry date
+
+                    Image folder names are <entry-date>_<entry-id> so you can match
+                    each photo back to its journal entry. The export.json file's
+                    "media" arrays include the exact archivePath inside this zip
+                    where each photo lives.
+
+                    If any photos couldn't be fetched at export time (network
+                    glitch, encryption mismatch), they'll be listed in the
+                    "missingImages" array at the bottom of export.json.
+
+                    Your data is yours. Take it wherever you want.
+                    """;
+                await es.WriteAsync(System.Text.Encoding.UTF8.GetBytes(readme));
+            }
+        }
+        // ↑ Disposing the ZipArchive here finalizes the central directory
+        // into `buffer`. Now copy the finished bytes to the response.
+
         Response.ContentType = "application/zip";
         Response.Headers.ContentDisposition =
             $"attachment; filename=\"creator-companion-export-{DateOnly.FromDateTime(DateTime.UtcNow):yyyy-MM-dd}.zip\"";
+        Response.ContentLength = buffer.Length;
 
-        await using var zip = new System.IO.Compression.ZipArchive(
-            Response.Body,
-            System.IO.Compression.ZipArchiveMode.Create,
-            leaveOpen: false);
-
-        // Add each image first so we know exactly what's missing before
-        // we serialize the JSON manifest. Sequential reads keep memory
-        // bounded and avoid hammering R2 (parallel would be faster but
-        // risks rate-limiting on heavy accounts; revisit if exports
-        // become slow for users with 500+ photos).
-        foreach (var entry in entries)
-        {
-            foreach (var media in entry.Media)
-            {
-                var archivePath = BuildArchivePath(entry, media, encryptor);
-                try
-                {
-                    var rawBytes  = await storage.ReadAllBytesAsync(media.StoragePath);
-                    var plainBytes = encryptor.DecryptBytes(rawBytes);
-                    var zipEntry  = zip.CreateEntry(
-                        archivePath,
-                        System.IO.Compression.CompressionLevel.NoCompression); // jpegs are already compressed
-                    await using var es = zipEntry.Open();
-                    await es.WriteAsync(plainBytes);
-                }
-                catch (Exception ex)
-                {
-                    missingImages.Add(new {
-                        mediaId   = media.Id,
-                        entryId   = entry.Id,
-                        archivePath,
-                        reason    = ex.GetType().Name
-                    });
-                }
-            }
-        }
-
-        // Now write the JSON manifest. The missingImages list reflects
-        // whatever we just failed to fetch, so the user knows exactly
-        // which files (if any) weren't included.
-        var jsonEntry = zip.CreateEntry(
-            "export.json",
-            System.IO.Compression.CompressionLevel.Optimal);
-        await using (var es = jsonEntry.Open())
-        {
-            var json = System.Text.Json.JsonSerializer.Serialize(
-                exportJson,
-                new System.Text.Json.JsonSerializerOptions
-                {
-                    WriteIndented = true,
-                    DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
-                });
-            await es.WriteAsync(System.Text.Encoding.UTF8.GetBytes(json));
-        }
-
-        // Optional: include a plain-text README so a non-technical user
-        // opening the zip understands what they have.
-        var readmeEntry = zip.CreateEntry(
-            "README.txt",
-            System.IO.Compression.CompressionLevel.Optimal);
-        await using (var es = readmeEntry.Open())
-        {
-            var readme = $"""
-                CREATOR COMPANION — DATA EXPORT
-                Exported: {DateTime.UtcNow:yyyy-MM-dd HH:mm} UTC
-
-                This archive contains everything you put into Creator Companion:
-                  export.json   — All journals, entries, tags, and media metadata
-                  images/       — Every photo you attached, organized by entry date
-
-                Image folder names are <entry-date>_<entry-id> so you can match
-                each photo back to its journal entry. The export.json file's
-                "media" arrays include the exact archivePath inside this zip
-                where each photo lives.
-
-                If any photos couldn't be fetched at export time (network
-                glitch, encryption mismatch), they'll be listed in the
-                "missingImages" array at the bottom of export.json.
-
-                Your data is yours. Take it wherever you want.
-                """;
-            await es.WriteAsync(System.Text.Encoding.UTF8.GetBytes(readme));
-        }
+        buffer.Position = 0;
+        await buffer.CopyToAsync(Response.Body);
     }
 
     /// <summary>Builds the in-zip path for an entry's media file.
