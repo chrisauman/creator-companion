@@ -104,6 +104,12 @@ marketing/                        static HTML/CSS/JS marketing site
   attachments). S3-compatible API.
 - **Resend** — transactional email.
 - **Stripe** — payments.
+- **Sentry** — error tracking + performance traces. Both backend
+  (.NET SDK in Program.cs) and frontend (Angular SDK in main.ts) report
+  to separate Sentry projects. SDK no-ops when the DSN env var is
+  unset, so dev environments without Sentry just skip reporting.
+  See "Observability (Sentry)" section below for env var names + the
+  privacy posture (which is critical — DON'T loosen it).
 
 ## Architecture
 
@@ -608,6 +614,75 @@ Re-read this before changing auth, billing, or storage paths.
   — the earlier kill-switch traced the iOS slow-launch to WebKit
   standalone startup, not the SW, but we deliberately keep the SW
   minimal pending more evidence.
+
+## Observability (Sentry)
+
+Error tracking + performance traces on both sides. SDK is no-op when
+DSN is unset, so missing env vars are graceful, not catastrophic.
+
+- **Backend**: `Sentry.AspNetCore` package, wired in `Program.cs` via
+  `builder.WebHost.UseSentry(...)`. Reads `Sentry:Dsn` from config.
+  `TracesSampleRate = 0.1` (10% of requests get perf traces — keeps
+  free tier alive). `SendDefaultPii = false`. Release tagged with
+  `RAILWAY_GIT_COMMIT_SHA` if set.
+- **Frontend**: `@sentry/angular` package, init in `main.ts` BEFORE
+  `bootstrapApplication`. `ErrorHandler` + `TraceService` providers
+  in `app.config.ts`. DSN injected at deploy time by
+  `scripts/inject-version.mjs` swapping the `__SENTRY_DSN__` sentinel
+  in the bundled `environment.production.ts`.
+- **Background worker capture**: `ReminderBackgroundService`,
+  `SubstackPostingBackgroundService`, and `ContentEncryptionMigrator`
+  all forward outer-catch exceptions to `Sentry.SentrySdk.
+  CaptureException(ex)` alongside `logger.LogError`. Don't strip these
+  — silent worker failures in Railway logs were a real problem before.
+- **Source maps**: `angular.json` sets `sourceMap.hidden = true`, so
+  `.map` files are emitted alongside `.js` bundles but NOT linked via
+  `sourceMappingURL` (browsers don't fetch them). The deploy workflow
+  uploads them to Sentry via `@sentry/cli`, then DELETES them from
+  `.vercel/output/static` before deploy. Defense in depth — without
+  the delete, a determined attacker could pattern-match
+  `/main-XXX.js.map` and reach source.
+
+### Privacy posture (CRITICAL — don't loosen)
+
+A journaling app where entry content IS the product means user-written
+text MUST NEVER appear in third-party error tracker payloads. Both
+SDKs scrub before sending:
+
+- **Backend `BeforeSend`** in `Program.cs`: strips `Authorization` +
+  `Cookie` headers from every event. Replaces request body with
+  `[scrubbed]` when the URL matches `ContainsSensitiveRoute` —
+  currently: `/v1/entries`, `/v1/drafts`, `/v1/journals`, `/v1/auth/`,
+  `/v1/users/me`, `/v1/admin/email-templates`. **Add to that list
+  whenever new content-bearing endpoints land.**
+- **Frontend `beforeBreadcrumb`** in `main.ts`: same URL pattern;
+  drops `body` from XHR/fetch breadcrumbs. `beforeSend` strips auth
+  headers as a belt-and-suspenders measure.
+- **Session Replay is OFF and stays OFF.** Sentry's Session Replay
+  records the user's DOM, which on a journaling app means recording
+  their writing in real time. If you ever turn this on, it MUST be
+  paired with `maskAllText: true` and `blockAllMedia: true` — and
+  even then think hard.
+- **`SendDefaultPii = false` on both sides.** User context, if set,
+  uses the user ID GUID only — never email, name, or IP.
+
+### Required env vars (set out-of-band, not in the repo)
+
+- **Railway** (backend): `Sentry__Dsn` = backend project DSN.
+  Format: `https://<key>@<org>.ingest.sentry.io/<project>`.
+- **Vercel** (frontend project): `SENTRY_DSN` = frontend project DSN.
+  Production scope. `vercel pull` makes it available to
+  `inject-version.mjs` at deploy time.
+- **GitHub repo secrets** (for source map upload from CI):
+  - `SENTRY_AUTH_TOKEN` — org-scope token with `project:read` +
+    `project:releases` scopes
+  - `SENTRY_ORG` — org slug
+  - `SENTRY_PROJECT_WEB` — Angular project slug
+
+If any of those three GitHub secrets is missing, the source-map upload
+step skips silently and the workflow keeps deploying. Frontend
+without a `SENTRY_DSN` ships with the SDK no-op'd. Backend without
+`Sentry__Dsn` does the same.
 
 ## Known deferred items (won't-fix with reasoning)
 
