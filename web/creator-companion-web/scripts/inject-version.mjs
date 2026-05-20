@@ -17,10 +17,11 @@
 //   curl -s https://app.creatorcompanionapp.com | grep cc-build
 
 import { execSync } from 'node:child_process';
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
-const distHtml = join('dist', 'creator-companion-web', 'browser', 'index.html');
+const distDir  = join('dist', 'creator-companion-web', 'browser');
+const distHtml = join(distDir, 'index.html');
 
 if (!existsSync(distHtml)) {
   console.warn(`[inject-version] ${distHtml} not found — skipping`);
@@ -49,3 +50,28 @@ html = html.replace(/<head>/, `<head>\n  ${marker}`);
 
 writeFileSync(distHtml, html);
 console.log(`[inject-version] stamped ${distHtml} with ${shortSha}`);
+
+// ── Sentinel replacement in JS bundles ────────────────────────────
+// environment.production.ts ships with text sentinels (__SENTRY_DSN__
+// and __RELEASE_SHA__) so the Sentry DSN doesn't have to be checked
+// into git. At deploy time, Vercel's env var SENTRY_DSN is available
+// to this Node script; we rewrite the sentinels in every bundled
+// .js file. If SENTRY_DSN is unset, the sentinel is replaced with
+// the empty string so Sentry's SDK gracefully no-ops.
+const sentryDsn = process.env.SENTRY_DSN || '';
+
+let bundleCount = 0;
+let bundlesRewritten = 0;
+for (const file of readdirSync(distDir)) {
+  if (!file.endsWith('.js')) continue;
+  bundleCount++;
+  const path = join(distDir, file);
+  const before = readFileSync(path, 'utf8');
+  if (!before.includes('__SENTRY_DSN__') && !before.includes('__RELEASE_SHA__')) continue;
+  const after = before
+    .replaceAll('__SENTRY_DSN__',  sentryDsn)
+    .replaceAll('__RELEASE_SHA__', sha);
+  writeFileSync(path, after);
+  bundlesRewritten++;
+}
+console.log(`[inject-version] rewrote sentinels in ${bundlesRewritten}/${bundleCount} JS bundle(s); SENTRY_DSN=${sentryDsn ? 'set' : 'EMPTY (SDK will no-op)'}`);

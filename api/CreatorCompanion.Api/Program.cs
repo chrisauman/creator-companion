@@ -29,6 +29,75 @@ try
         .WriteTo.Console()
         .WriteTo.File("logs/app-.log", rollingInterval: RollingInterval.Day));
 
+    // ── Sentry ──────────────────────────────────────────────────────
+    // Captures unhandled exceptions in controllers, JWT auth failures
+    // that bubble to a 500, and any explicit SentrySdk.CaptureException
+    // calls in background workers. SDK no-ops gracefully when
+    // Sentry:Dsn is unset — dev / local runs without a DSN just skip
+    // reporting. Wire-up via UseSentry so AspNetCore-specific middleware
+    // is registered before the request pipeline assembles below.
+    builder.WebHost.UseSentry(o =>
+    {
+        o.Dsn               = builder.Configuration["Sentry:Dsn"]; // null → SDK no-ops
+        o.Environment       = builder.Environment.EnvironmentName; // "Production" / "Development"
+        o.Release           = Environment.GetEnvironmentVariable("RAILWAY_GIT_COMMIT_SHA")
+                           ?? Environment.GetEnvironmentVariable("GIT_COMMIT_SHA")
+                           ?? "dev";
+        o.TracesSampleRate  = 0.1;   // 10% of requests get performance traces — keeps free tier alive
+        o.SendDefaultPii    = false; // Never send PII automatically; user ID set explicitly elsewhere
+        o.MaxRequestBodySize = Sentry.Extensibility.RequestSize.None; // We scrub bodies in BeforeSend
+
+        // BeforeSend scrubs sensitive request data BEFORE the event
+        // leaves the process. For a journaling app, entry/draft/journal
+        // bodies contain the user's writing — that must never appear
+        // in a third-party error tracker. Cookie + Authorization
+        // headers go too: a stolen JWT in a Sentry event would be a
+        // credential leak waiting to happen.
+        o.SetBeforeSend((Sentry.SentryEvent e, Sentry.SentryHint _) =>
+        {
+            try
+            {
+                if (e.Request is { } req)
+                {
+                    // Strip auth headers from every event.
+                    if (req.Headers is { } headers)
+                    {
+                        var toRemove = headers.Keys
+                            .Where(k => string.Equals(k, "Authorization", StringComparison.OrdinalIgnoreCase)
+                                     || string.Equals(k, "Cookie",        StringComparison.OrdinalIgnoreCase))
+                            .ToList();
+                        foreach (var k in toRemove) headers.Remove(k);
+                    }
+
+                    // Strip request body on routes that carry user content
+                    // or credentials. Anything we wouldn't print to a log
+                    // we shouldn't ship to Sentry.
+                    if (!string.IsNullOrEmpty(req.Url) && ContainsSensitiveRoute(req.Url))
+                    {
+                        req.Data = "[scrubbed]";
+                    }
+                }
+            }
+            catch { /* never break event delivery on a scrub error */ }
+
+            return e;
+        });
+    });
+
+    // Routes whose request bodies must NEVER reach Sentry. Anything
+    // with user-authored content (entry/draft/journal text), credentials
+    // (auth endpoints), or PII (account self-service).
+    static bool ContainsSensitiveRoute(string url)
+    {
+        var u = url.ToLowerInvariant();
+        return u.Contains("/v1/entries")
+            || u.Contains("/v1/drafts")
+            || u.Contains("/v1/journals")
+            || u.Contains("/v1/auth/")
+            || u.Contains("/v1/users/me")
+            || u.Contains("/v1/admin/email-templates"); // template bodies are admin content but still PII-adjacent
+    }
+
     // Database
     // Support both DATABASE_URL (Railway postgres:// URL) and legacy Npgsql connection string
     var rawDbUrl = Environment.GetEnvironmentVariable("DATABASE_URL")

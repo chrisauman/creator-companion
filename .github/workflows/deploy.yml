@@ -147,6 +147,69 @@ jobs:
           VERCEL_GIT_COMMIT_SHA: ${{ github.sha }}
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
 
+      # ── Sentry source maps: upload then delete ─────────────────────
+      # Why this is two operations glued together:
+      #   1. angular.json has sourceMap.hidden=true so .map files are
+      #      EMITTED but NOT referenced from the .js bundles. Browsers
+      #      don't fetch them; users never see source.
+      #   2. Sentry needs them to make minified stack traces readable
+      #      — without upload, every Sentry error shows
+      #      `m.fn (chunk-XYZ.js:1:8943)` instead of the real file/line.
+      #   3. BUT a .map file left in .vercel/output/static would still
+      #      be reachable at e.g. /main-XYZ.js.map by anyone who
+      #      pattern-matches the bundle filenames. Small info leak but
+      #      real. After upload, we delete them from the deploy artifact.
+      #
+      # Skips silently when SENTRY_AUTH_TOKEN secret is unset so the
+      # workflow keeps working before Sentry is configured. Once the
+      # three secrets are set as GitHub repo secrets, this becomes
+      # active automatically.
+      #
+      # ── Secrets required ──
+      #   - SENTRY_AUTH_TOKEN   org-scope token from
+      #                         sentry.io → User Settings → Auth Tokens.
+      #                         Scopes needed: project:read, project:releases.
+      #   - SENTRY_ORG          Org slug (lowercase, in your Sentry URLs).
+      #   - SENTRY_PROJECT_WEB  Project slug for the Angular project
+      #                         (lowercase, in the project URL).
+      - name: Upload source maps to Sentry (skips if not configured)
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG:        ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT:    ${{ secrets.SENTRY_PROJECT_WEB }}
+          RELEASE_SHA:       ${{ github.sha }}
+        run: |
+          if [ -z "$SENTRY_AUTH_TOKEN" ] || [ -z "$SENTRY_ORG" ] || [ -z "$SENTRY_PROJECT" ]; then
+            echo "Sentry secrets not configured — skipping source map upload."
+            echo "  SENTRY_AUTH_TOKEN: ${SENTRY_AUTH_TOKEN:+set}${SENTRY_AUTH_TOKEN:-UNSET}"
+            echo "  SENTRY_ORG:        ${SENTRY_ORG:-UNSET}"
+            echo "  SENTRY_PROJECT:    ${SENTRY_PROJECT:-UNSET}"
+            exit 0
+          fi
+
+          STATIC_DIR=.vercel/output/static
+          if [ ! -d "$STATIC_DIR" ]; then
+            echo "::warning::$STATIC_DIR not found — Vercel build output structure may have changed."
+            exit 0
+          fi
+
+          echo "Creating Sentry release $RELEASE_SHA…"
+          npx @sentry/cli@latest releases new "$RELEASE_SHA"
+
+          echo "Uploading source maps from $STATIC_DIR…"
+          npx @sentry/cli@latest releases files "$RELEASE_SHA" upload-sourcemaps \
+            "$STATIC_DIR" \
+            --url-prefix '~/' \
+            --rewrite \
+            --validate
+
+          npx @sentry/cli@latest releases finalize "$RELEASE_SHA"
+
+          echo "Deleting .map files from deploy artifact (already uploaded to Sentry)…"
+          find "$STATIC_DIR" -name '*.js.map' -delete
+          find "$STATIC_DIR" -name '*.css.map' -delete
+          echo "Source map upload complete."
+
       - name: Deploy prebuilt artifact to production
         env:
           VERCEL_ORG_ID:     ${{ secrets.VERCEL_ORG_ID }}

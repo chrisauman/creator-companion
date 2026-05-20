@@ -17,5 +17,15 @@ export const environment = {
   // Proxying both fixes: the browser only ever talks to
   // app.creatorcompanionapp.com (valid Vercel cert, same-origin
   // cookies). The Railway upstream is hidden behind Vercel's edge.
-  apiBaseUrl: '/v1'
+  apiBaseUrl: '/v1',
+  // Sentry DSN injected at build time from the SENTRY_DSN env var by
+  // scripts/inject-version.mjs. Sentile sentinel `__SENTRY_DSN__`
+  // is text-replaced before Vercel deploys the bundle. SDK no-ops if
+  // empty so the app still ships when the env var is missing.
+  sentryDsn: '__SENTRY_DSN__',
+  // Release SHA injected alongside sentryDsn — same script, same pass.
+  // Tags every Sentry event with the release that produced it so you
+  // can see "this error started in commit abc123" instead of just
+  // "this error exists."
+  releaseSha: '__RELEASE_SHA__'
 };

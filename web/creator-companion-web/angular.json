@@ -62,6 +62,12 @@
                   "inlineCritical": false
                 },
                 "fonts": false
+              },
+              "sourceMap": {
+                "scripts":   true,
+                "styles":    true,
+                "hidden":    true,
+                "vendor":    true
               }
             },
             "development": {

@@ -1,6 +1,7 @@
-import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
-import { provideRouter, withInMemoryScrolling } from '@angular/router';
+import { ApplicationConfig, ErrorHandler, inject, provideAppInitializer, provideBrowserGlobalErrorListeners } from '@angular/core';
+import { Router, provideRouter, withInMemoryScrolling } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import * as Sentry from '@sentry/angular';
 import { routes } from './app.routes';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
 
@@ -17,6 +18,29 @@ export const appConfig: ApplicationConfig = {
       scrollPositionRestoration: 'top',
       anchorScrolling: 'enabled'
     })),
-    provideHttpClient(withInterceptors([authInterceptor]))
+    provideHttpClient(withInterceptors([authInterceptor])),
+
+    // ── Sentry providers ──────────────────────────────────────────
+    // ErrorHandler installs Sentry as Angular's global error sink so
+    // template errors, signal-update throws, and any other unhandled
+    // exception are forwarded to Sentry. createErrorHandler() is a
+    // no-op wrapper when Sentry.init wasn't called (sentryDsn empty
+    // in dev) — safe to leave wired up regardless.
+    {
+      provide: ErrorHandler,
+      useValue: Sentry.createErrorHandler({
+        showDialog: false  // No "report this error" dialog — feels intrusive in a journaling app
+      })
+    },
+    // TraceService instruments the Router so each navigation becomes
+    // a Sentry performance transaction. Pair with provideAppInitializer
+    // so the Router subscription is set up before any nav happens.
+    {
+      provide: Sentry.TraceService,
+      deps: [Router]
+    },
+    provideAppInitializer(() => {
+      inject(Sentry.TraceService);
+    })
   ]
 };

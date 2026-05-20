@@ -24,16 +24,29 @@ public class ReminderBackgroundService(
 
         while (!stoppingToken.IsCancellationRequested)
         {
+            // Each catch logs locally AND reports to Sentry. Logging
+            // alone wasn't enough — Railway logs require manual grep
+            // to spot a worker silently failing for hours. Sentry
+            // gives us a single alert when a path starts erroring.
+            // SentrySdk.CaptureException is a no-op when DSN is unset.
             try { await ProcessRemindersAsync(stoppingToken); }
             catch (OperationCanceledException) { break; }
-            catch (Exception ex) { logger.LogError(ex, "Error processing reminders."); }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error processing reminders.");
+                Sentry.SentrySdk.CaptureException(ex);
+            }
 
             // Streak-threatened push runs in the same loop. Independent
             // path with its own dedupe (User.StreakThreatenedNotifiedFor),
             // so a failure here doesn't affect reminders and vice versa.
             try { await ProcessThreatenedNotificationsAsync(stoppingToken); }
             catch (OperationCanceledException) { break; }
-            catch (Exception ex) { logger.LogError(ex, "Error processing streak-threatened notifications."); }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error processing streak-threatened notifications.");
+                Sentry.SentrySdk.CaptureException(ex);
+            }
 
             // Trial lifecycle emails (3-day reminder, 1-day reminder,
             // expired notification). Each has its own dedupe column so
@@ -41,7 +54,11 @@ public class ReminderBackgroundService(
             // every minute is overkill but cheap — one query per tick.
             try { await ProcessTrialEmailsAsync(stoppingToken); }
             catch (OperationCanceledException) { break; }
-            catch (Exception ex) { logger.LogError(ex, "Error processing trial-lifecycle emails."); }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error processing trial-lifecycle emails.");
+                Sentry.SentrySdk.CaptureException(ex);
+            }
 
             // 48-hour trash purge — CLAUDE.md promises this; without
             // it, soft-deleted entries (and their R2 media) live
@@ -55,7 +72,11 @@ public class ReminderBackgroundService(
                 if (purged > 0) logger.LogInformation("Purged {Count} expired trash entries.", purged);
             }
             catch (OperationCanceledException) { break; }
-            catch (Exception ex) { logger.LogError(ex, "Error purging expired trash."); }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error purging expired trash.");
+                Sentry.SentrySdk.CaptureException(ex);
+            }
 
             try { await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken); }
             catch (OperationCanceledException) { break; }

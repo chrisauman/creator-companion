@@ -97,6 +97,10 @@ public class ContentEncryptionMigrator(
         catch (Exception ex)
         {
             logger.LogError(ex, "ContentEncryptionMigrator failed.");
+            // Migration failure is silent-but-fatal for security
+            // posture (legacy plaintext rows stay unencrypted). Bubble
+            // to Sentry so we're never blind to it.
+            Sentry.SentrySdk.CaptureException(ex);
         }
     }
 

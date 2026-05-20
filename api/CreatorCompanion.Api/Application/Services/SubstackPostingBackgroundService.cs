@@ -30,7 +30,14 @@ public class SubstackPostingBackgroundService(
                 await poster.TickAsync(stoppingToken);
             }
             catch (OperationCanceledException) { break; }
-            catch (Exception ex) { logger.LogError(ex, "Substack auto-poster tick failed."); }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Substack auto-poster tick failed.");
+                // Forward to Sentry so the worker doesn't silently
+                // fail for hours (Railway logs only show up when
+                // someone goes looking). No-op when DSN is unset.
+                Sentry.SentrySdk.CaptureException(ex);
+            }
 
             try { await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken); }
             catch (OperationCanceledException) { break; }
