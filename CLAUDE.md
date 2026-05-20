@@ -111,6 +111,97 @@ marketing/                        static HTML/CSS/JS marketing site
   See "Observability (Sentry)" section below for env var names + the
   privacy posture (which is critical — DON'T loosen it).
 
+## Service accounts (registry)
+
+Single source of truth for **which account owns each piece of the
+stack**. Exists to prevent credential-crossover with other projects
+on the same machine (one painful learning: macOS keychain stores
+ONE credential per host, so signing into `Sanctuarymg` GitHub in
+another context overwrote the `chrisauman` entry and broke pushes).
+
+**This file contains identifiers ONLY, never secrets.** Login emails,
+account slugs, project names, dashboard URLs — yes. Passwords, API
+tokens, DSNs, connection strings — never. Those live in your password
+manager and in service-side env vars (Railway, Vercel, GitHub
+repo secrets).
+
+Fields with `[TBD]` need Chris to confirm; update them as you
+verify each.
+
+### GitHub
+- **Account / owner:** `chrisauman`
+- **Login email:** [TBD — chris to confirm]
+- **Repo:** `https://github.com/chrisauman/creator-companion`
+- **Default branch:** `main`
+- **Notes:** Pushes use macOS keychain credentials for `github.com`.
+  If you've signed into other GitHub accounts on this machine, clear
+  the keychain entry before pushing here (`git credential reject`
+  with `host=github.com`).
+
+### Sentry
+- **Account holder:** Chris Auman
+- **Org slug:** `chris-auman`  → dashboard at `https://chris-auman.sentry.io`
+- **Org ID:** `4511419335966720`
+- **Data storage region:** US
+- **Login email:** [TBD — chris to confirm]
+- **Projects:**
+  - `creator-companion-api` — backend, platform: ASP.NET Core
+  - `creator-companion-web` — frontend, platform: Angular  *(TBD — to be created)*
+- **DSN env var locations:** backend DSN → Railway `Sentry__Dsn`
+  (double underscore); frontend DSN → Vercel `SENTRY_DSN` (Production
+  scope), consumed at build time by `scripts/inject-version.mjs`.
+
+### Railway
+- **Account holder:** [TBD]
+- **Login email:** [TBD]
+- **Project name:** [TBD]
+- **Service(s):** [TBD — backend API service, Postgres add-on]
+- **Notes:** auto-deploys on push to `main` via Railway's GitHub App
+  integration.
+
+### Vercel
+- **Account holder:** [TBD]
+- **Login email:** [TBD]
+- **Account type:** [TBD — Hobby or Team?]
+- **Projects:**
+  - `creator-companion-onti` — the PWA, custom domain
+    `app.creatorcompanionapp.com`. Deploys via CLI from
+    `.github/workflows/deploy.yml`.
+  - Marketing site project — custom domain `creatorcompanionapp.com`.
+    Project name: [TBD]. Deploys via Vercel's native GitHub
+    integration.
+
+### Cloudflare R2
+- **Account holder:** [TBD]
+- **Login email:** [TBD]
+- **Bucket name(s):** [TBD]
+- **Notes:** S3-compatible; SDK uses AWSSDK.S3 NuGet pointed at R2
+  endpoint.
+
+### Resend
+- **Account holder:** [TBD]
+- **Login email:** [TBD]
+- **From-address domain:** [TBD — code defaults to
+  `noreply@creatorcompanion.app` but live env var on Railway
+  (`Resend:FromEmail`) may differ.]
+- **Notes:** API key on Railway as `Resend:ApiKey`.
+
+### Stripe
+- **Account holder:** [TBD]
+- **Login email:** [TBD]
+- **Mode:** LIVE (production)
+- **Products / prices:**
+  - Monthly $5.99 — price ID `price_1TXski2fl0VNYpt98pYOBkFn`
+  - Annual $49.99 — price ID `price_1TXsm02fl0VNYpt9b371lP7m`
+  - Test product $0.50 — price ID `price_1TXsrL2fl0VNYpt95sEXNOdi`
+- **Webhook endpoint:** [TBD — destination URL on Railway]
+
+### Domain registrar
+- **Account holder:** [TBD]
+- **Login email:** [TBD]
+- **Domains:** `creatorcompanionapp.com` (apex + subdomains).
+- **DNS hosted at:** [TBD — registrar's nameservers or Cloudflare?]
+
 ## Architecture
 
 - **Frontend:** Angular 17+ standalone components, signals everywhere,
