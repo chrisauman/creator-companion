@@ -17,7 +17,7 @@ import { AdminShellComponent } from './admin-shell.component';
  *
  * Three tabs:
  *   - Settings: on/off toggle + health summary. Schedule (7am ET) and
- *     recipient (chris@sanctuarymg.com) are hardcoded server-side.
+ *     recipient (chris.auman@gmail.com) are hardcoded server-side.
  *   - Today: shows today's planned spark, status, and a "send now"
  *     override that bypasses the 7am schedule.
  *   - History: last 60 days of plans, newest first, with outcome.
@@ -102,7 +102,7 @@ import { AdminShellComponent } from './admin-shell.component';
                 </div>
                 <div class="substack-health__row">
                   <span class="substack-health__label">Recipient</span>
-                  <span class="substack-health__value">chris&#64;sanctuarymg.com</span>
+                  <span class="substack-health__value">chris.auman&#64;gmail.com</span>
                 </div>
                 <div class="substack-health__row">
                   <span class="substack-health__label">Last success</span>
