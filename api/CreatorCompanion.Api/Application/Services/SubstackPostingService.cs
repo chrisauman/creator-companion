@@ -87,7 +87,12 @@ public class SubstackPostingService : ISubstackPostingService
     // a fully personal "post this to Substack today" reminder, so DB-
     // driven recipient lookup is overkill. If/when more admins exist,
     // swap to a Users query (IsAdmin && IsActive).
-    private const string RecipientEmail = "chris@sanctuarymg.com";
+    //
+    // Recipient is explicitly chris.auman@gmail.com per the project's
+    // account boundary rules — not the sanctuarymg.com address that
+    // appears in some other contexts. Don't change without explicit
+    // user confirmation.
+    private const string RecipientEmail = "chris.auman@gmail.com";
 
     private static readonly Random Rng = new();
     private static readonly object RngLock = new();
