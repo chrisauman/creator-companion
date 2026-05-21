@@ -113,9 +113,29 @@ public class SubstackPostingService : ISubstackPostingService
 
     public async Task TickAsync(CancellationToken ct)
     {
+        // Lazy-init the settings row if it doesn't exist. The row is
+        // still used for operational metadata (LastSuccessAt /
+        // LastFailureAt / ConsecutiveFailures) so we need it
+        // non-null when FireOnePlanAsync writes the result of a send.
+        // Without lazy-init, a fresh install with no prior admin
+        // visit silently never fires the daily-spark email.
         var settings = await _db.SubstackSettings.FirstOrDefaultAsync(ct);
-        if (settings is null || !settings.Active)
-            return;
+        if (settings is null)
+        {
+            settings = new Domain.Models.SubstackSettings { Active = true };
+            _db.SubstackSettings.Add(settings);
+            await _db.SaveChangesAsync(ct);
+        }
+
+        // The Active gate was removed deliberately. In the old cookie-
+        // based auto-poster, Active=false was a circuit breaker that
+        // auto-flipped on a 401 from Substack to stop hammering. For
+        // the email-based reminder there's no equivalent failure-loop
+        // concern — emails either succeed or fail individually, the
+        // metadata fields track that. The Active field still exists
+        // on the model for future "pause my daily emails for vacation"
+        // UX, but it's intentionally NOT a gate today: the user wants
+        // the email to fire daily without having to opt in.
 
         var tz = ResolveTimeZone(ScheduleTimeZoneId);
         var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz));
