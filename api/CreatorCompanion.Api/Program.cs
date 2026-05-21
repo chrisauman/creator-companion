@@ -32,13 +32,20 @@ try
     // ── Sentry ──────────────────────────────────────────────────────
     // Captures unhandled exceptions in controllers, JWT auth failures
     // that bubble to a 500, and any explicit SentrySdk.CaptureException
-    // calls in background workers. SDK no-ops gracefully when
-    // Sentry:Dsn is unset — dev / local runs without a DSN just skip
-    // reporting. Wire-up via UseSentry so AspNetCore-specific middleware
-    // is registered before the request pipeline assembles below.
-    builder.WebHost.UseSentry(o =>
+    // calls in background workers.
+    //
+    // IMPORTANT: the Sentry .NET SDK does NOT gracefully no-op on a
+    // null DSN — it throws ArgumentNullException at boot, which kills
+    // the entire app. (Error message: "To disable Sentry, pass an empty
+    // string.") We sidestep that by only calling UseSentry when the
+    // DSN env var is actually set. Empty DSN → Sentry isn't registered
+    // at all → zero footprint, zero crash risk.
+    var sentryDsn = builder.Configuration["Sentry:Dsn"];
+    if (!string.IsNullOrWhiteSpace(sentryDsn))
     {
-        o.Dsn               = builder.Configuration["Sentry:Dsn"]; // null → SDK no-ops
+        builder.WebHost.UseSentry(o =>
+        {
+            o.Dsn               = sentryDsn;
         o.Environment       = builder.Environment.EnvironmentName; // "Production" / "Development"
         o.Release           = Environment.GetEnvironmentVariable("RAILWAY_GIT_COMMIT_SHA")
                            ?? Environment.GetEnvironmentVariable("GIT_COMMIT_SHA")
@@ -82,20 +89,21 @@ try
 
             return e;
         });
-    });
+        });
 
-    // Routes whose request bodies must NEVER reach Sentry. Anything
-    // with user-authored content (entry/draft/journal text), credentials
-    // (auth endpoints), or PII (account self-service).
-    static bool ContainsSensitiveRoute(string url)
-    {
-        var u = url.ToLowerInvariant();
-        return u.Contains("/v1/entries")
-            || u.Contains("/v1/drafts")
-            || u.Contains("/v1/journals")
-            || u.Contains("/v1/auth/")
-            || u.Contains("/v1/users/me")
-            || u.Contains("/v1/admin/email-templates"); // template bodies are admin content but still PII-adjacent
+        // Routes whose request bodies must NEVER reach Sentry. Anything
+        // with user-authored content (entry/draft/journal text), credentials
+        // (auth endpoints), or PII (account self-service).
+        static bool ContainsSensitiveRoute(string url)
+        {
+            var u = url.ToLowerInvariant();
+            return u.Contains("/v1/entries")
+                || u.Contains("/v1/drafts")
+                || u.Contains("/v1/journals")
+                || u.Contains("/v1/auth/")
+                || u.Contains("/v1/users/me")
+                || u.Contains("/v1/admin/email-templates"); // template bodies are admin content but still PII-adjacent
+        }
     }
 
     // Database
