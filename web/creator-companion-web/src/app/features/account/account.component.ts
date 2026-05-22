@@ -72,13 +72,19 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
                 Your free trial has ended. Subscribe to keep journaling and pick up where you left off.
               }
             </p>
-            <div style="display:flex;gap:.625rem;flex-wrap:wrap">
+            <div style="display:flex;gap:.625rem;flex-wrap:wrap;align-items:center">
               <button class="btn btn--primary btn--sm" (click)="upgrade('monthly')" [disabled]="upgrading()">
                 {{ upgrading() === 'monthly' ? 'Redirecting…' : 'Subscribe — $5.99/month' }}
               </button>
-              <button class="btn btn--secondary btn--sm" (click)="upgrade('annual')" [disabled]="upgrading()">
+              <button class="btn btn--primary btn--sm" (click)="upgrade('annual')" [disabled]="upgrading()">
                 {{ upgrading() === 'annual' ? 'Redirecting…' : 'Subscribe — $49.99/year' }}
               </button>
+              <!-- Brand-cyan "SAVE!" tag next to the annual button. Live
+                   text (not an inline pill) so it reads as an editorial
+                   call-out rather than a UI chip — cheaper signal that
+                   the annual plan is the deal, without out-screaming
+                   the buttons themselves. -->
+              <span style="color:var(--color-accent);font-weight:800;font-size:.9375rem;letter-spacing:.02em">SAVE!</span>
             </div>
             @if (upgradeError()) {
               <p class="alert alert--error" style="margin-top:.75rem">{{ upgradeError() }}</p>
@@ -120,7 +126,7 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
                      accept="image/jpeg,image/png,image/webp"
                      style="display:none"
                      (change)="onProfileImagePicked($event)" />
-              <button class="btn btn--secondary btn--sm"
+              <button class="btn btn--primary btn--sm"
                       type="button"
                       (click)="profileImageInput.click()"
                       [disabled]="profileImageWorking()">
@@ -165,7 +171,7 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
               </div>
             </div>
             <div class="name-edit-actions">
-              <button class="btn btn--secondary btn--sm"
+              <button class="btn btn--primary btn--sm"
                       type="button"
                       (click)="saveName()"
                       [disabled]="nameSaving() || !nameDirty()">
@@ -521,7 +527,7 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
           <p class="text-muted text-sm" style="margin-bottom:1.25rem">
             Deleted entries are kept for 48 hours before being permanently removed.
           </p>
-          <a routerLink="/trash" class="btn btn--secondary btn--sm">View trash</a>
+          <a routerLink="/trash" class="btn btn--primary btn--sm">View trash</a>
         </section>
 
         <!-- Export your data — moved to sit immediately above Delete
@@ -540,10 +546,10 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
             <button class="btn btn--primary" (click)="exportArchive()" [disabled]="archiving()">
               {{ archiving() ? 'Preparing archive…' : 'Download full archive (.zip)' }}
             </button>
-            <button class="btn btn--secondary" (click)="exportJson()" [disabled]="exporting()">
+            <button class="btn btn--primary" (click)="exportJson()" [disabled]="exporting()">
               Export as JSON
             </button>
-            <button class="btn btn--secondary" (click)="exportText()" [disabled]="exporting()">
+            <button class="btn btn--primary" (click)="exportText()" [disabled]="exporting()">
               Export as Text
             </button>
           </div>
@@ -963,9 +969,25 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
     }
     .new-tag-form {
       display:flex; gap:.625rem; margin-bottom:1rem;
+      /* flex-wrap is the safety net for very narrow viewports — if
+         the input + button still don't fit on one row after the
+         min-width:0 shrink below, the button wraps under the input
+         instead of overflowing the card frame. Previously the form
+         had neither min-width:0 nor flex-wrap, so on iPhone the
+         "+ Add tag" button rendered past the right edge of the
+         account card and was visually clipped. */
+      flex-wrap:wrap;
     }
     .new-tag-input {
-      flex:1; border:1.5px solid var(--color-border); border-radius:var(--radius-md);
+      /* min-width:0 is the critical fix — flex items default to
+         min-width:auto (their content's intrinsic size), which on
+         a text input means the placeholder width acts as a floor
+         and the input refuses to shrink any smaller. Setting it
+         to 0 lets the input share row width with the Add-tag
+         button properly. Without this, flex:1 alone doesn't help —
+         the input still claims its placeholder's worth of pixels. */
+      flex:1; min-width:0;
+      border:1.5px solid var(--color-border); border-radius:var(--radius-md);
       padding:.4rem .75rem; font-size:.9375rem; font-family:var(--font-sans);
       outline:none; background:var(--color-surface); color:var(--color-text);
       transition:border-color .15s;
