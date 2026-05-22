@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Creator Companion — The daily journal for creative people</title>
+  <meta name="description" content="Build your creative streak. Write every day, track your progress, and never lose what you create. Try free for 10 days.">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@700;800&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,600;1,700;1,800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://www.creatorcompanionapp.com">
+  <meta property="og:title" content="Creator Companion — The daily journal for creative people">
+  <meta property="og:description" content="Build your creative streak. Write every day, track your progress, and never lose what you create. Try free for 10 days.">
+  <meta property="og:image" content="https://www.creatorcompanionapp.com/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Creator Companion — The daily journal for creative people">
+  <meta name="twitter:description" content="Build your creative streak. Write every day, track your progress, and never lose what you create. Try free for 10 days.">
+  <meta name="twitter:image" content="https://www.creatorcompanionapp.com/og-image.png">
+  <link rel="canonical" href="https://www.creatorcompanionapp.com/">
+</head>
+<body>
+
+  <!-- Shared SVG defs — referenced by hero wave strokes. Hidden from
+       layout (width/height 0); just a place to declare the rainbow
+       gradient that the hero waves use as their stroke. -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <linearGradient id="hero-rainbow" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%"   stop-color="#12C4E3"/>
+        <stop offset="25%"  stop-color="#6366f1"/>
+        <stop offset="50%"  stop-color="#a855f7"/>
+        <stop offset="75%"  stop-color="#ec4899"/>
+        <stop offset="100%" stop-color="#f59e0b"/>
+      </linearGradient>
+    </defs>
+  </svg>
+
+  <!-- ── Nav ─────────────────────────────────────────────────────────── -->
+  <nav class="nav" id="nav">
+    <div class="nav__inner">
+      <a href="index.html" class="nav__logo">
+        <img src="logo-icon.png" alt="" class="nav__logo-icon">
+        <span class="nav__logo-name">Creator Companion</span>
+      </a>
+      <div class="nav__links">
+        <a href="pricing.html">Pricing</a>
+        <a href="faq.html">FAQ</a>
+        <a href="https://app.creatorcompanionapp.com/login" class="nav__login">Log in</a>
+        <a href="signup.html" class="btn btn--primary btn--sm">Start free trial</a>
+      </div>
+      <button class="nav__hamburger" id="hamburger" aria-label="Open menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Mobile menu overlay -->
+  <div class="mobile-menu" id="mobileMenu">
+    <a href="pricing.html">Pricing</a>
+    <a href="faq.html">FAQ</a>
+    <a href="https://app.creatorcompanionapp.com/login">Log in</a>
+    <a href="signup.html" class="btn btn--primary btn--sm">Start free trial</a>
+  </div>
+
+  <!-- ── Hero ─────────────────────────────────────────────────────────── -->
+  <section class="hero">
+    <!-- Animated background: hue-cycling radial glow + three slow-
+         drifting waves whose strokes share the rainbow linear-gradient
+         declared in the <defs> at the top of the body. The gradient
+         stays fixed; the waves drift through it so the same wave
+         reads cyan on the left and amber on the right. -->
+    <div class="hero__glow" aria-hidden="true"></div>
+    <svg class="hero__wave hero__wave--1" aria-hidden="true"
+         viewBox="0 0 1200 480" preserveAspectRatio="none">
+      <path d="M-50 240 C 200 120, 400 360, 600 240 C 800 120, 1000 360, 1250 240"/>
+    </svg>
+    <svg class="hero__wave hero__wave--2" aria-hidden="true"
+         viewBox="0 0 1200 480" preserveAspectRatio="none">
+      <path d="M-50 300 C 250 180, 500 420, 750 300 C 950 200, 1100 360, 1250 300"/>
+    </svg>
+    <svg class="hero__wave hero__wave--3" aria-hidden="true"
+         viewBox="0 0 1200 480" preserveAspectRatio="none">
+      <path d="M-50 180 C 200 60, 500 300, 750 180 C 950 80, 1100 240, 1250 180"/>
+    </svg>
+
+    <div class="hero__content">
+      <div class="hero__badge">
+        <span class="hero__badge-dot"></span>
+        Free 10-day trial &mdash; no credit card required
+      </div>
+      <h1 class="hero__title">
+        The daily journal<br>for <em>creative people</em>
+      </h1>
+      <p class="hero__sub">
+        Show up for your creative work every day. Write, reflect, and build a streak
+        that keeps you accountable — all in one private, beautifully simple journal.
+      </p>
+      <div class="hero__actions">
+        <a href="signup.html" class="btn btn--hero-primary">Start free trial</a>
+        <a href="pricing.html" class="btn btn--hero-ghost">See pricing →</a>
+      </div>
+    </div>
+    <div class="hero__strips" aria-hidden="true">
+      <div class="hero__strip">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        10-day free trial
+      </div>
+      <div class="hero__strip-div" aria-hidden="true"></div>
+      <div class="hero__strip">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        Private &amp; encrypted
+      </div>
+      <div class="hero__strip-div" aria-hidden="true"></div>
+      <div class="hero__strip">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22V12"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/><circle cx="12" cy="5" r="3"/></svg>
+        Install on any device
+      </div>
+      <div class="hero__strip-div" aria-hidden="true"></div>
+      <div class="hero__strip">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+        Cancel any time
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Feature 1: Streak ────────────────────────────────────────────── -->
+  <section class="feat-section feat-section--light">
+    <div class="container">
+      <div class="feat feat--text-left">
+
+        <div class="feat__copy">
+          <span class="feat__eyebrow">Streak Tracking</span>
+          <h2 class="feat__heading">Miss a day and it resets.<br>So you won't miss a day.</h2>
+          <p class="feat__body">Your streak is the heartbeat of your creative practice. Every entry extends it. Every day you skip resets it to zero. That gentle, compounding pressure is what separates people who want to journal from people who actually do.</p>
+          <ul class="feat__bullets">
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Visual day-by-day calendar in the app
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Daily reminder notifications you set yourself
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Pause up to 10 days/month without losing your streak
+            </li>
+          </ul>
+        </div>
+
+        <div class="feat__visual">
+          <!-- Phone mockup: dashboard -->
+          <div class="mock-phone">
+            <div class="mock-phone__notch"></div>
+            <div class="mock-phone__screen">
+
+              <div class="mapp-header">
+                <span class="mapp-title">Journal</span>
+                <span class="mapp-streak">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+                  12
+                </span>
+              </div>
+
+              <div class="mapp-month">May 2026</div>
+
+              <div class="mapp-week">
+                <div class="mw-day mw-day--done"><span>M</span></div>
+                <div class="mw-day mw-day--done"><span>T</span></div>
+                <div class="mw-day mw-day--done"><span>W</span></div>
+                <div class="mw-day mw-day--done"><span>T</span></div>
+                <div class="mw-day mw-day--done"><span>F</span></div>
+                <div class="mw-day mw-day--today"><span>S</span></div>
+                <div class="mw-day"><span>S</span></div>
+              </div>
+
+              <div class="mapp-entries">
+                <div class="mentry">
+                  <div class="mentry__meta">
+                    <span class="mentry__date">Today · May 1</span>
+                  </div>
+                  <div class="mentry__title">The resistance is always loudest at the start</div>
+                  <div class="mentry__preview">Sat down at 7am and almost talked myself out of it again. But I opened the app...</div>
+                </div>
+                <div class="mentry">
+                  <div class="mentry__meta">
+                    <span class="mentry__date">Wed · Apr 30</span>
+                    <span class="mentry__mood">😌</span>
+                  </div>
+                  <div class="mentry__title">Finished the chapter draft</div>
+                  <div class="mentry__preview">Three weeks of false starts and today it finally clicked. The key was letting go of...</div>
+                </div>
+                <div class="mentry">
+                  <div class="mentry__meta">
+                    <span class="mentry__date">Tue · Apr 29</span>
+                  </div>
+                  <div class="mentry__title">Morning pages + a weird idea</div>
+                  <div class="mentry__preview">What if I structured the whole thing around questions instead of answers? Going to sit with this...</div>
+                </div>
+              </div>
+
+              <div class="mapp-nav">
+                <div class="mnav-item mnav-item--active">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  <span>Journal</span>
+                </div>
+                <div class="mnav-item">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                  <span>Alerts</span>
+                </div>
+                <div class="mnav-item">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                  <span>To Do</span>
+                </div>
+                <div class="mnav-item">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                  <span>Account</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Feature 2: Writing experience ────────────────────────────────── -->
+  <section class="feat-section feat-section--dim">
+    <div class="container">
+      <div class="feat feat--text-right">
+
+        <div class="feat__visual">
+          <!-- Desktop browser mockup: entry editor -->
+          <div class="mock-browser">
+            <div class="mock-browser__bar">
+              <div class="mock-browser__dots">
+                <span class="dot-red"></span>
+                <span class="dot-yellow"></span>
+                <span class="dot-green"></span>
+              </div>
+              <div class="mock-browser__url">app.creatorcompanionapp.com</div>
+            </div>
+            <div class="mock-browser__body">
+              <div class="mdesk-sidebar">
+                <div class="mdesk-sidebar__logo">CC</div>
+                <div class="mdesk-nav">
+                  <div class="mdesk-nav-item mdesk-nav-item--active">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  </div>
+                  <div class="mdesk-nav-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  </div>
+                  <div class="mdesk-nav-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg>
+                  </div>
+                  <div class="mdesk-nav-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                  </div>
+                </div>
+              </div>
+              <div class="mdesk-editor">
+                <div class="mdesk-editor__topbar">
+                  <span class="mdesk-editor__date">Thursday, May 1, 2026</span>
+                  <div class="mdesk-editor__actions">
+                    <span class="mdesk-tag">#writing</span>
+                    <span class="mdesk-tag">#morning</span>
+                    <span class="mdesk-mood">😊</span>
+                  </div>
+                </div>
+                <div class="mdesk-editor__title">The resistance is always loudest at the start</div>
+                <div class="mdesk-editor__body">
+                  <div class="mdesk-editor__para">Sat down at 7am and almost talked myself out of it again. The inner critic was particularly loud — "you don't have anything to say today." But I opened the app anyway.</div>
+                  <div class="mdesk-editor__para">Three sentences in, something loosened. The critic went quiet. That's the magic no one tells you: you don't wait to feel ready. You just start, and the readiness comes.</div>
+                  <div class="mdesk-editor__cursor"></div>
+                </div>
+                <div class="mdesk-editor__footer">
+                  <span class="mdesk-wc">147 words</span>
+                  <span class="mdesk-saved">✓ Saved</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="feat__copy">
+          <span class="feat__eyebrow">Writing Experience</span>
+          <h2 class="feat__heading">A blank page that actually<br>wants you to fill it.</h2>
+          <p class="feat__body">The editor gets out of your way. No distracting toolbars, no formatting rabbit holes. Just you and your thoughts — with just enough structure to keep you writing instead of fiddling.</p>
+          <ul class="feat__bullets">
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Rich text formatting when you need it
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Attach photos — up to 20 per entry
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Mood tracking, tags, and multiple journals
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Auto-saves every keystroke — nothing is lost
+            </li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Feature 3: Daily Spark ─────────────────────────────────────── -->
+  <section class="feat-section feat-section--dark">
+    <div class="container">
+      <div class="feat feat--text-left">
+
+        <div class="feat__copy">
+          <span class="feat__eyebrow feat__eyebrow--inv">Daily Spark</span>
+          <h2 class="feat__heading feat__heading--inv">Creative fuel,<br>every morning.</h2>
+          <p class="feat__body feat__body--inv">Each day opens with a fresh insight, quote, or creative challenge — handpicked for people who make things for a living. Not generic productivity advice. Real wisdom for the creative life.</p>
+          <ul class="feat__bullets feat__bullets--inv">
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              New card every day, across dozens of categories
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Favorite the ones that hit hardest
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Browse your saved sparks any time
+            </li>
+          </ul>
+        </div>
+
+        <div class="feat__visual feat__visual--centered">
+          <!-- Spark card mockup -->
+          <div class="mock-spark-wrap">
+            <div class="mock-spark">
+              <div class="mock-spark__label">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12" stroke="white" stroke-width="2"/><line x1="12" y1="16" x2="12.01" y2="16" stroke="white" stroke-width="2"/></svg>
+                Daily Spark
+              </div>
+              <div class="mock-spark__category">Resistance &amp; Procrastination</div>
+              <blockquote class="mock-spark__quote">"The amateur believes he must first overcome his fear; then he can do his work. The professional knows that fear can never be overcome. He knows there is no such thing as a fearless warrior or a dread-free artist."</blockquote>
+              <div class="mock-spark__author">— Steven Pressfield, The War of Art</div>
+              <div class="mock-spark__takeaway">
+                <strong>Today's takeaway:</strong> Fear isn't a bug in your creative process. It's confirmation you're working on something that matters.
+              </div>
+              <div class="mock-spark__actions">
+                <button class="mock-spark__btn mock-spark__btn--fav">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                  Saved
+                </button>
+                <button class="mock-spark__btn">Start writing →</button>
+              </div>
+            </div>
+            <!-- Second card peeking behind -->
+            <div class="mock-spark mock-spark--behind"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Feature 4: Privacy + Ownership ───────────────────────────────── -->
+  <section class="feat-section feat-section--light">
+    <div class="container">
+      <div class="feat feat--text-right">
+
+        <div class="feat__visual">
+          <!-- Two-panel trust mockup -->
+          <div class="mock-trust">
+            <div class="mock-trust-card">
+              <div class="mock-trust-card__icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              </div>
+              <h4>Completely private</h4>
+              <p>No social features. No public posts. No feed. No audience. What you write stays between you and the page — always.</p>
+              <div class="mock-trust-card__pills">
+                <span>No sharing</span>
+                <span>No tracking</span>
+                <span>No ads</span>
+              </div>
+            </div>
+            <div class="mock-trust-card">
+              <div class="mock-trust-card__icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              </div>
+              <h4>Your data, always yours</h4>
+              <p>Download everything as JSON or plain text any time, no questions asked. We'll never hold your words hostage behind a paywall.</p>
+              <div class="mock-trust-card__pills">
+                <span>JSON export</span>
+                <span>Plain text</span>
+                <span>Any time</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="feat__copy">
+          <span class="feat__eyebrow">Privacy &amp; Ownership</span>
+          <h2 class="feat__heading">Your words belong<br>to you. Full stop.</h2>
+          <p class="feat__body">Journaling is one of the most intimate things a person can do. Creator Companion has no social layer, no advertising, and no incentive to monetize your writing. Your entries exist for one person: you.</p>
+          <ul class="feat__bullets">
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              No social features or public profiles
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Export everything to JSON or plain text, any time
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Deleted entries recoverable for 48 hours
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Cancel any time — your export comes with you
+            </li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ── How it works ──────────────────────────────────────────────────── -->
+  <section class="how">
+    <div class="container">
+      <div class="section-eyebrow section-eyebrow--inv">How it works</div>
+      <h2 class="section-heading section-heading--inv">Simple by design.</h2>
+      <p class="section-sub section-sub--inv">No complicated setup. You're writing in under a minute.</p>
+      <div class="steps">
+        <div class="step">
+          <div class="step__num">01</div>
+          <h3>Start your 10-day trial</h3>
+          <p>Sign up with your email. No credit card. Full access to every feature from day one.</p>
+        </div>
+        <div class="step">
+          <div class="step__num">02</div>
+          <h3>Log your first step</h3>
+          <p>Open the app, tap "New entry," and log a step in your creative practice — a sentence or a thousand words.</p>
+        </div>
+        <div class="step">
+          <div class="step__num">03</div>
+          <h3>Build the habit</h3>
+          <p>Come back tomorrow. Watch your streak grow and your archive fill with your creative journey.</p>
+        </div>
+        <div class="step">
+          <div class="step__num">04</div>
+          <h3>Keep going for $5.99/month</h3>
+          <p>When your trial ends, subscribe at $5.99/month or $49.99/year to keep your streak alive. Cancel any time.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Pricing ───────────────────────────────────────────────────────── -->
+  <section class="pricing-section">
+    <div class="container">
+      <div class="section-eyebrow">Pricing</div>
+      <h2 class="section-heading" style="text-align:center">Simple, honest pricing.</h2>
+      <p class="section-sub" style="text-align:center;margin-left:auto;margin-right:auto">Try every feature free for 10 days. No credit card required.</p>
+
+      <div class="plans plans--single">
+        <div class="plan plan--featured">
+          <div class="plan__badge">10-day free trial</div>
+          <div class="plan__name">Creator Companion</div>
+          <div class="plan__price"><span class="plan__amount">$5.99</span> <span class="plan__per">/ month</span></div>
+          <div class="plan__annual">or $49.99/year — save $22</div>
+          <ul class="plan__features">
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Up to 5 entries per day</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Up to 2,500 words per entry</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Up to 20 photos per entry</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Backfill past entries (2 days)</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Streak pause (10 days/month)</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Mood tracking &amp; favorites</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Up to 5 custom reminders/day</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Daily Spark — 290+ curated insights</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> JSON &amp; plain-text export, any time</li>
+          </ul>
+          <a href="signup.html" class="btn btn--plan-primary">Start free trial</a>
+        </div>
+      </div>
+
+      <p class="pricing-link"><a href="pricing.html">See the full feature list →</a></p>
+    </div>
+  </section>
+
+  <!-- ── Install strip ─────────────────────────────────────────────────── -->
+  <section class="install-strip">
+    <div class="container">
+      <div class="install-inner">
+        <div class="install-text">
+          <h2>Take it with you.</h2>
+          <p>Add Creator Companion to your home screen for a full app experience — no App Store required.</p>
+          <a href="https://app.creatorcompanionapp.com" class="btn btn--install">Open the app</a>
+        </div>
+        <div class="install-steps">
+          <div class="install-step">
+            <div class="install-step__icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>
+            </div>
+            <div>
+              <p class="install-step__label">iPhone / iPad</p>
+              <p class="install-step__desc">Tap <strong>Share</strong> in Safari → <strong>Add to Home Screen</strong></p>
+            </div>
+          </div>
+          <div class="install-step">
+            <div class="install-step__icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><circle cx="12" cy="17" r="1"/></svg>
+            </div>
+            <div>
+              <p class="install-step__label">Android</p>
+              <p class="install-step__desc">Tap browser <strong>menu (⋮)</strong> → <strong>Add to Home Screen</strong></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Final CTA ─────────────────────────────────────────────────────── -->
+  <section class="cta-final">
+    <div class="cta-final__glow" aria-hidden="true"></div>
+    <div class="container">
+      <p class="cta-final__eyebrow">Start today</p>
+      <h2 class="cta-final__title">Your streak starts<br><em>right now.</em></h2>
+      <p class="cta-final__sub">Join creative people who show up every day. Try free for 10 days, no credit card needed.</p>
+      <a href="signup.html" class="btn btn--cta-primary">Start free trial</a>
+      <p class="cta-final__note">10-day free trial · $5.99/mo or $49.99/yr · Your data belongs to you</p>
+    </div>
+  </section>
+
+  <!-- ── Footer ────────────────────────────────────────────────────────── -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="site-footer__top">
+        <a href="index.html" class="site-footer__logo site-footer__logo--text">
+          Creator Companion
+        </a>
+        <nav class="site-footer__nav">
+          <a href="pricing.html">Pricing</a>
+          <a href="faq.html">FAQ</a>
+          <a href="signup.html">Sign up</a>
+          <a href="https://app.creatorcompanionapp.com/login">Log in</a>
+          <a href="privacy.html">Privacy</a>
+          <a href="terms.html">Terms</a>
+        </nav>
+      </div>
+      <div class="site-footer__bottom">
+        <span>© 2026 Creator Companion. All rights reserved.</span>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Nav scroll behaviour
+    const nav = document.getElementById('nav');
+    const observer = new IntersectionObserver(
+      ([e]) => nav.classList.toggle('nav--scrolled', !e.isIntersecting),
+      { threshold: 0 }
+    );
+    observer.observe(document.querySelector('.hero'));
+
+    // Mobile hamburger
+    const hamburger = document.getElementById('hamburger');
+    const menu = document.getElementById('mobileMenu');
+    hamburger.addEventListener('click', () => {
+      hamburger.classList.toggle('open');
+      menu.classList.toggle('open');
+    });
+    menu.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+      hamburger.classList.remove('open');
+      menu.classList.remove('open');
+    }));
+
+    // Fade-in on scroll
+    const fadeEls = document.querySelectorAll('.feat, .step, .plan');
+    const fadeObserver = new IntersectionObserver(
+      (entries) => entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); fadeObserver.unobserve(e.target); } }),
+      { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
+    );
+    fadeEls.forEach(el => fadeObserver.observe(el));
+  </script>
+</body>
+</html>
