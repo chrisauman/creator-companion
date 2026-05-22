@@ -306,13 +306,24 @@ import { MobileHeaderComponent } from '../../shared/mobile-header/mobile-header.
     .trash-entry__actions {
       display: flex;
       gap: .5rem;
-      justify-content: flex-end;
+      /* Recover sits at the row's left edge; Delete permanently pins
+         to the right (see .trash-entry__delete margin-left:auto).
+         Earlier this was justify-content:flex-end on all breakpoints,
+         which clustered both buttons at the right and made Delete
+         feel like the primary action — bad framing for a destructive
+         second-position button. Left-Recover/right-Delete is the
+         standard "primary on left, destructive on right" pattern
+         every desktop OS dialog uses; we now do it on mobile too. */
       flex-wrap: wrap;
     }
     /* Destructive secondary — text + hover lift to rose-600 (the
        app-wide danger token). Quieter than a fully red pill, which
-       would compete with Recover for attention. */
-    .trash-entry__delete { color: #9f1239; }
+       would compete with Recover for attention. margin-left:auto
+       is the alignment trick that keeps this pinned right while
+       Recover stays left, even when the row wraps to two lines on
+       narrow viewports (each wrapped line auto-margins to its own
+       right edge — the visual contract holds). */
+    .trash-entry__delete { color: #9f1239; margin-left: auto; }
     .trash-entry__delete:hover {
       color: #fff;
       background: #9f1239;

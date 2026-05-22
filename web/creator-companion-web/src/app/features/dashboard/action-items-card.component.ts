@@ -336,7 +336,10 @@ import { ActionItem } from '../../core/models/models';
       border: none;
       outline: none;
       font-family: var(--font-sans);
-      font-size: 1rem;
+      /* See the iOS-zoom comment on .todo-list__edit-input — same
+         defense-in-depth, same surface (this list is where users
+         actually saw the zoom). */
+      font-size: 16px;
       line-height: 1.35;
       font-weight: 500;
       letter-spacing: -.01em;
@@ -385,9 +388,18 @@ import { ActionItem } from '../../core/models/models';
     /* Subtle hover — soft brand-cyan tint instead of a neutral gray
        so the highlight matches the rest of the app's hover language
        (cyan corner buttons, cyan-tinted preview banners, etc).
-       Low-alpha so it reads as a tint, not a solid block. */
-    .todo-list__item:hover {
-      background: rgba(18, 196, 227, .07);
+       Low-alpha so it reads as a tint, not a solid block.
+
+       Gated to pointer-fine devices because on iOS Safari, any
+       element with a :hover rule AND a click handler triggers the
+       "first tap shows hover, second tap fires click" two-step —
+       which on this list manifested as the row highlighting on the
+       first tap and only entering edit mode on the second. Gating
+       hover off for touch lets the first tap fire click immediately. */
+    @media (hover: hover) and (pointer: fine) {
+      .todo-list__item:hover {
+        background: rgba(18, 196, 227, .07);
+      }
     }
     .todo-list__item--editing {
       background: rgba(18, 196, 227, .07);
@@ -499,6 +511,20 @@ import { ActionItem } from '../../core/models/models';
       padding: .125rem 0;
       word-break: break-word;
       user-select: none;
+      /* touch-action: manipulation disables iOS Safari's 300ms
+         double-tap-to-zoom delay AND prevents the second tap from
+         being interpreted as a smart-zoom gesture. Without this,
+         tapping the text to edit it would sometimes zoom the page
+         into the row and leave the viewport stuck zoomed in until
+         the user navigated away (the symptom Chris reported on
+         iPhone). "manipulation" keeps panning + pinch-zoom intact;
+         it only disables the double-tap-zoom heuristic, which is
+         exactly what we want for a per-row click target. */
+      touch-action: manipulation;
+      /* Disable the long-press magnifier/callout iOS shows on text
+         spans — it interrupted the tap-to-edit gesture if the user
+         held a fraction too long. */
+      -webkit-touch-callout: none;
     }
     .todo-list__text--done {
       color: var(--color-text-3);
@@ -518,7 +544,17 @@ import { ActionItem } from '../../core/models/models';
       border: none;
       outline: none;
       font-family: var(--font-sans);
-      font-size: 1rem;
+      /* Explicit 16px (not 1rem) on the textarea is iOS-zoom
+         defense-in-depth. The global mobile rule in styles.scss
+         already enforces 16px on every input/textarea below 768px,
+         but stating it locally too means a future refactor that
+         scopes the global rule differently won't silently
+         reintroduce auto-zoom on this textarea. iOS Safari zooms
+         the viewport whenever a focused field's computed font-size
+         falls below 16px — and the to-do edit textarea was the
+         specific surface where users reported the zoom-then-stuck
+         viewport issue. */
+      font-size: 16px;
       line-height: 1.35;
       font-weight: 500;
       letter-spacing: -.01em;
@@ -666,8 +702,10 @@ import { ActionItem } from '../../core/models/models';
     .todo-list__items--done .todo-list__item {
       background: transparent;
     }
-    .todo-list__items--done .todo-list__item:hover {
-      background: var(--color-surface, #fff);
+    @media (hover: hover) and (pointer: fine) {
+      .todo-list__items--done .todo-list__item:hover {
+        background: var(--color-surface, #fff);
+      }
     }
 
     .todo-list__clear-done {
