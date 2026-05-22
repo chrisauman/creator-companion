@@ -97,12 +97,18 @@
       text-align: center;
     }
 
-    /* Logo + wordmark cluster */
+    /* Logo + wordmark cluster. Block-level flex so the eyebrow
+       beneath drops cleanly to its own line; justify-content keeps
+       icon + wordmark centered as a pair. (Earlier inline-flex let
+       the eyebrow pack onto the same row as the wordmark, which
+       read as a noisy "[icon] Creator Companion   COMING SOON"
+       triplet instead of a stacked hierarchy.) */
     .brand {
-      display: inline-flex;
+      display: flex;
+      justify-content: center;
       align-items: center;
       gap: 0.625rem;
-      margin-bottom: 2.5rem;
+      margin-bottom: 2rem;
     }
     .brand__icon {
       width: 44px;
@@ -149,9 +155,10 @@
     }
 
     /* Lightweight CTA — black-ink pill matching in-app primary CTAs.
-       Routes the curious to an obvious "we'll tell you" mailto so we
-       capture interest without standing up a form backend before the
-       launch ships. */
+       Links to the Creator Companion Substack where Chris already
+       posts the daily spark; interested visitors subscribe there and
+       get launch updates via the same channel — no separate email-
+       capture backend needed. */
     .cta {
       display: inline-flex;
       align-items: center;
@@ -233,8 +240,9 @@
         thank you for your patience.
       </p>
 
-      <a class="cta" href="mailto:chris.auman&#64;gmail.com?subject=Notify%20me%20when%20Creator%20Companion%20launches">
-        Notify me at launch
+      <a class="cta" href="https://substack.com/@creatorcompanion"
+         target="_blank" rel="noopener noreferrer">
+        Subscribe on Substack
         <svg class="cta__arrow" width="14" height="14" viewBox="0 0 24 24" fill="none"
              stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"
              aria-hidden="true">
