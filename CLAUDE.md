@@ -885,6 +885,31 @@ Document here so future audits don't re-spend the cycles deciding.
   admin," others actually POST. Schedule + recipient still hardcoded
   per-platform unless we need per-admin config later. Don't
   pre-build the abstraction — wait for the second consumer (YAGNI).
+- **Mobile search/sort bar — collapse for space.** The dashboard's
+  search input + sort `<select>` row eats ~80px of vertical space at
+  the top of every entry list view on mobile, pushing the entries
+  themselves below the fold. Discussed May 2026; deferred. Four
+  options on the table, ordered from least to most invasive:
+  1. **Just smaller** — media query that shrinks padding + font on
+     mobile. ~30% space saved. Zero UX shift, smallest impact.
+  2. **Hide sort, keep search** — search input stays prominent;
+     sort moves behind a small filter-icon menu at the end of the
+     search bar. Sort is the less-used action; this prioritises
+     search. ~30% space saved.
+  3. **Compact icons, expand on tap** *(recommended pick)* — default
+     shows only two small icons (search 🔍 + sort ↕). Tap search →
+     expands inline to full input. Tap sort → opens an action sheet
+     with the three options (Newest / Oldest / ★ Favorites). ~50%
+     space saved. Standard mobile pattern (Gmail, X, Slack).
+  4. **Single "Filter" button → bottom sheet** — entire row becomes
+     one chip; tap opens a drawer with both controls inside. Most
+     space saved (~55%) but every search becomes 3 taps instead of
+     1. Heaviest UX cost.
+
+  Code location: `dashboard.component.ts` around line 208 (`.search-
+  bar`); CSS at line 896. Targeting mobile breakpoint (< 768px). When
+  picking up, confirm choice with user before implementing — none of
+  the options is obviously right and the trade-offs matter.
 
 ## How to update this file
 
