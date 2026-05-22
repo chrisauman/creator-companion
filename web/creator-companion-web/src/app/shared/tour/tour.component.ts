@@ -435,12 +435,24 @@ export class TourComponent implements OnInit, OnDestroy {
     this.visible.set(true);
     // On mobile the sidebar is a slide-out drawer; every tour target
     // lives inside it, so open the drawer up-front so the spotlight
-    // has something to land on. Wait a frame after opening so the
-    // CSS transform animation has begun (otherwise the measured rect
-    // is the off-screen pre-animation position).
+    // has something to land on.
+    //
+    // The drawer's CSS is `transition: transform .25s ease` going from
+    // translateX(-100%) → translateX(0). The previous code waited just
+    // two requestAnimationFrame ticks (~32ms at 60fps) before measuring,
+    // which lands mid-slide — getBoundingClientRect returns an
+    // interpolated position somewhere off-screen, and the spotlight
+    // halo ends up partially off-screen too. Subsequent steps don't
+    // hit this because by then the drawer animation has long since
+    // finished; only step 1 (which fires from start()) was buggy.
+    //
+    // Waiting 300ms (250ms transition + 50ms buffer) gets us to the
+    // animation's resting state before measuring. transitionend would
+    // be more elegant but adds event-listener bookkeeping for no real
+    // gain — the timer is bounded and self-cleaning.
     if (this.isMobile()) {
       this.drawer.openMobile();
-      requestAnimationFrame(() => requestAnimationFrame(() => this.updateSpotlight()));
+      setTimeout(() => this.updateSpotlight(), 300);
     } else {
       this.updateSpotlight();
     }
