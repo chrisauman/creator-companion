@@ -1,4 +1,4 @@
-import { Component, DestroyRef, Input, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, DestroyRef, ElementRef, Input, OnInit, ViewChild, effect, inject, signal, computed } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink, NavigationEnd } from '@angular/router';
@@ -9,8 +9,9 @@ import { AuthService } from '../../core/services/auth.service';
 import { ViewportService } from '../../core/services/viewport.service';
 import { StreakStats } from '../../core/models/models';
 import { SidebarStateService } from './sidebar-state.service';
-import { SearchOverlayService } from '../../core/services/search-overlay.service';
+import { JournalFilterService } from '../../core/services/journal-filter.service';
 import { StreakRefreshService } from '../../core/services/streak-refresh.service';
+import { FormsModule } from '@angular/forms';
 import { TierIconComponent } from '../tier-icon/tier-icon.component';
 import { getMilestoneProgress, MilestoneProgress } from '../../core/constants/milestones';
 
@@ -19,7 +20,7 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [CommonModule, RouterLink, TierIconComponent],
+  imports: [CommonModule, FormsModule, RouterLink, TierIconComponent],
   template: `
     <!-- Backdrop: visible only when the mobile drawer is open. Click to close. -->
     @if (mobileOpen()) {
@@ -134,26 +135,71 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
                  stroke-width="2.4" stroke-linecap="round">
               <path d="M12 5v14M5 12h14"/>
             </svg>
-            <span class="sidebar__compose-label" *ngIf="!collapsed()">Log Today's Progress</span>
+            <span class="sidebar__compose-label" *ngIf="!collapsed()">Log Progress</span>
           </a>
         }
 
-        <!-- Search icon button. Opens the global search overlay (rendered
-             by app.ts). Hidden in the collapsed desktop sidebar to keep
-             that mode minimal — power users on collapsed sidebar can
-             still trigger via Cmd+K. -->
+        <!-- Search icon button — toggles the inline filter panel.
+             Hidden in the collapsed desktop sidebar to keep that
+             mode minimal (Cmd+K still works there). Active state
+             when the panel is open so the affordance feels like a
+             tab the user can collapse back. -->
         @if (!collapsed()) {
           <button class="sidebar__search"
                   type="button"
-                  (click)="searchOverlay.open(); closeMobile()"
-                  title="Search entries (⌘K)"
-                  aria-label="Search entries">
+                  [class.sidebar__search--active]="filter.panelOpen()"
+                  (click)="filter.toggle()"
+                  [title]="filter.panelOpen() ? 'Close search (⌘K)' : 'Search entries (⌘K)'"
+                  [attr.aria-label]="filter.panelOpen() ? 'Close search' : 'Search entries'"
+                  [attr.aria-expanded]="filter.panelOpen()">
             <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
               <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.452 4.391l3.328 3.329a.75.75 0 1 1-1.06 1.06l-3.329-3.328A7 7 0 0 1 2 9Z" clip-rule="evenodd"/>
             </svg>
           </button>
         }
       </div>
+
+      <!-- Inline filter panel. Expands directly below the compose row,
+           pushing the nav items down. Contains the search input + a
+           sort segmented control. On mobile (drawer open), pressing
+           Enter in the search input OR tapping a sort button closes
+           the drawer so the user sees the filtered entries behind. -->
+      @if (filter.panelOpen() && !collapsed()) {
+        <div class="sidebar__filter-panel">
+          <input class="sidebar__filter-input"
+                 type="text"
+                 placeholder="Search"
+                 autocomplete="off"
+                 autocorrect="off"
+                 autocapitalize="off"
+                 spellcheck="false"
+                 [ngModel]="filter.query()"
+                 (ngModelChange)="filter.query.set($event)"
+                 (keydown.enter)="closeMobile()"
+                 #filterInput />
+
+          <div class="sidebar__filter-sort" role="group" aria-label="Sort entries">
+            <button type="button"
+                    class="sidebar__filter-sort-btn"
+                    [class.sidebar__filter-sort-btn--active]="filter.sort() === 'newest'"
+                    (click)="filter.sort.set('newest'); closeMobile()">
+              Newest
+            </button>
+            <button type="button"
+                    class="sidebar__filter-sort-btn"
+                    [class.sidebar__filter-sort-btn--active]="filter.sort() === 'oldest'"
+                    (click)="filter.sort.set('oldest'); closeMobile()">
+              Oldest
+            </button>
+            <button type="button"
+                    class="sidebar__filter-sort-btn"
+                    [class.sidebar__filter-sort-btn--active]="filter.sort() === 'favorites'"
+                    (click)="filter.sort.set('favorites'); closeMobile()">
+              ★ Favorites
+            </button>
+          </div>
+        </div>
+      }
 
       <!-- Nav -->
       <nav class="sidebar__nav">
@@ -750,10 +796,10 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
       border: none;
       border-radius: 999px;
       font-family: inherit;
-      /* Was .8125rem (13px). Shrunk to .75rem (12px) so the label
-         "Log Today's Progress" still fits next to the new search
-         icon button in the narrow desktop sidebar (220px wide). */
-      font-size: .75rem;
+      /* Reverted to .8125rem (13px). The shorter "Log Progress" label
+         fits comfortably next to the 36px search button without the
+         earlier font-shrink we needed for "Log Today's Progress". */
+      font-size: .8125rem;
       font-weight: 600;
       cursor: pointer;
       text-decoration: none;
@@ -839,11 +885,102 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
     @media (max-width: 767px) {
       .sidebar__compose-row { margin: 0 1rem 1rem; }
       .sidebar__compose {
-        font-size: 1rem;
+        font-size: 1.0625rem;
         padding: .875rem 1rem;
       }
       .sidebar__compose svg { width: 18px !important; height: 18px !important; }
       .sidebar__search { width: 44px; height: 44px; }
+    }
+
+    /* ── Filter panel — expanded state when filter.panelOpen() is true.
+       Sits directly under the compose row, pushes the nav items down.
+       Compact: ~98px total (input + small gap + 3-button sort segment
+       + padding). Same width as compose-row for visual continuity. */
+    .sidebar__filter-panel {
+      margin: -.25rem .875rem 1rem;
+      padding: .625rem;
+      background: rgba(255, 255, 255, .04);
+      border: 1px solid rgba(255, 255, 255, .08);
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: .375rem;
+    }
+    .sidebar__filter-input {
+      width: 100%;
+      padding: .5rem .75rem;
+      background: rgba(0, 0, 0, .25);
+      border: 1px solid rgba(255, 255, 255, .12);
+      border-radius: 8px;
+      color: #fff;
+      font-family: var(--font-sans);
+      font-size: .875rem;
+      outline: none;
+      transition: border-color .15s, background .15s;
+    }
+    .sidebar__filter-input::placeholder { color: rgba(255, 255, 255, .4); }
+    .sidebar__filter-input:focus {
+      border-color: var(--color-accent);
+      background: rgba(0, 0, 0, .35);
+    }
+
+    /* Segmented sort control — three buttons share a row. Active state
+       fills with cyan tint; inactive stays subtle. Looks more native
+       inside an inline panel than a dropdown would. */
+    .sidebar__filter-sort {
+      display: flex;
+      gap: 2px;
+      background: rgba(0, 0, 0, .25);
+      border: 1px solid rgba(255, 255, 255, .12);
+      border-radius: 8px;
+      padding: 2px;
+    }
+    .sidebar__filter-sort-btn {
+      flex: 1;
+      padding: .375rem .25rem;
+      background: transparent;
+      border: none;
+      border-radius: 6px;
+      color: rgba(255, 255, 255, .6);
+      font-family: var(--font-sans);
+      font-size: .6875rem;
+      font-weight: 600;
+      letter-spacing: .02em;
+      cursor: pointer;
+      transition: background .12s, color .12s;
+    }
+    .sidebar__filter-sort-btn--active {
+      background: var(--color-accent);
+      color: #fff;
+    }
+    @media (hover: hover) and (pointer: fine) {
+      .sidebar__filter-sort-btn:hover:not(.sidebar__filter-sort-btn--active) {
+        background: rgba(255, 255, 255, .06);
+        color: #fff;
+      }
+    }
+
+    /* Mobile filter panel — bump input + button heights for touch. */
+    @media (max-width: 767px) {
+      .sidebar__filter-panel { margin: -.25rem 1rem 1rem; padding: .75rem; gap: .5rem; }
+      .sidebar__filter-input { padding: .75rem 1rem; font-size: 1rem; }
+      .sidebar__filter-sort-btn { padding: .625rem .25rem; font-size: .75rem; }
+    }
+
+    /* Search button active state — when the filter panel is open,
+       the search icon flips to filled-cyan so it reads like a tab
+       the user can collapse back. */
+    .sidebar__search--active {
+      background: var(--color-accent);
+      color: #fff;
+      border-color: var(--color-accent);
+    }
+    @media (hover: hover) and (pointer: fine) {
+      .sidebar__search--active:hover {
+        background: #0bd2f0;
+        color: #fff;
+        border-color: #0bd2f0;
+      }
     }
 
     /* ── Nav ────────────────────────────────────────────────────── */
@@ -1023,11 +1160,30 @@ export class SidebarComponent implements OnInit {
   private drawer   = inject(SidebarStateService);
   private streakRefresh = inject(StreakRefreshService);
   private destroyRef    = inject(DestroyRef);
-  /** Public so the template can call .open() directly on the search
-   *  icon button. The button also calls closeMobile() so opening
-   *  search from the drawer dismisses the drawer first — otherwise
-   *  the drawer would sit behind the overlay and feel like a stack. */
-  protected searchOverlay = inject(SearchOverlayService);
+  /** Public so the template can read/write the filter signals directly.
+   *  The search icon button calls toggle(); the input is two-way bound
+   *  to query(); the sort segmented control updates sort(). On Enter
+   *  or sort-tap the template ALSO calls closeMobile() so mobile users
+   *  see the filtered results behind the drawer they just closed. */
+  protected filter = inject(JournalFilterService);
+
+  /** Reference to the search input inside the filter panel. Used to
+   *  auto-focus when the panel opens (so the user can start typing
+   *  immediately without a second tap). The @if in the template means
+   *  this is undefined when the panel is closed. */
+  @ViewChild('filterInput') filterInput?: ElementRef<HTMLInputElement>;
+
+  constructor() {
+    // Auto-focus the search input each time the panel opens. The
+    // requestAnimationFrame wait ensures the @if block has rendered
+    // the input element before we try to focus it. Effects auto-
+    // dispose with the component, no cleanup needed.
+    effect(() => {
+      if (this.filter.panelOpen()) {
+        requestAnimationFrame(() => this.filterInput?.nativeElement.focus());
+      }
+    });
+  }
 
   /** Mirror of AuthService.isReadOnly. Drives the locked variant of
    *  the New Entry compose button so the cyan CTA isn't presented to

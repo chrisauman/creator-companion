@@ -4,9 +4,8 @@ import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { AuthService } from './core/services/auth.service';
 import { TokenService } from './core/services/token.service';
-import { SearchOverlayService } from './core/services/search-overlay.service';
+import { JournalFilterService } from './core/services/journal-filter.service';
 import { PaywallComponent } from './shared/paywall/paywall.component';
-import { SearchOverlayComponent } from './shared/search-overlay/search-overlay.component';
 
 /**
  * App root. Renders the router outlet for normal navigation and an
@@ -22,7 +21,7 @@ import { SearchOverlayComponent } from './shared/search-overlay/search-overlay.c
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, PaywallComponent, SearchOverlayComponent],
+  imports: [CommonModule, RouterOutlet, PaywallComponent],
   template: `
     <!-- Skip-to-main-content link for WCAG 2.4.1 ("Bypass Blocks",
          Level A). Hidden until keyboard-focused. The inline style
@@ -43,21 +42,13 @@ import { SearchOverlayComponent } from './shared/search-overlay/search-overlay.c
     @if (showPaywall()) {
       <app-paywall></app-paywall>
     }
-    <!-- Global search overlay. Mounted here (not inside the sidebar)
-         because the mobile sidebar uses CSS transforms, which create
-         a new containing block for position:fixed descendants — the
-         overlay would no longer cover the viewport. App root has no
-         transforms; overlay's inset:0 + position:fixed lands on the
-         viewport edges as intended. Rendering is gated internally
-         by SearchOverlayService.isOpen(). -->
-    <app-search-overlay />
   `
 })
 export class App {
   private auth          = inject(AuthService);
   private tokens        = inject(TokenService);
   private router        = inject(Router);
-  private searchOverlay = inject(SearchOverlayService);
+  private journalFilter = inject(JournalFilterService);
 
   /** Mirror of AuthService.showPaywall — kept here as a thin reference
    *  rather than recomputed locally so the dismissal + preview logic
@@ -94,17 +85,17 @@ export class App {
 
   /**
    * Global keyboard shortcut: Cmd+K (Mac) / Ctrl+K (everywhere else)
-   * opens the search overlay. preventDefault is critical — Chrome's
+   * toggles the journal-filter panel (the inline expand/collapse
+   * inside the sidebar). preventDefault is critical — Chrome's
    * default Cmd+K opens the address bar in some configurations, and
    * Safari's Cmd+K opens its own toolbar search. We're claiming the
    * shortcut for in-app search instead.
    *
    * Skip when an editable field has focus so users can type Cmd+K
-   * inside an entry body or a search input without surprise. Note:
-   * we DO let it fire from inside the overlay's own input — that
-   * way the user can toggle the overlay closed with the same key
-   * they opened it with. The overlay's own service.toggle() handles
-   * the close case.
+   * inside an entry body without surprise. Exception: the panel's
+   * own search input is allowed to trigger the shortcut (re-pressing
+   * Cmd+K from within the search input closes the panel — same key
+   * in/out feels right).
    */
   @HostListener('document:keydown', ['$event'])
   onGlobalKeydown(e: KeyboardEvent): void {
@@ -116,11 +107,11 @@ export class App {
     const isEditableField =
       tag === 'input' || tag === 'textarea' || target?.isContentEditable === true;
 
-    // Allow Cmd+K to ALSO close the overlay when typing in its input
-    // (same key in/out feels right). Otherwise skip on editables.
-    if (isEditableField && !target?.closest('.search-overlay')) return;
+    // Allow Cmd+K from within the journal-filter panel's own input
+    // so the same key closes it. Block on every other editable.
+    if (isEditableField && !target?.closest('.sidebar__filter-panel')) return;
 
     e.preventDefault();
-    this.searchOverlay.toggle();
+    this.journalFilter.toggle();
   }
 }
