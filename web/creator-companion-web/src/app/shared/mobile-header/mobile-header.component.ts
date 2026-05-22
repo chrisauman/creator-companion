@@ -47,6 +47,28 @@ import { SidebarStateService } from '../sidebar/sidebar-state.service';
     </div>
   `,
   styles: [`
+    /* Host wraps the .mobile-header inside. The HOST is the sticky
+       element (not the inner div), because Angular's default host
+       display is inline — and an inline parent with a position:sticky
+       child behaves inconsistently across browsers (iOS Safari
+       especially). Making the host itself the block-level sticky
+       element gives reliable "always visible at the top while
+       scrolling" behaviour on every page that mounts this component. */
+    :host {
+      display: block;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      /* Background here too (not just on the inner .mobile-header)
+         so the safe-area top inset doesn't show through as a
+         transparent strip when sticky pins at the top with the
+         system status bar overlapping. */
+      background: var(--color-bg);
+    }
+    @media (min-width: 768px) {
+      :host { display: none; }
+    }
+
     .mobile-header {
       display: flex;
       align-items: center;
@@ -68,9 +90,6 @@ import { SidebarStateService } from '../sidebar/sidebar-state.service';
       padding: calc(env(safe-area-inset-top, 0px) + 1rem) 1rem 1rem 1rem;
       background: var(--color-bg);
       border-bottom: 1px solid var(--color-border);
-      position: sticky;
-      top: 0;
-      z-index: 50;
     }
     @media (min-width: 768px) {
       .mobile-header { display: none; }

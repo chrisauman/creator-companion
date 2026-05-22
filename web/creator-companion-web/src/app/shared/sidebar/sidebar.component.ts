@@ -404,10 +404,16 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
       background: #111318;
       overflow-y: auto;
       overflow-x: hidden;
-      /* Bottom pad accounts for the home-indicator safe-area on
-         iOS notch / Dynamic Island devices so the last nav item
-         (or scroll target) clears it. */
-      padding: 1.25rem 0 calc(1rem + env(safe-area-inset-bottom, 0px));
+      /* Both top + bottom pads account for iOS safe-areas:
+          - top inset clears the Dynamic Island / notch / status bar,
+            so the logo + X close button are fully visible and tappable
+            when the drawer slides in. Without it, the X sat behind
+            the system controls and couldn't be tapped reliably.
+          - bottom inset clears the home indicator so the last nav
+            item (or scroll target) isn't hidden behind it.
+         The 0px fallback is for non-iOS browsers where env() returns
+         empty — the base 1.25rem / 1rem still applies. */
+      padding: calc(env(safe-area-inset-top, 0px) + 1.25rem) 0 calc(1rem + env(safe-area-inset-bottom, 0px));
       position: fixed;
       top: 0;
       left: 0;
