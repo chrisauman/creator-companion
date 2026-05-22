@@ -308,12 +308,18 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
       width: 100%;
       max-width: 760px;
       margin: 0 auto;
-      padding: .75rem 1.5rem 3rem;
+      /* Top padding bumped from .75rem to 1.75rem (mobile) and 2rem
+         (desktop) so the "This device" header has breathing room
+         below the sticky mobile-header instead of sitting flush
+         against it. The embedded variant in the dashboard column
+         keeps its own tighter 1rem because it has the reader-top
+         sticky bar above it providing the visual breathing room. */
+      padding: 1.75rem 1.5rem 3rem;
       box-sizing: border-box;
       color: var(--color-text);
     }
     @media (min-width: 768px) {
-      .body-inner { padding: .75rem 2.5rem 3rem; }
+      .body-inner { padding: 2rem 2.5rem 3rem; }
     }
     .page--embedded .body-inner { padding-top: 1rem; }
 
