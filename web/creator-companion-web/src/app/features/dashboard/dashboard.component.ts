@@ -538,7 +538,16 @@ import { ActivatedRoute } from '@angular/router';
         grid-template-columns: 1fr clamp(420px, 36vw, 720px);
       }
       .work__list-col {
-        padding: 0 1.25rem 1rem 0;
+        /* Top padding (.75rem) matches the today-panel's .today
+           container padding-top in today-panel.component.ts so the
+           first entry row in column 2 aligns vertically with the
+           top of the first card in column 3. Previously this was
+           0 because the inline search bar (since removed when
+           search moved to the sidebar) occupied that 64px slot
+           and established the alignment via height. With the
+           toolbar gone, column 2 needs its own top padding to
+           keep the same visual rhythm. */
+        padding: .75rem 1.25rem 1rem 0;
         min-width: 0;
         overflow-y: auto;
       }
