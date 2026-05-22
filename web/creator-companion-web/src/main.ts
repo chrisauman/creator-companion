@@ -5,27 +5,43 @@ import { App } from './app/app';
 import { environment } from './environments/environment';
 
 // ── Sentry init (MUST run before bootstrapApplication) ───────────
-// SDK gracefully no-ops when `sentryDsn` is empty, so dev builds
-// (where the sentinel sits unreplaced or env var is unset) simply
-// skip reporting. Production builds get the DSN injected by
-// scripts/inject-version.mjs at deploy time.
+// Activates only when environment.sentryDsn looks like a real DSN
+// URL. Two failure modes we're guarding against:
+//
+//  1. Build-time SENTRY_DSN env var was empty → inject-version.mjs
+//     replaces the __SENTRY_DSN__ sentinel with empty string →
+//     environment.sentryDsn is "" (falsy) → init skipped.
+//  2. inject-version.mjs didn't run at all (local dev, broken
+//     pipeline) → environment.sentryDsn is still the literal
+//     "__SENTRY_DSN__" → doesn't start with "https://" → init
+//     skipped, no crash from passing a bogus DSN to Sentry.
+//
+// The `startsWith('https://')` check is intentional rather than
+// comparing against the sentinel string '__SENTRY_DSN__': the
+// inject-version.mjs script does a global replaceAll on that exact
+// string in every JS bundle, INCLUDING the conditional. The
+// previous version of this code compared sentryDsn against a
+// literal '__SENTRY_DSN__' — after replacement, the comparison was
+// effectively `dsn !== dsn` → always false → init never ran. The
+// minified output was the smoking gun:
+//   be.sentryDsn && be.sentryDsn !== "https://...sentry.io/..."
+//   && Us({dsn:be.sentryDsn, ...})
+// → 0 events ever sent to Sentry.
 //
 // What we configure:
 //  - tracesSampleRate 0.1 — 10% of page loads get performance traces.
-//    Higher would burn through the free tier; lower would miss
-//    enough samples to surface real perf regressions.
-//  - Session Replay is intentionally OFF. For a journaling app, a
-//    full DOM recording of the user's session would capture the
-//    text they were typing. Privacy trumps the debugging utility.
-//    If we ever turn this on, it MUST be paired with `maskAllText`
-//    and `blockAllMedia` and even then I'd want to think hard.
-//  - beforeSend/beforeBreadcrumb scrub sensitive request data so
-//    entry content and auth headers don't ride along with errors.
-if (environment.sentryDsn && environment.sentryDsn !== '__SENTRY_DSN__') {
+//  - Session Replay is intentionally OFF (journaling app, would
+//    capture user's writing).
+//  - beforeSend/beforeBreadcrumb scrub sensitive request data.
+if (environment.sentryDsn && environment.sentryDsn.startsWith('https://')) {
   Sentry.init({
     dsn:         environment.sentryDsn,
     environment: environment.production ? 'production' : 'development',
-    release:     environment.releaseSha && environment.releaseSha !== '__RELEASE_SHA__'
+    // Release is a commit SHA — alphanumeric, 7+ chars. If the
+    // sentinel wasn't replaced (still literal "__RELEASE_SHA__"),
+    // it contains underscores so the regex fails and we pass
+    // undefined (Sentry auto-detects then).
+    release:     /^[a-f0-9]{7,40}$/i.test(environment.releaseSha)
                    ? environment.releaseSha
                    : undefined,
     tracesSampleRate: 0.1,
