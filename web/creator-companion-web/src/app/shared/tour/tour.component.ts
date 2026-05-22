@@ -278,14 +278,14 @@ export class TourComponent implements OnInit, OnDestroy {
    * first journal entry without needing to find the button again.
    */
   get steps(): TourStep[] {
-    const m = this.isMobile();
-    // On mobile, tooltip placement is forced to 'right' for sidebar
-    // items because the drawer occupies the left edge — placing the
-    // tip to the right of the drawer puts it next to the highlighted
-    // row. For the streak / usercard which sit near the bottom of the
-    // drawer, 'top' would clip; 'right' still works because the drawer
-    // is narrower than the viewport.
-    const placement: TourStep['placement'] = m ? 'right' : 'right';
+    // 'right' is the desktop placement (tip to the right of the
+    // highlighted sidebar row). On mobile this gets dynamically
+    // overridden inside tooltipPosition() to 'top' or 'bottom'
+    // depending on where the target lies in the viewport — the
+    // mobile drawer is too wide for a 'right' tip to fit without
+    // colliding back onto the target. See the comment on
+    // tooltipPosition for the rationale.
+    const placement: TourStep['placement'] = 'right';
     return [
       {
         target: '.sidebar__nav-item--journal',
@@ -346,10 +346,24 @@ export class TourComponent implements OnInit, OnDestroy {
     const tipWidth = 320;
     const tipHeight = 200; // approximate; doesn't need to be exact
 
+    // On mobile we override the step's declared placement. The desktop
+    // 'right' placement (tip to the right of the highlighted sidebar
+    // row) doesn't work on mobile: the drawer is wide enough that
+    // r.right + margin lies off-screen, the viewport-clamp slides
+    // the tip leftward, and it ends up sitting directly on top of the
+    // very element it was supposed to point at — totally defeating
+    // the highlight. Instead: place tip below targets in the upper
+    // 2/3 of the viewport, above targets in the bottom 1/3. The
+    // 2/3 threshold (not 1/2) gives the tip's full height room to
+    // fit beneath upper-half targets without re-colliding via clamp.
+    const placement: TourStep['placement'] = this.isMobile()
+      ? (r.bottom < window.innerHeight * 0.67 ? 'bottom' : 'top')
+      : step.placement;
+
     let top: number;
     let left: number;
 
-    switch (step.placement) {
+    switch (placement) {
       case 'top':
         top  = r.top - tipHeight - margin;
         left = Math.max(margin, r.left + r.width / 2 - tipWidth / 2);
