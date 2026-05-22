@@ -1,5 +1,5 @@
 import {
-  Component, inject, signal, computed, OnInit, HostListener, ElementRef
+  Component, inject, signal, computed, OnInit, ElementRef
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -84,16 +84,25 @@ import { ActionItem } from '../../core/models/models';
             cdkDropList
             (cdkDropListDropped)="onDrop($event)">
           @for (item of activeItems(); track item.id) {
+            <!-- The entire row is the tap target for entering edit mode
+                 (rather than the smaller .text span underneath). This
+                 was the single biggest mobile usability fix: tapping
+                 anywhere on the row enters edit immediately, instead
+                 of requiring a precise hit on the text glyphs. onRowClick
+                 filters out clicks that landed on the checkbox / drag
+                 handle / delete button so those keep their normal
+                 behaviour. Previously the row had touchstart/touchmove/
+                 touchend handlers for a swipe-to-delete gesture, but
+                 iOS Safari was waiting to disambiguate gesture-vs-tap
+                 before firing click — that's what manifested as "first
+                 tap only highlights, second tap edits AND zooms." The
+                 swipe is gone (replaced by an always-visible X on
+                 mobile) so tap fires immediately. -->
             <li class="todo-list__item"
                 [class.todo-list__item--editing]="editingId() === item.id"
-                [class.todo-list__item--swipe-revealed]="revealedItemId() === item.id"
-                [style.transform]="rowTransform(item.id)"
                 cdkDrag
                 cdkDragLockAxis="y"
-                (touchstart)="onTouchStart(item.id, $event)"
-                (touchmove)="onTouchMove($event)"
-                (touchend)="onTouchEnd(item.id)"
-                (touchcancel)="onTouchCancel(item.id)">
+                (click)="onRowClick($event, item)">
 
               <!-- Drag handle — bigger glyph + brighter at rest so it's
                    obviously interactive. The dots are 1.6r (was 1.2r)
@@ -138,16 +147,22 @@ import { ActionItem } from '../../core/models/models';
                           rows="1"
                           maxlength="150"></textarea>
               } @else {
-                <span class="todo-list__text"
-                      (click)="readOnly() ? null : startEdit(item)">{{ item.text }}</span>
+                <!-- Plain text — no click handler here; the parent <li>
+                     handles tap-to-edit. Click on text would double-
+                     fire and also be a smaller target. -->
+                <span class="todo-list__text">{{ item.text }}</span>
               }
 
-              <!-- Delete affordances hidden in read-only mode. -->
+              <!-- Delete affordance — single X button. On desktop it's
+                   invisible until row-hover (the muted hover-X), on
+                   mobile it's always visible (since hover doesn't
+                   exist). Earlier there was a separate swipe-revealed
+                   tile for mobile; that's gone because the gesture was
+                   blocking single-tap-to-edit. -->
               @if (!readOnly()) {
-                <!-- Desktop: hover-X delete (right edge). -->
                 <button class="todo-list__delete"
                         type="button"
-                        (click)="deleteItem(item)"
+                        (click)="deleteItem(item); $event.stopPropagation()"
                         title="Delete"
                         aria-label="Delete item">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
@@ -156,16 +171,6 @@ import { ActionItem } from '../../core/models/models';
                     <line x1="18" y1="6" x2="6" y2="18"/>
                     <line x1="6"  y1="6" x2="18" y2="18"/>
                   </svg>
-                </button>
-
-                <!-- Mobile: swipe-revealed Delete tile (sits behind the row,
-                     visible only when swiped left). -->
-                <button class="todo-list__swipe-delete"
-                        type="button"
-                        (click)="deleteItem(item)"
-                        [attr.aria-hidden]="revealedItemId() !== item.id"
-                        [attr.tabindex]="revealedItemId() === item.id ? 0 : -1">
-                  Delete
                 </button>
               }
             </li>
@@ -221,13 +226,7 @@ import { ActionItem } from '../../core/models/models';
           @if (doneExpanded()) {
             <ul class="todo-list__items todo-list__items--done">
               @for (item of completedItems(); track item.id) {
-                <li class="todo-list__item todo-list__item--completed"
-                    [class.todo-list__item--swipe-revealed]="revealedItemId() === item.id"
-                    [style.transform]="rowTransform(item.id)"
-                    (touchstart)="onTouchStart(item.id, $event)"
-                    (touchmove)="onTouchMove($event)"
-                    (touchend)="onTouchEnd(item.id)"
-                    (touchcancel)="onTouchCancel(item.id)">
+                <li class="todo-list__item todo-list__item--completed">
 
                   <!-- Completed rows skip the drag handle entirely so the
                        checkbox + text start flush against the row's left
@@ -263,14 +262,6 @@ import { ActionItem } from '../../core/models/models';
                         <line x1="18" y1="6" x2="6" y2="18"/>
                         <line x1="6"  y1="6" x2="18" y2="18"/>
                       </svg>
-                    </button>
-
-                    <button class="todo-list__swipe-delete"
-                            type="button"
-                            (click)="deleteItem(item)"
-                            [attr.aria-hidden]="revealedItemId() !== item.id"
-                            [attr.tabindex]="revealedItemId() === item.id ? 0 : -1">
-                      Delete
                     </button>
                   }
                 </li>
@@ -381,8 +372,31 @@ import { ActionItem } from '../../core/models/models';
       padding: .875rem .875rem;
       border-bottom: 1px solid var(--color-border);
       background: transparent;
-      transition: transform .25s ease, background .15s;
-      will-change: transform;
+      transition: background .15s;
+      cursor: pointer;
+      /* touch-action: manipulation on the ROW (not just the inner
+         text span) is the load-bearing fix. It tells iOS Safari "this
+         is a single-tap surface — don't wait 300ms to disambiguate
+         tap-vs-double-tap-to-zoom, don't interpret a quick second
+         tap as smart-zoom, just fire click immediately." Putting it
+         on the small .text span (the first fix attempt) didn't
+         cover the full tap area, so iOS still ran its gesture
+         disambiguation on taps that landed on the row padding. */
+      touch-action: manipulation;
+      /* Suppress the iOS Safari translucent-gray tap flash. The user
+         was reading this flash as "the row highlighted but nothing
+         happened" — which is technically what happens before click
+         fires. Transparent here makes the click feel instant; if a
+         hover/active state is wanted for desktop it's added via the
+         pointer-fine gated rule below. */
+      -webkit-tap-highlight-color: transparent;
+      /* Removed will-change: transform — it created a compositor
+         layer that iOS Safari's focus / viewport-zoom heuristics
+         misbehaved inside (textarea focus would auto-zoom even with
+         font-size: 16px, because iOS reads the layer's transformed
+         coordinate space and decides the input is "too small").
+         Without will-change, focus works correctly and no zoom
+         triggers. The CDK drag-drop animations don't need it. */
     }
     .todo-list__item:last-child { border-bottom: none; }
     /* Subtle hover — soft brand-cyan tint instead of a neutral gray
@@ -507,23 +521,18 @@ import { ActionItem } from '../../core/models/models';
       font-weight: 500;
       letter-spacing: -.01em;
       color: var(--color-text);
-      cursor: text;
+      /* cursor inherits from .todo-list__item (which is cursor:pointer)
+         so the whole row reads as clickable. Previously this was
+         cursor:text, which on iOS made the span behave like text
+         content (showing a text cursor on tap) rather than a tap
+         target — that's why first tap "only highlighted" before. */
+      cursor: inherit;
       padding: .125rem 0;
       word-break: break-word;
       user-select: none;
-      /* touch-action: manipulation disables iOS Safari's 300ms
-         double-tap-to-zoom delay AND prevents the second tap from
-         being interpreted as a smart-zoom gesture. Without this,
-         tapping the text to edit it would sometimes zoom the page
-         into the row and leave the viewport stuck zoomed in until
-         the user navigated away (the symptom Chris reported on
-         iPhone). "manipulation" keeps panning + pinch-zoom intact;
-         it only disables the double-tap-zoom heuristic, which is
-         exactly what we want for a per-row click target. */
-      touch-action: manipulation;
       /* Disable the long-press magnifier/callout iOS shows on text
-         spans — it interrupted the tap-to-edit gesture if the user
-         held a fraction too long. */
+         spans — without this, a slightly-held tap would surface the
+         macro magnifier and interrupt the click. */
       -webkit-touch-callout: none;
     }
     .todo-list__text--done {
@@ -596,47 +605,14 @@ import { ActionItem } from '../../core/models/models';
       visibility: hidden;
     }
 
-    /* On touch devices the hover-only delete is unreachable; hide it
-       there and rely on swipe-to-delete instead. */
+    /* On touch devices, the swipe-to-delete gesture has been removed
+       (it was blocking single-tap-to-edit on iOS) — so the X needs
+       to be always visible. Same .55 opacity desktop uses on hover,
+       just applied at rest. The X is its own button with its own
+       click handler that stopPropagation's, so tapping it deletes
+       the row without also triggering the row-level edit click. */
     @media (hover: none) and (pointer: coarse) {
-      .todo-list__delete { display: none; }
-    }
-
-    /* ── Swipe-to-delete (mobile) ───────────────────────────────── */
-    /* The Delete tile sits absolutely positioned to the right of the
-       row's natural width; visible only when the row is translated
-       left (--swipe-revealed). Pointer events disabled at rest to
-       prevent accidental taps when not revealed. */
-    .todo-list__swipe-delete {
-      position: absolute;
-      top: 0; right: 0;
-      transform: translateX(100%);
-      height: 100%;
-      width: 80px;
-      background: var(--color-danger, #e11d48);
-      color: #fff;
-      border: none;
-      font-family: inherit;
-      font-size: .8125rem;
-      font-weight: 700;
-      letter-spacing: .02em;
-      cursor: pointer;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity .15s;
-    }
-    .todo-list__item--swipe-revealed .todo-list__swipe-delete {
-      opacity: 1;
-      pointer-events: auto;
-    }
-    .todo-list__item--swipe-revealed {
-      /* The transform is applied inline via [style.transform] from
-         rowTransform() so live-drag tracking works smoothly. The
-         class only controls the swipe-delete tile visibility. */
-    }
-    /* Hide the swipe affordance entirely on devices with hover (= desktop) */
-    @media (hover: hover) and (pointer: fine) {
-      .todo-list__swipe-delete { display: none; }
+      .todo-list__delete { opacity: .55; }
     }
 
     /* ── Empty / caught-up ──────────────────────────────────────── */
@@ -701,6 +677,9 @@ import { ActionItem } from '../../core/models/models';
 
     .todo-list__items--done .todo-list__item {
       background: transparent;
+      /* Completed rows aren't click-to-edit (already done), so revert
+         the row-level pointer cursor back to default. */
+      cursor: default;
     }
     @media (hover: hover) and (pointer: fine) {
       .todo-list__items--done .todo-list__item:hover {
@@ -746,8 +725,6 @@ export class ActionItemsCardComponent implements OnInit {
   // ── UI state ─────────────────────────────────────────────────────
   doneExpanded   = signal(false);
   editingId      = signal<number | null>(null);
-  /** ID of the row currently showing the swipe-revealed Delete tile. */
-  revealedItemId = signal<number | null>(null);
 
   /** Two-way bound to the add input. */
   newText  = '';
@@ -755,15 +732,6 @@ export class ActionItemsCardComponent implements OnInit {
   editText = '';
   /** Original text snapshot for restoring on Esc / empty-blur. */
   private editOriginal = '';
-
-  // ── Swipe state (mobile) ──────────────────────────────────────────
-  private touchStartX  = 0;
-  private touchStartY  = 0;
-  private touchCurrentDelta = 0;
-  private swipingItemId: number | null = null;
-  /** Live transform offset by item id while a swipe is in progress.
-   *  Set to a negative number during touchmove; cleared on touchend. */
-  private liveSwipeOffset = signal<{ id: number; px: number } | null>(null);
 
   ngOnInit(): void {
     this.load();
@@ -819,8 +787,39 @@ export class ActionItemsCardComponent implements OnInit {
   }
 
   // ── Edit (click-to-edit) ─────────────────────────────────────────
+
+  /**
+   * Row click → enter edit mode, but only when the tap actually
+   * landed on row content (text or padding), not on one of the
+   * interactive sub-elements (drag handle, checkbox, delete X) which
+   * have their own handlers. event.target.closest() walks up the DOM
+   * from the actual touch target to check for those sub-elements;
+   * if any match, this is a no-op and the sub-element's handler
+   * runs instead.
+   *
+   * This replaced the previous "click on the .text span" approach —
+   * the span was a small target relative to the row, and iOS Safari
+   * was misinterpreting taps near the edges as gesture-starts (in
+   * conjunction with the now-removed swipe-to-delete). Routing the
+   * click through the row itself + filtering by target is both a
+   * bigger tap target AND skips the gesture-disambiguation delay
+   * that was costing the first tap.
+   */
+  onRowClick(ev: MouseEvent, item: ActionItem): void {
+    if (this.readOnly()) return;
+    if (this.editingId() === item.id) return;
+    const target = ev.target as HTMLElement;
+    // Skip when the tap landed on the drag handle, checkbox, delete
+    // X, or the textarea itself (which only exists when already
+    // editing — but defensive).
+    if (target.closest(
+      '.todo-list__handle, .todo-list__check, .todo-list__delete, ' +
+      '.todo-list__edit-input'
+    )) return;
+    this.startEdit(item);
+  }
+
   startEdit(item: ActionItem): void {
-    this.closeSwipe();
     this.editText = item.text;
     this.editOriginal = item.text;
     this.editingId.set(item.id);
@@ -883,7 +882,6 @@ export class ActionItemsCardComponent implements OnInit {
 
   // ── Delete ───────────────────────────────────────────────────────
   deleteItem(item: ActionItem): void {
-    this.closeSwipe();
     this.error.set('');
     // Optimistic remove
     const previous = this.items();
@@ -927,97 +925,6 @@ export class ActionItemsCardComponent implements OnInit {
         this.load(); // hard-refetch on failure
       }
     });
-  }
-
-  // ── Swipe-to-delete (mobile) ─────────────────────────────────────
-  /**
-   * Per-row inline transform string. Returns a negative-X transform
-   * during an active swipe, a fixed -80px when the Delete tile is
-   * revealed, and 'none' otherwise. Drives the live-drag visual.
-   */
-  rowTransform(itemId: number): string | null {
-    const live = this.liveSwipeOffset();
-    if (live && live.id === itemId) return `translateX(${live.px}px)`;
-    if (this.revealedItemId() === itemId) return 'translateX(-80px)';
-    return null;
-  }
-
-  onTouchStart(itemId: number, ev: TouchEvent): void {
-    // Don't engage swipe while editing this row.
-    if (this.editingId() === itemId) return;
-    // If the touch originated on the drag handle, hand off to CDK
-    // drag-drop entirely — swipe-to-delete and drag-to-reorder both
-    // hijack horizontal movement and would otherwise fight each other.
-    const target = ev.target as HTMLElement | null;
-    if (target?.closest('.todo-list__handle')) return;
-    // If a different row is currently revealed, close it first.
-    if (this.revealedItemId() !== null && this.revealedItemId() !== itemId) {
-      this.closeSwipe();
-    }
-    const t = ev.touches[0];
-    this.touchStartX = t.clientX;
-    this.touchStartY = t.clientY;
-    this.touchCurrentDelta = 0;
-    this.swipingItemId = itemId;
-  }
-
-  onTouchMove(ev: TouchEvent): void {
-    if (this.swipingItemId === null) return;
-    const t = ev.touches[0];
-    const dx = t.clientX - this.touchStartX;
-    const dy = t.clientY - this.touchStartY;
-    // If the user is mostly scrolling vertically, abort the swipe so
-    // the page can scroll naturally.
-    if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 8) {
-      this.swipingItemId = null;
-      this.liveSwipeOffset.set(null);
-      return;
-    }
-    // Only track leftward swipes; clamp to [-100, 0]. The starting
-    // position respects whether the row was already revealed.
-    const baseOffset = this.revealedItemId() === this.swipingItemId ? -80 : 0;
-    const px = Math.max(-100, Math.min(0, baseOffset + dx));
-    this.liveSwipeOffset.set({ id: this.swipingItemId, px });
-  }
-
-  onTouchEnd(itemId: number): void {
-    if (this.swipingItemId !== itemId) return;
-    const live = this.liveSwipeOffset();
-    const px = live?.px ?? 0;
-    // Threshold: revealed if the row is at < -50px past its rest position.
-    if (px < -40) {
-      this.revealedItemId.set(itemId);
-    } else {
-      this.revealedItemId.set(null);
-    }
-    this.swipingItemId = null;
-    this.liveSwipeOffset.set(null);
-  }
-
-  onTouchCancel(itemId: number): void {
-    if (this.swipingItemId !== itemId) return;
-    this.swipingItemId = null;
-    this.liveSwipeOffset.set(null);
-  }
-
-  /** Force-close any revealed swipe state (used when starting an edit
-   *  or clicking outside). */
-  private closeSwipe(): void {
-    this.revealedItemId.set(null);
-    this.liveSwipeOffset.set(null);
-    this.swipingItemId = null;
-  }
-
-  /** Tap outside any item closes the swipe-revealed state. Without
-   *  this, a revealed Delete tile would persist forever until the
-   *  user taps again on the row. */
-  @HostListener('document:click', ['$event'])
-  onDocumentClick(ev: MouseEvent): void {
-    if (this.revealedItemId() === null) return;
-    const target = ev.target as HTMLElement;
-    if (!target.closest('.todo-list__item')) {
-      this.closeSwipe();
-    }
   }
 
   /**
