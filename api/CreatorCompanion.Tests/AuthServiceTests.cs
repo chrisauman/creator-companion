@@ -21,6 +21,7 @@ public class AuthServiceTests
         public Task SendTrialEndingSoonAsync(string toEmail, string displayName, int daysLeft) => Task.CompletedTask;
         public Task SendTrialEndedAsync(string toEmail, string displayName) => Task.CompletedTask;
         public Task SendSubstackPostFailedAsync(string toEmail, int? statusCode, string errorMessage, string? errorBody, bool isCookieExpired) => Task.CompletedTask;
+        public Task SendDailySparkReminderAsync(string toEmail, string takeaway, string? fullContent) => Task.CompletedTask;
     }
 
     private sealed class NullAuditService : IAuditService

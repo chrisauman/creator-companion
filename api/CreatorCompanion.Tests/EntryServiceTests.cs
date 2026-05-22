@@ -37,7 +37,7 @@ public class EntryServiceTests
         var streak       = new StreakService(db);
         var storage      = new NullStorageService();
         var encryptor    = TestEncryptors.BuildEncryptor();
-        var tagSvc       = new TagService(db, encryptor);
+        var tagSvc       = new TagService(db, encryptor, entitlements);
         var urlSigner    = TestEncryptors.BuildUrlSigner();
         return new EntryService(db, entitlements, streak, storage, tagSvc, encryptor, urlSigner);
     }
@@ -270,8 +270,14 @@ public class EntryServiceTests
         var svc   = BuildService(db);
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
-        // Create a draft
-        var draftSvc = new DraftService(db, TestEncryptors.BuildEncryptor());
+        // Create a draft. DraftService now requires IEntitlementService
+        // (added when we gated draft upserts behind trial/sub access).
+        // Construct one with default limits — the test user has access
+        // so EnforceAccess passes.
+        var entitlements = new EntitlementService(
+            db,
+            Microsoft.Extensions.Options.Options.Create(new EntryLimitsConfig()));
+        var draftSvc = new DraftService(db, TestEncryptors.BuildEncryptor(), entitlements);
         await draftSvc.UpsertAsync(user.Id,
             new UpsertDraftRequest(journal.Id, today, "Draft content in progress here.", null));
 
