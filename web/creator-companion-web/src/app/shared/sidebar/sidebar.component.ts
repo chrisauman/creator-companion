@@ -175,26 +175,26 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
                  spellcheck="false"
                  [ngModel]="filter.query()"
                  (ngModelChange)="filter.query.set($event)"
-                 (keydown.enter)="closeMobile()"
+                 (keydown.enter)="commitFilterAction()"
                  #filterInput />
 
           <div class="sidebar__filter-sort" role="group" aria-label="Sort entries">
             <button type="button"
                     class="sidebar__filter-sort-btn"
                     [class.sidebar__filter-sort-btn--active]="filter.sort() === 'newest'"
-                    (click)="filter.sort.set('newest'); closeMobile()">
+                    (click)="filter.sort.set('newest'); commitFilterAction()">
               Newest
             </button>
             <button type="button"
                     class="sidebar__filter-sort-btn"
                     [class.sidebar__filter-sort-btn--active]="filter.sort() === 'oldest'"
-                    (click)="filter.sort.set('oldest'); closeMobile()">
+                    (click)="filter.sort.set('oldest'); commitFilterAction()">
               Oldest
             </button>
             <button type="button"
                     class="sidebar__filter-sort-btn"
                     [class.sidebar__filter-sort-btn--active]="filter.sort() === 'favorites'"
-                    (click)="filter.sort.set('favorites'); closeMobile()">
+                    (click)="filter.sort.set('favorites'); commitFilterAction()">
               ★ Favorites
             </button>
           </div>
@@ -1355,6 +1355,33 @@ export class SidebarComponent implements OnInit {
    *  dashboard's right column. The page is identical on every viewport. */
   goSupport(ev: Event): void {
     this.navTo(['/support'], null, ev);
+  }
+
+  /**
+   * Called when the user "commits" a filter action — either pressing
+   * Enter in the search input or tapping a sort button. Does two
+   * things:
+   *
+   * 1. Blurs the search input. On iOS, pressing Return inside an
+   *    input doesn't automatically dismiss the soft keyboard — the
+   *    input retains focus, and the keyboard stays up until something
+   *    explicitly removes focus. Without this blur, the keyboard
+   *    persists even after the drawer slides away (user could see
+   *    the floating keyboard accessory bar with the checkmark — a
+   *    confusing extra step). On desktop the blur is a no-op user-
+   *    visibly; cursor leaves the field but everything still works.
+   *
+   * 2. Closes the mobile drawer so the filtered entries (column 2)
+   *    become visible. No-op on desktop where the sidebar is always
+   *    open.
+   *
+   * Order matters: blur THEN closeMobile. If the drawer slides away
+   * with the input still focused, iOS sometimes keeps the keyboard
+   * "in transit" and it briefly reappears.
+   */
+  commitFilterAction(): void {
+    this.filterInput?.nativeElement.blur();
+    this.closeMobile();
   }
 
   /** Legacy entry point — kept in case anything else still calls it. */
