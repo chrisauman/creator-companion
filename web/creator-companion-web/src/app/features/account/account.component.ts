@@ -58,7 +58,7 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
             </span>
           </div>
           @if (plan().state === 'paid') {
-            <button class="btn btn--secondary btn--sm" (click)="openBillingPortal()" [disabled]="portalLoading()">
+            <button class="btn btn--primary btn--sm" (click)="openBillingPortal()" [disabled]="portalLoading()">
               {{ portalLoading() ? 'Opening…' : 'Manage billing & subscription' }}
             </button>
             @if (portalError()) {
@@ -299,40 +299,15 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
           </div>
         </section>
 
-        <!-- Preferences (paid only) -->
-        @if (user()?.tier === 'Paid') {
-          <section class="card">
-            <div class="section-head">
-              <h2>Preferences</h2>
-            </div>
-            <div class="pref-row">
-              <div class="pref-info">
-                <p class="pref-label">Daily Spark</p>
-                <p class="text-sm text-muted">Show a daily insight on creativity, resistance, mastery, and more.</p>
-              </div>
-              <label class="toggle-switch">
-                <input type="checkbox"
-                       [checked]="showMotivation()"
-                       [disabled]="motivationPrefWorking()"
-                       (change)="toggleMotivation()" />
-                <span class="toggle-track"><span class="toggle-thumb"></span></span>
-              </label>
-            </div>
-            <div class="pref-row" style="border-top:1px solid var(--color-border-light);margin-top:.75rem;padding-top:.75rem">
-              <div class="pref-info">
-                <p class="pref-label">Daily Reminders</p>
-                <p class="text-sm text-muted">Show your to-do/next-action list on the dashboard.</p>
-              </div>
-              <label class="toggle-switch">
-                <input type="checkbox"
-                       [checked]="showActionItems()"
-                       [disabled]="actionItemsPrefWorking()"
-                       (change)="toggleActionItems()" />
-                <span class="toggle-track"><span class="toggle-thumb"></span></span>
-              </label>
-            </div>
-          </section>
-        }
+        <!-- Preferences section removed May 2026. The two toggles
+             (Daily Spark, Daily Reminders) were inert UI — nothing
+             on the dashboard actually read showMotivation /
+             showActionItems, so toggling did nothing visible. We
+             also want the daily-spark + to-do-list affordances to
+             always be available to every paid user; making them
+             opt-out was creating choice paralysis with no real
+             benefit. The backend columns stay (cleanup deferred to
+             a follow-up); the frontend just stops consuming them. -->
 
         } <!-- end @if (!readOnly) — write-section block -->
 
@@ -974,6 +949,7 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
     }
     .new-tag-form {
       display:flex; gap:.625rem; margin-bottom:1rem;
+      align-items: center;
       /* flex-wrap is the safety net for very narrow viewports — if
          the input + button still don't fit on one row after the
          min-width:0 shrink below, the button wraps under the input
@@ -982,6 +958,17 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
          "+ Add tag" button rendered past the right edge of the
          account card and was visually clipped. */
       flex-wrap:wrap;
+    }
+    /* Scoped down-size for the inline Add tag button. The shared
+       .btn--sm is already used here, but in this inline form context
+       (sitting next to a text input) it still read as visually
+       heavy — its 13px font and ~6px×14px padding made it the same
+       physical height as the input but with darker visual weight.
+       Tighten padding and shrink font to match the form's compact
+       quick-add feel. Doesn't affect btn--sm anywhere else. */
+    .new-tag-form .btn {
+      padding: .3rem .65rem;
+      font-size: .75rem;
     }
     .new-tag-input {
       /* min-width:0 is the critical fix — flex items default to
@@ -1154,13 +1141,9 @@ export class AccountComponent implements OnInit {
   defaultReminder = computed(() => this.reminders().find(r => r.isDefault) ?? null);
   customReminders = computed(() => this.reminders().filter(r => !r.isDefault));
 
-  // Motivation preference
-  showMotivation       = signal(true);
-  motivationPrefWorking = signal(false);
-
-  // Action items preference
-  showActionItems       = signal(true);
-  actionItemsPrefWorking = signal(false);
+  // showMotivation / showActionItems signals removed alongside the
+  // Preferences UI block (see template). The backend columns still
+  // exist (default true) but nothing in the frontend reads them.
 
   // Push
   pushSupported = signal(false);
@@ -1211,8 +1194,6 @@ export class AccountComponent implements OnInit {
     });
     this.api.getMe().subscribe(u => {
       this.auth.setUser(u);
-      this.showMotivation.set(u.showMotivation ?? true);
-      this.showActionItems.set(u.showActionItems ?? true);
       // Seed the name inputs from the freshly-fetched profile.
       this.firstNameInput = u.firstName ?? '';
       this.lastNameInput  = u.lastName  ?? '';
@@ -1288,29 +1269,9 @@ export class AccountComponent implements OnInit {
     });
   }
 
-  toggleMotivation(): void {
-    this.motivationPrefWorking.set(true);
-    const newVal = !this.showMotivation();
-    this.api.updateMotivationPreference(newVal).subscribe({
-      next: res => {
-        this.showMotivation.set(res.showMotivation);
-        this.motivationPrefWorking.set(false);
-      },
-      error: () => this.motivationPrefWorking.set(false)
-    });
-  }
-
-  toggleActionItems(): void {
-    this.actionItemsPrefWorking.set(true);
-    const newVal = !this.showActionItems();
-    this.api.updateActionItemsPreference(newVal).subscribe({
-      next: res => {
-        this.showActionItems.set(res.showActionItems);
-        this.actionItemsPrefWorking.set(false);
-      },
-      error: () => this.actionItemsPrefWorking.set(false)
-    });
-  }
+  // toggleMotivation / toggleActionItems removed alongside the
+  // Preferences UI block. The api.service methods stay (the backend
+  // endpoints still exist) but no UI invokes them anymore.
 
   private async initPushState(): Promise<void> {
     this.pushSupported.set(this.push.isSupported);

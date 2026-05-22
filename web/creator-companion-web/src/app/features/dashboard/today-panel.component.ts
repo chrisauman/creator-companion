@@ -1,5 +1,8 @@
 import { Component, EventEmitter, Input, Output, OnInit, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
+import { NavigationEnd, Router } from '@angular/router';
+import { filter } from 'rxjs/operators';
 import { MotivationEntry } from '../../core/models/models';
 import { ApiService } from '../../core/services/api.service';
 import { AuthService } from '../../core/services/auth.service';
@@ -717,6 +720,37 @@ import { DailyReminderCardComponent } from './daily-reminder-card.component';
 export class TodayPanelComponent implements OnInit {
   private api  = inject(ApiService);
   private auth = inject(AuthService);
+  private router = inject(Router);
+
+  constructor() {
+    /**
+     * Collapse the Daily Spark every time the user lands on the
+     * dashboard. The today-panel persists in memory across in-app
+     * navigations (the dashboard component doesn't unmount when the
+     * user pops into /todos or /favorites and back), so the
+     * sparkExpanded signal would otherwise hold its last state
+     * forever. Explicitly resetting on every NavigationEnd that
+     * lands at /dashboard makes the "default to collapsed"
+     * experience reliable: even if the user expanded it last
+     * session, returning to the dashboard always shows the
+     * compact form. They can still re-expand with one tap on
+     * "Read more" — we just don't remember that they did.
+     *
+     * Per the May 2026 design call: the Daily Spark should default
+     * to its compact form to reclaim mobile screen space, with the
+     * full content always one tap away.
+     */
+    this.router.events
+      .pipe(
+        filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+        takeUntilDestroyed()
+      )
+      .subscribe(e => {
+        if (e.urlAfterRedirects.startsWith('/dashboard')) {
+          this.sparkExpanded.set(false);
+        }
+      });
+  }
 
   /** When true, the whole today panel collapses into a single subscribe
    *  promo card — daily-rotation content (Spark, Prompt, Mood starter)
