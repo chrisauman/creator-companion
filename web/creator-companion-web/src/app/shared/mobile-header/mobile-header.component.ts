@@ -5,7 +5,14 @@ import { SidebarStateService } from '../sidebar/sidebar-state.service';
 
 /**
  * Shared mobile-only header. Sticky bar with three slots:
- *   [hamburger] [logo + brand name (clickable, → /dashboard)] [Create Entry pill]
+ *   [Create Entry circle] [logo + brand name (clickable, → /dashboard)] [hamburger]
+ *
+ * Hamburger is on the RIGHT to suit right-handed thumb-reach for the
+ * most-tapped control (navigation). Compose moves to the LEFT corner
+ * as a smaller circular accent — present but visually deferring to
+ * the wordmark + nav. Earlier the layout was inverted (hamburger
+ * left, compose right) with both endcaps at 46×46; that was symmetric
+ * but harder to thumb-reach the menu on a right-handed grip.
  *
  * Hidden on viewports >= 768px (the desktop sidebar replaces it).
  *
@@ -23,19 +30,19 @@ import { SidebarStateService } from '../sidebar/sidebar-state.service';
   imports: [CommonModule, RouterLink],
   template: `
     <div class="mobile-header">
-      <button class="mobile-header__hamburger" type="button"
-              (click)="sidebarState.openMobile()"
-              title="Open menu" aria-label="Open menu">
-        <span></span><span></span><span></span>
+      <button class="mobile-header__compose" type="button" (click)="compose()"
+              title="Create entry" aria-label="Create entry">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
       </button>
       <a class="mobile-header__logo" routerLink="/dashboard">
         <img src="logo-icon.png" alt="" class="mobile-header__logo-icon">
         <span class="mobile-header__logo-name">Creator Companion</span>
       </a>
-      <button class="mobile-header__compose" type="button" (click)="compose()"
-              title="Create entry" aria-label="Create entry">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-             stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      <button class="mobile-header__hamburger" type="button"
+              (click)="sidebarState.openMobile()"
+              title="Open menu" aria-label="Open menu">
+        <span></span><span></span><span></span>
       </button>
     </div>
   `,
@@ -43,10 +50,8 @@ import { SidebarStateService } from '../sidebar/sidebar-state.service';
     .mobile-header {
       display: flex;
       align-items: center;
-      /* Tighter left padding (.75rem vs 1.125rem) pulls the hamburger
-         closer to the edge of the screen — was floating mid-air with
-         the logo crowding right behind it. Larger gap (.875rem vs
-         .5rem) gives the wordmark room to breathe. */
+      /* Larger gap (.875rem vs .5rem) gives the wordmark room to
+         breathe between the two endcaps. */
       gap: .875rem;
       /* Top padding adds the iOS safe-area inset (status bar /
          dynamic island height) ON TOP of the regular 1rem. Without
@@ -54,8 +59,13 @@ import { SidebarStateService } from '../sidebar/sidebar-state.service';
          "black-translucent" status bar style renders the header
          flush against (or behind) the system clock + signal icons.
          The 0px fallback is for browsers without env() support
-         where the regular 1rem is the right value. */
-      padding: calc(env(safe-area-inset-top, 0px) + 1rem) 1.125rem 1rem .75rem;
+         where the regular 1rem is the right value.
+         Symmetric horizontal padding (1rem both sides) — the earlier
+         asymmetric .75rem/1.125rem was tuned for the hamburger
+         hugging the left edge. With the compose+hamburger swap,
+         neither endcap has a special-case alignment need; symmetric
+         padding reads cleanest. */
+      padding: calc(env(safe-area-inset-top, 0px) + 1rem) 1rem 1rem 1rem;
       background: var(--color-bg);
       border-bottom: 1px solid var(--color-border);
       position: sticky;
@@ -130,17 +140,18 @@ import { SidebarStateService } from '../sidebar/sidebar-state.service';
     /* Compose CTA — black-circle "+" on mobile. The earlier "Create
        Entry" pill ate too much horizontal space and pushed the
        wordmark behind it on narrow viewports. The icon-only circle
-       gives the wordmark room to breathe and matches the
-       hamburger's hit area on the opposite side, balancing the bar. */
+       gives the wordmark room to breathe. Sized 40×40 — slightly
+       smaller than the 46×46 hamburger on the opposite end, so the
+       hamburger reads as the "primary" hand-reach target (matches
+       right-hander thumb ergonomics) and compose reads as a quieter
+       always-available CTA. SVG icon scaled down to 16×16 to match. */
     .mobile-header__compose {
       flex-shrink: 0;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      /* 46px matches the new hamburger size — the bar reads as
-         visually balanced when the two end caps are the same. */
-      width: 46px;
-      height: 46px;
+      width: 40px;
+      height: 40px;
       background: #0c0e13;
       color: #fff;
       border: none;
@@ -149,10 +160,15 @@ import { SidebarStateService } from '../sidebar/sidebar-state.service';
       cursor: pointer;
       transition: background .15s, transform .15s;
     }
-    .mobile-header__compose:hover {
-      background: var(--color-accent);
-      color: #fff;
-      transform: translateY(-1px);
+    /* :hover gated to pointer-fine devices so mobile taps don't latch
+       the cyan hover state — same pattern as the global .btn--primary
+       fix in styles.scss. */
+    @media (hover: hover) and (pointer: fine) {
+      .mobile-header__compose:hover {
+        background: var(--color-accent);
+        color: #fff;
+        transform: translateY(-1px);
+      }
     }
   `]
 })
