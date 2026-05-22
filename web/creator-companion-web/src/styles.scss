@@ -155,14 +155,27 @@ p  { line-height: 1.7; }
      Hover text is WHITE (not the previous black-on-cyan): black ink
      on the cyan hue had poor contrast and read as a downgrade from
      the default-state contrast. CLAUDE.md spec confirms the
-     black-bg-white-text / cyan-bg-white-text pattern. */
+     black-bg-white-text / cyan-bg-white-text pattern.
+
+     :hover gated behind (hover: hover) and (pointer: fine) so it
+     only activates for genuine mouse-pointer devices. iOS Safari
+     (and most mobile browsers) latch :hover on touch — tapping a
+     button leaves it visually stuck in hover state until you tap
+     elsewhere. The result was that every primary CTA on mobile
+     appeared cyan after first interaction instead of black. The
+     media-query gate is the standard fix; mobile users see the
+     button's :active state during tap (no styling defined → quick
+     opacity flash from the base .btn `transition: opacity`) and
+     it returns to black on release. */
   &--primary {
     background: #0c0e13;
     color: #fff;
-    &:hover:not(:disabled) {
-      background: var(--color-accent);
-      color: #fff;
-      transform: translateY(-1px);
+    @media (hover: hover) and (pointer: fine) {
+      &:hover:not(:disabled) {
+        background: var(--color-accent);
+        color: #fff;
+        transform: translateY(-1px);
+      }
     }
   }
 

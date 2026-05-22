@@ -212,6 +212,16 @@ const SLIDES: Slide[] = [
     }
 
     .step-actions { display: flex; flex-direction: column; gap: .625rem; }
+
+    /* Skip button — keep ghost styling (transparent bg, no border) so
+       Continue remains the visual primary, but use the same dark ink
+       as the body text instead of the global ghost's muted grey. On
+       the white card surface the muted-grey read as "disabled" rather
+       than "alternate action"; black text makes it clearly tappable
+       while still ceding visual weight to the Continue CTA. */
+    .step-actions .btn--ghost {
+      color: var(--color-text);
+    }
   `]
 })
 export class OnboardingComponent {
