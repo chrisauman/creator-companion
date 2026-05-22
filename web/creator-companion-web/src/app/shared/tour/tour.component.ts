@@ -115,7 +115,14 @@ export interface TourStep {
     .tour {
       position: fixed;
       inset: 0;
-      z-index: 200;
+      /* 500 sits above the mobile-nav drawer (z-index 200) so tooltips
+         that point at menu items remain visible when the menu is open.
+         Originally 200, which tied with the mobile-nav and lost the
+         stacking battle by DOM order. Anything below 1000 leaves the
+         dashboard takeover layers (paywall / welcome-back) free to
+         override the tour — appropriate, since those are hard blocks
+         and the tour should defer to them. */
+      z-index: 500;
       pointer-events: none; /* let highlighted element show through */
     }
 
