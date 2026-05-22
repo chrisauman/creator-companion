@@ -193,17 +193,27 @@ jobs:
             exit 0
           fi
 
+          # Pin to a known-good major version. sentry-cli 3.x removed the
+          # old `releases files <release> upload-sourcemaps` syntax we
+          # were using and replaced it with `sourcemaps upload`. Pinning
+          # protects us from future breaking changes in 4.x etc.
+          SENTRY_CLI="npx @sentry/cli@^3"
+
           echo "Creating Sentry release $RELEASE_SHA…"
-          npx @sentry/cli@latest releases new "$RELEASE_SHA"
+          $SENTRY_CLI releases new "$RELEASE_SHA"
 
           echo "Uploading source maps from $STATIC_DIR…"
-          npx @sentry/cli@latest releases files "$RELEASE_SHA" upload-sourcemaps \
-            "$STATIC_DIR" \
+          # New 3.x syntax: `sourcemaps upload` instead of
+          # `releases files X upload-sourcemaps`. Rewrite is the
+          # default behaviour now (use --no-rewrite to disable);
+          # --validate still checks the maps before upload.
+          $SENTRY_CLI sourcemaps upload \
+            --release "$RELEASE_SHA" \
             --url-prefix '~/' \
-            --rewrite \
-            --validate
+            --validate \
+            "$STATIC_DIR"
 
-          npx @sentry/cli@latest releases finalize "$RELEASE_SHA"
+          $SENTRY_CLI releases finalize "$RELEASE_SHA"
 
           echo "Deleting .map files from deploy artifact (already uploaded to Sentry)…"
           find "$STATIC_DIR" -name '*.js.map' -delete
