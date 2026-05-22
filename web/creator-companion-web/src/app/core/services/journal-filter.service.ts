@@ -32,30 +32,18 @@ export class JournalFilterService {
   private router = inject(Router);
 
   /**
-   * The ACTIVE filter applied to the dashboard's entry list. Updated
-   * live as the user types in the search input (via inputValue
-   * mirroring), AND retained when the user "commits" the search by
-   * pressing Enter. The dashboard's filteredAndSorted reads this.
+   * The active search filter. Two-way bound to the <input> in the
+   * sidebar's filter panel — typing updates query directly (live
+   * filtering), and the input always shows the current query.
    *
-   * Separating this from inputValue lets us clear the input field
-   * after Enter (so re-opening the panel feels like a fresh search)
-   * WITHOUT un-filtering the visible entries. The active filter
-   * persists until the panel is explicitly closed (via the search
-   * icon toggle or Cmd+K) or until the user types a new query that
-   * replaces it.
+   * Earlier iteration split this into query + inputValue so Enter
+   * could clear the input without un-filtering. Reverted because
+   * users couldn't see what was actively filtering once the input
+   * was empty. The single-signal version pairs with a one-click
+   * clear (X) button inside the input — same UX goal (easy escape)
+   * without the "invisible filter" trap.
    */
-  readonly query      = signal('');
-
-  /**
-   * What's currently in the search input field. Bound two-way to the
-   * <input> in the sidebar's filter panel. Typing here updates both
-   * inputValue (the visible field state) AND query (the active
-   * filter) — that preserves the "live filter as you type" feel.
-   * Pressing Enter clears ONLY inputValue, leaving query intact so
-   * the visible entry list stays filtered.
-   */
-  readonly inputValue = signal('');
-
+  readonly query     = signal('');
   /** Current sort order. Persists across panel open/close. */
   readonly sort      = signal<JournalSort>('newest');
   /** Whether the expanded panel is showing in the sidebar/drawer. */
@@ -85,18 +73,14 @@ export class JournalFilterService {
   }
 
   /**
-   * Close the panel. Clears both the input AND the active query so
-   * re-opening starts fresh — half-typed text lingering for the next
-   * session feels stale, and stale active filters on the entry list
-   * are confusing if the user doesn't realise the filter is still
-   * applied. Sort is preserved (it's a view preference, not
-   * transient filter).
+   * Close the panel. Clears the query so re-opening starts fresh —
+   * a half-typed query lingering for the next session feels stale.
+   * Sort is preserved (it's a view preference, not transient filter).
    */
   close(): void {
     if (!this.panelOpen()) return;
     this.panelOpen.set(false);
     this.query.set('');
-    this.inputValue.set('');
   }
 
   /** Convenience for the keyboard shortcut + sidebar icon toggle. */

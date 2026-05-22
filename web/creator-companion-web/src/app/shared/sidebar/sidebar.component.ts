@@ -166,36 +166,52 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
            the drawer so the user sees the filtered entries behind. -->
       @if (filter.panelOpen() && !collapsed()) {
         <div class="sidebar__filter-panel">
-          <input class="sidebar__filter-input"
-                 type="text"
-                 placeholder="Search"
-                 autocomplete="off"
-                 autocorrect="off"
-                 autocapitalize="off"
-                 spellcheck="false"
-                 [ngModel]="filter.inputValue()"
-                 (ngModelChange)="onFilterInput($event)"
-                 (keydown.enter)="commitSearchEnter()"
-                 #filterInput />
+          <div class="sidebar__filter-input-wrap">
+            <input class="sidebar__filter-input"
+                   type="text"
+                   placeholder="Search"
+                   autocomplete="off"
+                   autocorrect="off"
+                   autocapitalize="off"
+                   spellcheck="false"
+                   [ngModel]="filter.query()"
+                   (ngModelChange)="filter.query.set($event)"
+                   (keydown.enter)="commitFilterAction()"
+                   #filterInput />
+            <!-- One-click clear. Shown only when the query is non-empty
+                 so the field reads as plain when there's nothing to
+                 clear. Resets the active filter immediately (entries
+                 list reverts to all). Refocuses the input so the user
+                 can keep typing a new query without an extra tap. -->
+            @if (filter.query()) {
+              <button type="button"
+                      class="sidebar__filter-clear"
+                      (click)="clearFilterQuery()"
+                      title="Clear search"
+                      aria-label="Clear search">
+                ×
+              </button>
+            }
+          </div>
 
           <div class="sidebar__filter-sort" role="group" aria-label="Sort entries">
             <button type="button"
                     class="sidebar__filter-sort-btn"
                     [class.sidebar__filter-sort-btn--active]="filter.sort() === 'newest'"
-                    (click)="filter.sort.set('newest'); commitSortChange()">
+                    (click)="filter.sort.set('newest'); commitFilterAction()">
               Newest
             </button>
             <button type="button"
                     class="sidebar__filter-sort-btn"
                     [class.sidebar__filter-sort-btn--active]="filter.sort() === 'oldest'"
-                    (click)="filter.sort.set('oldest'); commitSortChange()">
+                    (click)="filter.sort.set('oldest'); commitFilterAction()">
               Oldest
             </button>
             <button type="button"
                     class="sidebar__filter-sort-btn"
                     [class.sidebar__filter-sort-btn--active]="filter.sort() === 'favorites'"
-                    (click)="filter.sort.set('favorites'); commitSortChange()">
-              ★ Favorites
+                    (click)="filter.sort.set('favorites'); commitFilterAction()">
+              Favorites
             </button>
           </div>
         </div>
@@ -906,9 +922,19 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
       flex-direction: column;
       gap: .375rem;
     }
+    /* Wrapper hosts the input + the absolute-positioned × clear
+       button. Position relative so the button anchors inside it. */
+    .sidebar__filter-input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
     .sidebar__filter-input {
       width: 100%;
-      padding: .5rem .75rem;
+      /* Right padding leaves room for the absolute × button when
+         visible. The button is 26px wide + the input's intrinsic
+         padding — 2rem covers it without overlapping the caret. */
+      padding: .5rem 2rem .5rem .75rem;
       background: rgba(0, 0, 0, .25);
       border: 1px solid rgba(255, 255, 255, .12);
       border-radius: 8px;
@@ -922,6 +948,36 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
     .sidebar__filter-input:focus {
       border-color: var(--color-accent);
       background: rgba(0, 0, 0, .35);
+    }
+
+    /* × clear button — only renders when there's a query to clear.
+       Subtle by default; brightens on hover/active so it reads as
+       interactive. Sized 22px to comfortably tap on mobile (the
+       tap target extends a few px beyond the visible glyph via
+       padding). */
+    .sidebar__filter-clear {
+      position: absolute;
+      right: .25rem;
+      width: 26px;
+      height: 26px;
+      background: transparent;
+      border: none;
+      padding: 0;
+      color: rgba(255, 255, 255, .5);
+      font-size: 1.125rem;
+      line-height: 1;
+      cursor: pointer;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: background .12s, color .12s;
+    }
+    @media (hover: hover) and (pointer: fine) {
+      .sidebar__filter-clear:hover {
+        background: rgba(255, 255, 255, .12);
+        color: #fff;
+      }
     }
 
     /* Segmented sort control — three buttons share a row. Active state
@@ -1358,61 +1414,48 @@ export class SidebarComponent implements OnInit {
   }
 
   /**
-   * Called every keystroke in the filter input. Mirrors the typed
-   * value into BOTH signals: `inputValue` so the visible field
-   * updates, and `query` so the dashboard's filteredAndSorted
-   * recomputes live. Keeping them in lockstep during typing is what
-   * preserves the "live filter as you type" feel.
+   * Called when the user "commits" a filter action — either pressing
+   * Enter in the search input or tapping a sort button. Two effects:
    *
-   * (Separation only matters at commit time — see commitSearchEnter
-   * below — where we clear inputValue but leave query intact.)
+   * 1. Blurs the search input. On iOS, pressing Return inside an
+   *    <input> doesn't dismiss the soft keyboard automatically —
+   *    the input keeps focus until something explicitly removes it.
+   *    Without blur, the keyboard would sit there with its floating
+   *    accessory bar after the drawer slides away.
+   *
+   * 2. Closes the mobile drawer so the filtered entries (column 2)
+   *    become visible. No-op on desktop where the sidebar is always
+   *    open.
+   *
+   * Order matters: blur THEN closeMobile. If the drawer animates
+   * away with the input still focused, iOS sometimes keeps the
+   * keyboard "in transit" and it briefly reappears.
+   *
+   * Note: this does NOT clear the query. The user sees their search
+   * term in the input field and can tap the inline × clear button
+   * (or close the panel) when they want to revert to the full list.
+   * Leaving the query visible mitigates the "invisible filter" trap
+   * an earlier iteration had (input cleared on Enter, but entries
+   * were still filtered — users couldn't tell why).
    */
-  onFilterInput(value: string): void {
-    this.filter.inputValue.set(value);
-    this.filter.query.set(value);
-  }
-
-  /**
-   * Called when the user presses Enter in the search input. Three
-   * things happen, in order:
-   *
-   * 1. Clear `inputValue` so the visible field empties. The active
-   *    `query` is intentionally NOT cleared — the dashboard's entry
-   *    list stays filtered. When the user re-opens the panel they
-   *    see a fresh empty input rather than the previous query
-   *    lingering.
-   *
-   * 2. Blur the input. On iOS, pressing Return inside an <input>
-   *    doesn't automatically dismiss the soft keyboard — the input
-   *    retains focus and the keyboard sits there with its floating
-   *    accessory bar until something explicitly removes focus.
-   *
-   * 3. Close the mobile drawer so the filtered entries (column 2)
-   *    become visible. No-op on desktop.
-   *
-   * To type a new query, the user just starts typing into the empty
-   * input — onFilterInput updates both signals, so the new query
-   * replaces the previous one and the entry list re-filters live.
-   * To clear the active filter entirely, close the panel (search
-   * icon toggle or Cmd+K) — that wipes both signals.
-   */
-  commitSearchEnter(): void {
-    this.filter.inputValue.set('');
+  commitFilterAction(): void {
     this.filterInput?.nativeElement.blur();
     this.closeMobile();
   }
 
   /**
-   * Called when the user taps a sort segmented button. Closes the
-   * mobile drawer (so they see the re-sorted entries) and blurs the
-   * input (in case the soft keyboard was still up from prior
-   * typing). Does NOT clear the input — sort is a transient view
-   * tweak on whatever the user was searching for, not a "new search"
-   * action.
+   * One-click filter clear, wired to the × button inside the search
+   * input. Resets the active query so the entries list reverts to
+   * all entries, then refocuses the input so the user can start
+   * typing a new query without an extra tap. Sort is preserved
+   * (it's a view preference, not part of the search action).
    */
-  commitSortChange(): void {
-    this.filterInput?.nativeElement.blur();
-    this.closeMobile();
+  clearFilterQuery(): void {
+    this.filter.query.set('');
+    // Defer focus to next tick so the @if removes the × button first
+    // (otherwise focus + the click-target removal in the same tick
+    // can race on some browsers).
+    requestAnimationFrame(() => this.filterInput?.nativeElement.focus());
   }
 
   /** Legacy entry point — kept in case anything else still calls it. */
