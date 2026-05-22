@@ -173,28 +173,28 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
                  autocorrect="off"
                  autocapitalize="off"
                  spellcheck="false"
-                 [ngModel]="filter.query()"
-                 (ngModelChange)="filter.query.set($event)"
-                 (keydown.enter)="commitFilterAction()"
+                 [ngModel]="filter.inputValue()"
+                 (ngModelChange)="onFilterInput($event)"
+                 (keydown.enter)="commitSearchEnter()"
                  #filterInput />
 
           <div class="sidebar__filter-sort" role="group" aria-label="Sort entries">
             <button type="button"
                     class="sidebar__filter-sort-btn"
                     [class.sidebar__filter-sort-btn--active]="filter.sort() === 'newest'"
-                    (click)="filter.sort.set('newest'); commitFilterAction()">
+                    (click)="filter.sort.set('newest'); commitSortChange()">
               Newest
             </button>
             <button type="button"
                     class="sidebar__filter-sort-btn"
                     [class.sidebar__filter-sort-btn--active]="filter.sort() === 'oldest'"
-                    (click)="filter.sort.set('oldest'); commitFilterAction()">
+                    (click)="filter.sort.set('oldest'); commitSortChange()">
               Oldest
             </button>
             <button type="button"
                     class="sidebar__filter-sort-btn"
                     [class.sidebar__filter-sort-btn--active]="filter.sort() === 'favorites'"
-                    (click)="filter.sort.set('favorites'); commitFilterAction()">
+                    (click)="filter.sort.set('favorites'); commitSortChange()">
               ★ Favorites
             </button>
           </div>
@@ -1358,28 +1358,59 @@ export class SidebarComponent implements OnInit {
   }
 
   /**
-   * Called when the user "commits" a filter action — either pressing
-   * Enter in the search input or tapping a sort button. Does two
-   * things:
+   * Called every keystroke in the filter input. Mirrors the typed
+   * value into BOTH signals: `inputValue` so the visible field
+   * updates, and `query` so the dashboard's filteredAndSorted
+   * recomputes live. Keeping them in lockstep during typing is what
+   * preserves the "live filter as you type" feel.
    *
-   * 1. Blurs the search input. On iOS, pressing Return inside an
-   *    input doesn't automatically dismiss the soft keyboard — the
-   *    input retains focus, and the keyboard stays up until something
-   *    explicitly removes focus. Without this blur, the keyboard
-   *    persists even after the drawer slides away (user could see
-   *    the floating keyboard accessory bar with the checkmark — a
-   *    confusing extra step). On desktop the blur is a no-op user-
-   *    visibly; cursor leaves the field but everything still works.
-   *
-   * 2. Closes the mobile drawer so the filtered entries (column 2)
-   *    become visible. No-op on desktop where the sidebar is always
-   *    open.
-   *
-   * Order matters: blur THEN closeMobile. If the drawer slides away
-   * with the input still focused, iOS sometimes keeps the keyboard
-   * "in transit" and it briefly reappears.
+   * (Separation only matters at commit time — see commitSearchEnter
+   * below — where we clear inputValue but leave query intact.)
    */
-  commitFilterAction(): void {
+  onFilterInput(value: string): void {
+    this.filter.inputValue.set(value);
+    this.filter.query.set(value);
+  }
+
+  /**
+   * Called when the user presses Enter in the search input. Three
+   * things happen, in order:
+   *
+   * 1. Clear `inputValue` so the visible field empties. The active
+   *    `query` is intentionally NOT cleared — the dashboard's entry
+   *    list stays filtered. When the user re-opens the panel they
+   *    see a fresh empty input rather than the previous query
+   *    lingering.
+   *
+   * 2. Blur the input. On iOS, pressing Return inside an <input>
+   *    doesn't automatically dismiss the soft keyboard — the input
+   *    retains focus and the keyboard sits there with its floating
+   *    accessory bar until something explicitly removes focus.
+   *
+   * 3. Close the mobile drawer so the filtered entries (column 2)
+   *    become visible. No-op on desktop.
+   *
+   * To type a new query, the user just starts typing into the empty
+   * input — onFilterInput updates both signals, so the new query
+   * replaces the previous one and the entry list re-filters live.
+   * To clear the active filter entirely, close the panel (search
+   * icon toggle or Cmd+K) — that wipes both signals.
+   */
+  commitSearchEnter(): void {
+    this.filter.inputValue.set('');
+    this.filterInput?.nativeElement.blur();
+    this.closeMobile();
+  }
+
+  /**
+   * Called when the user taps a sort segmented button. Closes the
+   * mobile drawer (so they see the re-sorted entries) and blurs the
+   * input (in case the soft keyboard was still up from prior
+   * typing). Does NOT clear the input — sort is a transient view
+   * tweak on whatever the user was searching for, not a "new search"
+   * action.
+   */
+  commitSortChange(): void {
     this.filterInput?.nativeElement.blur();
     this.closeMobile();
   }
