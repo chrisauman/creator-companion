@@ -125,6 +125,32 @@ import { AdminShellComponent } from './admin-shell.component';
           </li>
         </ul>
       </section>
+
+      <!-- Diagnostics — verification + smoke-test actions for the
+           operational integrations (Sentry, etc.). Each button is a
+           single-shot call that produces a deterministic side effect
+           you can verify on the integration's own dashboard. -->
+      <section class="preview-section">
+        <h2 class="preview-section__title">Diagnostics</h2>
+        <p class="preview-section__sub">
+          Smoke tests for backend integrations. Click and verify the result on the
+          provider dashboard.
+        </p>
+
+        <div class="diag-row">
+          <button class="btn btn--secondary"
+                  [disabled]="sentryTesting()"
+                  (click)="testBackendSentry()">
+            {{ sentryTesting() ? 'Sending…' : 'Send test event to Sentry (backend)' }}
+          </button>
+
+          @if (sentryTestResult(); as r) {
+            <span class="diag-msg" [class.diag-msg--ok]="r.ok" [class.diag-msg--err]="!r.ok">
+              {{ r.message }}
+            </span>
+          }
+        </div>
+      </section>
     </app-admin-shell>
   `,
   styles: [`
@@ -185,6 +211,21 @@ import { AdminShellComponent } from './admin-shell.component';
       font-size: .875rem;
       margin: 0 0 1rem;
     }
+
+    /* Diagnostics row — single inline button + adjacent status message.
+       Wraps on small screens so the status sits below the button. */
+    .diag-row {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      flex-wrap: wrap;
+    }
+    .diag-msg {
+      font-size: .875rem;
+    }
+    .diag-msg--ok  { color: var(--color-text-2); }
+    .diag-msg--err { color: #e11d48; }
+
     .preview-list {
       list-style: none;
       padding: 0;
@@ -229,10 +270,44 @@ export class AdminDashboardComponent implements OnInit {
   loading = signal(true);
   error   = signal('');
 
+  // Sentry backend test state. testResult is null until the user
+  // clicks the diagnostic button; afterwards it holds a one-shot
+  // status message that the template renders inline.
+  sentryTesting    = signal(false);
+  sentryTestResult = signal<{ ok: boolean; message: string } | null>(null);
+
   ngOnInit() {
     this.api.adminGetStats().subscribe({
       next: s => { this.stats.set(s); this.loading.set(false); },
       error: () => { this.error.set('Failed to load stats.'); this.loading.set(false); }
+    });
+  }
+
+  /**
+   * Fires the backend's /v1/admin/sentry-test endpoint which captures
+   * both a message and an exception via SentrySdk. The endpoint flushes
+   * synchronously before responding so events arrive in Sentry within
+   * a few seconds — by the time the success banner shows here, the
+   * events should already be visible at chris-auman.sentry.io.
+   */
+  testBackendSentry() {
+    this.sentryTestResult.set(null);
+    this.sentryTesting.set(true);
+    this.api.adminSentryTest().subscribe({
+      next: (r) => {
+        this.sentryTesting.set(false);
+        this.sentryTestResult.set({
+          ok: true,
+          message: `Sent at ${r.when}. Check the creator-companion-api project in Sentry within ~10s.`
+        });
+      },
+      error: (err) => {
+        this.sentryTesting.set(false);
+        this.sentryTestResult.set({
+          ok: false,
+          message: `Failed: ${err?.error?.error ?? err?.message ?? 'unknown error'}`
+        });
+      }
     });
   }
 

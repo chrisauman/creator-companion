@@ -450,6 +450,46 @@ public class AdminController(AppDbContext db, IAuditService audit) : ControllerB
 
         return Ok(new { total, page, pageSize, entries });
     }
+
+    // ── Sentry verification ───────────────────────────────────────────
+    /// <summary>
+    /// One-shot test endpoint for verifying the backend Sentry SDK is
+    /// configured + reachable. Captures both an info-level message AND
+    /// a deliberate exception so we cover both code paths:
+    ///   1. SentrySdk.CaptureMessage (used for non-error signals)
+    ///   2. SentrySdk.CaptureException (used by background worker catches)
+    ///
+    /// Behind AdminOnly so a stray external request can't pollute the
+    /// Sentry project with junk events. Safe to call repeatedly — both
+    /// captures are idempotent from the SDK's perspective. SDK no-ops
+    /// silently when Sentry:Dsn isn't set, so this also tells you
+    /// whether the DSN env var is wired up correctly.
+    /// </summary>
+    [HttpPost("sentry-test")]
+    public IActionResult SentryTest()
+    {
+        var when = DateTime.UtcNow;
+
+        Sentry.SentrySdk.CaptureMessage(
+            $"Backend Sentry verification test (admin) at {when:O}",
+            Sentry.SentryLevel.Info);
+
+        Sentry.SentrySdk.CaptureException(
+            new InvalidOperationException(
+                $"Backend Sentry verification test — deliberate exception at {when:O}"));
+
+        // Flush so the captures are sent before the response returns
+        // (useful when the admin clicks the button and immediately
+        // looks at Sentry — events arrive instead of "wait 30s").
+        Sentry.SentrySdk.Flush(TimeSpan.FromSeconds(5));
+
+        return Ok(new
+        {
+            sent = true,
+            when,
+            note = "Check Sentry within ~10s. You should see both a CaptureMessage event AND a CaptureException event."
+        });
+    }
 }
 
 public record SetTierRequest(string Tier);

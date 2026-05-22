@@ -286,6 +286,17 @@ export class ApiService {
     return this.http.get<any>(`${this.base}/admin/stats`);
   }
 
+  /**
+   * Fires a deliberate test message + exception to the backend Sentry
+   * project, useful for verifying the SDK is wired up correctly. The
+   * server flushes synchronously before responding so events arrive
+   * in Sentry within a few seconds.
+   */
+  adminSentryTest(): Observable<{ sent: boolean; when: string; note: string }> {
+    return this.http.post<{ sent: boolean; when: string; note: string }>(
+      `${this.base}/admin/sentry-test`, {});
+  }
+
   adminGetUsers(page = 1, pageSize = 25, search?: string): Observable<any> {
     let params = new HttpParams().set('page', page).set('pageSize', pageSize);
     if (search) params = params.set('search', search);
