@@ -205,22 +205,15 @@ import { ActivatedRoute } from '@angular/router';
 
         <!-- Entry list -->
         <section class="entries-section work__list-col">
-          <!-- Search + sort bar -->
-          <div class="search-bar">
-            <div class="search-input-wrap">
-              <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.452 4.391l3.328 3.329a.75.75 0 1 1-1.06 1.06l-3.329-3.328A7 7 0 0 1 2 9Z" clip-rule="evenodd"/>
-              </svg>
-              <input
-                type="text"
-                class="search-input"
-                placeholder="Search by title, tag, or date…"
-                [ngModel]="searchQuery()"
-                (ngModelChange)="searchQuery.set($event)"
-              />
-              <button *ngIf="searchQuery()" class="search-clear" (click)="searchQuery.set('')" title="Clear search">×</button>
-            </div>
-            <select class="sort-select" [ngModel]="sortOrder()" (ngModelChange)="sortOrder.set($event)">
+          <!-- Sort toolbar — single right-aligned pill.
+               Search was here previously; moved to the global
+               sidebar overlay (⌘K / search icon). Sort stays
+               page-local because it controls THIS list. -->
+          <div class="entries-toolbar">
+            <select class="sort-select"
+                    [ngModel]="sortOrder()"
+                    (ngModelChange)="sortOrder.set($event)"
+                    aria-label="Sort entries">
               <option value="newest">Newest first</option>
               <option value="oldest">Oldest first</option>
               <option value="favorites">★ Favorites</option>
@@ -229,21 +222,17 @@ import { ActivatedRoute } from '@angular/router';
 
           <div *ngIf="error()" class="alert alert--error">{{ error() }}</div>
 
-          <!-- Empty states -->
+          <!-- Empty states. The "no search results" case is gone with
+               the inline search; sort can still produce an empty
+               favorites view. -->
           <div *ngIf="entries().length === 0 && !loading()" class="empty-state">
             <p>No entries yet. Log your first step above.</p>
           </div>
           <div *ngIf="entries().length > 0 && filteredAndSorted().length === 0" class="empty-state">
-            <p *ngIf="sortOrder() === 'favorites' && !searchQuery()">No favorites yet. Open an entry and tap the star to save it.</p>
-            <p *ngIf="sortOrder() !== 'favorites' || searchQuery()">No entries match <strong>{{ searchQuery() }}</strong>.</p>
+            <p *ngIf="sortOrder() === 'favorites'">No favorites yet. Open an entry and tap the star to save it.</p>
             <button class="btn btn--ghost btn--sm" style="margin-top:.75rem"
-              (click)="searchQuery.set(''); sortOrder.set('newest')">Clear filters</button>
+              (click)="sortOrder.set('newest')">Show all entries</button>
           </div>
-
-          <!-- Result count when searching -->
-          <p class="search-results-count" *ngIf="searchQuery() && filteredAndSorted().length > 0">
-            {{ filteredAndSorted().length }} {{ filteredAndSorted().length === 1 ? 'entry' : 'entries' }} found
-          </p>
 
           <ng-container *ngIf="filteredAndSorted().length > 0">
             <ng-container *ngFor="let group of groupedEntries(); trackBy: trackByGroup; let first = first">
@@ -521,7 +510,7 @@ import { ActivatedRoute } from '@angular/router';
       /* Two equal-height columns, no rule line between them — the
          change in background color (paper → surface) on the right
          column already provides separation. The shared top bars
-         (search-bar on the left, reader-top on the right) are sized
+         (entries-toolbar on the left, reader-top on the right) are sized
          to match (64px) and align horizontally. Each column scrolls
          independently.
 
@@ -892,23 +881,22 @@ import { ActivatedRoute } from '@angular/router';
     .motivation-card--expanded .motivation-body { max-height: 600px; padding: 0 1.25rem 1.25rem; }
     .motivation-content { font-size: .9375rem; line-height: 1.7; color: var(--color-text); margin: 0; white-space: pre-wrap; }
 
-    /* ── Search bar (modern pill style) ─────────────────────────── */
-    .search-bar {
-      display: flex; align-items: center; gap: .5rem;
-      /* Bottom gap matches the trial banner's bottom gap (1rem)
-         so the vertical rhythm above and below structural rows
-         on mobile reads as one uniform spacing unit. */
-      margin-top: 1rem; margin-bottom: 1rem;
+    /* ── Sort toolbar — single right-aligned pill ──────────────
+       Search input is gone (moved to the global ⌘K overlay). Only
+       sort remains here because it controls THIS specific list.
+       Compact pill, right-aligned so it reads as a "view setting"
+       rather than a primary control. Sticky on desktop so it stays
+       reachable while the entry list scrolls. */
+    .entries-toolbar {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      margin: 1rem 0 .75rem;
     }
-    /* On desktop, the search bar sits at the top of the entry-list
-       column and aligns with the reader-top (64px) on the right column.
-       Both panes share a bottom hairline for a continuous header rule. */
     @media (min-width: 768px) {
-      .search-bar {
+      .entries-toolbar {
         margin: 0;
         height: 64px;
-        padding: 0;
-        box-sizing: border-box;
         flex-shrink: 0;
         position: sticky;
         top: 0;
@@ -916,68 +904,29 @@ import { ActivatedRoute } from '@angular/router';
         z-index: 4;
       }
     }
-    .search-input-wrap { flex: 1; position: relative; display: flex; align-items: center; }
-    .search-icon {
-      position: absolute; left: 1rem;
-      width: 1rem; height: 1rem; color: var(--color-text-3); pointer-events: none;
-    }
-    .search-input {
-      width: 100%;
-      padding: .625rem 1rem .625rem 2.5rem;
-      border: 1px solid var(--color-border);
-      border-radius: 999px;
-      background: var(--color-surface);
-      color: var(--color-text);
-      font-size: .875rem;
-      font-family: var(--font-sans);
-      box-sizing: border-box;
-      transition: border-color .15s, background .15s, box-shadow .15s;
-    }
-    .search-input::placeholder { color: var(--color-text-3); }
-    .search-input:hover { border-color: var(--color-text-3); }
-    .search-input:focus {
-      outline: none;
-      border-color: var(--color-accent);
-      box-shadow: 0 0 0 3px rgba(18,196,227,.12);
-    }
-    .search-clear {
-      position: absolute; right: .75rem;
-      background: var(--color-surface-2);
-      border: none;
-      cursor: pointer;
-      color: var(--color-text-2);
-      width: 22px; height: 22px;
-      border-radius: 50%;
-      display: grid; place-items: center;
-      font-size: .875rem; line-height: 1;
-      padding: 0;
-      transition: background .15s, color .15s;
-    }
-    .search-clear:hover { color: var(--color-text); background: var(--color-border); }
     .sort-select {
-      padding: .625rem 2.25rem .625rem 1rem;
+      padding: .375rem 1.875rem .375rem .75rem;
       border: 1px solid var(--color-border);
       border-radius: 999px;
       background: var(--color-surface);
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239099a5' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
       background-repeat: no-repeat;
-      background-position: right 1rem center;
-      color: var(--color-text);
-      font-size: .8125rem;
+      background-position: right .75rem center;
+      color: var(--color-text-2);
+      font-size: .75rem;
       font-weight: 500;
       font-family: var(--font-sans);
       cursor: pointer;
       flex-shrink: 0;
       appearance: none;
-      transition: border-color .15s;
+      transition: border-color .15s, color .15s;
     }
-    .sort-select:hover { border-color: var(--color-text-3); }
+    .sort-select:hover { border-color: var(--color-text-3); color: var(--color-text); }
     .sort-select:focus {
       outline: none;
       border-color: var(--color-accent);
       box-shadow: 0 0 0 3px rgba(18,196,227,.12);
     }
-    .search-results-count { font-size: .75rem; color: var(--color-text-3); margin: 0 0 .75rem; }
 
     /* ── Entry list ──────────────────────────────────────────────── */
     /* Month divider above each calendar group (e.g. "MAY 2026") is
@@ -1303,35 +1252,21 @@ export class DashboardComponent implements OnInit {
    *  return / save like the other compose-context signals. */
   composeDate   = signal<string | null>(null);
 
-  // Search & sort
-  searchQuery = signal('');
-  sortOrder   = signal<'newest' | 'oldest' | 'favorites'>('newest');
+  // Sort — search filtering moved out of this page entirely; lives
+  // in the global SearchOverlayComponent (Cmd+K / sidebar icon).
+  // The dashboard's list now only applies the user's chosen sort.
+  sortOrder = signal<'newest' | 'oldest' | 'favorites'>('newest');
 
   filteredAndSorted = computed(() => {
-    const q     = this.searchQuery().trim().toLowerCase();
-    const sort  = this.sortOrder();
-    let result  = this.entries();
+    const sort = this.sortOrder();
+    let result = this.entries();
 
     if (sort === 'favorites') {
       result = result.filter(e => e.isFavorited);
     }
-
-    if (q) {
-      const terms = q.split(/\s+/).filter(t => t.length > 0);
-      result = result.filter(e => {
-        // Include ISO date ("2026-04-18") AND human-readable ("april 18, 2026")
-        const dateReadable = new Date(e.entryDate + 'T00:00:00')
-          .toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-          .toLowerCase(); // → "april 18, 2026"
-        const haystack = [e.title, ...e.tags, e.entryDate, dateReadable].join(' ').toLowerCase();
-        return terms.every(term => haystack.includes(term));
-      });
-    }
-
     if (sort === 'oldest') {
       result = [...result].sort((a, b) => a.entryDate.localeCompare(b.entryDate));
     }
-
     return result;
   });
 

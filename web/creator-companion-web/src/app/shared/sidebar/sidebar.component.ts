@@ -9,6 +9,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { ViewportService } from '../../core/services/viewport.service';
 import { StreakStats } from '../../core/models/models';
 import { SidebarStateService } from './sidebar-state.service';
+import { SearchOverlayService } from '../../core/services/search-overlay.service';
 import { StreakRefreshService } from '../../core/services/streak-refresh.service';
 import { TierIconComponent } from '../tier-icon/tier-icon.component';
 import { getMilestoneProgress, MilestoneProgress } from '../../core/constants/milestones';
@@ -102,32 +103,57 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
            CTA — leaving the visual anchor in place reminds the user
            where their primary action used to live and what they get
            back by subscribing. -->
-      @if (readOnly()) {
-        <button class="sidebar__compose sidebar__compose--locked"
-                [class.sidebar__compose--collapsed]="collapsed()"
-                type="button"
-                disabled
-                title="Subscribe to unlock writing">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-               stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <rect x="5" y="11" width="14" height="9" rx="2"/>
-            <path d="M8 11V8a4 4 0 0 1 8 0v3"/>
-          </svg>
-          <span class="sidebar__compose-label" *ngIf="!collapsed()">Subscribe to unlock</span>
-        </button>
-      } @else {
-        <a class="sidebar__compose"
-           [class.sidebar__compose--collapsed]="collapsed()"
-           [routerLink]="['/dashboard']"
-           [queryParams]="{compose: 1}"
-           [title]="collapsed() ? 'Log Today\\'s Progress' : null">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-               stroke-width="2.4" stroke-linecap="round">
-            <path d="M12 5v14M5 12h14"/>
-          </svg>
-          <span class="sidebar__compose-label" *ngIf="!collapsed()">Log Today's Progress</span>
-        </a>
-      }
+      <!-- Compose + Search row. The two share one flex container so
+           the search icon button sits flush to the right of the
+           compose pill instead of dropping to the next row. The
+           compose pill stretches (flex:1) and the search button is
+           a fixed 40×40 square. On collapsed desktop sidebar, only
+           the compose icon shows (no search button) to keep that
+           mode minimal. -->
+      <div class="sidebar__compose-row" [class.sidebar__compose-row--collapsed]="collapsed()">
+        @if (readOnly()) {
+          <button class="sidebar__compose sidebar__compose--locked"
+                  [class.sidebar__compose--collapsed]="collapsed()"
+                  type="button"
+                  disabled
+                  title="Subscribe to unlock writing">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="5" y="11" width="14" height="9" rx="2"/>
+              <path d="M8 11V8a4 4 0 0 1 8 0v3"/>
+            </svg>
+            <span class="sidebar__compose-label" *ngIf="!collapsed()">Subscribe to unlock</span>
+          </button>
+        } @else {
+          <a class="sidebar__compose"
+             [class.sidebar__compose--collapsed]="collapsed()"
+             [routerLink]="['/dashboard']"
+             [queryParams]="{compose: 1}"
+             [title]="collapsed() ? 'Log Today\\'s Progress' : null">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2.4" stroke-linecap="round">
+              <path d="M12 5v14M5 12h14"/>
+            </svg>
+            <span class="sidebar__compose-label" *ngIf="!collapsed()">Log Today's Progress</span>
+          </a>
+        }
+
+        <!-- Search icon button. Opens the global search overlay (rendered
+             by app.ts). Hidden in the collapsed desktop sidebar to keep
+             that mode minimal — power users on collapsed sidebar can
+             still trigger via Cmd+K. -->
+        @if (!collapsed()) {
+          <button class="sidebar__search"
+                  type="button"
+                  (click)="searchOverlay.open(); closeMobile()"
+                  title="Search entries (⌘K)"
+                  aria-label="Search entries">
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.452 4.391l3.328 3.329a.75.75 0 1 1-1.06 1.06l-3.329-3.328A7 7 0 0 1 2 9Z" clip-rule="evenodd"/>
+            </svg>
+          </button>
+        }
+      </div>
 
       <!-- Nav -->
       <nav class="sidebar__nav">
@@ -682,6 +708,26 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
       .sidebar__streak-foot { font-size: .75rem; }
     }
 
+    /* ── Compose + Search row. The two share a flex row so the
+       search icon button sits flush to the right of the compose
+       pill. The pill stretches (flex:1) and the search button is
+       a fixed square endcap. Horizontal margin lives on the row
+       container; the compose pill itself has no horizontal margin
+       so flex can lay them out without surprises. */
+    .sidebar__compose-row {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      margin: 0 .875rem 1rem;
+    }
+    .sidebar__compose-row--collapsed {
+      /* Collapsed desktop sidebar — only the compose icon shows
+         (the search button is hidden via @if in the template);
+         re-center the lone child. */
+      justify-content: center;
+      margin: 0 auto 1rem;
+    }
+
     /* ── New Entry button — exception to the global primary-CTA
        pattern. Black-on-black would disappear on the dark sidebar,
        so this one stays brand cyan with white text. Hover shifts
@@ -692,14 +738,22 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
       align-items: center;
       justify-content: center;
       gap: .5rem;
-      margin: 0 .875rem 1rem;
+      /* Margin removed — the parent .sidebar__compose-row owns
+         positioning now. Compose stretches to fill remaining
+         horizontal space in the row. */
+      margin: 0;
+      flex: 1;
+      min-width: 0; /* allow flex to shrink below content width */
       padding: .5rem 1rem;
       background: var(--color-accent);
       color: #fff;
       border: none;
       border-radius: 999px;
       font-family: inherit;
-      font-size: .8125rem;
+      /* Was .8125rem (13px). Shrunk to .75rem (12px) so the label
+         "Log Today's Progress" still fits next to the new search
+         icon button in the narrow desktop sidebar (220px wide). */
+      font-size: .75rem;
       font-weight: 600;
       cursor: pointer;
       text-decoration: none;
@@ -714,7 +768,11 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
     .sidebar__compose--collapsed {
       width: 32px; height: 32px;
       padding: 0;
-      margin: 0 auto 1rem;
+      /* Collapsed: revert flex stretch so the icon sits as a tight
+         32px circle rather than being widened by flex:1. The
+         compose-row--collapsed wrapper handles centering. */
+      flex: 0 0 32px;
+      margin: 0;
       border-radius: 50%;
     }
     /* Locked variant — same footprint as the cyan compose CTA so the
@@ -733,17 +791,59 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
       color: rgba(255,255,255,.55);
       transform: none;
     }
-    .sidebar__compose-label { white-space: nowrap; }
+    .sidebar__compose-label {
+      white-space: nowrap;
+      /* Ellipsis if the label can't fit beside the search button —
+         degrades gracefully on edge-case viewports rather than
+         wrapping or pushing the search icon offscreen. */
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Search icon button — sibling of the compose pill inside the
+       row. Quiet styling (transparent bg, faint border) so the
+       compose pill remains the visual primary action; the search
+       button is an always-available secondary. Sized 36×36 in the
+       desktop sidebar so the row stays compact (slightly smaller
+       than compose's ~38px tall pill); 44×44 in the mobile drawer
+       for proper touch-target sizing. */
+    .sidebar__search {
+      flex-shrink: 0;
+      width: 36px;
+      height: 36px;
+      background: transparent;
+      color: rgba(255, 255, 255, .7);
+      border: 1px solid rgba(255, 255, 255, .15);
+      border-radius: 10px;
+      padding: 0;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: background .15s, color .15s, border-color .15s;
+    }
+    /* Hover gated to mouse-pointer devices so mobile taps don't
+       latch the lighter background — same pattern as the global
+       .btn--primary fix. */
+    @media (hover: hover) and (pointer: fine) {
+      .sidebar__search:hover {
+        background: rgba(255, 255, 255, .08);
+        color: #fff;
+        border-color: rgba(255, 255, 255, .3);
+      }
+    }
+
     /* Mobile drawer has plenty of horizontal room — bump the compose
        button up to a more inviting size. Larger text, fatter padding,
-       bigger plus glyph. */
+       bigger plus glyph. Search button also gets touch-friendly. */
     @media (max-width: 767px) {
+      .sidebar__compose-row { margin: 0 1rem 1rem; }
       .sidebar__compose {
-        font-size: 1.0625rem;
-        padding: .875rem 1.25rem;
-        margin: 0 1rem 1rem;
+        font-size: 1rem;
+        padding: .875rem 1rem;
       }
       .sidebar__compose svg { width: 18px !important; height: 18px !important; }
+      .sidebar__search { width: 44px; height: 44px; }
     }
 
     /* ── Nav ────────────────────────────────────────────────────── */
@@ -923,6 +1023,11 @@ export class SidebarComponent implements OnInit {
   private drawer   = inject(SidebarStateService);
   private streakRefresh = inject(StreakRefreshService);
   private destroyRef    = inject(DestroyRef);
+  /** Public so the template can call .open() directly on the search
+   *  icon button. The button also calls closeMobile() so opening
+   *  search from the drawer dismisses the drawer first — otherwise
+   *  the drawer would sit behind the overlay and feel like a stack. */
+  protected searchOverlay = inject(SearchOverlayService);
 
   /** Mirror of AuthService.isReadOnly. Drives the locked variant of
    *  the New Entry compose button so the cyan CTA isn't presented to
