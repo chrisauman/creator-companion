@@ -543,13 +543,18 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
             Download all your entries. Your data always belongs to you.
           </p>
           <div class="export-actions">
-            <button class="btn btn--primary" (click)="exportArchive()" [disabled]="archiving()">
+            <!-- btn--sm to match every other primary CTA on this page
+                 (Change photo, Save name, View trash, Add tag, etc).
+                 Without btn--sm these rendered at the default larger
+                 button size and looked oversized relative to their
+                 neighbours. -->
+            <button class="btn btn--primary btn--sm" (click)="exportArchive()" [disabled]="archiving()">
               {{ archiving() ? 'Preparing archive…' : 'Download full archive (.zip)' }}
             </button>
-            <button class="btn btn--primary" (click)="exportJson()" [disabled]="exporting()">
+            <button class="btn btn--primary btn--sm" (click)="exportJson()" [disabled]="exporting()">
               Export as JSON
             </button>
-            <button class="btn btn--primary" (click)="exportText()" [disabled]="exporting()">
+            <button class="btn btn--primary btn--sm" (click)="exportText()" [disabled]="exporting()">
               Export as Text
             </button>
           </div>
