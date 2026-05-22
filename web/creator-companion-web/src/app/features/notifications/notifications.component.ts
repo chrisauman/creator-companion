@@ -63,7 +63,13 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
             } @else if (!pushEnabled()) {
               <div class="push-prompt">
                 <p class="block__body">Enable notifications on this device to receive daily reminders.</p>
-                <button class="action-btn" (click)="enablePush()" [disabled]="pushWorking()">
+                <!-- Promoted from .action-btn (light cream pill) to the
+                     standard black btn--primary to match every other
+                     primary CTA in the app. The bell emoji stays as
+                     the leading glyph; the button itself just reads
+                     as a normal black pill instead of a special-case
+                     "neutral" pill. -->
+                <button class="btn btn--primary" (click)="enablePush()" [disabled]="pushWorking()">
                   {{ pushWorking() ? 'Enabling…' : '🔔 Enable notifications' }}
                 </button>
                 <p class="block__body" *ngIf="pushDenied()">
@@ -73,7 +79,10 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
             } @else {
               <div class="push-active">
                 <span class="push-dot"></span>
-                <span>Reminders enabled on this device</span>
+                <!-- Shortened from "Reminders enabled on this device" so
+                     it doesn't wrap to two lines on iPhone next to the
+                     dot + Disable button. Same meaning, half the width. -->
+                <span>Device reminders enabled</span>
                 <button class="link-btn" (click)="disablePush()" [disabled]="pushWorking()">Disable</button>
               </div>
             }
@@ -93,11 +102,19 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
                         (click)="sendTestPush()">
                   {{ testWorking() ? 'Sending…' : 'Send test' }}
                 </button>
+                <!-- "How to" toggle replaces the previous "Reset all"
+                     button. The schedule-rule hint below used a lot of
+                     vertical space for a one-time bit of orientation;
+                     gating it behind a toggle reclaims that space for
+                     the actual reminder slots (which is what users
+                     came here to edit). Reset-all is reachable via
+                     the resetReminders() method if we ever wire a
+                     menu, but for now we trade it for the breathing
+                     room — users rarely reset, frequently scan slots. -->
                 <button class="link-btn"
                         type="button"
-                        [disabled]="reminderWorking()"
-                        (click)="resetReminders()">
-                  Reset all
+                        (click)="showHowTo.set(!showHowTo())">
+                  {{ showHowTo() ? 'Hide how-to' : 'How to' }}
                 </button>
               </div>
             </div>
@@ -113,13 +130,16 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
                  entry-based gating, no streak-pause skip. Set them for
                  anything: a journal nudge, hydration, a walk break.
                  The only built-in guard is "at most once per day per
-                 slot" so a 9am reminder doesn't double-fire. -->
-            <p class="reminder-hint">
-              Each slot fires once per day at the time you set,
-              regardless of whether you've journaled. Set them for
-              anything you want a daily nudge on. Use
-              <strong>Send test</strong> above to verify delivery.
-            </p>
+                 slot" so a 9am reminder doesn't double-fire.
+                 Collapsed behind the "How to" toggle by default. -->
+            @if (showHowTo()) {
+              <p class="reminder-hint">
+                Each slot fires once per day at the time you set,
+                regardless of whether you've journaled. Set them for
+                anything you want a daily nudge on. Use
+                <strong>Send test</strong> above to verify delivery.
+              </p>
+            }
 
             @if (remindersLoading()) {
               <p class="block__body">Loading…</p>
@@ -554,6 +574,21 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
       accent-color: #0c0e13;
     }
     .time-input { min-width: 140px; }
+    /* On mobile (≤500px) the .reminder-tile__fields grid collapses to
+       a single column, so the time input's width:100% inherits the
+       full row width. Combined with min-width:140px and iOS Safari's
+       native time picker rendering, the input was overflowing the
+       card's right edge on iPhone — the picker's intrinsic content
+       (e.g. "12:00 AM") plus padding pushed past the parent. Drop the
+       100% width and let the input size to its content, capped at
+       130px so the AM/PM picker still fits comfortably. */
+    @media (max-width: 500px) {
+      .time-input {
+        width: auto;
+        min-width: 0;
+        max-width: 130px;
+      }
+    }
     .time-input:focus,
     .text-input:focus {
       outline: none;
@@ -690,6 +725,14 @@ export class NotificationsComponent implements OnInit {
   reminderWorking  = signal(false);
   reminderError    = signal('');
   drafts: Record<string, { time: string; message: string }> = {};
+
+  /** Drives the collapsible schedule-rule hint that lives under the
+   *  Reminder times header. Hidden by default so the reminder slots
+   *  themselves are the first thing the user sees; toggled via the
+   *  "How to" link in the section header. Per-session signal — there's
+   *  no need to persist this preference, the hint is short and the
+   *  toggle is one tap if the user wants it back. */
+  showHowTo = signal(false);
 
   // "Send test" — fires a notification immediately to all current device
   // subscriptions. The result message stays on screen until the user clicks
