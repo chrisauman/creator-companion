@@ -33,7 +33,12 @@ Brief inventory so I can reason about the product without grepping.
   before hard-delete.
 - **Image compression** — uploads are downscaled + recompressed via
   ImageSharp before storage (R2). Keeps user storage / bandwidth sane.
-- **Preferences** — toggle Daily Spark, toggle reminders globally, etc.
+- **Preferences** (REMOVED May 2026) — the Daily Spark + Daily
+  Reminders toggles were inert UI (nothing on the dashboard
+  actually read `showMotivation` / `showActionItems`, so toggling
+  did nothing visible). UI removed entirely; backend columns +
+  API endpoints retained for cleanup. Both features now always-on
+  for every paid user.
 - **FAQ + support** — self-serve help content; user can also delete
   account and export data from the account page.
 - **Admin** — separate `/admin` area: stats dashboard, user management,
@@ -434,6 +439,12 @@ signal AND strips the URL param.
 - **User-facing label:** "Reminders." Internal route still
   `/notifications`, internal type literals still `'notifications'`
   (URLs and identifiers preserved for bookmarks / refactor cost).
+- **"How to" toggle (May 2026)** replaces the prior "Reset all"
+  button in the section header. The schedule-rule hint is now
+  collapsed by default behind a `showHowTo` signal — reclaims
+  vertical space above the reminder slots (which is what users
+  came to edit). `resetReminders()` method retained in code for
+  potential future wiring through a menu.
 
 ## Profile model
 
@@ -580,6 +591,75 @@ no further hook-based fallback is needed.
 - **Component style budgets** in `angular.json` are 12kB. Heavy
   components (dashboard, edit-entry) exceed this; warnings only,
   not errors. Don't bloat them further unless necessary.
+- **localStorage persists across logout/login.** It's per-origin, not
+  per-session, not per-user. Any UI preference stored there (e.g.,
+  the legacy `cc_today_collapsed` mobile-today-panel state) survives
+  logout, login as a different user, browser quit, everything.
+  For per-session UI state, keep it in-memory only. For genuine
+  cross-session preference, persist server-side. Removed
+  `cc_today_collapsed` May 2026 — cleanup `removeItem` runs in
+  `DashboardComponent.ngOnInit` so existing browsers get reset.
+- **Backticks inside CSS comments inside `styles: [\`...\`]`** break
+  the Angular template-literal parser ("Failed to resolve styles at
+  position 0"). Don't quote class/property names with backticks in
+  inline styles. Use plain text or single quotes.
+
+## Mobile touch UX patterns (iOS Safari)
+
+Hard-won rules from iPhone PWA testing. Apply to every new
+interactive surface on mobile — these aren't optional polish.
+
+- **Gate `:hover` to pointer-fine devices.** Wrap any `:hover` rule
+  on a tappable element in `@media (hover: hover) and (pointer: fine)
+  { ... }`. iOS Safari treats first-tap as hover and second-tap as
+  click on elements that have both `:hover` AND a click handler —
+  producing the "first tap only highlights, second tap activates"
+  two-step. Affected: `mobile-header__compose`, `todo-list__item`,
+  `todo-list__items--done .todo-list__item`, every BTN with a hover
+  variant.
+- **Don't put `cursor: text` on clickable elements.** iOS reads
+  `cursor: text` as a hint that the element is text content and
+  shows a text cursor on first tap before recognizing it as a click
+  target. Use `cursor: pointer` (or `inherit` from a pointer parent)
+  for clickable surfaces, even text-containing ones. This was the
+  root cause of the to-do row's "first tap does nothing" bug.
+- **Put `touch-action: manipulation` on the WHOLE tap surface.**
+  Not the inner span. On a small inner element, iOS still runs
+  gesture disambiguation on taps landing in the surrounding padding.
+  `touch-action: manipulation` disables the 300ms tap delay AND
+  prevents the second tap being read as smart-zoom — but only for
+  the area it actually covers.
+- **Add `-webkit-tap-highlight-color: transparent`** on tap targets.
+  Suppresses the iOS gray tap flash users mistake for "highlighted
+  but nothing happened." Pairs naturally with the hover-gate fix.
+- **Add `-webkit-touch-callout: none`** on text-containing tap
+  targets to prevent the iOS long-press magnifier from popping up
+  and interrupting taps that hold a fraction too long.
+- **Avoid `will-change: transform` on elements containing
+  focusable inputs.** Creates a compositor layer where iOS's
+  focus/viewport-zoom heuristics misbehave — textareas auto-zoom
+  on focus even with explicit `font-size: 16px`. Remove unless
+  actively animating; transitions don't need it for short single-
+  row movements. (The to-do row had this and it was triggering the
+  zoom-then-stuck-viewport symptom even after the 16px fix.)
+- **Explicit `font-size: 16px` on inputs/textareas (not `1rem`).**
+  styles.scss has a global `@media (max-width: 767px)` rule
+  enforcing 16px on every input/textarea, but stating it locally on
+  the surfaces where iOS auto-zoom matters most (entry textareas,
+  to-do edit, add-tag input, etc.) is defense-in-depth — protects
+  against a future global-rule refactor silently reintroducing the
+  zoom and keeps the iOS-zoom intent obvious at the call site.
+- **Don't stack touch handlers + gesture libraries on the same
+  element** if you also want fast clicks. Custom touchstart/
+  touchmove/touchend handlers AND cdkDrag on the same `<li>` made
+  iOS wait to disambiguate "tap vs. start-of-gesture" before
+  firing click, costing the first-tap response. The to-do swipe-
+  to-delete was removed in May 2026 for this reason; replaced with
+  an always-visible × button. If a gesture is genuinely needed,
+  put it on a dedicated handle child element, not the click target.
+
+When debugging a mobile UX issue that doesn't reproduce on desktop,
+run through this list before assuming it's a browser bug.
 
 ## Typography standard
 
@@ -641,6 +721,17 @@ gotchas where this has slipped:
   `/notifications`, `/todos`, `/favorites`, `/streak-history`).
   When a UI decision lands in the embedded variant, propagate to
   the standalone route — and vice versa.
+- **Dual-rendered Daily Spark (the worst offender).** The Daily
+  Spark has TWO collapse/expand states in two different components:
+  `sparkExpanded` in `today-panel.component.ts` (desktop hero) and
+  `todayCollapsed` in `dashboard.component.ts` (mobile-only wrapper
+  around the whole today-panel). Plus a now-hidden third
+  `motivationExpanded` in `dashboard.component.ts` (`.motivation-
+  card--mobile`, display:none everywhere). When a Daily-Spark bug
+  is reported "on mobile", grep both components — fixing the wrong
+  one is the easy mistake. The pattern generalises: any feature
+  that has been "moved into the Today panel" still has an old
+  mobile-only implementation hanging around. Search broadly.
 - **Button placement.** Save / Edit / Delete moved to the bottom
   of forms is a project convention; verify both the embedded
   reader/editor AND the standalone page reflect it.
@@ -659,6 +750,19 @@ desktop-only.
 4. Use `--no-verify` or `--no-gpg-sign` to bypass hooks.
 5. Replace the brand cyan `#12C4E3` with a darker teal.
 6. Replace the live Fraunces wordmark with a PNG raster.
+7. Reintroduce swipe-to-delete (or any custom horizontal-touch
+   gesture) on a row that's ALSO the click-to-edit target. The
+   gesture-vs-tap disambiguation costs iOS the first-tap response
+   and confuses every user. The to-do list went through this
+   loop in May 2026; resolved by removing the gesture in favour
+   of a visible × button. If you need both, put the gesture on a
+   dedicated handle child element, never the row body.
+8. Persist transient UI state (collapse/expand, panel-open,
+   "did I scroll past this?") to localStorage scoped by origin
+   alone. It survives logout/login and confuses users when they
+   "reset" and the state persists. In-memory by default; only
+   persist with a per-user-id key AND a clear reset path. See
+   the `cc_today_collapsed` removal in May 2026.
 7. Mass-rename routes/files without explicit instruction (URL bookmarks).
 
 ## Security posture (current state)
