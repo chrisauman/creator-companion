@@ -239,6 +239,15 @@ verify each.
 
 - **Accent:** `#12C4E3` (the only blue/cyan in the app). Hover variant:
   `#0bd2f0`. **Never darker teal.**
+- **Marketing-site color latitude (deliberate exception).** The brand
+  cyan-only rule applies to the **app** (`web/creator-companion-web/`).
+  The **marketing site** (`marketing/`) is allowed to be louder — the
+  homepage hero uses a multi-stop rainbow gradient (cyan → indigo →
+  purple → pink → amber) as a deliberate "expressive on the outside,
+  focused on the inside" positioning. Don't flatten it during an
+  audit. New marketing sections should still anchor in brand cyan;
+  the rainbow is the hero's signature, not a license for arbitrary
+  color use across every marketing surface.
 - **Ink:** `#0c0e13` / `#1a1d24`.
 - **Cream gradient:** `#fdfaf2` → `#f6f1e6`.
 - **Primary CTAs:** black bg + white text default; brighter cyan

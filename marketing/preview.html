@@ -94,15 +94,27 @@
       <h1 class="hero__title">
         The daily journal<br>for <em>creative people</em>
       </h1>
+      <!-- Positioning line — names the audience explicitly so the
+           right visitor self-identifies in 2 seconds. Sits between
+           title and sub so it reads as a clarifier without
+           interrupting the title→sub→CTA scan. -->
+      <p class="hero__audience">
+        For writers, artists, musicians, filmmakers, and makers of every kind.
+      </p>
       <p class="hero__sub">
         Show up for your creative work every day. Write, reflect, and build a streak
         that keeps you accountable — all in one private, beautifully simple journal.
       </p>
+      <!-- Single CTA — the previous "See pricing →" ghost button
+           split the click. Trial is the only primary path; pricing
+           has its own section one scroll down. -->
       <div class="hero__actions">
         <a href="signup.html" class="btn btn--hero-primary">Start free trial</a>
-        <a href="pricing.html" class="btn btn--hero-ghost">See pricing →</a>
       </div>
     </div>
+    <!-- Trust strip trimmed 4 → 3. "Cancel any time" moved into the
+         final CTA's note line — it's reassurance at the moment of
+         decision, not a hero header. -->
     <div class="hero__strips" aria-hidden="true">
       <div class="hero__strip">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -117,11 +129,6 @@
       <div class="hero__strip">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22V12"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/><circle cx="12" cy="5" r="3"/></svg>
         Install on any device
-      </div>
-      <div class="hero__strip-div" aria-hidden="true"></div>
-      <div class="hero__strip">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-        Cancel any time
       </div>
     </div>
   </section>
@@ -370,68 +377,16 @@
     </div>
   </section>
 
-  <!-- ── Feature 4: Privacy + Ownership ───────────────────────────────── -->
-  <section class="feat-section feat-section--light">
-    <div class="container">
-      <div class="feat feat--text-right">
+  <!-- Privacy + Ownership feature section removed May 2026 — it was
+       a trust check, not a buying trigger, and ate a full screen of
+       scroll for a message that should be a quick confirm rather
+       than a sales pitch. The four bullets that lived here are now
+       distributed: "No social features", "Your data exports", and
+       "48h trash recovery" live in the compact trust band that
+       sits below pricing (just before the install strip). "Cancel
+       any time" moved into the final CTA's note line, where it
+       lands at the moment of decision. -->
 
-        <div class="feat__visual">
-          <!-- Two-panel trust mockup -->
-          <div class="mock-trust">
-            <div class="mock-trust-card">
-              <div class="mock-trust-card__icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-              </div>
-              <h4>Completely private</h4>
-              <p>No social features. No public posts. No feed. No audience. What you write stays between you and the page — always.</p>
-              <div class="mock-trust-card__pills">
-                <span>No sharing</span>
-                <span>No tracking</span>
-                <span>No ads</span>
-              </div>
-            </div>
-            <div class="mock-trust-card">
-              <div class="mock-trust-card__icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              </div>
-              <h4>Your data, always yours</h4>
-              <p>Download everything as JSON or plain text any time, no questions asked. We'll never hold your words hostage behind a paywall.</p>
-              <div class="mock-trust-card__pills">
-                <span>JSON export</span>
-                <span>Plain text</span>
-                <span>Any time</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="feat__copy">
-          <span class="feat__eyebrow">Privacy &amp; Ownership</span>
-          <h2 class="feat__heading">Your words belong<br>to you. Full stop.</h2>
-          <p class="feat__body">Journaling is one of the most intimate things a person can do. Creator Companion has no social layer, no advertising, and no incentive to monetize your writing. Your entries exist for one person: you.</p>
-          <ul class="feat__bullets">
-            <li>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-              No social features or public profiles
-            </li>
-            <li>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-              Export everything to JSON or plain text, any time
-            </li>
-            <li>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-              Deleted entries recoverable for 48 hours
-            </li>
-            <li>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-              Cancel any time — your export comes with you
-            </li>
-          </ul>
-        </div>
-
-      </div>
-    </div>
-  </section>
 
   <!-- ── How it works ──────────────────────────────────────────────────── -->
   <section class="how">
@@ -455,11 +410,11 @@
           <h3>Build the habit</h3>
           <p>Come back tomorrow. Watch your streak grow and your archive fill with your creative journey.</p>
         </div>
-        <div class="step">
-          <div class="step__num">04</div>
-          <h3>Keep going for $5.99/month</h3>
-          <p>When your trial ends, subscribe at $5.99/month or $49.99/year to keep your streak alive. Cancel any time.</p>
-        </div>
+        <!-- Earlier there was a step 04 here ("Keep going for $5.99/month")
+             but that's pricing dressed up as onboarding — disguising the
+             ask doesn't help conversion, it confuses the model of what
+             "How it works" promises. Pricing lives in its own section
+             immediately below; no need to pre-empt it here. -->
       </div>
     </div>
   </section>
@@ -476,16 +431,28 @@
           <div class="plan__badge">10-day free trial</div>
           <div class="plan__name">Creator Companion</div>
           <div class="plan__price"><span class="plan__amount">$5.99</span> <span class="plan__per">/ month</span></div>
-          <div class="plan__annual">or $49.99/year — save $22</div>
+          <!-- "save $22" gets brand-cyan emphasis to match the SAVE!
+               call-out on the app's account page. Same hook, same
+               visual treatment — brand consistency between marketing
+               and product. -->
+          <div class="plan__annual">
+            or $49.99/year <span class="plan__save">— save $22</span>
+          </div>
+          <!-- Bullet list trimmed 9 → 6. Reordered outcome-first
+               (Daily Spark, streak protection, exports) before the
+               operational items. Removed limit-style bullets ("Up to
+               5 entries/day", "Up to 2,500 words", "Up to 20 photos
+               per entry", "Backfill past entries (2 days)") — they
+               read as restrictions, not benefits, and almost no
+               trial-stage user is calibrated to know whether those
+               caps matter. Reintroduce on the pricing.html deep
+               page if you want the full schedule. -->
           <ul class="plan__features">
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Up to 5 entries per day</li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Up to 2,500 words per entry</li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Up to 20 photos per entry</li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Backfill past entries (2 days)</li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Streak pause (10 days/month)</li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Mood tracking &amp; favorites</li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Up to 5 custom reminders/day</li>
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Daily Spark — 290+ curated insights</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Streak tracking with 10-day pause</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Mood tracking, tags, and favorites</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Up to 5 custom daily reminders</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Photo attachments on every entry</li>
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> JSON &amp; plain-text export, any time</li>
           </ul>
           <a href="signup.html" class="btn btn--plan-primary">Start free trial</a>
@@ -493,6 +460,45 @@
       </div>
 
       <p class="pricing-link"><a href="pricing.html">See the full feature list →</a></p>
+    </div>
+  </section>
+
+  <!-- ── Trust band (replaces the Privacy + Ownership full section) ──
+       Compact 3-icon row covering the same trust message in 1/4 the
+       scroll. Sits after pricing so it does its work at the moment
+       the visitor is weighing "should I sign up?" — the right
+       moment for "your data stays yours" reassurance. -->
+  <section class="trust-band">
+    <div class="container">
+      <div class="trust-band__items">
+        <div class="trust-item">
+          <div class="trust-item__icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <div class="trust-item__text">
+            <p class="trust-item__title">No social, no ads</p>
+            <p class="trust-item__sub">Your entries exist for one person: you.</p>
+          </div>
+        </div>
+        <div class="trust-item">
+          <div class="trust-item__icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </div>
+          <div class="trust-item__text">
+            <p class="trust-item__title">Your words, exportable</p>
+            <p class="trust-item__sub">Download as JSON or plain text any time.</p>
+          </div>
+        </div>
+        <div class="trust-item">
+          <div class="trust-item__icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          </div>
+          <div class="trust-item__text">
+            <p class="trust-item__title">48-hour trash recovery</p>
+            <p class="trust-item__sub">Deleted entries restorable for two days.</p>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -537,7 +543,14 @@
       <h2 class="cta-final__title">Your streak starts<br><em>right now.</em></h2>
       <p class="cta-final__sub">Join creative people who show up every day. Try free for 10 days, no credit card needed.</p>
       <a href="signup.html" class="btn btn--cta-primary">Start free trial</a>
-      <p class="cta-final__note">10-day free trial · $5.99/mo or $49.99/yr · Your data belongs to you</p>
+      <!-- Friction-killer line, placed right under the button at
+           the moment of decision. Removes the "is this going to be
+           a 10-form-field onboarding?" anxiety. -->
+      <p class="cta-final__friction">Email + password. Start writing in 30 seconds.</p>
+      <!-- Note line picks up "Cancel any time" from the (now slimmed
+           three-item) hero strip — reassurance lands harder here,
+           next to the button, than as a header item. -->
+      <p class="cta-final__note">10-day free trial · $5.99/mo or $49.99/yr · Cancel any time</p>
     </div>
   </section>
 
