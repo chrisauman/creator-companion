@@ -130,12 +130,12 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
              [class.sidebar__compose--collapsed]="collapsed()"
              [routerLink]="['/dashboard']"
              [queryParams]="{compose: 1}"
-             [title]="collapsed() ? 'Log Today\\'s Progress' : null">
+             [title]="collapsed() ? 'Create entry' : null">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                  stroke-width="2.4" stroke-linecap="round">
               <path d="M12 5v14M5 12h14"/>
             </svg>
-            <span class="sidebar__compose-label" *ngIf="!collapsed()">Log Progress</span>
+            <span class="sidebar__compose-label" *ngIf="!collapsed()">Create Entry</span>
           </a>
         }
 
@@ -818,9 +818,9 @@ const COLLAPSE_KEY = 'cc_sidebar_collapsed';
       border: none;
       border-radius: 999px;
       font-family: inherit;
-      /* Reverted to .8125rem (13px). The shorter "Log Progress" label
-         fits comfortably next to the 36px search button without the
-         earlier font-shrink we needed for "Log Today's Progress". */
+      /* .8125rem (13px). "Create Entry" is the same character count
+         as the prior "Log Progress" label, so it fits comfortably
+         next to the 36px search button without any font-shrink. */
       font-size: .8125rem;
       font-weight: 600;
       cursor: pointer;
