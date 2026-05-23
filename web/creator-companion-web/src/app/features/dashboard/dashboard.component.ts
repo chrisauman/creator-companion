@@ -1107,33 +1107,31 @@ export class DashboardComponent implements OnInit {
   rightColumnMode      = signal<'today' | 'reading' | 'composing' | 'editing' | 'notifications' | 'todos' | 'favorites' | 'streak-history'>('today');
 
   /** Mobile-only collapse state for the "Today's Spark and Prompts" panel
-   *  (Daily Spark + Daily Prompt + Mood grid). Persisted in
-   *  localStorage so the user's open/closed preference survives
-   *  reloads. Default is COLLAPSED on first visit — entries below
-   *  the fold matter more than the inspiration block, so the entry
-   *  list should be visible without scrolling past the panel. The
-   *  chevron + summary label still signal that the section exists
-   *  and can be expanded. Users who have explicitly opened it
-   *  ('0' in localStorage) keep the expanded state. */
-  private static readonly TODAY_COLLAPSED_KEY = 'cc_today_collapsed';
-  todayCollapsed = signal<boolean>(this.readTodayCollapsed());
-
-  private readTodayCollapsed(): boolean {
-    try {
-      const stored = localStorage.getItem(DashboardComponent.TODAY_COLLAPSED_KEY);
-      // '0' = user has explicitly expanded → keep expanded.
-      // '1' or absent → collapsed (default for new sessions).
-      return stored !== '0';
-    }
-    catch { return true; }
-  }
+   *  (Daily Spark + Daily Prompt + Mood grid).
+   *
+   *  Always defaults to COLLAPSED on every fresh dashboard mount. NO
+   *  persistence — earlier this signal was hydrated from a
+   *  `cc_today_collapsed` localStorage key so the user's expanded
+   *  preference survived across sessions. That turned out to be the
+   *  wrong default: once a user expanded the panel once, it would
+   *  stay expanded forever (including across logout/login because
+   *  localStorage isn't cleared by auth changes), which defeated the
+   *  whole "entries below the fold matter more than the inspiration
+   *  block" rationale.
+   *
+   *  New behaviour per Chris's May 2026 call: every dashboard arrival
+   *  → collapsed. The user can still tap the chevron to expand within
+   *  a session, but the expansion is purely transient. We also
+   *  proactively clear the legacy localStorage key on construction so
+   *  existing accounts with the stale '0' value don't get tripped up
+   *  by some other read path resurrecting it.
+   */
+  private static readonly LEGACY_TODAY_COLLAPSED_KEY = 'cc_today_collapsed';
+  todayCollapsed = signal<boolean>(true);
 
   toggleTodayCollapsed(): void {
-    const next = !this.todayCollapsed();
-    this.todayCollapsed.set(next);
-    try {
-      localStorage.setItem(DashboardComponent.TODAY_COLLAPSED_KEY, next ? '1' : '0');
-    } catch { /* private mode — fall back to in-memory only */ }
+    this.todayCollapsed.set(!this.todayCollapsed());
+    // Intentionally no localStorage write. Expansion is per-session.
   }
 
   /**
@@ -1261,6 +1259,16 @@ export class DashboardComponent implements OnInit {
     this.auth.loadCapabilities().subscribe(caps => this.isPaid.set(caps.canFavorite));
     this.initPushNudge();
     this.applySectionQueryParam();
+
+    // Clean up the legacy cc_today_collapsed key from localStorage if
+    // it's still hanging around from before we removed the persistence.
+    // Without this, any leftover value is just dead bytes in the user's
+    // browser; not actively harmful since nothing reads it anymore,
+    // but tidy. Try/catch in case localStorage is unavailable (Safari
+    // private mode, etc).
+    try {
+      localStorage.removeItem(DashboardComponent.LEGACY_TODAY_COLLAPSED_KEY);
+    } catch { /* private mode — nothing to clean */ }
 
     // Re-apply section param on subsequent navigations (e.g. user clicks
     // a sidebar nav item while already on /dashboard).
