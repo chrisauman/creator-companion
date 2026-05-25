@@ -441,6 +441,13 @@ interface PendingImage {
       background: var(--color-surface);
       max-width: 760px;
       margin: 0 auto;
+      /* Bottom padding gives the Save button (last element in the
+         happy path) white-card breathing room before the card edge
+         on mobile. Without it the button sat flush against the
+         bottom border which read as "cut off". The outer 80px
+         padding on .editor-main is grey-area below the card —
+         this is the equivalent inside the card. */
+      padding: 0 0 1.5rem;
     }
     @media (min-width: 768px) {
       .editor-main .container {
@@ -552,21 +559,33 @@ interface PendingImage {
     .footer-hint--warn { color: var(--color-streak); }
 
     /* ── Entry date row (above title) ─────────────────────────── */
+    /* Restructured May 2026: was a horizontal flex with the label
+       inline next to the date-picker buttons, styled as an eyebrow
+       (caps, 11px, muted). That made it the only "form section
+       header" on the page using eyebrow styling while every other
+       section (Tags, How are you feeling?) used a bolder sentence-
+       case label sitting above its controls. Now matches them:
+       vertical stack, label on top, sentence-case primary-text
+       label. Adds breathing room above so the section header has
+       visual weight against the white card top edge. */
     .date-row {
       display: flex;
-      align-items: center;
+      flex-direction: column;
+      align-items: flex-start;
       gap: .75rem;
-      flex-wrap: wrap;
-      padding-bottom: 1rem;
-      margin-bottom: 1rem;
+      padding-bottom: 1.25rem;
+      margin-top: .75rem;
+      margin-bottom: 1.25rem;
       border-bottom: 1px solid var(--color-border);
     }
     .date-row__label {
-      font-size: .6875rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .14em;
-      color: var(--color-text-3);
+      /* Mirrors .tag-section__label and .mood-label — same size,
+         same weight, same color. One section-header treatment
+         across the form so the eye reads consistent hierarchy
+         from Entry date down through Tags and Mood. */
+      font-size: .9375rem;
+      font-weight: 600;
+      color: var(--color-text);
     }
 
     /* Title input scale matches the column-3 reader title (1.625rem /
