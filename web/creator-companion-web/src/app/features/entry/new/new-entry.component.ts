@@ -55,15 +55,11 @@ interface PendingImage {
         <div class="reader-top__breadcrumb">
           New entry · <strong>{{ selectedDateLabel() }}</strong>
         </div>
-        <!-- Save moved to the bottom of the form. Top toolbar carries
-             only the auto-save indicator now. -->
-        <div class="reader-top__actions">
-          <div class="save-indicator-mini" [class]="'save-indicator--' + saveState()">
-            <span *ngIf="saveState() === 'saving'">Saving…</span>
-            <span *ngIf="saveState() === 'saved'">Draft saved</span>
-            <span *ngIf="saveState() === 'error'">Save failed</span>
-          </div>
-        </div>
+        <!-- Auto-save indicator removed May 2026 — it was overlapping
+             the breadcrumb date on narrow phones and added no value
+             since drafts persist invisibly. Save failures still
+             surface via the explicit submitError block below the
+             form when the user actually tries to save the entry. -->
       </div>
 
       <!-- Editor -->
@@ -430,9 +426,17 @@ interface PendingImage {
       &--error  { color: var(--color-danger); }
     }
 
+    /* Edge-to-edge white on mobile to match the edit-entry page
+       (.main-content there is also white + zero horizontal padding).
+       Previously this had 1.25rem top / 1.125rem horizontal outer
+       padding which drew a grey margin around the form's white card
+       — inconsistent with how editing an existing entry rendered.
+       Now the white surface carries to the screen edges and only
+       the .container provides the inside-the-card breathing room. */
     .editor-main {
       flex: 1;
-      padding: 1.25rem 1.125rem calc(80px + env(safe-area-inset-bottom, 0px));
+      padding: 0 0 calc(80px + env(safe-area-inset-bottom, 0px));
+      background: var(--color-surface);
     }
     @media (min-width: 768px) {
       .editor-main { padding: 1.5rem 0 4rem; }
@@ -441,13 +445,14 @@ interface PendingImage {
       background: var(--color-surface);
       max-width: 760px;
       margin: 0 auto;
-      /* Bottom padding gives the Save button (last element in the
-         happy path) white-card breathing room before the card edge
-         on mobile. Without it the button sat flush against the
-         bottom border which read as "cut off". The outer 80px
-         padding on .editor-main is grey-area below the card —
-         this is the equivalent inside the card. */
-      padding: 0 0 1.5rem;
+      /* Mobile: horizontal padding now lives on the container (since
+         the outer .editor-main went edge-to-edge) so form content
+         keeps its breathing room from the screen edges. Bottom
+         padding gives the Save button white-card breathing room
+         before the card's visible bottom — without it the button
+         sat flush against the safe-area transition which read as
+         "cut off". */
+      padding: 1.25rem 1.125rem 1.5rem;
     }
     @media (min-width: 768px) {
       .editor-main .container {
