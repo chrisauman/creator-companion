@@ -364,16 +364,19 @@ a:hover { text-decoration: underline; }
 .hero__actions {
   display: flex; align-items: center; justify-content: center;
   gap: .875rem; flex-wrap: wrap;
-  /* margin-bottom reduced from 6rem → 2rem May 2026 — the old value
-     added a tall blank gap between the "Start free trial" button
-     and the bullet strip below. The strip is still pinned to the
-     hero's bottom edge via margin-top:auto on .hero__strips, so
-     this tighter spacing only affects the visible distance from
-     the CTA down to the bullets, not the strip's own position. */
-  margin-bottom: 2rem;
+  margin-bottom: 0;
 }
 
-/* Feature strips pinned to bottom */
+/* Strips used to be pinned to the hero's bottom edge via
+   margin-top: auto, with a border-top giving them a "hero footer
+   band" feel. On tall desktop viewports that produced a large
+   blank gap between the CTA and the bullets that wasn't
+   carrying its weight. Now they flow naturally below the
+   centered hero__content with a small margin gap — the whole
+   hero content (text + CTA + strips) reads as one centered
+   block instead of two visually-separated pieces. The 100vw
+   + border-top + padding still preserves the "horizontal rail
+   of icons" visual rhythm. */
 .hero__strips {
   position: relative; z-index: 1;
   width: 100vw;
@@ -381,7 +384,7 @@ a:hover { text-decoration: underline; }
   gap: 0; flex-wrap: wrap;
   border-top: 1px solid rgba(255,255,255,.07);
   padding: 1.375rem 2rem;
-  margin-top: auto;
+  margin-top: 2.5rem;
 }
 .hero__strip {
   display: flex; align-items: center; gap: .5rem;
