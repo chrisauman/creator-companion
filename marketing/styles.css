@@ -312,10 +312,23 @@ a:hover { text-decoration: underline; }
 }
 
 .hero__title {
-  font-size: clamp(3rem, 7.5vw, 5.5rem);
+  /* Font cap reduced from 5.5rem → 4.25rem May 2026 so the longer
+     of the two title lines ("The digital companion", 21 chars)
+     fits inside the 820px hero content container at desktop sizes
+     without secondary wrapping. Previously the title rendered as
+     3-4 lines on wide viewports because the font ran past the
+     container before the manual <br> could take effect.
+     text-wrap: balance is the modern CSS hint that asks the
+     browser to balance line lengths across however many lines the
+     text needs — combined with the explicit <br>, this produces a
+     clean two-line layout on every viewport. Browsers without
+     text-wrap support (older Safari/Firefox) still honor the <br>
+     so the worst case is the old behaviour, not a new bug. */
+  font-size: clamp(2.25rem, 6.5vw, 4.25rem);
   font-weight: 800; line-height: 1.1; letter-spacing: -.035em;
   color: #fff;
   margin-bottom: 1.75rem;
+  text-wrap: balance;
 }
 .hero__title em {
   font-style: italic;
