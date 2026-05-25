@@ -342,7 +342,13 @@ a:hover { text-decoration: underline; }
 }
 .hero__title em {
   font-style: italic;
-  background: linear-gradient(135deg, #fff 30%, var(--cyan) 100%);
+  /* Gradient stops compressed May 2026 to push the cyan onto
+     "creative" as well as "people". Previously white 30% → cyan
+     100% kept the transition stretched across both words, so
+     "creative" rendered mostly white and only "people" read as
+     properly cyan. Now white 0% → cyan 45% means cyan dominates
+     by the end of "creative" and "people" sits in solid cyan. */
+  background: linear-gradient(135deg, #fff 0%, var(--cyan) 45%);
   -webkit-background-clip: text; background-clip: text;
   -webkit-text-fill-color: transparent;
 }
