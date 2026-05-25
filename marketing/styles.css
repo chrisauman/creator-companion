@@ -18,10 +18,19 @@
   --text-2:     #4b5568;
   --text-3:     #8892a4;
 
-  /* Cyan accent */
+  /* Cyan accent — brand-locked per CLAUDE.md ("the only blue/cyan
+     in the app/site"). Two colors only: #12C4E3 (primary) and
+     #0bd2f0 (hover variant, brighter). Anything darker drifts to
+     teal which the brand rule explicitly bans.
+     The `--cyan-dark` and `--cyan-mid` names are vestigial — they
+     used to hold a darker teal (#0891b2) and mid-teal (#0ba5c6)
+     that violated the brand rule. The names are kept to avoid
+     refactoring ~27 usages across this stylesheet; both now point
+     to brand-correct colors, so the names mislead but the result
+     is on-brand everywhere. */
   --cyan:       #12C4E3;
-  --cyan-dark:  #0891b2;
-  --cyan-mid:   #0ba5c6;
+  --cyan-dark:  #12C4E3;   /* was #0891b2 — brand-locked to primary */
+  --cyan-mid:   #0bd2f0;   /* was #0ba5c6 — now the brand hover variant */
   --cyan-dim:   rgba(18,196,227,0.12);
   --cyan-glow:  rgba(18,196,227,0.20);
 
