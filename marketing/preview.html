@@ -242,12 +242,14 @@
   </section>
 
   <!-- ── Section 2: Simple Reminders ──────────────────────────────────── -->
-  <!-- Replaced the previous "Writing experience" section (browser
-       mockup of the entry editor) with the Reminders pitch. The
-       browser mockup was the only desktop-rendered visual on the
-       page — going all-mobile for the four sections makes a
-       cleaner story on the phone-first market we're talking to. -->
-  <section class="feat-section feat-section--dim">
+  <!-- Background swapped from --dim to --dark May 2026 so the four
+       sections alternate cleanly light/dark/light/dark down the
+       page — gives the scroll a stronger rhythm than the earlier
+       light/dim/light/dark sequence. Phone mockup already had a
+       dark frame so it carries across either treatment; text
+       elements gain --inv modifiers below to read on the dark
+       background. -->
+  <section class="feat-section feat-section--dark">
     <div class="container">
       <div class="feat feat--text-right">
 
@@ -313,10 +315,10 @@
         </div>
 
         <div class="feat__copy">
-          <span class="feat__eyebrow">Simple Reminders</span>
-          <h2 class="feat__heading">A coach in<br>your back pocket.</h2>
-          <p class="feat__body">Every creative person needs a little help and support. Creator Companion is like having a coach in your back pocket — keeping you consistent and accountable.</p>
-          <ul class="feat__bullets">
+          <span class="feat__eyebrow feat__eyebrow--inv">Simple Reminders</span>
+          <h2 class="feat__heading feat__heading--inv">A coach in<br>your back pocket.</h2>
+          <p class="feat__body feat__body--inv">Every creative person needs a little help and support. Creator Companion is like having a coach in your back pocket — keeping you consistent and accountable.</p>
+          <ul class="feat__bullets feat__bullets--inv">
             <li>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
               Set up to 5 custom reminders a day — for journaling or any daily best practice.
