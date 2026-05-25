@@ -324,21 +324,13 @@ a:hover { text-decoration: underline; }
   -webkit-text-fill-color: transparent;
 }
 
-/* Audience-naming line that sits between hero__title and hero__sub.
-   Reads as a positioning clarifier — the right visitor self-
-   identifies in two seconds. Color is brighter than .hero__sub
-   (which is genuinely tertiary) but not full-white either: this is
-   a label, not a headline. clamp keeps it responsive without going
-   so small on mobile that it becomes vestigial. */
-.hero__audience {
-  font-size: clamp(.9375rem, 1.6vw, 1.0625rem);
-  font-weight: 500;
-  color: rgba(255,255,255,.72);
-  letter-spacing: -.005em;
-  max-width: 640px;
-  margin: -.5rem auto 1.25rem;
-  line-height: 1.5;
-}
+/* .hero__audience rule lived here until May 2026 — the audience-
+   naming line ("For writers, artists, musicians, filmmakers...")
+   was removed once the new sub copy made the "support for
+   creative practice" positioning explicit enough that the
+   redundant audience callout could go. Rule deleted to keep the
+   stylesheet honest; restore from git history if it ever
+   returns. */
 
 .hero__sub {
   font-size: clamp(1rem, 2.2vw, 1.1875rem);
@@ -348,7 +340,14 @@ a:hover { text-decoration: underline; }
 
 .hero__actions {
   display: flex; align-items: center; justify-content: center;
-  gap: .875rem; flex-wrap: wrap; margin-bottom: 6rem;
+  gap: .875rem; flex-wrap: wrap;
+  /* margin-bottom reduced from 6rem → 2rem May 2026 — the old value
+     added a tall blank gap between the "Start free trial" button
+     and the bullet strip below. The strip is still pinned to the
+     hero's bottom edge via margin-top:auto on .hero__strips, so
+     this tighter spacing only affects the visible distance from
+     the CTA down to the bullets, not the strip's own position. */
+  margin-bottom: 2rem;
 }
 
 /* Feature strips pinned to bottom */
