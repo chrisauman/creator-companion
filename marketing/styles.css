@@ -998,6 +998,201 @@ a:hover { text-decoration: underline; }
 .pricing-link a { color: var(--cyan-dark); font-weight: 500; }
 .pricing-link a:hover { color: var(--text); }
 
+/* ── Feature showcase ────────────────────────────────────────────────────
+   Comprehensive "everything-you-get" block that lives directly under
+   pricing. Cream gradient surface matches the Daily Spark hero cards
+   inside the app — feels "abundant and warm" against the white pricing
+   card above and the white install strip below, so it reads as the
+   value moment of the page.
+
+   Layout: 2-column card grid on desktop, single-column on mobile.
+   Each card is benefit-led copy + a long bulleted feature list. The
+   list is meant to feel exhaustive on purpose — the more visible
+   value the visitor can scan, the more "less than a coffee" feels
+   like an understatement.
+
+   Closing micro-CTA reframes the cost at the bottom of the scroll
+   ("less than a single coffee") and offers the trial again with
+   friction-killing fine print. */
+.feature-showcase {
+  background: linear-gradient(180deg, #fdfaf2 0%, #f6f1e6 100%);
+  padding: 6rem 0;
+  border-top: 1px solid rgba(190,170,130,.22);
+  border-bottom: 1px solid rgba(190,170,130,.22);
+  position: relative;
+  overflow: hidden;
+}
+/* Subtle cyan glow in the top-right corner — matches the radial
+   glow on the app's Daily Spark hero card. Sits behind the
+   content, low opacity, decorative only. */
+.feature-showcase::before {
+  content: '';
+  position: absolute;
+  top: -10%; right: -10%;
+  width: 480px; height: 480px;
+  background: radial-gradient(circle, rgba(18,196,227,.18) 0%, transparent 65%);
+  pointer-events: none;
+  z-index: 0;
+}
+.feature-showcase .container { position: relative; z-index: 1; }
+
+.feature-showcase__head {
+  text-align: center;
+  max-width: 680px;
+  margin: 0 auto 4rem;
+  padding: 0 1.5rem;
+}
+.feature-showcase__eyebrow {
+  display: inline-block;
+  font-size: .8125rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .14em;
+  color: var(--cyan-dark);
+  margin-bottom: 1rem;
+}
+.feature-showcase__title {
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -.03em;
+  color: var(--text);
+  margin-bottom: 1.25rem;
+  text-wrap: balance;
+}
+.feature-showcase__sub {
+  font-size: 1.125rem;
+  color: var(--text-2);
+  line-height: 1.6;
+}
+
+.feature-showcase__grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+  max-width: 1100px;
+  margin: 0 auto 4rem;
+  padding: 0 1.5rem;
+}
+@media (max-width: 720px) {
+  .feature-showcase__grid {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+    padding: 0 1rem;
+  }
+}
+
+.feat-card {
+  background: #fff;
+  border: 1px solid rgba(190,170,130,.18);
+  border-radius: 20px;
+  padding: 2.25rem 2rem;
+  box-shadow: 0 2px 12px rgba(0,0,0,.03);
+  transition: transform .2s var(--ease), box-shadow .2s var(--ease);
+}
+.feat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,.06);
+}
+@media (max-width: 720px) {
+  .feat-card { padding: 1.75rem 1.5rem; }
+}
+.feat-card__icon {
+  display: inline-flex;
+  align-items: center; justify-content: center;
+  width: 48px; height: 48px;
+  background: var(--cyan-dim);
+  color: var(--cyan-dark);
+  border-radius: 14px;
+  margin-bottom: 1.25rem;
+}
+.feat-card__eyebrow {
+  display: block;
+  font-size: .75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: var(--cyan-dark);
+  margin-bottom: .5rem;
+}
+.feat-card__heading {
+  font-size: 1.375rem;
+  font-weight: 700;
+  letter-spacing: -.02em;
+  line-height: 1.25;
+  color: var(--text);
+  margin-bottom: .875rem;
+}
+.feat-card__benefit {
+  font-size: 1rem;
+  line-height: 1.55;
+  color: var(--text-2);
+  margin-bottom: 1.5rem;
+}
+.feat-card__list {
+  list-style: none;
+  padding: 0; margin: 0;
+  display: flex; flex-direction: column;
+  gap: .625rem;
+}
+.feat-card__list li {
+  display: flex; align-items: flex-start;
+  gap: .625rem;
+  font-size: .9375rem;
+  line-height: 1.5;
+  color: var(--text);
+}
+.feat-card__list li svg {
+  flex-shrink: 0;
+  color: var(--cyan-dark);
+  margin-top: .3125rem;
+}
+
+/* Closing block — sits at the bottom of the showcase, reframing
+   the cost at the moment the visitor has finished absorbing the
+   full value inventory. The price-line emphasizes the brand cyan
+   to echo the SAVE callout on the pricing card above. */
+.feature-showcase__close {
+  text-align: center;
+  max-width: 620px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+.feature-showcase__close-price {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: .5rem;
+  letter-spacing: -.015em;
+}
+.feature-showcase__close-price strong {
+  color: var(--cyan-dark);
+  font-weight: 800;
+}
+.feature-showcase__close-line {
+  font-size: 1.0625rem;
+  color: var(--text-2);
+  margin-bottom: 2rem;
+  line-height: 1.55;
+}
+.feature-showcase__close-btn {
+  /* Promoted to the dark-ink CTA-primary look matching the final
+     CTA at the bottom of the page. Same visual language so the
+     visitor recognizes "this is the action button" even after a
+     long scroll. */
+  background: var(--ink);
+  color: #fff;
+}
+.feature-showcase__close-btn:hover {
+  background: var(--cyan); color: #fff;
+}
+.feature-showcase__close-fine {
+  font-size: .875rem;
+  color: var(--text-3);
+  margin-top: 1.5rem;
+  letter-spacing: .005em;
+}
+
 /* ── Trust band ──────────────────────────────────────────────────────────
    Sits between Pricing and Install strip. Compact 3-icon row that
    replaces what used to be the full Privacy + Ownership feature
