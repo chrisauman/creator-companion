@@ -576,6 +576,134 @@ a:hover { text-decoration: underline; }
 }
 .mnav-item--active { color: var(--cyan); }
 
+/* ── Reminders mockup (Section 2) ────────────────────────────────────────
+   Lives inside .mock-phone__screen. Five-row list matching the actual
+   Reminders screen in the app: time on the left, message in the middle,
+   on/off toggle on the right. Empty/off rows are dimmed so the active
+   ones read as the primary content. */
+.mr-list {
+  flex: 1;
+  display: flex; flex-direction: column;
+  gap: 1px;
+  background: rgba(255,255,255,.05);
+  margin-top: .5rem;
+}
+.mr-row {
+  background: #111318;
+  display: grid;
+  grid-template-columns: 66px 1fr 32px;
+  align-items: center;
+  gap: .625rem;
+  padding: .75rem 1.125rem;
+}
+.mr-row--empty { opacity: .35; }
+.mr-time {
+  font-size: .75rem; font-weight: 700;
+  color: rgba(255,255,255,.85);
+  letter-spacing: -.01em;
+  font-variant-numeric: tabular-nums;
+}
+.mr-msg {
+  font-size: .75rem; font-weight: 500;
+  color: rgba(255,255,255,.5);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.mr-toggle {
+  width: 26px; height: 16px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.12);
+  position: relative;
+  flex-shrink: 0;
+  transition: background .15s;
+}
+.mr-toggle::after {
+  content: '';
+  position: absolute;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.6);
+  top: 2px; left: 2px;
+  transition: transform .15s;
+}
+.mr-toggle--on {
+  background: var(--cyan);
+}
+.mr-toggle--on::after {
+  background: #fff;
+  transform: translateX(10px);
+}
+
+/* ── To-do mockup (Section 3) ────────────────────────────────────────────
+   Persistent add-an-item bar at the top, drag-handle + circle-check +
+   text rows, a "Done" divider, then completed rows with line-through. */
+.mtodo-add {
+  display: flex; align-items: center;
+  gap: .5rem;
+  padding: .625rem 1.125rem;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  margin-top: .25rem;
+}
+.mtodo-add-plus {
+  color: rgba(255,255,255,.35);
+  font-size: 1rem; line-height: 1; font-weight: 300;
+  width: 14px; text-align: center;
+}
+.mtodo-add-text {
+  font-size: .75rem; color: rgba(255,255,255,.35); font-weight: 500;
+}
+.mtodo-list {
+  flex: 1;
+  display: flex; flex-direction: column;
+}
+.mtodo-item {
+  display: flex; align-items: center;
+  gap: .5rem;
+  padding: .6875rem 1.125rem;
+  border-bottom: 1px solid rgba(255,255,255,.05);
+}
+.mtodo-handle {
+  font-size: .625rem; color: rgba(255,255,255,.2);
+  letter-spacing: -2px;
+  width: 10px;
+  user-select: none;
+}
+.mtodo-handle--hidden { visibility: hidden; }
+.mtodo-check {
+  flex-shrink: 0;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,.25);
+  display: grid; place-items: center;
+  font-size: .625rem;
+  color: #fff;
+  background: transparent;
+}
+.mtodo-check--checked {
+  background: var(--cyan);
+  border-color: var(--cyan);
+  font-weight: 700;
+}
+.mtodo-text {
+  font-size: .75rem; font-weight: 500;
+  color: rgba(255,255,255,.85);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.mtodo-text--done {
+  color: rgba(255,255,255,.3);
+  text-decoration: line-through;
+  text-decoration-color: rgba(255,255,255,.2);
+}
+.mtodo-item--done { background: rgba(255,255,255,.015); }
+.mtodo-divider {
+  font-size: .625rem; font-weight: 700;
+  color: rgba(255,255,255,.3);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  padding: .875rem 1.125rem .5rem;
+  border-top: 1px solid rgba(255,255,255,.06);
+  margin-top: .25rem;
+}
+
 /* ── Browser mockup ──────────────────────────────────────────────────────── */
 .mock-browser {
   background: #13151e;
