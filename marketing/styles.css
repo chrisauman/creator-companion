@@ -296,7 +296,12 @@ a:hover { text-decoration: underline; }
 }
 
 /* Bumped to z-index: 2 so the waves (z-index: 1) sit safely behind. */
-.hero__content { position: relative; z-index: 2; max-width: 820px; width: 100%; }
+/* max-width bumped 820 → 1100 May 2026 to give the title room to
+   render on two lines at a bigger font (see .hero__title below).
+   The .hero__sub keeps its own narrower max-width:580 so paragraph
+   copy stays at a readable measure; only the title benefits from
+   the extra width. */
+.hero__content { position: relative; z-index: 2; max-width: 1100px; width: 100%; }
 
 .hero__badge {
   display: inline-flex; align-items: center; gap: .5rem;
@@ -312,19 +317,24 @@ a:hover { text-decoration: underline; }
 }
 
 .hero__title {
-  /* Font cap reduced from 5.5rem → 4.25rem May 2026 so the longer
-     of the two title lines ("The digital companion", 21 chars)
-     fits inside the 820px hero content container at desktop sizes
-     without secondary wrapping. Previously the title rendered as
-     3-4 lines on wide viewports because the font ran past the
-     container before the manual <br> could take effect.
-     text-wrap: balance is the modern CSS hint that asks the
-     browser to balance line lengths across however many lines the
-     text needs — combined with the explicit <br>, this produces a
-     clean two-line layout on every viewport. Browsers without
-     text-wrap support (older Safari/Firefox) still honor the <br>
-     so the worst case is the old behaviour, not a new bug. */
-  font-size: clamp(2.25rem, 6.5vw, 4.25rem);
+  /* Sizing iterated twice in May 2026:
+     · Original: clamp(3rem, 7.5vw, 5.5rem) — too big against the
+       820px container; "The digital companion" wrapped before the
+       manual <br> could fire, producing 3-4 lines on desktop.
+     · First fix: clamp(2.25rem, 6.5vw, 4.25rem) — shrank the font
+       so it fit the 820px container, but felt visibly small on
+       both desktop and mobile.
+     · Now: clamp(3rem, 7vw, 5rem) paired with the widened
+       hero__content (1100px). Mobile min restored to 3rem (matches
+       the original feel Chris liked). Desktop max held at 5rem so
+       the longer 21-char title line fits in 1100px even at the
+       weight-800 Plus Jakarta width — preserves the visible "hero
+       headline" weight without the wrapping bug.
+     text-wrap: balance is a modern CSS hint that asks the browser
+     to balance line lengths intelligently; combined with the
+     manual <br>, this delivers a clean two-line layout. Older
+     browsers without support fall back to honoring the <br>. */
+  font-size: clamp(3rem, 7vw, 5rem);
   font-weight: 800; line-height: 1.1; letter-spacing: -.035em;
   color: #fff;
   margin-bottom: 1.75rem;
