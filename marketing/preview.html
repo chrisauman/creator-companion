@@ -519,63 +519,22 @@
        redundant and was slowing the path from feature story to
        pricing. Pricing now flows directly after Section 4. -->
 
-  <!-- ── Pricing ───────────────────────────────────────────────────────── -->
-  <section class="pricing-section">
-    <div class="container">
-      <div class="section-eyebrow">Pricing</div>
-      <h2 class="section-heading" style="text-align:center">Simple, honest pricing.</h2>
-      <p class="section-sub" style="text-align:center;margin-left:auto;margin-right:auto">Try every feature free for 10 days. No credit card required.</p>
+  <!-- Standalone Pricing section removed May 2026 — the feature
+       showcase below now does double duty, presenting the full
+       value inventory AND the price in its closing micro-CTA.
+       Having both was repeating the $5.99 ask back-to-back. The
+       .pricing-section / .plan* CSS rules stay in styles.css as
+       orphan code; cleanup deferred. -->
 
-      <div class="plans plans--single">
-        <div class="plan plan--featured">
-          <div class="plan__badge">10-day free trial</div>
-          <div class="plan__name">Creator Companion</div>
-          <div class="plan__price"><span class="plan__amount">$5.99</span> <span class="plan__per">/ month</span></div>
-          <!-- "save $22" gets brand-cyan emphasis to match the SAVE!
-               call-out on the app's account page. Same hook, same
-               visual treatment — brand consistency between marketing
-               and product. -->
-          <div class="plan__annual">
-            or $49.99/year <span class="plan__save">— save $22</span>
-          </div>
-          <!-- Bullet list trimmed 9 → 6. Reordered outcome-first
-               (Daily Spark, streak protection, exports) before the
-               operational items. Removed limit-style bullets ("Up to
-               5 entries/day", "Up to 2,500 words", "Up to 20 photos
-               per entry", "Backfill past entries (2 days)") — they
-               read as restrictions, not benefits, and almost no
-               trial-stage user is calibrated to know whether those
-               caps matter. Reintroduce on the pricing.html deep
-               page if you want the full schedule. -->
-          <ul class="plan__features">
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Daily Spark — 290+ curated insights</li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Streak tracking with 10-day pause</li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Mood tracking, tags, and favorites</li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Up to 5 custom daily reminders</li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Photo attachments on every entry</li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> JSON &amp; plain-text export, any time</li>
-          </ul>
-          <a href="signup.html" class="btn btn--plan-primary">Start free trial</a>
-        </div>
-      </div>
-
-      <!-- "See the full feature list →" link removed — the full
-           feature showcase now lives directly below in the
-           .feature-showcase section, making the outbound link
-           redundant. Pricing.html still exists for direct linking
-           but it's no longer a primary path from the homepage. -->
-    </div>
-  </section>
-
-  <!-- ── Feature showcase — the full toolkit ──────────────────────────
-       Comprehensive everything-you-get presentation under pricing.
-       Eight cards covering every meaningful feature in the product,
-       paired with benefit-first writing. Cream gradient background
+  <!-- ── Feature showcase — the full toolkit + price reveal ───────────
+       Comprehensive everything-you-get presentation, also serving
+       as the page's primary pricing moment (the closing micro-CTA
+       at the bottom of the showcase carries the $5.99/month +
+       trial pitch). Eight cards covering every meaningful feature,
+       paired with benefit-first writing. Cream gradient surface
        matches the app's Daily Spark hero cards — feels "abundant
-       and warm" against the white pricing card above and the
-       white install strip below. Closing micro-CTA reframes the
-       cost ("less than a single coffee") at the moment the visitor
-       finishes scrolling the value inventory. -->
+       and warm" against the dark Section 4 above and the white
+       Install strip below. -->
   <section class="feature-showcase">
     <div class="container">
 
