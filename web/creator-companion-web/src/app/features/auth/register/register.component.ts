@@ -29,7 +29,17 @@ import { AuthService } from '../../../core/services/auth.service';
           After your trial, keep going for $5.99/month or $49.99/year.
         </div>
 
-        <div *ngIf="error()" class="alert alert--error">{{ error() }}</div>
+        <!-- When the error matches "already exists" we append recovery
+             links (Sign in / Reset password) so a user who forgot they
+             have an account isn't dead-ended in the form. Backend's
+             exact text is "An account with that email already exists." -->
+        <div *ngIf="error()" class="alert alert--error">
+          {{ error() }}
+          <span *ngIf="errorOffersRecovery()" class="alert__recovery">
+            <a routerLink="/login">Sign in →</a>
+            <a routerLink="/forgot-password">Reset password →</a>
+          </span>
+        </div>
 
         <form class="stack stack--md" (ngSubmit)="submit()" #f="ngForm">
           <div class="name-row">
@@ -81,18 +91,43 @@ import { AuthService } from '../../../core/services/auth.service';
 
           <div class="form-group">
             <label for="password">Password</label>
-            <input
-              id="password"
-              class="form-control"
-              type="password"
-              [(ngModel)]="password"
-              (ngModelChange)="onPasswordChange()"
-              name="password"
-              placeholder="Pick something strong"
-              autocomplete="new-password"
-              required
-              #passwordField="ngModel"
-            />
+            <div class="password-wrap">
+              <input
+                id="password"
+                class="form-control"
+                [type]="showPassword() ? 'text' : 'password'"
+                [(ngModel)]="password"
+                (ngModelChange)="onPasswordChange()"
+                name="password"
+                placeholder="Pick something strong"
+                autocomplete="new-password"
+                required
+                #passwordField="ngModel"
+              />
+              <!-- Eye toggle — flips the input's type between password
+                   and text. aria-pressed + aria-label update so screen
+                   readers announce the state. Pattern is duplicated on
+                   the login + reset-password + marketing signup
+                   surfaces for visual consistency. -->
+              <button type="button" class="password-toggle"
+                      (click)="showPassword.set(!showPassword())"
+                      [attr.aria-pressed]="showPassword()"
+                      [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'">
+                @if (showPassword()) {
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/>
+                    <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/>
+                    <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/>
+                    <line x1="2" y1="2" x2="22" y2="22"/>
+                  </svg>
+                } @else {
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                }
+              </button>
+            </div>
             <!-- Live requirements checklist. Mirrors StrongPasswordAttribute
                  on the server so the user sees exactly what's needed before
                  submitting. Each rule starts grey and flips to green as the
@@ -213,6 +248,53 @@ import { AuthService } from '../../../core/services/auth.service';
     .password-rules__item--met {
       color: #15803d;
     }
+
+    /* Password field with eye-toggle. Same pattern on login,
+       reset-password, and marketing signup. */
+    .password-wrap { position: relative; }
+    .password-wrap input { padding-right: 3rem; }
+    .password-toggle {
+      position: absolute;
+      right: .5rem;
+      top: 50%;
+      transform: translateY(-50%);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      background: transparent;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      color: var(--color-text-3);
+      border-radius: 6px;
+      transition: color .15s, background .15s;
+    }
+    .password-toggle:hover {
+      color: var(--color-text);
+      background: var(--color-surface-2);
+    }
+    .password-toggle:focus-visible {
+      outline: 2px solid var(--color-accent);
+      outline-offset: 2px;
+    }
+
+    /* Email-exists recovery row appended inside the .alert--error
+       when the backend message indicates the email is already
+       registered. Turns the dead-end error into a recovery path. */
+    .alert__recovery {
+      display: block;
+      margin-top: .5rem;
+      font-size: .875rem;
+      font-weight: 600;
+    }
+    .alert__recovery a {
+      color: inherit;
+      text-decoration: underline;
+      margin-right: 1rem;
+    }
+    .alert__recovery a:last-child { margin-right: 0; }
   `]
 })
 export class RegisterComponent {
@@ -225,6 +307,14 @@ export class RegisterComponent {
   password  = '';
   loading   = signal(false);
   error     = signal('');
+  /** Eye-toggle visibility on the password field. */
+  showPassword = signal(false);
+  /** True when the current error text suggests the email is already
+   *  registered — drives the inline Sign-in / Reset-password
+   *  recovery links so the user isn't dead-ended. Matches both the
+   *  backend's exact phrasing ("An account with that email already
+   *  exists.") and looser variants. */
+  errorOffersRecovery = computed(() => /already exists/i.test(this.error()));
   /** Drives the live password-rules checklist. Updated via onPasswordChange()
    *  so we don't have to track ngModel reactively. Mirrors the rules enforced
    *  by StrongPasswordAttribute on the server. */

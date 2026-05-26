@@ -126,11 +126,25 @@ export class ForgotPasswordComponent {
         this.devToken.set(res.resetToken ?? '');
         this.loading.set(false);
       },
-      error: () => {
-        this.error.set('Something went wrong. Please try again.');
+      error: err => {
+        this.error.set(this.describeForgotPasswordError(err));
         this.loading.set(false);
       }
     });
+  }
+
+  /** Mirrors the login + reset-password error-mapping pattern so
+   *  rate-limit and server-error states get user-actionable copy
+   *  instead of the same "Something went wrong" string. */
+  private describeForgotPasswordError(err: any): string {
+    const status: number | undefined = err?.status;
+    if (status === 0 || status === undefined)
+      return "Couldn't reach the server. Check your connection and try again.";
+    if (status === 429)
+      return 'Too many attempts. Please wait a minute and try again.';
+    if (status >= 500)
+      return 'Our servers had a hiccup. We have been notified. Please try again in a moment.';
+    return err?.error?.error ?? 'Something went wrong. Please try again.';
   }
 
   copyToken(): void {

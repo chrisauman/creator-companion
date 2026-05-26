@@ -38,16 +38,40 @@ import { AuthService } from '../../../core/services/auth.service';
 
           <div class="form-group">
             <label for="password">Password</label>
-            <input
-              id="password"
-              class="form-control"
-              type="password"
-              [(ngModel)]="password"
-              name="password"
-              placeholder="••••••••"
-              autocomplete="current-password"
-              required
-            />
+            <div class="password-wrap">
+              <input
+                id="password"
+                class="form-control"
+                [type]="showPassword() ? 'text' : 'password'"
+                [(ngModel)]="password"
+                name="password"
+                placeholder="••••••••"
+                autocomplete="current-password"
+                required
+              />
+              <!-- Eye toggle — flips input type between password
+                   and text. Same pattern as register + reset-password
+                   + marketing signup; styles are local to each
+                   component for now. -->
+              <button type="button" class="password-toggle"
+                      (click)="showPassword.set(!showPassword())"
+                      [attr.aria-pressed]="showPassword()"
+                      [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'">
+                @if (showPassword()) {
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/>
+                    <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/>
+                    <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/>
+                    <line x1="2" y1="2" x2="22" y2="22"/>
+                  </svg>
+                } @else {
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                }
+              </button>
+            </div>
           </div>
 
           <button class="btn btn--primary btn--full btn--lg" type="submit" [disabled]="loading()">
@@ -107,6 +131,39 @@ import { AuthService } from '../../../core/services/auth.service';
       letter-spacing: -.01em;
       color: var(--color-text);
     }
+
+    /* Password field with eye-toggle. Same pattern on register,
+       reset-password, and marketing signup. Local CSS per
+       component for now; pull into a shared partial when this
+       starts to drift. */
+    .password-wrap { position: relative; }
+    .password-wrap input { padding-right: 3rem; }
+    .password-toggle {
+      position: absolute;
+      right: .5rem;
+      top: 50%;
+      transform: translateY(-50%);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      background: transparent;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      color: var(--color-text-3);
+      border-radius: 6px;
+      transition: color .15s, background .15s;
+    }
+    .password-toggle:hover {
+      color: var(--color-text);
+      background: var(--color-surface-2);
+    }
+    .password-toggle:focus-visible {
+      outline: 2px solid var(--color-accent);
+      outline-offset: 2px;
+    }
   `]
 })
 export class LoginComponent {
@@ -117,6 +174,8 @@ export class LoginComponent {
   password   = '';
   loading    = signal(false);
   error      = signal('');
+  /** Eye-toggle visibility on the password field. */
+  showPassword = signal(false);
 
   submit(): void {
     if (!this.email || !this.password) return;

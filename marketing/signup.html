@@ -58,6 +58,85 @@
     .tz-note {
       font-size: .8125rem; color: var(--text-3); margin-top: .2rem;
     }
+
+    /* Password field with eye-toggle. Mirrors the in-app pattern. */
+    .password-wrap {
+      position: relative;
+    }
+    .password-wrap input[type="password"],
+    .password-wrap input[type="text"] {
+      /* Right padding leaves room for the absolutely-positioned eye
+         button without the password text colliding with it. */
+      padding-right: 3rem;
+    }
+    .password-toggle {
+      position: absolute;
+      right: .5rem;
+      top: 50%;
+      transform: translateY(-50%);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      background: transparent;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      color: var(--text-3);
+      border-radius: 6px;
+    }
+    .password-toggle:hover { color: var(--text); background: var(--bg-2, rgba(0,0,0,.04)); }
+    .password-toggle:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+    .password-toggle svg { display: block; }
+
+    /* Live password-rules checklist — ports the pattern from the
+       in-app register component so a user can't fail validation
+       when every bullet is green. Green-on-met, grey-on-unmet,
+       compact so it doesn't visually dominate the form. */
+    .password-rules {
+      list-style: none;
+      padding: 0;
+      margin: .5rem 0 0;
+      font-size: .8125rem;
+      line-height: 1.65;
+      color: var(--text-3);
+    }
+    .password-rules li {
+      display: flex;
+      align-items: center;
+      gap: .375rem;
+      transition: color .15s;
+    }
+    .password-rules__bullet {
+      display: inline-flex;
+      width: 14px;
+      justify-content: center;
+      font-weight: 700;
+    }
+    .password-rules__item--met {
+      color: #15803d;
+    }
+
+    /* "Email already exists" recovery — inline links that turn the
+       error from a dead-end into a recovery path. Appended into
+       the .form-error element when the backend returns the
+       "already exists" message specifically. */
+    .form-error__recovery {
+      display: block;
+      margin-top: .5rem;
+      font-size: .875rem;
+      font-weight: 600;
+    }
+    .form-error__recovery a {
+      color: var(--accent-dark, var(--accent));
+      text-decoration: underline;
+      margin-right: 1rem;
+    }
+    .form-error__recovery a:last-child { margin-right: 0; }
   </style>
 </head>
 <body class="signup-page">
@@ -130,9 +209,34 @@
 
         <div class="field">
           <label for="password">Password</label>
-          <input type="password" id="password" name="password"
-            placeholder="At least 8 characters"
-            autocomplete="new-password" required minlength="8">
+          <div class="password-wrap">
+            <input type="password" id="password" name="password"
+              placeholder="Choose a strong password"
+              autocomplete="new-password" required minlength="8">
+            <!-- Eye toggle — click to show/hide the password. SVG swaps
+                 via JS in the script block below. aria-label updates in
+                 lockstep so screen readers announce the state. -->
+            <button type="button" id="password-toggle" class="password-toggle"
+                    aria-label="Show password" aria-pressed="false">
+              <svg id="password-toggle-icon" width="20" height="20" viewBox="0 0 24 24"
+                   fill="none" stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+          <!-- Live rules checklist — mirrors the server's
+               StrongPasswordAttribute. Each <li> gets a "--met"
+               class once its rule is satisfied. Updated in the
+               password input handler below. -->
+          <ul class="password-rules" id="password-rules" aria-live="polite">
+            <li data-rule="length"><span class="password-rules__bullet">○</span> At least 8 characters</li>
+            <li data-rule="upper"><span class="password-rules__bullet">○</span> One uppercase letter</li>
+            <li data-rule="lower"><span class="password-rules__bullet">○</span> One lowercase letter</li>
+            <li data-rule="digit"><span class="password-rules__bullet">○</span> One number</li>
+            <li data-rule="special"><span class="password-rules__bullet">○</span> One special character (!@#$%^&amp;* etc.)</li>
+          </ul>
         </div>
 
         <div class="field">
@@ -200,8 +304,23 @@
       'Pacific/Auckland', 'America/Sao_Paulo', 'America/Argentina/Buenos_Aires'
     ];
 
-    // Try to detect the user's timezone automatically
+    // Try to detect the user's timezone automatically. If the
+    // detected zone isn't in our common list (e.g. Africa/Lagos,
+    // America/Indianapolis, Etc/GMT-5), prepend it as a selectable
+    // option so the user isn't forced to scroll or pick a near-miss.
+    // Previously a non-listed detected zone left the dropdown at
+    // its default empty option and submitters got the generic
+    // "Please fill in all fields" with no idea which field was the
+    // problem.
     const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+    if (detected && !commonZones.includes(detected)) {
+      const opt = document.createElement('option');
+      opt.value = detected;
+      opt.textContent = detected.replace('_', ' ') + ' (detected)';
+      opt.selected = true;
+      TZ_SELECT.appendChild(opt);
+    }
 
     commonZones.forEach(tz => {
       const opt = document.createElement('option');
@@ -209,6 +328,49 @@
       opt.textContent = tz.replace('_', ' ');
       if (tz === detected) opt.selected = true;
       TZ_SELECT.appendChild(opt);
+    });
+
+    // ── Password rules checklist ───────────────────────────────────────────
+    // Mirrors the server's StrongPasswordAttribute exactly. Updates
+    // live as the user types. The visual checklist removes the
+    // "type the password, submit, see what's wrong, retype" loop
+    // that drove form-abandonment before this change.
+    const PW_INPUT = document.getElementById('password');
+    const PW_RULES_EL = document.getElementById('password-rules');
+    const PW_RULES = {
+      length:  p => p.length >= 8,
+      upper:   p => /[A-Z]/.test(p),
+      lower:   p => /[a-z]/.test(p),
+      digit:   p => /\d/.test(p),
+      special: p => /[^a-zA-Z\d]/.test(p),
+    };
+    function updatePasswordRules() {
+      const p = PW_INPUT.value;
+      PW_RULES_EL.querySelectorAll('li').forEach(li => {
+        const rule = li.getAttribute('data-rule');
+        const met  = PW_RULES[rule] ? PW_RULES[rule](p) : false;
+        li.classList.toggle('password-rules__item--met', met);
+        const bullet = li.querySelector('.password-rules__bullet');
+        if (bullet) bullet.textContent = met ? '✓' : '○';
+      });
+    }
+    PW_INPUT.addEventListener('input', updatePasswordRules);
+
+    // ── Password visibility toggle ─────────────────────────────────────────
+    // Eye icon (visible) / eye-off (hidden when password is shown).
+    // SVG swaps via innerHTML rewrite. aria-label + aria-pressed
+    // keep screen readers in sync.
+    const PW_TOGGLE = document.getElementById('password-toggle');
+    const PW_TOGGLE_ICON = document.getElementById('password-toggle-icon');
+    const EYE_OPEN  = '<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>';
+    const EYE_CLOSED = '<path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/>';
+    PW_TOGGLE.addEventListener('click', () => {
+      const showing = PW_INPUT.getAttribute('type') === 'text';
+      const next = showing ? 'password' : 'text';
+      PW_INPUT.setAttribute('type', next);
+      PW_TOGGLE.setAttribute('aria-pressed', next === 'text' ? 'true' : 'false');
+      PW_TOGGLE.setAttribute('aria-label', next === 'text' ? 'Hide password' : 'Show password');
+      PW_TOGGLE_ICON.innerHTML = next === 'text' ? EYE_CLOSED : EYE_OPEN;
     });
 
     // ── Form submission ─────────────────────────────────────────────────────
@@ -291,18 +453,57 @@
               message = data.error;
             }
           }
-          errEl.textContent = message ?? 'Something went wrong. Please try again.';
+
+          // Rate-limit and server-error get specific copy so the
+          // user isn't told to "try again" when they should be
+          // told to wait, or led to think they did something wrong
+          // when our infrastructure hiccupped.
+          if (!message) {
+            if (res.status === 429) {
+              message = 'Too many attempts. Please wait a minute and try again.';
+            } else if (res.status >= 500) {
+              message = 'Our servers had a hiccup. We have been notified. Please try again in a moment.';
+            } else {
+              message = 'Something went wrong. Please try again.';
+            }
+          }
+
+          // Email-already-exists recovery. The backend's exact message
+          // is "An account with that email already exists." When we
+          // see it, append a recovery row with sign-in + reset-password
+          // links so a user who just forgot they have an account isn't
+          // stuck. Without this row the form is a dead end: their email
+          // is taken and there's no obvious next step.
+          errEl.innerHTML = '';
+          errEl.appendChild(document.createTextNode(message));
+          const looksLikeExistingAccount = /already exists/i.test(message);
+          if (looksLikeExistingAccount) {
+            const recovery = document.createElement('span');
+            recovery.className = 'form-error__recovery';
+            const signin = document.createElement('a');
+            signin.href = APP_URL + '/login';
+            signin.textContent = 'Sign in →';
+            const reset = document.createElement('a');
+            reset.href = APP_URL + '/forgot-password';
+            reset.textContent = 'Reset password →';
+            recovery.appendChild(signin);
+            recovery.appendChild(reset);
+            errEl.appendChild(recovery);
+          }
           errEl.style.display = 'block';
           btn.disabled = false;
           btn.textContent = 'Start free trial';
           return;
         }
 
-        // Hand the access token off to the app via sessionStorage so the
-        // user lands authenticated in onboarding without a second login.
-        if (data.accessToken) {
-          sessionStorage.setItem('cc_access_token', data.accessToken);
-        }
+        // Previously this block also wrote data.accessToken to
+        // sessionStorage as a "cross-origin handoff". That was dead
+        // code — sessionStorage is per-origin, so creatorcompanionapp.com
+        // (marketing) and app.creatorcompanionapp.com (app) don't
+        // share it AND nothing in the Angular app ever read the key.
+        // The real session bridge is the refresh cookie which is
+        // scoped to .creatorcompanionapp.com (Auth:CookieDomain) and
+        // works across the subdomain transition automatically.
 
         sucEl.textContent = 'Account created! Taking you to the app…';
         sucEl.style.display = 'block';
@@ -312,7 +513,10 @@
         }, 800);
 
       } catch (err) {
-        errEl.textContent = 'Could not connect. Please check your connection and try again.';
+        errEl.innerHTML = '';
+        errEl.appendChild(document.createTextNode(
+          'Could not connect. Please check your connection and try again.'
+        ));
         errEl.style.display = 'block';
         btn.disabled = false;
         btn.textContent = 'Start free trial';
