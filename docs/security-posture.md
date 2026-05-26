@@ -17,6 +17,18 @@ drift.**
 **Prior audit:** 2026-05 (original hardening pass referenced throughout
 CLAUDE.md)
 
+**Active hardening campaign (post-2026-05-25 review):**
+- 2026-05-25 — **Phase 1 shipped** (commit `eb4bcd2`): closes risks #1
+  (refresh-token-in-body), #3 (PII in JWT — email + firstName +
+  lastName + tier all removed), and #4 (CSP `connect-src` `https:`
+  no-op). See §§1.2, 1.1, and 8.2 below.
+- 2026-05-25 — **Phase 2 shipped** (commit TBD on push): HIBP
+  compromised-password check at registration, password change, and
+  password reset. See §4.6 below.
+- **Open phases** (3–6): distributed rate-limit counters, TOTP 2FA,
+  login telemetry + new-device email, admin-demotion immediate
+  revocation. Tracked in the conversation triage.
+
 ---
 
 ## 1. Authentication & session management
@@ -27,9 +39,14 @@ CLAUDE.md)
 - `ClockSkew = TimeSpan.Zero` (`Program.cs:163`) — no leniency at the
   expiry boundary. Means clock drift between client and Railway is a
   real concern; symptom is instant 401s after fresh login.
-- Claims: `sub` (user GUID), `email`, `role`. **Email-in-JWT is flagged
-  as Risk #3 in the 2026-05-25 audit** — broadcast in plaintext on
-  every request via the `Authorization` header.
+- **Claims (as of 2026-05-25 Phase 1):** `sub` (user GUID), `jti`
+  (unique token id), and `role` (only when the user is admin).
+  Previously also carried `email`, `firstName`, `lastName`, and `tier`
+  — those were continuous PII broadcasts via the `Authorization`
+  header on every request, visible to any TLS-inspecting proxy
+  (corporate firewall, browser extension, debug tooling, screen
+  share). Removed in Phase 1; frontend reads profile data via
+  `/v1/users/me` instead (already implemented).
 
 ### 1.2 Refresh tokens
 - Carrier: `HttpOnly Secure SameSite=None` cookie named `cc_refresh_token`,
@@ -52,10 +69,12 @@ CLAUDE.md)
 - Cap of **5 active refresh tokens per user**. Considered reducing to 3
   in the prior audit; left at 5 because most users have mobile + desktop
   + tablet legitimately.
-- **`/register` and `/login` responses still include `RefreshToken` in
-  the body.** Flagged as Risk #1 in the 2026-05-25 audit — frontend
-  correctly discards it, but the value travels over the wire and
-  contradicts the cookie-only posture.
+- **Refresh token NEVER appears in response bodies (as of 2026-05-25
+  Phase 1).** `AuthResponse.RefreshToken` is annotated
+  `[property: JsonIgnore]` so the field stays on the .NET type (the
+  controller still reads it to set the HttpOnly cookie) but is
+  omitted from JSON serialization on every endpoint. Brings the
+  wire format in line with the documented cookie-only contract.
 
 ### 1.3 Password hashing
 - BCrypt work factor **12** (OWASP 2024 recommendation).
@@ -242,6 +261,47 @@ chosen and justified:
 - Reminder slots: **5 fixed**, lazy-created on first GET.
 - Refresh tokens: 5 active per user (see §1.2).
 
+### 4.6 HIBP compromised-password check (2026-05-25, Phase 2)
+- **Goal:** reject passwords that have appeared in known public
+  breaches before we accept them. Defends against credential
+  stuffing (the dominant modern brute-force vector — attackers
+  replay breach lists rather than guessing).
+- **API:** Have I Been Pwned "Pwned Passwords" range endpoint
+  (`https://api.pwnedpasswords.com/range/{prefix}`). Free, no
+  account, no API key.
+- **Privacy posture:** k-anonymity protocol. We SHA-1 hash the
+  password locally and send only the first 5 hex characters of
+  the hash. HIBP returns ~500 candidate suffixes (padded via
+  `Add-Padding: true` header so response size leaks nothing
+  about the prefix). We check our suffix locally. **The
+  password and the full hash never leave our server.**
+- **Call sites:**
+  - `AuthService.RegisterAsync` — first thing the method does,
+    before the email-exists check.
+  - `AuthService.ResetPasswordAsync` — runs before the reset
+    token is consumed, so a compromised new password rejection
+    doesn't burn the user's valid token.
+  - `UsersController.ChangePassword` — runs AFTER the current-
+    password verification, so HIBP is only called for proven
+    authenticated callers (no random-probe oracle).
+- **Fail-open:** any transport error (timeout, DNS failure, 5xx,
+  malformed body) is caught in `HibpPasswordSafetyService`,
+  logged via the standard logger (so Sentry picks it up), and
+  the password is allowed through. HIBP outages must never
+  block legitimate users.
+- **Timeout:** 1 second per check.
+- **User-facing error:** *"This password has appeared in a
+  public data breach. Please choose a different one for your
+  safety."* — returned as 400 Bad Request from the controller.
+- **Files:**
+  - `Application/Interfaces/IPasswordSafetyService.cs`
+  - `Infrastructure/Services/HibpPasswordSafetyService.cs`
+  - Wired in `Program.cs` via `AddHttpClient<IPasswordSafetyService, HibpPasswordSafetyService>`
+- **Tests:** `AuthServiceTests.Register_CompromisedPassword_Rejected`,
+  `AuthServiceTests.ResetPassword_CompromisedPassword_Rejected`,
+  plus the test fixture's `NullPasswordSafetyService` for tests
+  that exercise other paths.
+
 ---
 
 ## 5. At-rest encryption + privacy of stored content
@@ -348,9 +408,10 @@ Sent by Vercel for the frontend project:
   - `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`
   - `font-src 'self' data: https://fonts.gstatic.com`
   - `img-src 'self' data: blob: https:`
-  - `connect-src 'self' <api hosts> https://*.r2.dev https://*.r2.cloudflarestorage.com https:`
-    — the trailing `https:` is flagged as Risk #4 in the 2026-05-25
-    audit (effective no-op of the directive's allowlist)
+  - `connect-src 'self' <api hosts> https://*.r2.dev https://*.r2.cloudflarestorage.com`
+    — tightened 2026-05-25 Phase 1 by removing the trailing
+    `https:` token that made the named allowlist effectively a
+    no-op. The directive is now a real allowlist.
   - `object-src 'none'`, `base-uri 'self'`, `frame-ancestors 'none'`
 - Cache-Control: long-lived for fingerprinted assets; `no-cache` for
   `index.html`, `sw.js`, `manifest.webmanifest`.
@@ -485,19 +546,35 @@ Logs and dashboards worth a regular scan:
 
 ## 15. Open risks (active, tracked separately)
 
-Eight findings from the 2026-05-25 defensive review are tracked
-separately for discussion + triage. They are NOT in this doc because
-this doc is the implemented-controls inventory. See the review report
-or the open security discussion for:
+The 2026-05-25 defensive review surfaced eight findings. As they're
+closed, they move into the implemented sections above. Current
+state:
 
-1. Refresh token returned in `register` / `login` response bodies
-2. Push subscription silent take-over (`PushController.Subscribe`)
-3. Email claim in JWT access token
-4. CSP `connect-src` includes `https:` (effective no-op of allowlist)
-5. Rate limit counters in-memory only (not distributed)
-6. Email verification not required before trial granted
-7. Storage upload before DB row commit (R2 orphan reconciliation)
-8. Admin demotion window — access token survives demotion until TTL
+**Closed:**
+- ~~#1 Refresh token returned in response bodies~~ → closed
+  2026-05-25 Phase 1. See §1.2.
+- ~~#3 Email + name + tier claims in JWT~~ → closed 2026-05-25
+  Phase 1 (broader than originally scoped — all unused PII
+  claims removed). See §1.1.
+- ~~#4 CSP `connect-src` includes `https:`~~ → closed 2026-05-25
+  Phase 1. See §8.2.
+
+**Open:**
+- **#2** — Push subscription silent take-over
+  (`PushController.Subscribe`). Needs threat-model discussion.
+- **#5** — Rate limit counters in-memory only (not distributed).
+  Tracked as Phase 3.
+- **#6** — Email verification not required before trial granted.
+  Product/policy call.
+- **#7** — Storage upload before DB row commit (R2 orphan
+  reconciliation). Operational, not security-critical.
+- **#8** — Admin demotion window — access token survives
+  demotion until TTL. Tracked as Phase 6 (depends on Phase 3 if
+  using the Redis-blocklist approach).
+
+**New defenses added (not closure of original findings, but new
+controls):**
+- 2026-05-25 Phase 2: HIBP compromised-password check. See §4.6.
 
 ---
 

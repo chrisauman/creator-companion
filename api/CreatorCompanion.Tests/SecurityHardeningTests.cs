@@ -59,7 +59,17 @@ public class SecurityHardeningTests
             => Task.CompletedTask;
     }
 
-    private static AuthService BuildAuth(AppDbContext db)
+    // Test double for the HIBP password-safety service. Default
+    // behaviour is "always safe" so existing tests don't need to
+    // pick non-pwned strings. New HIBP-specific tests can pass a
+    // custom service that throws.
+    private sealed class NullPasswordSafetyService : IPasswordSafetyService
+    {
+        public Task EnsurePasswordSafeAsync(string password, CancellationToken ct = default)
+            => Task.CompletedTask;
+    }
+
+    private static AuthService BuildAuth(AppDbContext db, IPasswordSafetyService? passwordSafety = null)
     {
         var config = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
@@ -73,6 +83,7 @@ public class SecurityHardeningTests
             .Build();
         return new AuthService(db, config, new NullEmailService(), new NullAuditService(), new NullStorageService(),
             new NullWelcomeEntryService(),
+            passwordSafety ?? new NullPasswordSafetyService(),
             Microsoft.Extensions.Logging.Abstractions.NullLogger<AuthService>.Instance);
     }
 

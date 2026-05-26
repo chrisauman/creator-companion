@@ -12,7 +12,11 @@ namespace CreatorCompanion.Api.Api.Controllers;
 [ApiController]
 [Route("v1/users")]
 [Authorize]
-public class UsersController(AppDbContext db, IStorageService storage, IImageProcessor imageProcessor) : ControllerBase
+public class UsersController(
+    AppDbContext db,
+    IStorageService storage,
+    IImageProcessor imageProcessor,
+    IPasswordSafetyService passwordSafety) : ControllerBase
 {
     // HEIC/HEIF allowed because iPhone defaults to it. ImageSharp can't
     // decode HEIC natively, but UploadProfileImage runs through
@@ -106,6 +110,20 @@ public class UsersController(AppDbContext db, IStorageService storage, IImagePro
 
         if (request.NewPassword == request.CurrentPassword)
             return BadRequest(new { error = "New password must be different from your current password." });
+
+        // HIBP compromised-password check. Runs AFTER current-password
+        // verification so the HIBP call only happens for authenticated,
+        // proven-identity callers — never for a random bad-actor probing
+        // the endpoint. Fail-open path silently allows; see
+        // HibpPasswordSafetyService for rationale.
+        try
+        {
+            await passwordSafety.EnsurePasswordSafeAsync(request.NewPassword);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
 
         // OWASP-2024 work factor (12). Logging in afterwards rehashes
         // legacy hashes transparently; new hashes start at the target.

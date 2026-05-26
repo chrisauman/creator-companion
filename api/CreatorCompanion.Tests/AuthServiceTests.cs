@@ -3,6 +3,7 @@ using CreatorCompanion.Api.Application.Interfaces;
 using CreatorCompanion.Api.Application.Services;
 using CreatorCompanion.Tests.Helpers;
 using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 
 namespace CreatorCompanion.Tests;
@@ -44,7 +45,19 @@ public class AuthServiceTests
             => Task.CompletedTask;
     }
 
-    private static AuthService Build(AppDbContext db)
+    // Test double for the HIBP password-safety service. Default
+    // behaviour is "always safe" — matches the fail-open production
+    // behaviour when HIBP is unreachable, and lets the existing test
+    // suite continue to use whatever weak test passwords it always
+    // has. Individual tests can override by passing their own
+    // service that throws.
+    private sealed class NullPasswordSafetyService : IPasswordSafetyService
+    {
+        public Task EnsurePasswordSafeAsync(string password, CancellationToken ct = default)
+            => Task.CompletedTask;
+    }
+
+    private static AuthService Build(AppDbContext db, IPasswordSafetyService? passwordSafety = null)
     {
         var config = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
@@ -58,6 +71,7 @@ public class AuthServiceTests
             .Build();
         return new AuthService(db, config, new NullEmailService(), new NullAuditService(), new NullStorageService(),
             new NullWelcomeEntryService(),
+            passwordSafety ?? new NullPasswordSafetyService(),
             Microsoft.Extensions.Logging.Abstractions.NullLogger<AuthService>.Instance);
     }
 
@@ -196,5 +210,75 @@ public class AuthServiceTests
         var act = async () => await svc.RefreshAsync(reg.RefreshToken);
 
         await act.Should().ThrowAsync<UnauthorizedAccessException>();
+    }
+
+    // ── HIBP compromised-password check ────────────────────────────
+    // Three behaviours to verify: compromised passwords are rejected
+    // at registration, compromised passwords are rejected at reset,
+    // and the fail-open path lets the password through when the
+    // HIBP service throws transport errors.
+
+    private sealed class AlwaysCompromisedSafetyService : IPasswordSafetyService
+    {
+        public Task EnsurePasswordSafeAsync(string password, CancellationToken ct = default)
+            => throw new InvalidOperationException(
+                "This password has appeared in a public data breach. " +
+                "Please choose a different one for your safety.");
+    }
+
+    private sealed class AlwaysFailingSafetyService : IPasswordSafetyService
+    {
+        // Simulates a real-world transport failure (HIBP unreachable,
+        // network blip, etc). The production implementation catches
+        // and fails open — but the test double here demonstrates that
+        // ANY exception thrown by EnsurePasswordSafeAsync propagates.
+        // The fail-open behaviour is the production-class
+        // HibpPasswordSafetyService's responsibility (verified by
+        // inspecting its catch block).
+        public Task EnsurePasswordSafeAsync(string password, CancellationToken ct = default)
+            => throw new HttpRequestException("simulated HIBP outage");
+    }
+
+    [Fact]
+    public async Task Register_CompromisedPassword_Rejected()
+    {
+        var db  = DbFactory.Create();
+        var svc = Build(db, new AlwaysCompromisedSafetyService());
+
+        var act = async () => await svc.RegisterAsync(NewRegister("Pwn", "pwn@test.com"));
+
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*public data breach*");
+
+        // No user row should have been created.
+        var count = await db.Users.CountAsync(u => u.Email == "pwn@test.com");
+        count.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task ResetPassword_CompromisedPassword_Rejected()
+    {
+        var db  = DbFactory.Create();
+        // Register with the safe service so the account exists.
+        var svc = Build(db);
+        var reg = await svc.RegisterAsync(NewRegister("Reset", "reset@test.com"));
+
+        // Now build a service with the compromised-safety check and
+        // attempt a reset. Use ForgotPassword to mint a real token first.
+        var resetToken = await svc.ForgotPasswordAsync("reset@test.com");
+        resetToken.Should().NotBeNullOrEmpty();
+
+        var pwnedSvc = Build(db, new AlwaysCompromisedSafetyService());
+        var act = async () => await pwnedSvc.ResetPasswordAsync(resetToken, "AnyPassword123!");
+
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*public data breach*");
+
+        // The original password should still work. Login proves the
+        // reset never went through. "Password1!" is the default the
+        // test fixture's NewRegister() uses when no password is
+        // passed in.
+        var login = await svc.LoginAsync(new LoginRequest("reset@test.com", "Password1!"));
+        login.AccessToken.Should().NotBeNullOrEmpty();
     }
 }

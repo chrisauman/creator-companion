@@ -241,6 +241,21 @@ try
     builder.Services.AddTransient<IResend, ResendClient>();
     builder.Services.AddScoped<IEmailService, ResendEmailService>();
 
+    // HIBP password-safety client (used by AuthService at registration
+    // + password reset, and by UsersController at password change).
+    // Singleton HttpClient via the typed-client helper so the API
+    // base address + 1-second timeout are set once. Fail-open
+    // behaviour lives in the service itself — see
+    // HibpPasswordSafetyService for the rationale.
+    builder.Services.AddHttpClient<IPasswordSafetyService, HibpPasswordSafetyService>(client =>
+    {
+        client.BaseAddress = new Uri("https://api.pwnedpasswords.com/");
+        client.Timeout     = TimeSpan.FromSeconds(1);
+        // A friendly User-Agent is requested by HIBP's docs. Identifies
+        // us if there's ever an abuse investigation.
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("creator-companion/1.0");
+    });
+
     // Application services
     builder.Services.AddHttpContextAccessor();
     builder.Services.AddScoped<IAuditService, AuditService>();

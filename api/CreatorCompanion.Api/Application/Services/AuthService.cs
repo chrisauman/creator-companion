@@ -19,6 +19,7 @@ public class AuthService(
     IAuditService audit,
     IStorageService storage,
     IWelcomeEntryService welcomeEntry,
+    IPasswordSafetyService passwordSafety,
     ILogger<AuthService> logger) : IAuthService
 {
     // Lockout configuration. Per-account counter is persisted on the
@@ -38,6 +39,17 @@ public class AuthService(
 
     public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
     {
+        // HIBP compromised-password check. Runs before the email-exists
+        // check so a leaked credential rejection wins over "email is
+        // taken" — the user benefits from learning their password is
+        // compromised even if they're trying to re-register an existing
+        // account. Fail-open path (HIBP unreachable) silently allows
+        // the password through; see HibpPasswordSafetyService for
+        // rationale. Throws InvalidOperationException with a user-
+        // facing message that surfaces as the controller's BadRequest
+        // body via the existing catch in AuthController.Register.
+        await passwordSafety.EnsurePasswordSafeAsync(request.Password);
+
         // First-pass exists check — fast common path. The unique index
         // on User.Email (configured in UserConfiguration) is the real
         // authority; the check below + the catch-on-SaveChanges below
@@ -407,6 +419,15 @@ public class AuthService(
 
     public async Task ResetPasswordAsync(string token, string newPassword)
     {
+        // HIBP compromised-password check runs FIRST so a bad new
+        // password is rejected before we commit any state changes.
+        // Token validation runs after — a malicious caller who guesses
+        // a reset token still has to also submit a non-compromised
+        // password, but legitimate users who submit a compromised
+        // password get the clear "choose a different one" message
+        // without their valid reset token being consumed.
+        await passwordSafety.EnsurePasswordSafeAsync(newPassword);
+
         var hash = HashToken(token);
         var resetToken = await db.PasswordResetTokens
             .Include(t => t.User)
