@@ -179,7 +179,11 @@
 
   <script>
     // ── Config ──────────────────────────────────────────────────────────────
-    const API_BASE = 'https://api.creatorcompanionapp.com/v1';
+    // Same-origin proxy via Vercel rewrite (see marketing/vercel.json
+    // → rewrites). Avoids the broken SSL cert on the
+    // api.creatorcompanionapp.com custom hostname AND eliminates the
+    // CORS preflight that hitting Railway directly would require.
+    const API_BASE = '/v1';
     const APP_URL  = 'https://app.creatorcompanionapp.com';
 
     // ── Timezone picker ─────────────────────────────────────────────────────

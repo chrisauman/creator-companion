@@ -612,6 +612,20 @@ no further hook-based fallback is needed.
   the Angular template-literal parser ("Failed to resolve styles at
   position 0"). Don't quote class/property names with backticks in
   inline styles. Use plain text or single quotes.
+- **`api.creatorcompanionapp.com` SSL cert is broken on Railway** —
+  the custom hostname serves the default `*.up.railway.app` cert
+  instead of `*.creatorcompanionapp.com`, so any browser hitting it
+  fails the TLS handshake. NEVER call this hostname from a browser
+  fetch — the request will fail with no usable error before any
+  HTTP layer responds (Network tab shows "(failed) preflight" +
+  "(failed) fetch" with 0 bytes). Both vercel.json files (app and
+  marketing) carry a `/v1/* → creator-companion-api-production.up.railway.app/v1/*`
+  rewrite so browser code can use a same-origin `/v1` path
+  exclusively. **If you add a new HTML page that calls the API, use
+  `/v1/...` not `https://api.creatorcompanionapp.com/v1/...`.**
+  The custom-hostname SSL should still get fixed on Railway
+  eventually (it's a 5-min dashboard task — re-issue the cert for
+  the custom domain) but the proxy means we're not blocked on it.
 
 ## Mobile touch UX patterns (iOS Safari)
 

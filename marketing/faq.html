@@ -232,7 +232,11 @@
     // it client-side with search + category filtering. For SEO we
     // can pre-render this at build time later; for now, the API
     // is fast enough that the latency is negligible.
-    const API = 'https://api.creatorcompanionapp.com/v1/faq/public';
+    // Same-origin proxy via Vercel rewrite (see marketing/vercel.json
+    // → rewrites). Avoids the broken SSL cert on the
+    // api.creatorcompanionapp.com custom hostname AND eliminates the
+    // CORS preflight that hitting Railway directly would require.
+    const API = '/v1/faq/public';
     const listEl  = document.getElementById('faq-list');
     const qInput  = document.getElementById('faq-q');
     const qClear  = document.getElementById('faq-clear');
