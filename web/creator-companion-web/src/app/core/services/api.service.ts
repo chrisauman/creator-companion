@@ -19,14 +19,22 @@ export class ApiService {
   // ── Auth ────────────────────────────────────────────────────────────────
   // withCredentials: true is required so the browser sends the HttpOnly
   // refresh-token cookie on cross-origin requests to the Railway API.
-  register(firstName: string, lastName: string, email: string, password: string, timeZoneId: string): Observable<AuthResponse> {
+  // cfTurnstileResponse: Cloudflare Turnstile token from the widget.
+  // Optional in the type so callers without the widget (tests,
+  // legacy paths) still compile, but the backend ITurnstileVerifier
+  // rejects the request if the field is missing in environments
+  // where Turnstile is configured. Backend maps a missing/invalid
+  // token to 403 with code "turnstile_failed".
+  register(firstName: string, lastName: string, email: string, password: string, timeZoneId: string, cfTurnstileResponse?: string): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.base}/auth/register`,
-      { firstName, lastName, email, password, timeZoneId }, { withCredentials: true });
+      { firstName, lastName, email, password, timeZoneId, cfTurnstileResponse },
+      { withCredentials: true });
   }
 
-  login(email: string, password: string): Observable<AuthResponse> {
+  login(email: string, password: string, cfTurnstileResponse?: string): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.base}/auth/login`,
-      { email, password }, { withCredentials: true });
+      { email, password, cfTurnstileResponse },
+      { withCredentials: true });
   }
 
   /** Update the current user's first + last name. */
@@ -46,8 +54,8 @@ export class ApiService {
     return this.http.post<void>(`${this.base}/auth/revoke`, {}, { withCredentials: true });
   }
 
-  forgotPassword(email: string): Observable<{ message: string; resetToken: string }> {
-    return this.http.post<any>(`${this.base}/auth/forgot-password`, { email });
+  forgotPassword(email: string, cfTurnstileResponse?: string): Observable<{ message: string; resetToken: string }> {
+    return this.http.post<any>(`${this.base}/auth/forgot-password`, { email, cfTurnstileResponse });
   }
 
   resetPassword(token: string, newPassword: string): Observable<{ message: string }> {

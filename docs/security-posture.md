@@ -22,12 +22,19 @@ CLAUDE.md)
   (refresh-token-in-body), #3 (PII in JWT — email + firstName +
   lastName + tier all removed), and #4 (CSP `connect-src` `https:`
   no-op). See §§1.2, 1.1, and 8.2 below.
-- 2026-05-25 — **Phase 2 shipped** (commit TBD on push): HIBP
+- 2026-05-25 — **Phase 2 shipped** (commit `eaf367b`): HIBP
   compromised-password check at registration, password change, and
   password reset. See §4.6 below.
-- **Open phases** (3–6): distributed rate-limit counters, TOTP 2FA,
-  login telemetry + new-device email, admin-demotion immediate
-  revocation. Tracked in the conversation triage.
+- 2026-05-26 — **Auth-surface parity pass shipped** (commit `97d7da4`):
+  password-rules checklist on marketing signup + reset-password,
+  email-exists recovery links, password visibility toggles,
+  consistent 429/5xx error messages across all 5 auth surfaces.
+- 2026-05-26 — **PR 2 shipped** (commit TBD): Cloudflare Turnstile
+  bot-protection on register / login / forgot-password. See §4.7
+  below.
+- **Open phases** (3, 4, 5, 6): distributed rate-limit counters,
+  TOTP 2FA, login telemetry + new-device email, admin-demotion
+  immediate revocation. Tracked in the conversation triage.
 
 ---
 
@@ -301,6 +308,57 @@ chosen and justified:
   `AuthServiceTests.ResetPassword_CompromisedPassword_Rejected`,
   plus the test fixture's `NullPasswordSafetyService` for tests
   that exercise other paths.
+
+### 4.7 Cloudflare Turnstile bot-protection (2026-05-26)
+- **Goal:** reject automated traffic at the three public-facing
+  auth endpoints (register / login / forgot-password) before it
+  hits any business logic. Closes the bot-signup, credential-
+  stuffing, and forgot-password-flood vectors.
+- **Service:** Cloudflare Turnstile, "Managed" widget mode
+  (auto-decides invisible vs interactive based on Cloudflare's
+  risk signals). 1M requests/month free.
+- **Hostnames covered:** `creatorcompanionapp.com` and
+  `app.creatorcompanionapp.com` — both registered with the widget.
+- **Frontend:**
+  - Script loaded once globally in `index.html` (Angular app)
+    and `signup.html` (marketing) with `render=explicit` + async +
+    defer.
+  - Shared `TurnstileComponent` (`web/.../shared/turnstile/`)
+    wraps the mount/unmount/reset lifecycle for the Angular
+    surfaces; marketing's standalone signup duplicates the same
+    pattern in vanilla JS.
+  - Site key in `environment.production.ts` (real key) and
+    `environment.ts` (Cloudflare's always-pass test key
+    `1x00000000000000000000AA` for local dev).
+  - Token is single-use; widget is reset after any submit failure
+    so retries always get a fresh token.
+- **Backend:**
+  - `ITurnstileVerifier` interface, `CloudflareTurnstileVerifier`
+    implementation. Typed `HttpClient` with 5-second timeout,
+    base URL `https://challenges.cloudflare.com/`.
+  - Wired into `AuthController.Register / Login / ForgotPassword`
+    via a private `RequireHumanAsync` helper that runs BEFORE any
+    business logic. Token verification at the front of the
+    pipeline means a bot never touches password hashing, lockout
+    counters, or the email send.
+  - Secret key in Railway env var `Turnstile__SecretKey`
+    (double underscore). Local dev leaves this blank — verifier
+    becomes a no-op and logs a warning at every call.
+- **Failure posture:** **fail closed**. Missing token, invalid
+  token, Cloudflare API error, network timeout — all reject the
+  request with 403 + `code: "turnstile_failed"`. Unlike HIBP
+  (which fails open because it's an additional layer), Turnstile
+  IS the bot defense; failing open would defeat the purpose.
+  Cloudflare's siteverify runs at 99.99%+ availability so the
+  false-positive lockout risk is tiny.
+- **Operator escape hatch:** blanking `Turnstile__SecretKey` in
+  Railway disables Turnstile entirely (verifier returns true,
+  logs warning). Lets an emergency operator turn it off without
+  a code deploy. Documented as the explicit posture for any env
+  that doesn't have the key configured.
+- **CSP updates:** `https://challenges.cloudflare.com` added to
+  `script-src` and `frame-src` in both `web/.../vercel.json`
+  and `marketing/vercel.json`.
 
 ---
 

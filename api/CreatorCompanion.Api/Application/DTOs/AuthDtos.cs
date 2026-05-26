@@ -4,17 +4,24 @@ using CreatorCompanion.Api.Application.Validation;
 
 namespace CreatorCompanion.Api.Application.DTOs;
 
+// Cloudflare Turnstile token field: optional on the DTO so older
+// clients (and our test fixtures) don't break, but ITurnstileVerifier
+// rejects the request if the field is missing in environments where
+// the secret key is configured. Default null = "client didn't supply
+// a token" which the verifier will treat as "reject."
 public record RegisterRequest(
     [Required, MinLength(1), MaxLength(60)] string FirstName,
     [Required, MinLength(1), MaxLength(60)] string LastName,
     [Required, EmailAddress, MaxLength(256)] string Email,
     [Required, MaxLength(128), StrongPassword] string Password,
-    [Required, MaxLength(100)] string TimeZoneId
+    [Required, MaxLength(100)] string TimeZoneId,
+    string? CfTurnstileResponse = null
 );
 
 public record LoginRequest(
     [Required, EmailAddress] string Email,
-    [Required] string Password
+    [Required] string Password,
+    string? CfTurnstileResponse = null
 );
 
 public record RefreshRequest(
@@ -37,7 +44,8 @@ public record AuthResponse(
 );
 
 public record ForgotPasswordRequest(
-    [Required, EmailAddress] string Email
+    [Required, EmailAddress] string Email,
+    string? CfTurnstileResponse = null
 );
 
 public record ResetPasswordRequest(

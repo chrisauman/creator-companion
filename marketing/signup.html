@@ -10,6 +10,13 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@700;800&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,600;1,700;1,800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
+
+  <!-- Cloudflare Turnstile widget script. Uses render=explicit so we
+       can control mount timing from our submit-handler JS instead of
+       relying on the auto-render scan. Same script reference and
+       Site Key as the in-app Angular surfaces (login, register,
+       forgot-password). -->
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
   <!-- Open Graph -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://www.creatorcompanionapp.com/signup.html">
@@ -247,6 +254,11 @@
           <span class="tz-note">Used to track your daily streak correctly</span>
         </div>
 
+        <!-- Cloudflare Turnstile widget mount point. Rendered via
+             the explicit render API in the script block below so
+             the token flow is wired into submit handling. -->
+        <div id="turnstile-widget" style="display:flex;justify-content:center;margin:1rem 0;min-height:65px"></div>
+
         <hr class="form-divider">
 
         <button type="submit" class="btn btn--primary btn--full btn--lg" id="submit-btn">
@@ -356,6 +368,35 @@
     }
     PW_INPUT.addEventListener('input', updatePasswordRules);
 
+    // ── Cloudflare Turnstile ───────────────────────────────────────────────
+    // Production site key. Pre-renders the widget once the Turnstile
+    // script (loaded async in the head) becomes available. Token is
+    // captured into a module-scoped variable + included in the submit
+    // POST. After a failed submit we reset the widget so the next
+    // attempt gets a fresh token — Turnstile tokens are single-use,
+    // and reusing one always returns "timeout-or-duplicate" from
+    // siteverify.
+    const TURNSTILE_SITE_KEY = '0x4AAAAAADW2dlAs0vEOFM1i';
+    let turnstileToken  = null;
+    let turnstileWidget = null;
+
+    function renderTurnstile(attempts) {
+      attempts = attempts || 0;
+      if (!window.turnstile) {
+        if (attempts < 50) setTimeout(() => renderTurnstile(attempts + 1), 100);
+        return;
+      }
+      try {
+        turnstileWidget = window.turnstile.render('#turnstile-widget', {
+          sitekey: TURNSTILE_SITE_KEY,
+          callback: function (token) { turnstileToken = token; },
+          'expired-callback': function () { turnstileToken = null; },
+          theme: 'light'
+        });
+      } catch (_) { /* render failed; submit will surface clean error */ }
+    }
+    renderTurnstile();
+
     // ── Password visibility toggle ─────────────────────────────────────────
     // Eye icon (visible) / eye-off (hidden when password is shown).
     // SVG swaps via innerHTML rewrite. aria-label + aria-pressed
@@ -403,6 +444,11 @@
         errEl.style.display = 'block';
         return;
       }
+      if (!turnstileToken) {
+        errEl.textContent = 'Please complete the human-verification check above before continuing.';
+        errEl.style.display = 'block';
+        return;
+      }
 
       btn.disabled = true;
       btn.textContent = 'Creating account…';
@@ -412,7 +458,11 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-          body: JSON.stringify({ firstName, lastName, email, password, timeZoneId: timezone })
+          body: JSON.stringify({
+            firstName, lastName, email, password,
+            timeZoneId: timezone,
+            cfTurnstileResponse: turnstileToken
+          })
         });
 
         const data = await res.json().catch(() => ({}));
@@ -493,6 +543,13 @@
           errEl.style.display = 'block';
           btn.disabled = false;
           btn.textContent = 'Start free trial';
+          // Reset the Turnstile widget — token is single-use, any
+          // retry needs a fresh one or the backend rejects with
+          // "timeout-or-duplicate".
+          turnstileToken = null;
+          if (window.turnstile && turnstileWidget) {
+            try { window.turnstile.reset(turnstileWidget); } catch (_) {}
+          }
           return;
         }
 
@@ -520,6 +577,12 @@
         errEl.style.display = 'block';
         btn.disabled = false;
         btn.textContent = 'Start free trial';
+        // Reset Turnstile on network failure too — same single-use
+        // token rule applies.
+        turnstileToken = null;
+        if (window.turnstile && turnstileWidget) {
+          try { window.turnstile.reset(turnstileWidget); } catch (_) {}
+        }
       }
     });
   </script>

@@ -8,8 +8,35 @@ namespace CreatorCompanion.Api.Api.Controllers;
 
 [ApiController]
 [Route("v1/auth")]
-public class AuthController(IAuthService authService, IWebHostEnvironment env, IConfiguration config) : ControllerBase
+public class AuthController(
+    IAuthService authService,
+    IWebHostEnvironment env,
+    IConfiguration config,
+    ITurnstileVerifier turnstile) : ControllerBase
 {
+    // Verifies the supplied Turnstile token against Cloudflare's
+    // siteverify endpoint. Returns an IActionResult to 403 when
+    // verification fails so the caller can `return await CheckTurnstile(...)
+    // ?? next-step` without nested if-blocks. Token check runs before any
+    // business logic (don't even hash a password if the request hasn't
+    // proven it's a human). remoteIp is read from RemoteIpAddress which
+    // ForwardedHeaders middleware has already resolved to the real
+    // client (not the Railway proxy).
+    private async Task<IActionResult?> RequireHumanAsync(string? token)
+    {
+        var remoteIp = HttpContext.Connection.RemoteIpAddress?.ToString();
+        var ok = await turnstile.VerifyAsync(token, remoteIp);
+        if (!ok)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new
+            {
+                error = "Human verification failed. Please refresh the page and try again.",
+                code  = "turnstile_failed"
+            });
+        }
+        return null;
+    }
+
     // ── Cookie helpers ───────────────────────────────────────────────────────
 
     // The refresh cookie is intentionally domain-scoped to the parent
@@ -67,6 +94,13 @@ public class AuthController(IAuthService authService, IWebHostEnvironment env, I
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
+        // Turnstile gate FIRST — before any DB query, password hash, or
+        // HIBP call. Cheap up-front filter against bot signups; also
+        // prevents using these endpoints as a free oracle for any later
+        // checks (email enumeration, etc.) by bot traffic.
+        var turnstileFail = await RequireHumanAsync(request.CfTurnstileResponse);
+        if (turnstileFail is not null) return turnstileFail;
+
         try
         {
             var result = await authService.RegisterAsync(request);
@@ -85,6 +119,13 @@ public class AuthController(IAuthService authService, IWebHostEnvironment env, I
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
+        // Turnstile gate before the per-account lockout check, so a
+        // credential-stuffing bot never gets to increment FailedLoginCount
+        // on real user accounts. Without this, an attacker who knew real
+        // emails could lock those accounts out by pummeling /login.
+        var turnstileFail = await RequireHumanAsync(request.CfTurnstileResponse);
+        if (turnstileFail is not null) return turnstileFail;
+
         try
         {
             var result = await authService.LoginAsync(request);
@@ -151,6 +192,14 @@ public class AuthController(IAuthService authService, IWebHostEnvironment env, I
     [HttpPost("forgot-password")]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
     {
+        // Turnstile gate first. Without it, bots can use this endpoint
+        // to harvest registered email addresses (the timing-equalization
+        // we already have makes that hard, but the reset email itself
+        // still goes out to real recipients on bot-triggered POSTs —
+        // turning every CC user's inbox into a notification target).
+        var turnstileFail = await RequireHumanAsync(request.CfTurnstileResponse);
+        if (turnstileFail is not null) return turnstileFail;
+
         var token = await authService.ForgotPasswordAsync(request.Email);
         if (env.IsDevelopment())
             return Ok(new { message = "If that email is registered, a reset link has been sent.", resetToken = token });

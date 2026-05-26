@@ -1,14 +1,15 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../../../core/services/api.service';
+import { TurnstileComponent } from '../../../shared/turnstile/turnstile.component';
 import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-forgot-password',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, TurnstileComponent],
   template: `
     <main class="auth-page" id="main">
       <div class="auth-card card fade-in">
@@ -65,6 +66,11 @@ import { environment } from '../../../../environments/environment';
               />
             </div>
 
+            <!-- Cloudflare Turnstile. See login.component for rationale. -->
+            <app-turnstile (verified)="turnstileToken.set($event)"
+                           (expired)="turnstileToken.set(null)"
+                           #ts></app-turnstile>
+
             <button class="btn btn--primary btn--full btn--lg" type="submit" [disabled]="loading()">
               {{ loading() ? 'Sending…' : 'Send reset link' }}
             </button>
@@ -114,13 +120,21 @@ export class ForgotPasswordComponent {
   success  = signal(false);
   devToken = signal('');
   copied   = signal(false);
+  /** Most recent Turnstile token (single-use, ~5min lifetime). */
+  turnstileToken = signal<string | null>(null);
+
+  @ViewChild('ts') ts?: TurnstileComponent;
 
   submit(): void {
     if (!this.email) return;
+    if (!this.turnstileToken()) {
+      this.error.set('Please complete the human-verification check above before continuing.');
+      return;
+    }
     this.loading.set(true);
     this.error.set('');
 
-    this.api.forgotPassword(this.email).subscribe({
+    this.api.forgotPassword(this.email, this.turnstileToken() ?? undefined).subscribe({
       next: res => {
         this.success.set(true);
         this.devToken.set(res.resetToken ?? '');
@@ -129,6 +143,9 @@ export class ForgotPasswordComponent {
       error: err => {
         this.error.set(this.describeForgotPasswordError(err));
         this.loading.set(false);
+        // Reset the widget — Turnstile tokens are single-use.
+        this.turnstileToken.set(null);
+        this.ts?.reset();
       }
     });
   }

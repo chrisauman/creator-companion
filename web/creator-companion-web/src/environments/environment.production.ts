@@ -18,6 +18,11 @@ export const environment = {
   // app.creatorcompanionapp.com (valid Vercel cert, same-origin
   // cookies). The Railway upstream is hidden behind Vercel's edge.
   apiBaseUrl: '/v1',
+  // Cloudflare Turnstile site key — public, embedded in HTML on
+  // every auth surface (login, register, forgot-password). The
+  // matching secret key lives in Railway env var Turnstile__SecretKey
+  // and is read server-side by ITurnstileVerifier.
+  turnstileSiteKey: '0x4AAAAAADW2dlAs0vEOFM1i',
   // Sentry DSN injected at build time from the SENTRY_DSN env var by
   // scripts/inject-version.mjs. Sentile sentinel `__SENTRY_DSN__`
   // is text-replaced before Vercel deploys the bundle. SDK no-ops if

@@ -10,5 +10,14 @@ export const environment = {
   // SHA injected by scripts/inject-version.mjs at build time so each
   // Sentry event is tagged with the release that produced it. In dev
   // this is left blank; Sentry falls back to its own auto-detection.
-  releaseSha: ''
+  releaseSha: '',
+  // Cloudflare Turnstile test site key — always passes, never shows
+  // an interactive challenge. Documented at
+  // https://developers.cloudflare.com/turnstile/troubleshooting/testing/
+  // Pair with the always-pass secret key '1x0000000000000000000000000000000AA'
+  // in your local appsettings.Development.json's Turnstile:SecretKey
+  // if you want to exercise the full verifier path in dev. Otherwise
+  // leave the dev secret blank — the verifier becomes a no-op and
+  // every dev signup passes without server-side check.
+  turnstileSiteKey: '1x00000000000000000000AA'
 };

@@ -1,13 +1,14 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { TurnstileComponent } from '../../../shared/turnstile/turnstile.component';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, TurnstileComponent],
   template: `
     <main class="auth-page" id="main">
       <div class="auth-card card fade-in">
@@ -73,6 +74,15 @@ import { AuthService } from '../../../core/services/auth.service';
               </button>
             </div>
           </div>
+
+          <!-- Cloudflare Turnstile widget. Usually invisible (auto-
+               passes); shows an interactive challenge only if
+               Cloudflare's risk signals suggest the session may be
+               a bot. Token is single-use; ts.reset() runs on any
+               submit failure so the next attempt gets a fresh token. -->
+          <app-turnstile (verified)="turnstileToken.set($event)"
+                         (expired)="turnstileToken.set(null)"
+                         #ts></app-turnstile>
 
           <button class="btn btn--primary btn--full btn--lg" type="submit" [disabled]="loading()">
             {{ loading() ? 'Signing in…' : 'Sign in' }}
@@ -176,13 +186,22 @@ export class LoginComponent {
   error      = signal('');
   /** Eye-toggle visibility on the password field. */
   showPassword = signal(false);
+  /** Most recent Turnstile token (single-use, ~5min lifetime). Null
+   *  before the widget verifies or after it expires/resets. */
+  turnstileToken = signal<string | null>(null);
+
+  @ViewChild('ts') ts?: TurnstileComponent;
 
   submit(): void {
     if (!this.email || !this.password) return;
+    if (!this.turnstileToken()) {
+      this.error.set('Please complete the human-verification check above before signing in.');
+      return;
+    }
     this.loading.set(true);
     this.error.set('');
 
-    this.auth.login(this.email, this.password).subscribe({
+    this.auth.login(this.email, this.password, this.turnstileToken() ?? undefined).subscribe({
       next: res => {
         if (!res.user.onboardingCompleted) {
           this.router.navigate(['/onboarding']);
@@ -196,6 +215,12 @@ export class LoginComponent {
         // is a cold-start 5xx or a rate-limit window.
         this.error.set(this.describeLoginError(err));
         this.loading.set(false);
+        // Turnstile tokens are single-use. After any failed submit,
+        // reset the widget so the next attempt gets a fresh token
+        // instead of replaying the stale one (which would 403 with
+        // "timeout-or-duplicate" on the backend).
+        this.turnstileToken.set(null);
+        this.ts?.reset();
       }
     });
   }

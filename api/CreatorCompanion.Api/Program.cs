@@ -256,6 +256,21 @@ try
         client.DefaultRequestHeaders.UserAgent.ParseAdd("creator-companion/1.0");
     });
 
+    // Cloudflare Turnstile verifier — used by AuthController at the
+    // three public-facing auth surfaces (register / login /
+    // forgot-password). 5-second timeout because Cloudflare's
+    // siteverify is typically <500ms but the auth path can afford
+    // a bigger headroom than the HIBP path (HIBP is on the password-
+    // creation hot path and we want fail-open snappy; Turnstile is
+    // the bot gate and we'd rather wait a moment than skip the check).
+    // Fail-closed behaviour lives in the verifier — see
+    // CloudflareTurnstileVerifier for the rationale.
+    builder.Services.AddHttpClient<ITurnstileVerifier, CloudflareTurnstileVerifier>(client =>
+    {
+        client.BaseAddress = new Uri("https://challenges.cloudflare.com/");
+        client.Timeout     = TimeSpan.FromSeconds(5);
+    });
+
     // Application services
     builder.Services.AddHttpContextAccessor();
     builder.Services.AddScoped<IAuditService, AuditService>();

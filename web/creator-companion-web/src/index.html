@@ -28,6 +28,15 @@
 
   <link rel="icon" type="image/x-icon" href="favicon.ico">
 
+  <!-- Cloudflare Turnstile — bot challenge widget loaded once,
+       rendered explicitly by each auth component (login, register,
+       forgot-password). Async + defer so it doesn't block first
+       paint. The "explicit" render API is used (not the auto-render
+       cf-turnstile class) so component lifecycle can manage mount/
+       unmount across route changes without the Turnstile script
+       trying to auto-render into removed nodes. -->
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
+
   <!-- Fonts (async-load to avoid render-blocking).
        The previous setup was a synchronous <link rel="stylesheet">
        which made every PWA launch wait on the Google Fonts CSS +

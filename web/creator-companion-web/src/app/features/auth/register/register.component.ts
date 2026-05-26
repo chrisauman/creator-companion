@@ -1,13 +1,14 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { TurnstileComponent } from '../../../shared/turnstile/turnstile.component';
 
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, TurnstileComponent],
   template: `
     <main class="auth-page" id="main">
       <div class="auth-card card fade-in">
@@ -156,6 +157,12 @@ import { AuthService } from '../../../core/services/auth.service';
               </li>
             </ul>
           </div>
+
+          <!-- Cloudflare Turnstile. See login.component for the same
+               pattern + rationale. -->
+          <app-turnstile (verified)="turnstileToken.set($event)"
+                         (expired)="turnstileToken.set(null)"
+                         #ts></app-turnstile>
 
           <button class="btn btn--primary btn--full btn--lg" type="submit" [disabled]="loading()">
             {{ loading() ? 'Creating account…' : 'Start free trial' }}
@@ -309,6 +316,11 @@ export class RegisterComponent {
   error     = signal('');
   /** Eye-toggle visibility on the password field. */
   showPassword = signal(false);
+  /** Most recent Turnstile token (single-use, ~5min lifetime). Null
+   *  before the widget verifies or after it expires/resets. */
+  turnstileToken = signal<string | null>(null);
+
+  @ViewChild('ts') ts?: TurnstileComponent;
   /** True when the current error text suggests the email is already
    *  registered — drives the inline Sign-in / Reset-password
    *  recovery links so the user isn't dead-ended. Matches both the
@@ -350,6 +362,10 @@ export class RegisterComponent {
       this.error.set('Your password needs to satisfy every rule below before you can continue.');
       return;
     }
+    if (!this.turnstileToken()) {
+      this.error.set('Please complete the human-verification check above before continuing.');
+      return;
+    }
     this.loading.set(true);
 
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
@@ -357,11 +373,14 @@ export class RegisterComponent {
     // Trial-only signup: never bounces through Stripe Checkout. The 10-day
     // trial is created server-side in AuthService.RegisterAsync; conversion
     // to a paid subscription happens later from the in-app paywall.
-    this.auth.register(this.firstName.trim(), this.lastName.trim(), this.email, this.password, tz).subscribe({
+    this.auth.register(this.firstName.trim(), this.lastName.trim(), this.email, this.password, tz, this.turnstileToken() ?? undefined).subscribe({
       next: () => this.router.navigate(['/onboarding']),
       error: err => {
         this.error.set(this.extractErrorMessage(err));
         this.loading.set(false);
+        // Reset the widget — Turnstile tokens are single-use.
+        this.turnstileToken.set(null);
+        this.ts?.reset();
       }
     });
   }

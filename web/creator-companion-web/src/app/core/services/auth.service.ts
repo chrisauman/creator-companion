@@ -72,14 +72,18 @@ export class AuthService {
     return !!caps && !caps.hasAccess;
   });
 
-  register(firstName: string, lastName: string, email: string, password: string, timeZoneId: string): Observable<AuthResponse> {
-    return this.api.register(firstName, lastName, email, password, timeZoneId).pipe(
+  // cfTurnstileResponse comes from the component's Turnstile widget
+  // and is passed through to the backend for verification. Optional
+  // so callers without the widget (legacy paths, future flows that
+  // don't need bot protection) still compile.
+  register(firstName: string, lastName: string, email: string, password: string, timeZoneId: string, cfTurnstileResponse?: string): Observable<AuthResponse> {
+    return this.api.register(firstName, lastName, email, password, timeZoneId, cfTurnstileResponse).pipe(
       tap(res => this.handleAuth(res))
     );
   }
 
-  login(email: string, password: string): Observable<AuthResponse> {
-    return this.api.login(email, password).pipe(
+  login(email: string, password: string, cfTurnstileResponse?: string): Observable<AuthResponse> {
+    return this.api.login(email, password, cfTurnstileResponse).pipe(
       tap(res => this.handleAuth(res))
     );
   }
