@@ -256,7 +256,42 @@
         const data = await res.json().catch(() => ({}));
 
         if (!res.ok) {
-          errEl.textContent = data.error ?? 'Something went wrong. Please try again.';
+          // The backend returns two distinct error shapes:
+          //
+          //   1. { error: "string" }      — application-level rejections
+          //      (HIBP breach, email already exists, lockout, etc.)
+          //      thrown by the controller via Conflict() / BadRequest().
+          //
+          //   2. { errors: { Field: ["..."] } } — ASP.NET's
+          //      ValidationProblemDetails, fired by [Required] /
+          //      [StrongPassword] / [EmailAddress] data annotations
+          //      BEFORE the controller method runs. This is the
+          //      "Password must contain one uppercase letter, one
+          //      special character (!@#$%^&* etc.)" path that hits
+          //      when someone tries "password123" — StrongPassword
+          //      rejects it before HIBP ever runs.
+          //
+          // Handle both. Without the ValidationProblemDetails path,
+          // any bad-input registration shows the generic fallback,
+          // which is what was happening for "password123" before
+          // this fix.
+          let message = null;
+          if (data && typeof data === 'object') {
+            if (data.errors && typeof data.errors === 'object') {
+              const collected = [];
+              for (const field of Object.keys(data.errors)) {
+                const arr = data.errors[field];
+                if (Array.isArray(arr) && arr.length > 0 && typeof arr[0] === 'string') {
+                  collected.push(arr[0]);
+                }
+              }
+              if (collected.length > 0) message = collected.join(' ');
+            }
+            if (!message && typeof data.error === 'string') {
+              message = data.error;
+            }
+          }
+          errEl.textContent = message ?? 'Something went wrong. Please try again.';
           errEl.style.display = 'block';
           btn.disabled = false;
           btn.textContent = 'Start free trial';
