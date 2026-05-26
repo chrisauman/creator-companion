@@ -366,7 +366,7 @@ public class ResendEmailService(IResend resend, IConfiguration config, AppDbCont
         await resend.EmailSendAsync(message);
     }
 
-    public async Task SendDailySparkReminderAsync(
+    public async Task<Guid?> SendDailySparkReminderAsync(
         string toEmail,
         string takeaway,
         string? fullContent)
@@ -417,7 +417,19 @@ public class ResendEmailService(IResend resend, IConfiguration config, AppDbCont
             HtmlBody = WrapInBrandedShell(body, appName)
         };
 
-        await resend.EmailSendAsync(message);
+        // Capture the response so we can return the Resend message id
+        // (Guid) to the caller. With ThrowExceptions=true set in
+        // Program.cs, API failures throw before reaching this line —
+        // so by the time we get here, success is real (HTTP 200/202
+        // from Resend's API) and we can safely log + return the id.
+        var resp = await resend.EmailSendAsync(message);
+        var resendId = resp?.Content;
+        // Log at Info so the message id shows up in Railway logs for
+        // every successful daily-spark send. Easy correlation with the
+        // Resend dashboard: `Daily-spark email sent ... ResendMessageId={Guid}`.
+        // Without this, debugging delivery problems required guessing
+        // which Resend row corresponded to our send.
+        return resendId == default ? null : resendId;
     }
 
     // ── Branded shell + CTA helpers ─────────────────────────────────

@@ -37,7 +37,14 @@ public interface IEmailService
     /// platform. Replaces the older auto-poster + cookie path, which
     /// broke whenever Substack rotated its session cookie.
     /// </summary>
-    Task SendDailySparkReminderAsync(
+    /// <summary>
+    /// Returns the Resend message id (Guid) on success, or null if
+    /// the SDK doesn't surface one. Caller can persist this so admin
+    /// UI / debugging can cross-reference the Resend dashboard with
+    /// our own send records. Throws on Resend API failure now that
+    /// ThrowExceptions=true is set on the ResendClient (see Program.cs).
+    /// </summary>
+    Task<Guid?> SendDailySparkReminderAsync(
         string toEmail,
         string takeaway,
         string? fullContent);

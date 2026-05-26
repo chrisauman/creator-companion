@@ -306,9 +306,18 @@ public class SubstackPostingService : ISubstackPostingService
             return new SubstackPostResult(false, null, null, err, null);
         }
 
+        Guid? resendMessageId = null;
         try
         {
-            await _email.SendDailySparkReminderAsync(
+            // Capture the Resend message id so we can persist it for
+            // future cross-reference with Cloudflare^H^H^H^H^H^H^H^H^H^H^H^H
+            // Resend's dashboard. With ThrowExceptions=true (set in
+            // Program.cs), this now actually throws on API failures —
+            // previously the SDK silently returned a Success=false
+            // response and we'd mark Posted regardless, leaving the
+            // admin "Sent" badge lying. See the 2026-05-26 commit
+            // message for the full root-cause story.
+            resendMessageId = await _email.SendDailySparkReminderAsync(
                 RecipientEmail,
                 plan.Spark.Takeaway ?? "(no takeaway)",
                 plan.Spark.FullContent);
@@ -321,7 +330,14 @@ public class SubstackPostingService : ISubstackPostingService
 
         plan.Status         = SubstackPlanStatus.Posted;
         plan.PostedAt       = DateTime.UtcNow;
-        plan.SubstackNoteId = null;
+        // SubstackNoteId originally held the post id from when this
+        // service auto-posted to Substack via cookie. Repurposed
+        // 2026-05-26 to hold the Resend message id — same shape (an
+        // external-system identifier for the published artifact),
+        // different external system. Surfaced in admin so future
+        // debugging can correlate our row with Resend's dashboard
+        // in one click.
+        plan.SubstackNoteId = resendMessageId?.ToString();
         plan.ErrorMessage   = null;
 
         settings.LastSuccessAt       = DateTime.UtcNow;
@@ -330,7 +346,9 @@ public class SubstackPostingService : ISubstackPostingService
         settings.UpdatedAt           = DateTime.UtcNow;
 
         await _db.SaveChangesAsync(ct);
-        _log.LogInformation("Daily-spark reminder emailed for plan {PlanId}.", plan.Id);
+        _log.LogInformation(
+            "Daily-spark reminder emailed for plan {PlanId}. ResendMessageId={ResendMessageId}",
+            plan.Id, resendMessageId);
 
         return new SubstackPostResult(true, 200, null, null, null);
     }

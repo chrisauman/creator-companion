@@ -237,7 +237,40 @@ try
     builder.Services.AddOptions();
     builder.Services.AddHttpClient<ResendClient>();
     builder.Services.Configure<ResendClientOptions>(o =>
-        o.ApiToken = builder.Configuration["Resend:ApiKey"] ?? string.Empty);
+    {
+        o.ApiToken = builder.Configuration["Resend:ApiKey"] ?? string.Empty;
+        // ThrowExceptions = true is the load-bearing change here.
+        // Resend's SDK defaults to ThrowExceptions=false, which means
+        // API errors come back as ResendResponse with Success=false
+        // instead of throwing. Every EmailSendAsync call site in this
+        // codebase used "await ... ;" and discarded the return — so
+        // silent Resend failures (rate limits, unverified domains,
+        // 5xx) got marked as success and the admin "Sent" badge lied.
+        //
+        // The 2026-05-26 missing daily-spark email was caused by
+        // exactly this path: Resend rejected the send, SDK returned
+        // a Success=false response, our code marked the
+        // SubstackDailyPlan as Posted anyway.
+        //
+        // Setting ThrowExceptions=true makes API failures surface as
+        // exceptions, which:
+        //  · Get caught by the existing try/catch in
+        //    SubstackPostingService.FireOnePlanAsync (marks Failed +
+        //    records the error message), so admin badge becomes
+        //    truthful;
+        //  · Get caught by Sentry on the worker paths
+        //    (ReminderBackgroundService, SubstackPostingBackgroundService)
+        //    via their outer-catch CaptureException calls;
+        //  · Get caught by the try/catch wrappers around every
+        //    AuthService email send (welcome / verification /
+        //    password-reset / password-changed) — those already log
+        //    and continue, so registration still succeeds even if
+        //    Resend is briefly down.
+        //
+        // No call site in this repo relies on SDK silent-failure
+        // behaviour. Audited 2026-05-26 — see commit message.
+        o.ThrowExceptions = true;
+    });
     builder.Services.AddTransient<IResend, ResendClient>();
     builder.Services.AddScoped<IEmailService, ResendEmailService>();
 
