@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 using CreatorCompanion.Api.Application.Validation;
 
 namespace CreatorCompanion.Api.Application.DTOs;
@@ -20,9 +21,17 @@ public record RefreshRequest(
     [Required] string RefreshToken
 );
 
+// [JsonIgnore] on RefreshToken means the value is set internally by
+// AuthService (so the controller can read it to set the HttpOnly
+// cookie) but never serialized into the JSON response body. Prior to
+// this the value also rode the response body as a localStorage
+// fallback; that path was removed from the frontend, but the value
+// kept travelling over the wire until this change. Cookie-only is
+// the documented posture (CLAUDE.md: "never returned to JS"); this
+// change brings the wire format in line with the documented contract.
 public record AuthResponse(
     string AccessToken,
-    string RefreshToken,
+    [property: JsonIgnore] string RefreshToken,
     DateTime ExpiresAt,
     UserSummary User
 );

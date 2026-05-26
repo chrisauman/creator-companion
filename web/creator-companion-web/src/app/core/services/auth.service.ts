@@ -235,7 +235,9 @@ export class AuthService {
   }
 
   private handleAuth(res: AuthResponse): void {
-    this.tokens.setTokens(res.accessToken, res.refreshToken, res.expiresAt);
+    // refreshToken arg removed 2026-05-25 — backend no longer sends
+    // it in the response body (cookie-only carrier per CLAUDE.md).
+    this.tokens.setTokens(res.accessToken, res.expiresAt);
     this._user.set(res.user);
     // Cache minimal user info for optimistic auth on next page load
     if (res.user) {

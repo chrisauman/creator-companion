@@ -26,9 +26,12 @@ export interface MotivationEntry {
   updatedAt: string;
 }
 
+// refreshToken removed from the wire interface 2026-05-25 — the backend
+// now omits it from the JSON response body (cookie-only carrier per
+// CLAUDE.md security posture). If the field somehow comes back in a
+// payload from an older deploy, it'll just be ignored on parse.
 export interface AuthResponse {
   accessToken: string;
-  refreshToken: string;
   expiresAt: string;
   user: User;
 }

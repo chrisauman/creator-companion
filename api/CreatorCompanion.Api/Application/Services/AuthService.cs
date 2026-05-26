@@ -512,13 +512,19 @@ public class AuthService(
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
+        // JWT carries only what's strictly needed to authorize the
+        // request: subject (user id), role, and a unique JTI. Audited
+        // 2026-05-25 — the prior `email`, `firstName`, `lastName`, and
+        // `tier` claims rode every request in the Authorization header
+        // (so visible to any TLS-inspecting proxy: corporate firewall,
+        // browser extension with broad perms, debug tooling, screen
+        // share of dev tools, etc.) but were not actually read by the
+        // frontend (which calls /v1/users/me when it needs profile
+        // detail). Removing them eliminates a continuous PII broadcast
+        // for zero functional cost.
         var claimsList = new List<Claim>
         {
             new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-            new Claim(JwtRegisteredClaimNames.Email, user.Email),
-            new Claim("firstName", user.FirstName),
-            new Claim("lastName", user.LastName),
-            new Claim("tier", user.Tier.ToString()),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
         if (user.IsAdmin)

@@ -26,12 +26,14 @@ export class TokenService {
   private static readonly RT_KEY    = 'cc_rt'; // legacy — kept for migration cleanup only
   private static readonly USER_KEY  = 'cc_user';
 
-  setTokens(accessToken: string, _refreshToken: string, expiresAt: string): void {
+  // Backend stopped sending refresh tokens in the response body
+  // 2026-05-25. The parameter was already a no-op (cookie-only),
+  // so it's fully removed from the signature now. Legacy localStorage
+  // cleanup still runs in case any browser still has the old key
+  // from before the prior cookie-only rollout.
+  setTokens(accessToken: string, expiresAt: string): void {
     this._accessToken.set(accessToken);
     this._expiresAt.set(new Date(expiresAt));
-    // Intentionally no longer storing _refreshToken anywhere — cookie only.
-    // Clear any legacy localStorage refresh token from before this rollout
-    // so XSS can't read it. Best-effort; silently swallow private-mode.
     try { localStorage.removeItem(TokenService.RT_KEY); } catch {}
   }
 
