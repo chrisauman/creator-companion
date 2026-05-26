@@ -779,6 +779,12 @@ desktop-only.
 Snapshot of what's enforced server-side as of the May 2026 audit pass.
 Re-read this before changing auth, billing, or storage paths.
 
+**For the audit-grade inventory** (every control, every code path,
+every deliberately-accepted-as-is decision, plus monitoring cadence)
+see [`docs/security-posture.md`](docs/security-posture.md). Updated
+2026-05-25 after the second defensive review pass. The bullets below
+are the must-know operational rules; the doc is the long-form reference.
+
 - **JWT access token** in memory only, ~60min TTL, `ClockSkew=0`.
 - **Refresh token** in HttpOnly Secure SameSite=None cookie ONLY —
   never returned to JS, never stored in localStorage, never accepted
