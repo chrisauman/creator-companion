@@ -447,7 +447,7 @@ a:hover { text-decoration: underline; }
 }
 .feat-section--light { background: var(--white); }
 .feat-section--dim   { background: var(--off); }
-.feat-section--dark  { background: #1a1d24; border-color: rgba(255,255,255,.07); }
+.feat-section--dark  { background: #2a2f38; border-color: rgba(255,255,255,.07); }
 
 /* Layout: text-left = copy|visual, text-right = visual|copy */
 .feat {
