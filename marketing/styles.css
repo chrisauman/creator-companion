@@ -466,7 +466,7 @@ a:hover { text-decoration: underline; }
   font-size: .75rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
   color: var(--cyan-dark); margin-bottom: 1.25rem;
 }
-.feat__eyebrow--inv { color: rgba(255,255,255,.4); }
+.feat__eyebrow--inv { color: var(--cyan); }
 
 .feat__heading {
   font-size: clamp(2rem, 3.5vw, 2.875rem);
