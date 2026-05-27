@@ -1319,6 +1319,67 @@ a:hover { text-decoration: underline; }
 .install-step__label { font-size: .9375rem; font-weight: 700; color: var(--text); margin-bottom: .25rem; }
 .install-step__desc { font-size: .875rem; color: var(--text-2); line-height: 1.55; }
 
+/* ── Homepage FAQ accordion ──────────────────────────────────────────────
+   Curated subset of the in-app FAQ. Renders from /v1/faq/public, filtered
+   for admin-flagged `isFeaturedOnHomepage` entries. Uses native
+   <details>/<summary> so it's keyboard-accessible and toggles without JS.
+   Section starts `hidden` and is unhidden by the inline script after a
+   successful fetch with at least one item. */
+.faq-home {
+  padding: 7rem 0 8rem;
+  background: var(--white);
+  border-bottom: 1.5px solid var(--border);
+}
+.faq-home__heading {
+  font-size: clamp(2rem, 3.5vw, 2.875rem);
+  font-weight: 800; letter-spacing: -.03em; line-height: 1.18;
+  color: var(--text);
+  text-align: center;
+  margin: 0 auto 3rem;
+  max-width: 720px;
+}
+.faq-home__list {
+  max-width: 720px;
+  margin: 0 auto;
+}
+.faq-home__item {
+  border-bottom: 1px solid var(--border);
+}
+.faq-home__item:first-child {
+  border-top: 1px solid var(--border);
+}
+/* Native <summary> renders a disclosure triangle by default — kill it so
+   our custom + icon is the only affordance. */
+.faq-home__q {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 0;
+  cursor: pointer;
+  list-style: none;
+  font-size: 1.0625rem; font-weight: 600; color: var(--text);
+  line-height: 1.4;
+}
+.faq-home__q::-webkit-details-marker { display: none; }
+.faq-home__q-text { flex: 1; }
+.faq-home__icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  width: 28px; height: 28px;
+  align-items: center; justify-content: center;
+  color: var(--text-2);
+  transition: transform .25s ease, color .15s ease;
+}
+.faq-home__item:hover .faq-home__icon { color: var(--cyan); }
+/* + → × on open */
+.faq-home__item[open] .faq-home__icon { transform: rotate(45deg); color: var(--cyan); }
+.faq-home__a {
+  padding: 0 0 1.5rem;
+  font-size: 1rem; color: var(--text-2); line-height: 1.65;
+  /* Preserve admin-authored linebreaks (FAQ answers in seed migrations
+     sometimes use \n for paragraph breaks). */
+  white-space: pre-wrap;
+}
+
 /* ── Final CTA ───────────────────────────────────────────────────────────── */
 .cta-final {
   position: relative; overflow: hidden;
@@ -1645,6 +1706,8 @@ details[open] .faq-q::after { content: '−'; }
   .steps { grid-template-columns: 1fr; gap: 2.5rem; }
   .pricing-section { padding: 5rem 0; }
   .cta-final { padding: 5rem 0 6rem; }
+  .faq-home { padding: 4rem 0 5rem; }
+  .faq-home__heading { margin-bottom: 2rem; }
   .hero__strips { gap: 0; }
   .hero__strip { padding: .375rem 1rem; font-size: .75rem; }
   .hero { padding-top: 6rem; }

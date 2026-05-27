@@ -31,7 +31,7 @@ public class FaqController(AppDbContext db) : ControllerBase
             .ThenBy(f => f.CreatedAt)
             .Select(f => new FaqResponse(
                 f.Id, f.Question, f.Answer, f.Category,
-                f.SortOrder, f.IsPublished,
+                f.SortOrder, f.IsPublished, f.IsFeaturedOnHomepage,
                 f.CreatedAt, f.UpdatedAt))
             .ToListAsync();
 

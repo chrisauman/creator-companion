@@ -13,7 +13,7 @@ namespace CreatorCompanion.Api.Api.Controllers;
 public class AdminFaqController(AppDbContext db) : ControllerBase
 {
     private static FaqResponse Map(Faq f) =>
-        new(f.Id, f.Question, f.Answer, f.Category, f.SortOrder, f.IsPublished, f.CreatedAt, f.UpdatedAt);
+        new(f.Id, f.Question, f.Answer, f.Category, f.SortOrder, f.IsPublished, f.IsFeaturedOnHomepage, f.CreatedAt, f.UpdatedAt);
 
     [HttpGet]
     public async Task<IActionResult> GetAll()
@@ -35,11 +35,12 @@ public class AdminFaqController(AppDbContext db) : ControllerBase
 
         var faq = new Faq
         {
-            Question    = request.Question.Trim(),
-            Answer      = request.Answer.Trim(),
-            Category    = string.IsNullOrWhiteSpace(request.Category) ? "General" : request.Category.Trim(),
-            IsPublished = request.IsPublished,
-            SortOrder   = maxOrder + 1
+            Question             = request.Question.Trim(),
+            Answer               = request.Answer.Trim(),
+            Category             = string.IsNullOrWhiteSpace(request.Category) ? "General" : request.Category.Trim(),
+            IsPublished          = request.IsPublished,
+            IsFeaturedOnHomepage = request.IsFeaturedOnHomepage,
+            SortOrder            = maxOrder + 1
         };
 
         db.Faqs.Add(faq);
@@ -54,11 +55,12 @@ public class AdminFaqController(AppDbContext db) : ControllerBase
         var faq = await db.Faqs.FindAsync(id);
         if (faq is null) return NotFound();
 
-        faq.Question    = request.Question.Trim();
-        faq.Answer      = request.Answer.Trim();
-        faq.Category    = string.IsNullOrWhiteSpace(request.Category) ? "General" : request.Category.Trim();
-        faq.IsPublished = request.IsPublished;
-        faq.UpdatedAt   = DateTime.UtcNow;
+        faq.Question             = request.Question.Trim();
+        faq.Answer               = request.Answer.Trim();
+        faq.Category             = string.IsNullOrWhiteSpace(request.Category) ? "General" : request.Category.Trim();
+        faq.IsPublished          = request.IsPublished;
+        faq.IsFeaturedOnHomepage = request.IsFeaturedOnHomepage;
+        faq.UpdatedAt            = DateTime.UtcNow;
 
         await db.SaveChangesAsync();
         return Ok(Map(faq));

@@ -14,6 +14,14 @@ public class Faq
     public string Category { get; set; } = "General";
     public int SortOrder { get; set; } = 0;
     public bool IsPublished { get; set; } = true;
+    /// <summary>
+    /// Per-entry flag for surfacing on the public marketing homepage
+    /// (preview.html / index.html FAQ accordion). Admin curates which
+    /// FAQs are visitor-facing vs. signed-in-only via this bool. The
+    /// public /v1/faq/public endpoint returns all published rows
+    /// including this field; the marketing JS filters client-side.
+    /// </summary>
+    public bool IsFeaturedOnHomepage { get; set; } = false;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }

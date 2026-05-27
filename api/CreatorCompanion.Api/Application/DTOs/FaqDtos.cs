@@ -9,6 +9,7 @@ public record FaqResponse(
     string   Category,
     int      SortOrder,
     bool     IsPublished,
+    bool     IsFeaturedOnHomepage,
     DateTime CreatedAt,
     DateTime UpdatedAt
 );
@@ -17,14 +18,16 @@ public record CreateFaqRequest(
     [Required, MaxLength(500)] string Question,
     [Required]                 string Answer,
     [MaxLength(80)] string Category = "General",
-    bool IsPublished = true
+    bool IsPublished = true,
+    bool IsFeaturedOnHomepage = false
 );
 
 public record UpdateFaqRequest(
     [Required, MaxLength(500)] string Question,
     [Required]                 string Answer,
     [MaxLength(80)] string Category = "General",
-    bool IsPublished = true
+    bool IsPublished = true,
+    bool IsFeaturedOnHomepage = false
 );
 
 public record ReorderFaqRequest(

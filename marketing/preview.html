@@ -533,6 +533,22 @@
        .install-text / .install-step* CSS rules stay in styles.css as
        orphan code; cleanup deferred to a future polish pass. -->
 
+  <!-- ── FAQ accordion ─────────────────────────────────────────────────
+       Curated subset of the in-app FAQ. Admins toggle individual entries
+       to "Show on public homepage FAQ" via /admin/faq; this section
+       fetches /v1/faq/public, filters by `isFeaturedOnHomepage`, and
+       renders <details>/<summary> accordion items. If no entries are
+       flagged (or the API is unreachable) the whole section hides
+       so the page degrades cleanly. -->
+  <section class="faq-home" id="faq-home" hidden>
+    <div class="container">
+      <h2 class="faq-home__heading">Frequently asked</h2>
+      <div class="faq-home__list" id="faq-home-list" role="list">
+        <!-- Items injected by inline script at the bottom of <body> -->
+      </div>
+    </div>
+  </section>
+
   <!-- ── Final CTA ─────────────────────────────────────────────────────── -->
   <section class="cta-final">
     <div class="cta-final__glow" aria-hidden="true"></div>
@@ -603,6 +619,55 @@
       { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
     );
     fadeEls.forEach(el => fadeObserver.observe(el));
+
+    /* ── Homepage FAQ accordion ─────────────────────────────────────────
+       Fetches the public FAQ endpoint (proxied through marketing/vercel.json
+       to Railway — see CLAUDE.md "api.creatorcompanionapp.com SSL cert"
+       gotcha for why we use /v1/* not the api.* hostname directly),
+       filters for admin-curated homepage entries, and renders accordion
+       items. Hides the section entirely on fetch failure or zero results
+       so the page degrades cleanly. */
+    (async () => {
+      const section = document.getElementById('faq-home');
+      const list = document.getElementById('faq-home-list');
+      if (!section || !list) return;
+
+      try {
+        const res = await fetch('/v1/faq/public', { credentials: 'omit' });
+        if (!res.ok) return;
+        const all = await res.json();
+        // Defensive: only render items explicitly flagged for the homepage.
+        // Sort by the admin-set SortOrder so reordering in admin reflects here.
+        const items = all
+          .filter(f => f && f.isFeaturedOnHomepage === true)
+          .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+        if (items.length === 0) return;
+
+        // Minimal in-line escape — answer/question text comes from admins
+        // (trusted authors) but we still escape to defend against accidental
+        // raw HTML or future content-source changes.
+        const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c =>
+          ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])
+        );
+
+        list.innerHTML = items.map(f => `
+          <details class="faq-home__item" role="listitem">
+            <summary class="faq-home__q">
+              <span class="faq-home__q-text">${esc(f.question)}</span>
+              <span class="faq-home__icon" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+              </span>
+            </summary>
+            <div class="faq-home__a">${esc(f.answer)}</div>
+          </details>
+        `).join('');
+
+        section.hidden = false;
+      } catch {
+        // Stay hidden on any network/parse error — the rest of the page
+        // is still useful without the FAQ block.
+      }
+    })();
   </script>
 </body>
 </html>

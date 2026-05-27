@@ -205,6 +205,10 @@ export interface Faq {
   category: string;
   sortOrder: number;
   isPublished: boolean;
+  /** Per-entry flag controlling whether this FAQ appears in the curated
+   *  homepage accordion on the public marketing site. The admin toggles
+   *  this; the marketing JS filters /v1/faq/public for `isFeaturedOnHomepage`. */
+  isFeaturedOnHomepage: boolean;
   createdAt: string;
   updatedAt: string;
 }

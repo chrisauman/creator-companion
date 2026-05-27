@@ -56,6 +56,10 @@ import { AdminShellComponent } from './admin-shell.component';
             <input type="checkbox" id="add-published" [(ngModel)]="draftPublished">
             <label for="add-published">Published (visible to users)</label>
           </div>
+          <div class="form-check">
+            <input type="checkbox" id="add-homepage" [(ngModel)]="draftFeaturedOnHomepage">
+            <label for="add-homepage">Show on public homepage FAQ</label>
+          </div>
           <div class="form-actions">
             <button class="btn btn--primary btn--sm"
               [disabled]="saving() || !draftQuestion.trim() || !draftAnswer.trim()"
@@ -111,6 +115,10 @@ import { AdminShellComponent } from './admin-shell.component';
                     <input type="checkbox" [id]="'pub-' + faq.id" [(ngModel)]="draftPublished">
                     <label [for]="'pub-' + faq.id">Published</label>
                   </div>
+                  <div class="form-check">
+                    <input type="checkbox" [id]="'home-' + faq.id" [(ngModel)]="draftFeaturedOnHomepage">
+                    <label [for]="'home-' + faq.id">Show on public homepage FAQ</label>
+                  </div>
                   <div class="form-actions">
                     <button class="btn btn--primary btn--sm"
                       [disabled]="saving() || !draftQuestion.trim() || !draftAnswer.trim()"
@@ -129,6 +137,9 @@ import { AdminShellComponent } from './admin-shell.component';
                     <span class="status-badge" [class.status-badge--on]="faq.isPublished">
                       {{ faq.isPublished ? 'Published' : 'Draft' }}
                     </span>
+                    @if (faq.isFeaturedOnHomepage) {
+                      <span class="status-badge status-badge--home" title="Surfaces in the public homepage FAQ accordion">Homepage</span>
+                    }
                   </div>
                   <p class="faq-a">{{ faq.answer }}</p>
                 </div>
@@ -220,6 +231,7 @@ import { AdminShellComponent } from './admin-shell.component';
       background: var(--color-surface-2); color: var(--color-text-3);
       border: 1px solid var(--color-border);
       &--on { background: #dcfce7; color: #166534; border-color: #86efac; }
+      &--home { background: #e0f2fe; color: #075985; border-color: #7dd3fc; }
     }
     .cat-badge {
       font-size: .6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
@@ -250,10 +262,11 @@ export class AdminFaqComponent implements OnInit {
   showAddForm = signal(false);
   editingId   = signal<string | null>(null);
 
-  draftQuestion  = '';
-  draftAnswer    = '';
-  draftCategory  = 'General';
-  draftPublished = true;
+  draftQuestion           = '';
+  draftAnswer             = '';
+  draftCategory           = 'General';
+  draftPublished          = true;
+  draftFeaturedOnHomepage = false;
 
   /** Distinct categories already used in the FAQ set — fed to the
    *  <datalist> autocomplete on the category input so admins can
@@ -278,18 +291,20 @@ export class AdminFaqComponent implements OnInit {
   // ── Add ─────────────────────────────────────────────────────────
   startAdd(): void {
     this.cancelEdit();
-    this.draftQuestion  = '';
-    this.draftAnswer    = '';
-    this.draftCategory  = 'General';
-    this.draftPublished = true;
+    this.draftQuestion           = '';
+    this.draftAnswer             = '';
+    this.draftCategory           = 'General';
+    this.draftPublished          = true;
+    this.draftFeaturedOnHomepage = false;
     this.showAddForm.set(true);
   }
 
   cancelAdd(): void {
     this.showAddForm.set(false);
-    this.draftQuestion = '';
-    this.draftAnswer   = '';
-    this.draftCategory = 'General';
+    this.draftQuestion           = '';
+    this.draftAnswer             = '';
+    this.draftCategory           = 'General';
+    this.draftFeaturedOnHomepage = false;
   }
 
   submitAdd(): void {
@@ -297,7 +312,7 @@ export class AdminFaqComponent implements OnInit {
     this.saving.set(true);
     this.error.set('');
     const category = this.draftCategory.trim() || 'General';
-    this.api.adminCreateFaq(this.draftQuestion.trim(), this.draftAnswer.trim(), category, this.draftPublished).subscribe({
+    this.api.adminCreateFaq(this.draftQuestion.trim(), this.draftAnswer.trim(), category, this.draftPublished, this.draftFeaturedOnHomepage).subscribe({
       next: faq => {
         this.faqs.update(list => [...list, faq]);
         this.cancelAdd();
@@ -311,17 +326,19 @@ export class AdminFaqComponent implements OnInit {
   startEdit(faq: Faq): void {
     this.cancelAdd();
     this.editingId.set(faq.id);
-    this.draftQuestion  = faq.question;
-    this.draftAnswer    = faq.answer;
-    this.draftCategory  = faq.category || 'General';
-    this.draftPublished = faq.isPublished;
+    this.draftQuestion           = faq.question;
+    this.draftAnswer             = faq.answer;
+    this.draftCategory           = faq.category || 'General';
+    this.draftPublished          = faq.isPublished;
+    this.draftFeaturedOnHomepage = faq.isFeaturedOnHomepage;
   }
 
   cancelEdit(): void {
     this.editingId.set(null);
-    this.draftQuestion = '';
-    this.draftAnswer   = '';
-    this.draftCategory = 'General';
+    this.draftQuestion           = '';
+    this.draftAnswer             = '';
+    this.draftCategory           = 'General';
+    this.draftFeaturedOnHomepage = false;
   }
 
   submitEdit(faq: Faq): void {
@@ -329,7 +346,7 @@ export class AdminFaqComponent implements OnInit {
     this.saving.set(true);
     this.error.set('');
     const category = this.draftCategory.trim() || 'General';
-    this.api.adminUpdateFaq(faq.id, this.draftQuestion.trim(), this.draftAnswer.trim(), category, this.draftPublished).subscribe({
+    this.api.adminUpdateFaq(faq.id, this.draftQuestion.trim(), this.draftAnswer.trim(), category, this.draftPublished, this.draftFeaturedOnHomepage).subscribe({
       next: updated => {
         this.faqs.update(list => list.map(f => f.id === updated.id ? updated : f));
         this.cancelEdit();
