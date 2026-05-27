@@ -525,16 +525,17 @@ a:hover { text-decoration: underline; }
   padding-bottom: 0;
 }
 /* Variant: full-bleed image fills the screen (no .mapp-* children).
-   Background matches the app's body grey so any gap above/below
-   the image blends with the screenshot's own background. The
-   :has() rule below propagates the grey up to the .mock-phone
-   parent so the gutters around the notch are grey too (otherwise
-   the dark phone-frame fill shows through next to the notch). */
+   The source screenshot has the iOS safe-area shadow baked into its
+   left edge (a horizontal gradient from #bababa at x=0 fading to
+   body-grey #e8e8e8 by ~11% of width). The screen + parent .mock-phone
+   bg uses the SAME left-anchored horizontal gradient so the shadow
+   flows continuously down the entire left side, including the area
+   above/below the image and around the notch. */
 .mock-phone:has(.mock-phone__screen--img) {
-  background: #e8e9eb;
+  background: linear-gradient(to right, #bababa 0%, #e8e8e8 11%, #e8e8e8 100%);
 }
 .mock-phone__screen--img {
-  background: #e8e9eb;
+  background: linear-gradient(to right, #bababa 0%, #e8e8e8 11%, #e8e8e8 100%);
   min-height: 0;
   padding: 0;
 }
