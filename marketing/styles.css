@@ -372,7 +372,7 @@ a:hover { text-decoration: underline; }
 
 .hero__sub {
   font-size: clamp(1rem, 2.2vw, 1.1875rem);
-  color: rgba(255,255,255,.5); line-height: 1.75;
+  color: #fff; line-height: 1.75;
   max-width: 580px; margin: 0 auto 3rem;
 }
 
@@ -1212,7 +1212,7 @@ a:hover { text-decoration: underline; }
 }
 .feature-showcase__close-line {
   font-size: 1.0625rem;
-  color: var(--text-2);
+  color: var(--text);
   margin-bottom: 2rem;
   line-height: 1.55;
 }
@@ -1229,7 +1229,7 @@ a:hover { text-decoration: underline; }
 }
 .feature-showcase__close-fine {
   font-size: .875rem;
-  color: var(--text-3);
+  color: var(--text);
   margin-top: 1.5rem;
   letter-spacing: .005em;
 }
