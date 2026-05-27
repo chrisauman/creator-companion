@@ -1378,15 +1378,27 @@ a:hover { text-decoration: underline; }
   padding-bottom: 2rem;
   border-bottom: 1px solid rgba(255,255,255,.06);
 }
-.site-footer__logo img { height: 22px; filter: brightness(0) invert(1); opacity: .6; }
-/* Live-text variant — replaces the PNG wordmark per CLAUDE.md brand rule. */
-.site-footer__logo--text {
+/* Footer logo: icon + live Fraunces wordmark, mirroring the nav.
+   The icon is the cyan-on-black logo-icon.png; on the dark footer
+   the black square blends in and only the cyan brand mark reads.
+   No brightness/invert filter — render the icon as-is. */
+.site-footer__logo {
+  display: flex;
+  align-items: center;
+  gap: .625rem;
+  text-decoration: none;
+}
+.site-footer__logo-icon {
+  height: 26px;
+  width: auto;
+  display: block;
+}
+.site-footer__logo-name {
   font-family: 'Fraunces', Georgia, serif;
   font-size: 1.0625rem; font-weight: 800; letter-spacing: -.01em;
   color: rgba(255,255,255,.6);
-  text-decoration: none;
 }
-.site-footer__logo--text:hover { color: rgba(255,255,255,.9); text-decoration: none; }
+.site-footer__logo:hover .site-footer__logo-name { color: rgba(255,255,255,.9); }
 .site-footer__nav { display: flex; gap: 2rem; flex-wrap: wrap; }
 .site-footer__nav a { font-size: .875rem; color: rgba(255,255,255,.35); transition: color .15s; text-decoration: none; }
 .site-footer__nav a:hover { color: rgba(255,255,255,.7); text-decoration: none; }
