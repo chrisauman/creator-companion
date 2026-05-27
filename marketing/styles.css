@@ -527,18 +527,25 @@ a:hover { text-decoration: underline; }
 /* Variant: full-bleed image fills the screen (no .mapp-* children).
    The source screenshot has an iOS safe-area shadow baked into its
    left edge. To make that shadow flow continuously into the screen
-   area above/below the image (and around the notch), the .mock-phone
-   parent + the .mock-phone__screen--img screen both use a 750x4
-   slice extracted from the screenshot's top row as a repeat-y bg.
-   Because the strip and the image are both scaled to 100% of the
-   same container width, their gradients line up pixel-for-pixel —
-   no visible seam where the image meets the background. */
+   area around the notch, both .mock-phone (parent, via :has()) and
+   .mock-phone__screen--img use the SAME 750x4 slice extracted from
+   the screenshot's top row as a repeat-y background. The slice and
+   the image both scale to 100% of the same container width, so
+   their gradients line up pixel-for-pixel — no visible seam.
+
+   Per-mockup customization: each .mock-phone instance sets
+   `--mock-edge: url('images/<name>-edge.png')` inline. The custom
+   property inherits from .mock-phone down to its --img child.  */
 .mock-phone:has(.mock-phone__screen--img) {
-  background: url('images/mock-journal-edge.png') repeat-y top left;
+  background-image: var(--mock-edge);
+  background-repeat: repeat-y;
+  background-position: top left;
   background-size: 100% auto;
 }
 .mock-phone__screen--img {
-  background: url('images/mock-journal-edge.png') repeat-y top left;
+  background-image: var(--mock-edge);
+  background-repeat: repeat-y;
+  background-position: top left;
   background-size: 100% auto;
   min-height: 0;
   padding: 0;
