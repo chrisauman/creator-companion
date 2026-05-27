@@ -29,12 +29,21 @@ CLAUDE.md)
   password-rules checklist on marketing signup + reset-password,
   email-exists recovery links, password visibility toggles,
   consistent 429/5xx error messages across all 5 auth surfaces.
-- 2026-05-26 — **PR 2 shipped** (commit TBD): Cloudflare Turnstile
+- 2026-05-26 — **PR 2 shipped** (commit `de87f3e`): Cloudflare Turnstile
   bot-protection on register / login / forgot-password. See §4.7
   below.
-- **Open phases** (3, 4, 5, 6): distributed rate-limit counters,
-  TOTP 2FA, login telemetry + new-device email, admin-demotion
-  immediate revocation. Tracked in the conversation triage.
+- 2026-05-26 — **Resend silent-failure fix shipped** (commit `b1a2e7e`):
+  ResendClientOptions.ThrowExceptions=true, message id captured +
+  persisted. Admin "Sent" badge now reflects actual delivery. See
+  §13 / accepted-as-is for the audit trail.
+- 2026-05-26 — **Phase 3 (distributed rate-limit counters) deferred
+  with reasoning.** Not a code change — a security-posture decision
+  to accept the existing four-layer brute-force defense as
+  sufficient now that Turnstile is shipped. See §7.3 (updated) and
+  §13 (new accepted-as-is entry).
+- **Open phases** (4, 5, 6): TOTP 2FA, login telemetry + new-device
+  email, admin-demotion immediate revocation. Tracked in the
+  conversation triage.
 
 ---
 
@@ -438,9 +447,44 @@ Three paths that delete user content also clean orphaned R2 media:
   **10 / 60s per IP**.
 - All POST/PUT/PATCH/DELETE globally: **30 / 60s per IP**.
 - Counter store: **in-memory** (`MemoryCacheRateLimitCounterStore`).
-  Per-process, lost on restart. Flagged as Risk #5 in the 2026-05-25
-  audit — the per-account login lockout (§1.4) is the durable
-  brute-force defense; this is the soft outer layer.
+  Per-process, lost on restart, not shared across replicas. This is
+  Risk #5 from the 2026-05-25 audit; **deferred as acceptable on
+  2026-05-26** (see §13 for the full reasoning). Short version:
+  the IP rate limit is the 4th of four defense layers against
+  credential stuffing; the three above it (Turnstile at the door,
+  per-account lockout DB-backed, BCrypt-12 per-attempt cost) carry
+  the real load, so the in-memory limitation doesn't materially
+  weaken the overall posture.
+
+### 7.4 The four-layer brute-force defense (current as of 2026-05-26)
+
+Documented here as a single block so the layering shows clearly
+when reading just this section. The 2026-05-26 decision to defer
+distributed rate-limit counters rests on this layering.
+
+| Layer | What it does | Where it lives |
+|---|---|---|
+| **1. Cloudflare Turnstile** | Filters bot traffic at the auth surface before any backend logic runs. Missing or invalid token → 403 with `code: "turnstile_failed"`. Bot-net rotating IPs gets stopped here, not at rate-limit | `§4.7`, `AuthController.RequireHumanAsync` |
+| **2. Per-account lockout** | 10 wrong-password attempts in 15 minutes locks the specific user account. **DB-backed** — survives restarts, applies across all instances. Locked path runs dummy BCrypt to match timing | `§1.4` |
+| **3. BCrypt work factor 12** | Each wrong-password attempt costs ~250ms of server CPU. Makes per-attempt brute force economically painful even at high request volumes | `§1.3` |
+| **4. IP rate limit (this section)** | 10 auth requests / 60s per IP. Soft outer layer — slows casual probing, doesn't stop a determined distributed attacker | `§7.3` |
+
+The IP rate limit's in-memory limitation (counters reset on
+restart, don't share across replicas) is meaningful in isolation —
+an attacker who knows about it could time attempts around deploys
+or split across instances. But in the layered context, any such
+attacker still has to:
+- defeat Turnstile (the bot vector is essentially closed today)
+- AND avoid tripping per-account lockout (10/15min hard cap per
+  user, can't be evaded by rotating IPs)
+- AND eat BCrypt's 250ms-per-attempt cost (limits per-account
+  attempt rate to ~4/sec even with perfect parallelism)
+
+The IP rate limit then becomes "casual probing slowdown" rather
+than "primary defense" — and the bar for the casual case is low
+enough that an in-memory counter that occasionally resets is
+acceptable. A distributed counter store would be defense-in-depth
+on a threat that's already heavily defended.
 
 ---
 
@@ -583,6 +627,79 @@ changes.
 | JWT `sub` claim contains the user GUID | Standard, correct. |
 | CORS uses `AllowCredentials()` | Required for the cookie refresh flow. Locked to the explicit allowlist in production. |
 | No CSRF token middleware | Cookie is `SameSite=None; Secure` + CORS allowlist + Origin checks. Cross-origin state-changing requests still need CORS approval. Acceptable for current threat model; an explicit CSRF token would be belt-and-suspenders. |
+| In-memory rate-limit counter store (Risk #5 deferral, 2026-05-26) | The IP rate limit is layer 4 of the four-layer brute-force defense (see §7.4). Layers 1–3 — Turnstile at the door, DB-backed per-account lockout, BCrypt-12 per-attempt cost — carry the real load against credential stuffing. The IP limit's role is "casual probing slowdown," not "primary defense." A distributed counter store (Redis, Postgres-backed, or Cloudflare-edge) would close the per-replica / restart-resets gap but adds infrastructure for a threat already heavily defended. Decision: accept the in-memory limitation; revisit if Sentry/Railway logs show real distributed credential-stuffing traffic that's bypassing Turnstile. |
+
+### 13.1 Phase 3 deferral — full reasoning (Risk #5, 2026-05-26)
+
+Spelled out at length because the call rests on a layering argument
+that's easy to forget when re-reading just the row above.
+
+**The original finding (2026-05-25 review):** `AspNetCoreRateLimit`
+uses `MemoryCacheRateLimitCounterStore`. Counters live in each
+.NET process's RAM. Three resulting weaknesses:
+
+1. **Restart-reset.** Every redeploy zeros the counters. An attacker
+   timing attempts around our deploy cadence gets free credits.
+2. **Per-replica.** If Railway ever scales the API to >1 instance,
+   each instance has its own counter. The effective ceiling becomes
+   `replicas × 10/60s` per IP.
+3. **Per-process, period.** A future process crash + restart has
+   the same effect as a redeploy.
+
+**Why the original instinct was Redis.** Standard answer in
+`AspNetCoreRateLimit`'s own docs: swap `MemoryCacheRateLimitCounterStore`
+for `DistributedCacheRateLimitCounterStore` backed by Redis.
+Counters survive restarts, shared across replicas, well-trodden
+pattern, ~1 day of work.
+
+**Why we're not doing that now.** Reassessed on 2026-05-26 after
+the Turnstile rollout (`de87f3e`) reshaped the threat model.
+Documented as the four-layer defense in §7.4. Quick summary:
+
+| Layer | Stops |
+|---|---|
+| Turnstile (§4.7) | Bot traffic (the dominant credential-stuffing vector) — at the door, before any backend logic |
+| Per-account lockout (§1.4) | Targeted per-user brute force — DB-backed, immune to per-replica / restart issues |
+| BCrypt-12 (§1.3) | Economic-scale per-attempt cost — ~250ms/attempt regardless of rate limiter |
+| IP rate limit (§7.3) | Casual probing slowdown |
+
+The IP rate limit's role demoted from "primary brute-force defense"
+to "casual probing slowdown." For an attacker to actually benefit
+from the in-memory counter limitation, they would need to:
+- defeat Turnstile (currently essentially closed),
+- AND attack across enough accounts to evade per-account lockout
+  (10 wrong-passwords / 15min hard cap, can't be bypassed by
+  rotating IPs),
+- AND absorb BCrypt-12's ~250ms-per-attempt cost (limits
+  effective rate to ~4/sec/account even at perfect parallelism).
+
+At that point the restart-resets-counter detail is the least of
+our problems.
+
+**The added cost of fixing it now:**
+- Another service in the stack (Redis on Railway adds ~$5/mo + a
+  new outage surface + another credential to rotate).
+- OR a Postgres-backed counter table (writes on every authenticated
+  request, hot rows, eventual VACUUM pain — not free either).
+- OR Cloudflare-edge rate limiting (free tier exists, but means
+  we're committing to keeping Cloudflare in front of the API
+  permanently — currently we only use Cloudflare for R2 and
+  Turnstile).
+
+**Reassess if any of these are true:**
+- Sentry shows credential-stuffing traffic at volume that's
+  visibly evading Turnstile.
+- Railway scales the API horizontally (today it's a single
+  instance; the per-replica gap is hypothetical).
+- We adopt Cloudflare in front of the API for other reasons —
+  edge rate limiting becomes free at that point.
+- The threat model changes (e.g., we add a high-value endpoint
+  that needs stricter per-IP throttling than the existing
+  defense layers cover).
+
+Until then: in-memory is acceptable. The doc admits the gap
+honestly; defense-in-depth on a defended threat isn't worth
+the infrastructure cost.
 
 ---
 
@@ -617,22 +734,36 @@ state:
 - ~~#4 CSP `connect-src` includes `https:`~~ → closed 2026-05-25
   Phase 1. See §8.2.
 
+**Deferred with reasoning (still risks, but accepted as-is):**
+- **#5** — Rate limit counters in-memory only (not distributed).
+  Deferred 2026-05-26 after Turnstile rollout reshaped the threat
+  model. IP rate limit is now layer 4 of a four-layer defense
+  (§7.4); the in-memory limitation is "casual probing slowdown
+  occasionally resets" rather than "primary defense fails open."
+  Full reasoning in §13.1. Revisit if Sentry shows distributed
+  credential-stuffing evading Turnstile, or if we ever scale the
+  API horizontally on Railway.
+
 **Open:**
 - **#2** — Push subscription silent take-over
   (`PushController.Subscribe`). Needs threat-model discussion.
-- **#5** — Rate limit counters in-memory only (not distributed).
-  Tracked as Phase 3.
 - **#6** — Email verification not required before trial granted.
   Product/policy call.
 - **#7** — Storage upload before DB row commit (R2 orphan
   reconciliation). Operational, not security-critical.
 - **#8** — Admin demotion window — access token survives
-  demotion until TTL. Tracked as Phase 6 (depends on Phase 3 if
-  using the Redis-blocklist approach).
+  demotion until TTL. Tracked as Phase 6. (Previously coupled
+  to Phase 3 via the "Redis blocklist" implementation idea;
+  with Phase 3 deferred, Phase 6 can ship as a standalone
+  short-TTL access-token + DB-revocation-list approach if/when
+  prioritized.)
 
 **New defenses added (not closure of original findings, but new
 controls):**
 - 2026-05-25 Phase 2: HIBP compromised-password check. See §4.6.
+- 2026-05-26: Cloudflare Turnstile bot-protection on
+  register/login/forgot-password. See §4.7. Materially reshaped
+  the brute-force threat model — see §7.4 for the layering.
 
 ---
 

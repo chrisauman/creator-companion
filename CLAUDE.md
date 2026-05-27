@@ -913,6 +913,18 @@ without a `SENTRY_DSN` ships with the SDK no-op'd. Backend without
 Items the May 2026 audit pass flagged but didn't fix, with rationale.
 Document here so future audits don't re-spend the cycles deciding.
 
+- **Distributed rate-limit counters (Phase 3, deferred 2026-05-26)** —
+  `AspNetCoreRateLimit`'s `MemoryCacheRateLimitCounterStore` is
+  per-process and lost on restart. The 2026-05-25 audit flagged this
+  as Risk #5 and proposed Redis-backed distributed counters. Deferred
+  after the Turnstile rollout (`de87f3e`) made the IP rate limit
+  layer 4 of a four-layer defense — layers 1–3 (Turnstile, per-account
+  DB-backed lockout, BCrypt-12) carry the real load against credential
+  stuffing, so the in-memory limitation is "casual probing slowdown
+  occasionally resets" rather than "primary defense fails open." Full
+  reasoning in `docs/security-posture.md` §13.1. Revisit if Sentry
+  shows distributed credential-stuffing evading Turnstile, or if we
+  ever scale the API horizontally on Railway.
 - **ForwardedHeaders `KnownNetworks` allow-list** — Audit recommended
   populating with Railway's proxy IP ranges. Railway uses dynamic
   proxy IPs and doesn't publish them, so the only working alternative
