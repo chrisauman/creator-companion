@@ -502,10 +502,11 @@ a:hover { text-decoration: underline; }
   background: #111318;
   border-radius: 48px;
   border: 8px solid #1e2130;
-  box-shadow:
-    0 0 0 1px rgba(255,255,255,.05),
-    0 40px 80px rgba(0,0,0,.45),
-    inset 0 0 0 1px rgba(255,255,255,.04);
+  /* Simple drop shadow only — no inner/outer 1px highlights.
+     The original stack added a subtle inset white edge that read as
+     a faint line on the left side once the screen interior went grey
+     (#e8e9eb via the --img variant). */
+  box-shadow: 0 30px 60px rgba(0,0,0,.35);
   overflow: hidden;
   position: relative;
   flex-shrink: 0;
