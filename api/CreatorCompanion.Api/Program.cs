@@ -162,6 +162,62 @@ try
                 IssuerSigningKey = new SymmetricSecurityKey(jwtKey),
                 ClockSkew = TimeSpan.Zero
             };
+
+            // SecurityStamp validation. Runs AFTER signature, issuer,
+            // audience, and lifetime have all checked out. We then
+            // compare the JWT's "stamp" claim to the user row's
+            // current SecurityStamp via a 2-min cached lookup, and
+            // fail the request if they differ. Bumping a user's
+            // SecurityStamp (admin demote/promote, deactivate,
+            // password change/reset) therefore invalidates every
+            // outstanding access token for that user within the
+            // cache TTL.
+            //
+            // **Legacy-token grace.** JWTs issued before this rollout
+            // carry no "stamp" claim. We treat a missing claim as
+            // valid — those tokens still have to pass the standard
+            // ~60-min lifetime check, so they age out naturally
+            // within an hour of deploy. Without this grace, every
+            // active user would get force-logged-out the moment
+            // we ship.
+            //
+            // **Missing user row** (returned as null from the
+            // service) is also a fail — covers the deleted-account
+            // edge case.
+            options.Events = new JwtBearerEvents
+            {
+                OnTokenValidated = async ctx =>
+                {
+                    var stamp = ctx.Principal?.FindFirst("stamp")?.Value;
+                    if (string.IsNullOrEmpty(stamp))
+                        return; // legacy token: allow, will expire on its own
+
+                    var subStr = ctx.Principal?.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value
+                              ?? ctx.Principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                    if (!Guid.TryParse(subStr, out var userId))
+                    {
+                        ctx.Fail("Invalid sub claim.");
+                        return;
+                    }
+
+                    var stampService = ctx.HttpContext.RequestServices
+                        .GetRequiredService<IUserStampService>();
+                    var current = await stampService.GetCurrentStampAsync(userId, ctx.HttpContext.RequestAborted);
+
+                    if (current == null)
+                    {
+                        // User row no longer exists (deleted). The
+                        // token must die immediately.
+                        ctx.Fail("User no longer exists.");
+                        return;
+                    }
+                    if (!string.Equals(current, stamp, StringComparison.Ordinal))
+                    {
+                        ctx.Fail("Security stamp mismatch.");
+                        return;
+                    }
+                }
+            };
         });
 
     builder.Services.AddAuthorization(options =>
@@ -307,6 +363,7 @@ try
     // Application services
     builder.Services.AddHttpContextAccessor();
     builder.Services.AddScoped<IAuditService, AuditService>();
+    builder.Services.AddScoped<IUserStampService, UserStampService>();
     builder.Services.AddScoped<IAuthService, AuthService>();
     builder.Services.AddScoped<IEntitlementService, EntitlementService>();
     builder.Services.AddScoped<IStreakService, StreakService>();

@@ -20,6 +20,7 @@ public class AuthService(
     IStorageService storage,
     IWelcomeEntryService welcomeEntry,
     IPasswordSafetyService passwordSafety,
+    IUserStampService stampService,
     ILogger<AuthService> logger) : IAuthService
 {
     // Lockout configuration. Per-account counter is persisted on the
@@ -446,6 +447,13 @@ public class AuthService(
         // immediately on the next request.
         resetToken.User.FailedLoginCount = 0;
         resetToken.User.LockedUntil = null;
+        // Bump SecurityStamp so every outstanding access token for this
+        // user fails the OnTokenValidated stamp check on its next request.
+        // Refresh-token revocation (just below) closes the session-renewal
+        // path; the stamp bump closes the "attacker already minted a
+        // JWT and is using it now" path within the cache TTL (~2 min,
+        // typically much less because the next bullet calls Invalidate).
+        resetToken.User.SecurityStamp = Guid.NewGuid().ToString("N");
 
         await audit.LogAsync("password.reset", resetToken.UserId);
 
@@ -460,6 +468,9 @@ public class AuthService(
             rt.RevokedAt = DateTime.UtcNow;
 
         await db.SaveChangesAsync();
+        // Drop the cached stamp so the new value is visible to the
+        // very next request (don't wait the 2-min TTL).
+        stampService.Invalidate(resetToken.UserId);
 
         try { await emailService.SendPasswordChangedAsync(resetToken.User.Email); }
         catch (Exception ex) { Console.WriteLine($"[WARN] Failed to send password changed email: {ex.Message}"); }
@@ -546,7 +557,16 @@ public class AuthService(
         var claimsList = new List<Claim>
         {
             new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            // Per-user SecurityStamp. Validated on every request by the
+            // JwtBearer OnTokenValidated handler in Program.cs against
+            // the current row value (cached ~2 min). Bumping the row's
+            // SecurityStamp therefore invalidates every outstanding
+            // JWT for the user within the cache TTL — closes the
+            // admin-demotion window and tightens password-change /
+            // reset / deactivate revocation. See IUserStampService
+            // for the lookup model and ALL call sites that bump.
+            new Claim("stamp", user.SecurityStamp)
         };
         if (user.IsAdmin)
             claimsList.Add(new Claim(ClaimTypes.Role, "Admin"));

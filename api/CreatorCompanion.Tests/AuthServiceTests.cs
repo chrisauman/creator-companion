@@ -57,6 +57,18 @@ public class AuthServiceTests
             => Task.CompletedTask;
     }
 
+    // No-op SecurityStamp service. AuthService calls Invalidate after
+    // a password reset; tests don't exercise the JWT OnTokenValidated
+    // path (that runs only inside a live HTTP pipeline), so this stub
+    // is enough to satisfy the constructor. GetCurrentStampAsync
+    // returns null because no test calls it.
+    private sealed class NullUserStampService : IUserStampService
+    {
+        public Task<string?> GetCurrentStampAsync(Guid userId, CancellationToken ct = default)
+            => Task.FromResult<string?>(null);
+        public void Invalidate(Guid userId) { }
+    }
+
     private static AuthService Build(AppDbContext db, IPasswordSafetyService? passwordSafety = null)
     {
         var config = new ConfigurationBuilder()
@@ -72,6 +84,7 @@ public class AuthServiceTests
         return new AuthService(db, config, new NullEmailService(), new NullAuditService(), new NullStorageService(),
             new NullWelcomeEntryService(),
             passwordSafety ?? new NullPasswordSafetyService(),
+            new NullUserStampService(),
             Microsoft.Extensions.Logging.Abstractions.NullLogger<AuthService>.Instance);
     }
 

@@ -21,6 +21,11 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.StripeSubscriptionId).HasMaxLength(255);
         builder.Property(u => u.ProfileImagePath).HasMaxLength(500);
 
+        // Guid.NewGuid().ToString("N") is exactly 32 hex chars. Cap at
+        // 64 to leave room if we ever switch to a longer stamp scheme
+        // (e.g., base64-encoded random bytes) without another migration.
+        builder.Property(u => u.SecurityStamp).HasMaxLength(64).IsRequired();
+
         builder.HasIndex(u => u.Email).IsUnique();
 
         // Partial index covering all three trial-lifecycle email

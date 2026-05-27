@@ -13,7 +13,7 @@ namespace CreatorCompanion.Api.Api.Controllers;
 [ApiController]
 [Route("v1/admin")]
 [Authorize(Policy = "AdminOnly")]
-public class AdminController(AppDbContext db, IAuditService audit) : ControllerBase
+public class AdminController(AppDbContext db, IAuditService audit, IUserStampService stampService) : ControllerBase
 {
     private Guid AdminId => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)
         ?? User.FindFirstValue("sub")!);
@@ -214,7 +214,38 @@ public class AdminController(AppDbContext db, IAuditService audit) : ControllerB
         if (passwordChanged)
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword, 12);
 
+        // Bump the user's SecurityStamp on any change that should
+        // invalidate every outstanding access token they hold:
+        // - admin role flipped (closes the demote-but-token-still-valid
+        //   window — Risk #8 in the 2026-05-25 audit)
+        // - active flag flipped (a reactivated user with a leaked
+        //   pre-deactivation token shouldn't get it back live; a
+        //   deactivated user shouldn't continue ANY in-flight session)
+        // - admin reset their password (other devices need to die)
+        // Tier changes don't need a stamp bump because tier is no
+        // longer carried in the JWT — it's read fresh from the DB by
+        // EntitlementService on every gated write path.
+        var stampShouldBump = wasAdmin != user.IsAdmin
+                              || wasActive != user.IsActive
+                              || passwordChanged;
+        if (stampShouldBump)
+        {
+            user.SecurityStamp = Guid.NewGuid().ToString("N");
+            // Revoke active refresh tokens too so the session-renewal
+            // path can't immediately mint a new JWT (which would carry
+            // the new stamp and so pass validation). This matches the
+            // SetActive(false) flow's behaviour and the password-reset
+            // path in AuthService.
+            var nowRt = DateTime.UtcNow;
+            await db.RefreshTokens
+                .Where(rt => rt.UserId == id && rt.RevokedAt == null)
+                .ExecuteUpdateAsync(s => s.SetProperty(r => r.RevokedAt, nowRt));
+        }
+
         await db.SaveChangesAsync();
+
+        if (stampShouldBump)
+            stampService.Invalidate(id);
 
         // Emit fine-grained audit entries for every security-relevant
         // change so a compromised admin can be retraced.
@@ -336,18 +367,29 @@ public class AdminController(AppDbContext db, IAuditService audit) : ControllerB
         // rather than waiting for the next RefreshAsync to notice the
         // flipped IsActive. Otherwise a malicious session can keep
         // refreshing access tokens for up to 30 days.
-        if (wasActive && !user.IsActive)
+        // Also bump SecurityStamp so any *current* access token in the
+        // user's pocket dies within the OnTokenValidated cache TTL —
+        // covers the gap between revoke and natural JWT exp.
+        if (wasActive != user.IsActive)
         {
-            var now = DateTime.UtcNow;
-            await db.RefreshTokens
-                .Where(rt => rt.UserId == id && rt.RevokedAt == null)
-                .ExecuteUpdateAsync(s => s.SetProperty(r => r.RevokedAt, now));
+            user.SecurityStamp = Guid.NewGuid().ToString("N");
+            if (wasActive && !user.IsActive)
+            {
+                var now = DateTime.UtcNow;
+                await db.RefreshTokens
+                    .Where(rt => rt.UserId == id && rt.RevokedAt == null)
+                    .ExecuteUpdateAsync(s => s.SetProperty(r => r.RevokedAt, now));
+            }
         }
 
         await db.SaveChangesAsync();
+
         if (wasActive != user.IsActive)
+        {
+            stampService.Invalidate(id);
             await audit.LogAsync(user.IsActive ? "admin.reactivated_user" : "admin.deactivated_user",
                 AdminId, $"target={id}");
+        }
 
         return Ok(new { id = user.Id, isActive = user.IsActive });
     }

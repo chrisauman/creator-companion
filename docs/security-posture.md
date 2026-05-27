@@ -41,8 +41,15 @@ CLAUDE.md)
   to accept the existing four-layer brute-force defense as
   sufficient now that Turnstile is shipped. See §7.3 (updated) and
   §13 (new accepted-as-is entry).
-- **Open phases** (4, 5, 6): TOTP 2FA, login telemetry + new-device
-  email, admin-demotion immediate revocation. Tracked in the
+- 2026-05-27 — **Phase 6 shipped:** per-user `SecurityStamp` column +
+  `"stamp"` JWT claim + cached `OnTokenValidated` check. Bumping the
+  stamp invalidates every outstanding access token for that user
+  within the cache TTL (~2 min, often instant via explicit
+  Invalidate). Bumped on admin promote/demote, admin deactivate,
+  admin password reset, user password change, and password reset.
+  Closes Risk #8 (admin-demotion window). See §1.10 below.
+- **Open phases:** 4 (TOTP 2FA — deferred at user's request),
+  5 (login telemetry + new-device email — next up). Tracked in the
   conversation triage.
 
 ---
@@ -147,6 +154,50 @@ CLAUDE.md)
 - Hard-deletes the user and **all dependent rows + R2 media**.
 - Stays open even during trial-expired lockout, deliberately — a
   locked-out user must always be able to leave with their data.
+
+### 1.10 SecurityStamp + immediate access-token revocation (2026-05-27, Phase 6)
+- **Goal:** invalidate every outstanding access token for a user
+  within ~2 minutes of any privilege change, without waiting for
+  the natural ~60 min JWT expiry. Closes Risk #8 (admin demoted but
+  still holds a valid admin JWT for up to an hour).
+- **Mechanism:** every JWT carries a `"stamp"` claim = `User.SecurityStamp`
+  (32-char random). The JwtBearer `OnTokenValidated` event (wired
+  in `Program.cs`) compares the claim to the row's current value
+  via `IUserStampService`, which caches per-user lookups for ~2 min.
+  Mismatched stamp → `ctx.Fail()` → request gets 401.
+- **What bumps the stamp:**
+  - Admin promote/demote (closes the demote-window itself)
+  - Admin deactivate (paired with refresh-token revoke)
+  - Admin password reset
+  - User password change (paired with other-device refresh-revoke)
+  - User-initiated password reset via the forgot-password flow
+- **Why a cache.** Without one, every authenticated request gains
+  a DB hit. 2-min TTL absorbs the vast majority of traffic; bumps
+  call `Invalidate(userId)` after `SaveChanges` so the change takes
+  effect immediately (not after TTL).
+- **Legacy-token grace.** JWTs minted before this rollout carry no
+  `"stamp"` claim. `OnTokenValidated` treats a missing claim as
+  valid — those tokens still die via the ~60 min lifetime check.
+  Without this grace, every active user would get force-logged-out
+  on deploy.
+- **Migration:** `AddSecurityStampToUser` adds the column with empty
+  default, then `UPDATE … SET SecurityStamp = gen_random_uuid()::text`
+  to give every existing user a unique value. The C# default
+  initializer (`Guid.NewGuid().ToString("N")`) covers new users.
+- **Files:**
+  - `Domain/Models/User.cs` — `SecurityStamp` property
+  - `Application/Interfaces/IUserStampService.cs`
+  - `Application/Services/UserStampService.cs` (cache + DB lookup)
+  - `Application/Services/AuthService.cs` — emits claim, bumps on reset
+  - `Api/Controllers/UsersController.cs` — bumps on password change
+  - `Api/Controllers/AdminController.cs` — bumps on demote/deactivate
+  - `Program.cs` — registers service, wires `OnTokenValidated`
+  - `Migrations/20260527005814_AddSecurityStampToUser.cs`
+- **Tests:**
+  - `SecurityHardeningTests.GeneratedJwt_carries_stamp_claim_matching_user_row`
+  - `SecurityHardeningTests.ResetPasswordAsync_bumps_security_stamp`
+  - `SecurityHardeningTests.NewlyCreatedUser_gets_unique_security_stamp`
+  - `UserStampServiceTests.*` (cache hit, miss, invalidate)
 
 ---
 
@@ -733,6 +784,10 @@ state:
   claims removed). See §1.1.
 - ~~#4 CSP `connect-src` includes `https:`~~ → closed 2026-05-25
   Phase 1. See §8.2.
+- ~~#8 Admin demotion window~~ → closed 2026-05-27 Phase 6.
+  SecurityStamp bump on demote (+ activate/deactivate, password
+  change/reset) invalidates outstanding access tokens within the
+  2-min cache TTL via `OnTokenValidated`. See §1.10.
 
 **Deferred with reasoning (still risks, but accepted as-is):**
 - **#5** — Rate limit counters in-memory only (not distributed).
@@ -751,12 +806,7 @@ state:
   Product/policy call.
 - **#7** — Storage upload before DB row commit (R2 orphan
   reconciliation). Operational, not security-critical.
-- **#8** — Admin demotion window — access token survives
-  demotion until TTL. Tracked as Phase 6. (Previously coupled
-  to Phase 3 via the "Redis blocklist" implementation idea;
-  with Phase 3 deferred, Phase 6 can ship as a standalone
-  short-TTL access-token + DB-revocation-list approach if/when
-  prioritized.)
+  *(#8 moved to Closed — see Phase 6 above.)*
 
 **New defenses added (not closure of original findings, but new
 controls):**

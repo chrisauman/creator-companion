@@ -16,7 +16,8 @@ public class UsersController(
     AppDbContext db,
     IStorageService storage,
     IImageProcessor imageProcessor,
-    IPasswordSafetyService passwordSafety) : ControllerBase
+    IPasswordSafetyService passwordSafety,
+    IUserStampService stampService) : ControllerBase
 {
     // HEIC/HEIF allowed because iPhone defaults to it. ImageSharp can't
     // decode HEIC natively, but UploadProfileImage runs through
@@ -129,6 +130,17 @@ public class UsersController(
         // legacy hashes transparently; new hashes start at the target.
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword, 12);
         user.UpdatedAt = DateTime.UtcNow;
+        // Bump SecurityStamp so every other access token currently
+        // out for this user fails the OnTokenValidated stamp check.
+        // Paired with the refresh-token revoke below, this fully
+        // terminates other sessions within the cache TTL (~2 min,
+        // often much less because we Invalidate the cache entry
+        // explicitly after SaveChanges). The CURRENT session's
+        // access token will also fail; the frontend will hit /refresh
+        // which fails (we just revoked the refresh tokens), so the
+        // user will be pushed back to the login page — exactly the
+        // right behaviour for a password change.
+        user.SecurityStamp = Guid.NewGuid().ToString("N");
 
         // Revoke every other active refresh token for this user. A
         // password change is a security signal — typically "I think
@@ -141,6 +153,9 @@ public class UsersController(
             .ExecuteUpdateAsync(s => s.SetProperty(r => r.RevokedAt, now));
 
         await db.SaveChangesAsync();
+        // Drop cached stamp so the new value takes effect immediately
+        // (not after the 2-min TTL).
+        stampService.Invalidate(UserId);
 
         return Ok(new { message = "Password updated successfully." });
     }

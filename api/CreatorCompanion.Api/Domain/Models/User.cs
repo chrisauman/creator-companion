@@ -85,6 +85,24 @@ public class User
     public string? StripeSubscriptionId { get; set; }
 
     /// <summary>
+    /// Opaque per-user version stamp. Included as the "stamp" claim on every
+    /// issued JWT; validated on each authenticated request against the row's
+    /// current value via <see cref="Application.Interfaces.IUserStampService"/>
+    /// (cached ~2 min). Bumping this value invalidates every outstanding
+    /// access token for the user within the cache TTL — closes the
+    /// admin-demotion / password-change windows where a stale token would
+    /// otherwise survive until its natural ~60 min expiry.
+    ///
+    /// Bumped on: admin promote/demote, admin deactivate, password change,
+    /// password reset. Initialised at registration. Existing rows are
+    /// backfilled to unique random values by the AddSecurityStampToUser
+    /// migration so legacy tokens (which carry no "stamp" claim) keep
+    /// working until they naturally expire — see <c>OnTokenValidated</c>
+    /// in Program.cs for the legacy-token grace path.
+    /// </summary>
+    public string SecurityStamp { get; set; } = Guid.NewGuid().ToString("N");
+
+    /// <summary>
     /// Storage path / URL for the user's profile picture. Null when the
     /// user hasn't uploaded one (the UI falls back to a generated
     /// initial-letter circle in that case). Stored as a relative key
