@@ -499,20 +499,19 @@ a:hover { text-decoration: underline; }
 /* ── Phone mockup ────────────────────────────────────────────────────────── */
 .mock-phone {
   width: 300px;
-  background: #111318;
+  background: #d8dce4;
   border-radius: 48px;
-  border: 8px solid #1e2130;
+  border: 8px solid #c4c8d0;
   box-shadow:
-    0 0 0 1px rgba(255,255,255,.05),
-    0 40px 80px rgba(0,0,0,.45),
-    inset 0 0 0 1px rgba(255,255,255,.04);
+    0 0 0 1px rgba(0,0,0,.04),
+    0 30px 60px rgba(0,0,0,.18);
   overflow: hidden;
   position: relative;
   flex-shrink: 0;
 }
 .mock-phone__notch {
   width: 110px; height: 30px;
-  background: #111318;
+  background: #d8dce4;
   border-radius: 0 0 20px 20px;
   margin: 0 auto;
   position: relative; z-index: 2;
