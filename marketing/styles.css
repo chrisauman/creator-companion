@@ -525,7 +525,13 @@ a:hover { text-decoration: underline; }
 }
 /* Variant: full-bleed image fills the screen (no .mapp-* children).
    Background matches the app's body grey so any gap above/below
-   the image blends with the screenshot's own background. */
+   the image blends with the screenshot's own background. The
+   :has() rule below propagates the grey up to the .mock-phone
+   parent so the gutters around the notch are grey too (otherwise
+   the dark phone-frame fill shows through next to the notch). */
+.mock-phone:has(.mock-phone__screen--img) {
+  background: #e8e9eb;
+}
 .mock-phone__screen--img {
   background: #e8e9eb;
   min-height: 0;
