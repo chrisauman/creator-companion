@@ -525,17 +525,21 @@ a:hover { text-decoration: underline; }
   padding-bottom: 0;
 }
 /* Variant: full-bleed image fills the screen (no .mapp-* children).
-   The source screenshot has the iOS safe-area shadow baked into its
-   left edge (a horizontal gradient from #bababa at x=0 fading to
-   body-grey #e8e8e8 by ~11% of width). The screen + parent .mock-phone
-   bg uses the SAME left-anchored horizontal gradient so the shadow
-   flows continuously down the entire left side, including the area
-   above/below the image and around the notch. */
+   The source screenshot has an iOS safe-area shadow baked into its
+   left edge. To make that shadow flow continuously into the screen
+   area above/below the image (and around the notch), the .mock-phone
+   parent + the .mock-phone__screen--img screen both use a 750x4
+   slice extracted from the screenshot's top row as a repeat-y bg.
+   Because the strip and the image are both scaled to 100% of the
+   same container width, their gradients line up pixel-for-pixel —
+   no visible seam where the image meets the background. */
 .mock-phone:has(.mock-phone__screen--img) {
-  background: linear-gradient(to right, #bababa 0%, #e8e8e8 11%, #e8e8e8 100%);
+  background: url('images/mock-journal-edge.png') repeat-y top left;
+  background-size: 100% auto;
 }
 .mock-phone__screen--img {
-  background: linear-gradient(to right, #bababa 0%, #e8e8e8 11%, #e8e8e8 100%);
+  background: url('images/mock-journal-edge.png') repeat-y top left;
+  background-size: 100% auto;
   min-height: 0;
   padding: 0;
 }
