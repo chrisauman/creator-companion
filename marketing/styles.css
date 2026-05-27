@@ -523,6 +523,17 @@ a:hover { text-decoration: underline; }
   display: flex; flex-direction: column;
   padding-bottom: 0;
 }
+/* Variant: full-bleed image fills the screen (no .mapp-* children). */
+.mock-phone__screen--img {
+  background: #fff;
+  min-height: 0;
+  padding: 0;
+}
+.mock-phone__img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
 
 /* App header */
 .mapp-header {
