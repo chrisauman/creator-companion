@@ -455,7 +455,7 @@ a:hover { text-decoration: underline; }
   gap: 5rem;
   align-items: center;
 }
-.feat--text-left  { grid-template-columns: 1fr 1.15fr; }
+.feat--text-left  { grid-template-columns: 1.15fr 1fr; }
 .feat--text-right { grid-template-columns: 1.15fr 1fr; }
 .feat--text-right .feat__copy  { order: 2; }
 .feat--text-right .feat__visual { order: 1; }
