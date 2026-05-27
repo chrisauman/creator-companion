@@ -447,7 +447,7 @@ a:hover { text-decoration: underline; }
 }
 .feat-section--light { background: var(--white); }
 .feat-section--dim   { background: var(--off); }
-.feat-section--dark  { background: var(--ink); border-color: rgba(255,255,255,.07); }
+.feat-section--dark  { background: #1a1d24; border-color: rgba(255,255,255,.07); }
 
 /* Layout: text-left = copy|visual, text-right = visual|copy */
 .feat {
@@ -479,7 +479,7 @@ a:hover { text-decoration: underline; }
   font-size: 1.0625rem; color: var(--text-2); line-height: 1.78;
   margin-bottom: 2rem; max-width: 460px;
 }
-.feat__body--inv { color: rgba(255,255,255,.5); }
+.feat__body--inv { color: rgba(255,255,255,.92); }
 
 .feat__bullets {
   list-style: none; display: flex; flex-direction: column; gap: .75rem;
@@ -489,7 +489,7 @@ a:hover { text-decoration: underline; }
   font-size: .9375rem; color: var(--text-2); line-height: 1.5;
 }
 .feat__bullets li svg { flex-shrink: 0; margin-top: .15rem; color: var(--cyan-dark); }
-.feat__bullets--inv li { color: rgba(255,255,255,.5); }
+.feat__bullets--inv li { color: rgba(255,255,255,.92); }
 .feat__bullets--inv li svg { color: var(--cyan); }
 
 /* Visual containers */
