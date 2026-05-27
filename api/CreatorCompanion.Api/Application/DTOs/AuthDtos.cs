@@ -48,6 +48,10 @@ public record ForgotPasswordRequest(
     string? CfTurnstileResponse = null
 );
 
+public record ResendVerificationRequest(
+    [Required, EmailAddress] string Email
+);
+
 public record ResetPasswordRequest(
     [Required] string Token,
     [Required, MaxLength(128), StrongPassword] string NewPassword

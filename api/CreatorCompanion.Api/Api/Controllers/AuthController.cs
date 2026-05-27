@@ -186,7 +186,31 @@ public class AuthController(
     {
         var success = await authService.VerifyEmailAsync(token);
         if (!success) return BadRequest(new { error = "Verification link is invalid or has expired." });
-        return Ok(new { message = "Email verified successfully. You can now sign in." });
+        return Ok(new { message = "Email verified! Your 10-day free trial has started." });
+    }
+
+    /// <summary>
+    /// Resends the email-verification link. Open to authenticated AND
+    /// unauthenticated callers — a user who's already logged in but
+    /// hasn't verified is sitting on the verify-email screen, and an
+    /// unauthenticated caller might be retrying immediately after
+    /// signup. The response copy is generic enough that it doesn't
+    /// leak existence either way.
+    ///
+    /// The rate-limit rule for this endpoint lives in Program.cs's
+    /// AspNetCoreRateLimit config; without the limit, the endpoint
+    /// becomes an email-flood weapon against arbitrary inboxes.
+    /// </summary>
+    [HttpPost("resend-verification")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ResendVerification([FromBody] ResendVerificationRequest request)
+    {
+        await authService.ResendVerificationAsync(request.Email);
+        // Same generic-response pattern as ForgotPassword. Don't
+        // surface whether the email is registered OR whether the
+        // user is already verified — both would be enumeration
+        // signals to an unauthenticated caller.
+        return Ok(new { message = "If that email is registered and unverified, a new link has been sent." });
     }
 
     [HttpPost("forgot-password")]

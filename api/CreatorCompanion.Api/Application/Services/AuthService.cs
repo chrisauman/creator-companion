@@ -67,12 +67,17 @@ public class AuthService(
             Email = request.Email.ToLower(),
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password, BCryptWorkFactor),
             TimeZoneId = request.TimeZoneId,
-            // 10-day free trial — full access during this window. After
-            // expiration, EntitlementService.HasAccess returns false and
-            // every write returns HTTP 402 until the user subscribes.
-            // No Stripe interaction at signup — that happens only when
-            // the user explicitly subscribes via /v1/stripe/checkout.
-            TrialEndsAt = DateTime.UtcNow.AddDays(10)
+            // Trial is NOT granted at registration anymore (Risk #6
+            // closure, 2026-05-27). VerifyEmailAsync grants TrialEndsAt
+            // when the user proves ownership of their email. Until
+            // then the unverified-email guard middleware in Program.cs
+            // returns 402 with code: "email_unverified" on any
+            // non-allowlisted endpoint, and the frontend's verify-email
+            // takeover screen handles the UX. Leaving TrialEndsAt null
+            // also keeps the trial-lifecycle email worker from firing
+            // any of the 3d / 1d / ended reminders (their queries all
+            // require TrialEndsAt IS NOT NULL).
+            TrialEndsAt = null
         };
 
         db.Users.Add(user);
@@ -412,10 +417,82 @@ public class AuthService(
 
         record.User.EmailVerified = true;
         record.User.UpdatedAt     = DateTime.UtcNow;
+
+        // Grant the 10-day free trial on first verification. The TRIAL
+        // STARTS NOW, not at registration — closes Risk #6 (sign up
+        // with any email, get 10 days of access without ever proving
+        // ownership of it). The `is null` guard prevents a re-verify
+        // race or a second registered email link from resetting the
+        // clock on an already-running trial.
+        if (record.User.TrialEndsAt is null)
+        {
+            record.User.TrialEndsAt = DateTime.UtcNow.AddDays(10);
+        }
+
+        // Bump SecurityStamp so any open session with a pre-verification
+        // JWT (verified=false claim) is force-refreshed on the next API
+        // call. The refresh issues a new JWT with verified=true, and the
+        // unverified-guard middleware then lets the user through. Pairs
+        // with the OnTokenValidated handler in Program.cs.
+        record.User.SecurityStamp = Guid.NewGuid().ToString("N");
+
         db.EmailVerificationTokens.Remove(record);
         await audit.LogAsync("email.verified", record.UserId);
         await db.SaveChangesAsync();
+        stampService.Invalidate(record.UserId);
         return true;
+    }
+
+    /// <summary>
+    /// Re-sends a verification email. Used by the in-app "didn't get the
+    /// link?" button on the post-registration verify-email screen.
+    ///
+    /// Privacy: the response is identical regardless of whether the
+    /// email is registered (the controller surfaces only a generic
+    /// "if that email exists, we sent a new link" message). We DO
+    /// short-circuit when the user is already verified — there's
+    /// nothing to send and no enumeration value in distinguishing
+    /// because the verify-email screen is only ever shown to
+    /// signed-in users who already know their own state.
+    /// </summary>
+    public async Task ResendVerificationAsync(string email)
+    {
+        // Lowercase to match RegisterAsync's storage convention.
+        var normalized = (email ?? string.Empty).Trim().ToLowerInvariant();
+
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Email == normalized);
+        if (user is null) return;
+        if (user.EmailVerified)  return;
+
+        // Invalidate any outstanding (un-expired) verification tokens
+        // for this user — issuing multiple live links is fine, but
+        // dropping the old ones reduces the surface area in the
+        // (unlikely) event one is intercepted.
+        // Used tokens are hard-deleted by VerifyEmailAsync, so "live"
+        // tokens are simply those whose ExpiresAt is still in the
+        // future. Drop them to keep one live token at a time.
+        var stale = await db.EmailVerificationTokens
+            .Where(t => t.UserId == user.Id && t.ExpiresAt > DateTime.UtcNow)
+            .ToListAsync();
+        db.EmailVerificationTokens.RemoveRange(stale);
+
+        var plain = GenerateSecureToken();
+        var hash  = HashToken(plain);
+        db.EmailVerificationTokens.Add(new EmailVerificationToken
+        {
+            UserId    = user.Id,
+            Token     = hash, // mirror into legacy column for unique-constraint compat
+            TokenHash = hash,
+            ExpiresAt = DateTime.UtcNow.AddHours(24)
+        });
+
+        await db.SaveChangesAsync();
+
+        var webBaseUrl = config["Web:BaseUrl"] ?? "https://app.creatorcompanionapp.com";
+        var link = $"{webBaseUrl.TrimEnd('/')}/verify-email?token={HttpUtility.UrlEncode(plain)}";
+        try { await emailService.SendVerificationEmailAsync(user.Email, link); }
+        catch (Exception ex) { logger.LogWarning(ex, "ResendVerification email send failed for {UserId}", user.Id); }
+        await audit.LogAsync("email.verification_resent", user.Id);
     }
 
     public async Task ResetPasswordAsync(string token, string newPassword)
@@ -568,6 +645,14 @@ public class AuthService(
             // for the lookup model and ALL call sites that bump.
             new Claim("stamp", user.SecurityStamp)
         };
+        // Present-when-true only. The middleware (and entitlement
+        // checks) treat a missing claim as "unverified" — except for
+        // the legacy-grace path (pre-rollout JWTs with no claim at
+        // all), where a DB lookup confirms the user's actual state.
+        // Verifying the email bumps SecurityStamp so any open session
+        // gets force-refreshed and the new JWT carries verified=true.
+        if (user.EmailVerified)
+            claimsList.Add(new Claim("verified", "true"));
         if (user.IsAdmin)
             claimsList.Add(new Claim(ClaimTypes.Role, "Admin"));
         var claims = claimsList.ToArray();

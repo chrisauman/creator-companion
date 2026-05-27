@@ -43,6 +43,23 @@ export class AuthService {
   readonly isLoggedIn   = computed(() => !!this._user());
 
   /**
+   * True iff the user should see the verify-email takeover screen.
+   * **Takes precedence over showPaywall** — an unverified user is
+   * pre-trial, so the "subscribe to continue" framing is wrong for
+   * them. They see "verify your email to start your trial" instead.
+   *
+   * Driven entirely by `capabilities.emailVerified === false`. The
+   * paywall-dismissed flag does NOT apply here; the user genuinely
+   * cannot use the app until they verify, and "dismiss" would be
+   * misleading. (Sign out is available on the screen as the escape
+   * hatch — see VerifyEmailScreenComponent.)
+   */
+  readonly showVerifyEmail = computed(() => {
+    const caps = this._capabilities();
+    return !!caps && caps.emailVerified === false;
+  });
+
+  /**
    * True iff the user should see the full-screen paywall takeover.
    * - Real users: capabilities loaded AND hasAccess false AND they
    *   haven't dismissed it via "Just browse my entries."
@@ -50,8 +67,12 @@ export class AuthService {
    *   (preview can be dismissed too, to test the read-only-mode
    *   experience that real trial-expired users land in).
    * App.ts renders <app-paywall> off this signal.
+   *
+   * Suppressed when showVerifyEmail is true so the two takeovers
+   * never compete — the verify-email screen wins (it's pre-trial).
    */
   readonly showPaywall = computed(() => {
+    if (this.showVerifyEmail())   return false;
     if (this._paywallDismissed()) return false;
     if (this._paywallPreview())   return true;
     const caps = this._capabilities();

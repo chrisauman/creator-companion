@@ -34,7 +34,12 @@ public static class DbFactory
             // either an active subscription or an in-trial timestamp.
             // Free-tier tests in the suite predate this model; give
             // them a far-future trial so EnforceAccess passes.
-            TrialEndsAt = DateTime.UtcNow.AddYears(1)
+            TrialEndsAt = DateTime.UtcNow.AddYears(1),
+            // Risk #6 closure (2026-05-27): HasAccess now also requires
+            // EmailVerified=true. Mirror the prod migration's
+            // grandfather posture so existing tests don't need to opt in.
+            // Specific tests of unverified-state behaviour can override.
+            EmailVerified = true
         };
         var journal = new Journal
         {

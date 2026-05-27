@@ -399,6 +399,201 @@ public class SecurityHardeningTests
             "each new user must start with a distinct random stamp; sharing one would mean a bump on one user invalidates another's tokens");
         stamps.Should().NotContain(string.Empty);
     }
+
+    // ── Email verification gate (Risk #6) ───────────────────────────────
+    // The new policy: trial starts on verification, all access blocked
+    // until then. The HTTP-pipeline middleware can't be exercised from
+    // a unit test (it needs a real request), so these tests work the
+    // service / data layer to pin the contracts the middleware relies
+    // on: trial NOT granted at register, EmailVerified=false default,
+    // and verify grants trial + flips the flag + bumps stamp.
+
+    [Fact]
+    public async Task Register_does_not_grant_trial_until_email_verified()
+    {
+        await using var db = DbFactory.Create();
+        var auth = BuildAuth(db);
+        await auth.RegisterAsync(
+            new RegisterRequest("Trial", "Test", "trial-gate@test.com", "Password1!", "UTC"));
+
+        var user = await db.Users.SingleAsync(u => u.Email == "trial-gate@test.com");
+        user.EmailVerified.Should().BeFalse("a new signup must prove ownership of their email before getting trial access");
+        user.TrialEndsAt.Should().BeNull("trial timer must not start ticking until verification — closes the fake-email free-access vector");
+    }
+
+    [Fact]
+    public async Task VerifyEmail_grants_trial_and_bumps_stamp()
+    {
+        await using var db = DbFactory.Create();
+        var auth = BuildAuth(db);
+        await auth.RegisterAsync(
+            new RegisterRequest("Verify", "Test", "verify-grants@test.com", "Password1!", "UTC"));
+
+        // Pull the verification token straight from the DB —
+        // the email-send step is a no-op in tests, so there's
+        // no other way to get the plain token back.
+        var token = await db.EmailVerificationTokens
+            .Where(t => t.User.Email == "verify-grants@test.com")
+            .Select(t => t.Token)
+            .FirstAsync();
+        token.Should().NotBeNullOrWhiteSpace();
+
+        // Capture the pre-verify stamp so we can assert the bump.
+        var stampBefore = await db.Users
+            .Where(u => u.Email == "verify-grants@test.com")
+            .Select(u => u.SecurityStamp)
+            .SingleAsync();
+
+        var ok = await auth.VerifyEmailAsync(token);
+        ok.Should().BeTrue();
+
+        db.ChangeTracker.Clear();
+        var after = await db.Users.SingleAsync(u => u.Email == "verify-grants@test.com");
+
+        after.EmailVerified.Should().BeTrue();
+        after.TrialEndsAt.Should().NotBeNull("verify must start the 10-day trial");
+        after.TrialEndsAt!.Value.Should().BeAfter(DateTime.UtcNow.AddDays(9))
+            .And.BeBefore(DateTime.UtcNow.AddDays(11));
+        after.SecurityStamp.Should().NotBe(stampBefore,
+            "verify must bump SecurityStamp so any open session with a verified=false JWT gets force-refreshed");
+    }
+
+    [Fact]
+    public async Task VerifyEmail_idempotent_for_trial_start()
+    {
+        // Second verify (somehow — same token won't work because
+        // it's deleted, but a hypothetical re-issued token) must
+        // NOT reset the trial timer. We simulate by calling
+        // VerifyEmailAsync once, then registering a fresh token
+        // for the same user and verifying again.
+        await using var db = DbFactory.Create();
+        var auth = BuildAuth(db);
+        await auth.RegisterAsync(
+            new RegisterRequest("Idem", "Test", "idem-trial@test.com", "Password1!", "UTC"));
+        var firstToken = await db.EmailVerificationTokens
+            .Where(t => t.User.Email == "idem-trial@test.com")
+            .Select(t => t.Token).FirstAsync();
+        await auth.VerifyEmailAsync(firstToken);
+
+        var firstTrialEnd = await db.Users
+            .Where(u => u.Email == "idem-trial@test.com")
+            .Select(u => u.TrialEndsAt).SingleAsync();
+
+        // Manually re-issue a verification token (something only
+        // a re-resend would normally do, but a verified user
+        // wouldn't get one — this is the worst-case race).
+        var userId = await db.Users.Where(u => u.Email == "idem-trial@test.com").Select(u => u.Id).SingleAsync();
+        var newPlain = Guid.NewGuid().ToString("N");
+        var newHash  = System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(newPlain));
+        db.EmailVerificationTokens.Add(new CreatorCompanion.Api.Domain.Models.EmailVerificationToken
+        {
+            UserId    = userId,
+            Token     = Convert.ToHexString(newHash).ToLowerInvariant(),
+            TokenHash = Convert.ToHexString(newHash).ToLowerInvariant(),
+            ExpiresAt = DateTime.UtcNow.AddHours(24)
+        });
+        await db.SaveChangesAsync();
+        await auth.VerifyEmailAsync(newPlain);
+
+        var secondTrialEnd = await db.Users
+            .AsNoTracking()
+            .Where(u => u.Email == "idem-trial@test.com")
+            .Select(u => u.TrialEndsAt).SingleAsync();
+
+        secondTrialEnd.Should().Be(firstTrialEnd,
+            "a second verify must not reset the trial timer — TrialEndsAt should only be set when null, never overwritten");
+    }
+
+    [Fact]
+    public async Task ResendVerification_silently_noops_for_already_verified_user()
+    {
+        await using var db = DbFactory.Create();
+        var auth = BuildAuth(db);
+        await auth.RegisterAsync(
+            new RegisterRequest("Resend", "X", "resend-noop@test.com", "Password1!", "UTC"));
+        var token = await db.EmailVerificationTokens
+            .Where(t => t.User.Email == "resend-noop@test.com")
+            .Select(t => t.Token).FirstAsync();
+        await auth.VerifyEmailAsync(token);
+
+        var tokenCountBefore = await db.EmailVerificationTokens
+            .CountAsync(t => t.User.Email == "resend-noop@test.com");
+        tokenCountBefore.Should().Be(0, "verify should have deleted the used token");
+
+        // Resend for an already-verified user is a no-op.
+        await auth.ResendVerificationAsync("resend-noop@test.com");
+        var tokenCountAfter = await db.EmailVerificationTokens
+            .CountAsync(t => t.User.Email == "resend-noop@test.com");
+        tokenCountAfter.Should().Be(0,
+            "an already-verified user must not get a fresh verification token issued");
+    }
+
+    [Fact]
+    public async Task ResendVerification_silently_noops_for_unknown_email()
+    {
+        // Privacy: an unknown email must not throw and must not
+        // create a token (the controller returns the same generic
+        // message regardless, so an enumeration probe gets no
+        // distinguishing signal).
+        await using var db = DbFactory.Create();
+        var auth = BuildAuth(db);
+
+        var act = async () => await auth.ResendVerificationAsync("never-registered@test.com");
+        await act.Should().NotThrowAsync();
+
+        var anyTokens = await db.EmailVerificationTokens.AnyAsync();
+        anyTokens.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ResendVerification_replaces_existing_live_token()
+    {
+        await using var db = DbFactory.Create();
+        var auth = BuildAuth(db);
+        await auth.RegisterAsync(
+            new RegisterRequest("Resend", "Y", "resend-replace@test.com", "Password1!", "UTC"));
+
+        var firstToken = await db.EmailVerificationTokens
+            .Where(t => t.User.Email == "resend-replace@test.com")
+            .Select(t => t.Token).SingleAsync();
+
+        await auth.ResendVerificationAsync("resend-replace@test.com");
+
+        var tokens = await db.EmailVerificationTokens
+            .Where(t => t.User.Email == "resend-replace@test.com")
+            .Select(t => t.Token).ToListAsync();
+        tokens.Should().HaveCount(1, "resend should drop the old live token and issue a fresh one");
+        tokens.Single().Should().NotBe(firstToken);
+    }
+
+    // EntitlementService defense-in-depth: even if middleware is
+    // bypassed, the service-layer HasAccess check must refuse
+    // unverified users.
+
+    [Fact]
+    public async Task EntitlementService_HasAccess_false_for_unverified_user_even_in_trial_window()
+    {
+        await using var db = DbFactory.Create();
+        var unverified = new CreatorCompanion.Api.Domain.Models.User
+        {
+            Email = "unverified-access@test.com",
+            FirstName = "U", LastName = "V",
+            PasswordHash = "x", TimeZoneId = "UTC",
+            EmailVerified = false,
+            TrialEndsAt   = DateTime.UtcNow.AddDays(5) // in trial window
+        };
+        db.Users.Add(unverified);
+        await db.SaveChangesAsync();
+
+        var ent = new CreatorCompanion.Api.Application.Services.EntitlementService(
+            db,
+            Microsoft.Extensions.Options.Options.Create(new CreatorCompanion.Api.Common.EntryLimitsConfig()));
+
+        ent.HasAccess(unverified).Should().BeFalse(
+            "HasAccess must require EmailVerified=true even with an active trial — middleware-removal regression guard");
+        ent.IsInTrial(unverified).Should().BeTrue(
+            "IsInTrial reflects the trial window itself; the gating is in HasAccess");
+    }
 }
 
 /// <summary>

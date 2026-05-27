@@ -48,6 +48,14 @@ CLAUDE.md)
   Invalidate). Bumped on admin promote/demote, admin deactivate,
   admin password reset, user password change, and password reset.
   Closes Risk #8 (admin-demotion window). See §1.10 below.
+- 2026-05-27 — **Risk #6 shipped:** trial timer now starts at
+  email verification (not registration). `EmailVerificationGuardMiddleware`
+  blocks every gated endpoint for unverified signed-in users with
+  `code: "email_unverified"`. Frontend renders a full-takeover
+  verify-email screen (takes precedence over paywall) with a
+  resend button, sign-out escape hatch, and a link-landing page
+  at `/verify-email`. Closes "sign up with any email, get 10
+  days free." See §1.11 below.
 - **Open phases:** 4 (TOTP 2FA — deferred at user's request),
   5 (login telemetry + new-device email — next up). Tracked in the
   conversation triage.
@@ -198,6 +206,83 @@ CLAUDE.md)
   - `SecurityHardeningTests.ResetPasswordAsync_bumps_security_stamp`
   - `SecurityHardeningTests.NewlyCreatedUser_gets_unique_security_stamp`
   - `UserStampServiceTests.*` (cache hit, miss, invalidate)
+
+### 1.11 Email verification before trial (2026-05-27, Risk #6)
+- **Goal:** stop attackers from signing up with a fake email and
+  getting 10 days of full access without ever proving ownership.
+  The trial timer now starts at email-verification, not registration,
+  and ALL access (read + write) is blocked for unverified accounts.
+- **Mechanism:**
+  - `AuthService.RegisterAsync` leaves `TrialEndsAt = null` and
+    sends a verification email as before. The user is auto-logged-in
+    (gets a JWT) but every gated endpoint refuses to serve them.
+  - `AuthService.VerifyEmailAsync` sets `EmailVerified = true`, grants
+    the 10-day trial (only if currently null — idempotent guard
+    against re-verify races), bumps SecurityStamp (so the open
+    session's JWT gets force-refreshed and the new one carries
+    `verified=true`).
+  - JWT carries a `"verified": "true"` claim (present-when-true).
+    `EmailVerificationGuardMiddleware` runs after auth, before
+    controllers; if the claim is missing or false, returns 402 with
+    `code: "email_unverified"` unless the path is on the allowlist.
+  - **Defense in depth:** `EntitlementService.HasAccess` ALSO
+    requires `EmailVerified=true` — if the middleware were ever
+    removed or re-ordered, service-layer writes still refuse.
+- **Allowlist** (paths reachable for an unverified signed-in user):
+  - `GET /v1/users/me` (verify-screen needs to know who you are)
+  - `GET /v1/users/me/capabilities` (state for the screen)
+  - `POST /v1/auth/resend-verification` (Resend button)
+  - `DELETE /v1/users/me` (account self-delete — same principle as
+    trial-expired lockout)
+- **Legacy-token grace.** JWTs minted before the rollout don't carry
+  the `"verified"` claim. The middleware does a 2-min cached DB
+  lookup on `EmailVerified`; verified grandfathered users continue
+  uninterrupted (their tokens naturally expire in ~60 min).
+- **Backfill migration:** `GrandfatherEmailVerifiedForExistingUsers`
+  sets every existing user to `EmailVerified=true`. The new
+  rule applies ONLY to users registering post-deploy.
+- **Resend endpoint:** `POST /v1/auth/resend-verification` (anonymous,
+  rate-limited 10/60s like the other pre-auth endpoints). Privacy
+  posture mirrors forgot-password — silent no-op for unknown
+  emails or already-verified users; controller returns the same
+  generic response either way. Drops any outstanding live
+  verification tokens before issuing a fresh one.
+- **Frontend:**
+  - `VerifyEmailScreenComponent` (full-takeover, sibling to paywall)
+    — fires on `capabilities.emailVerified === false`. Resend
+    button with 30s cooldown + sign-out escape hatch.
+  - `VerifyEmailPage` (`/verify-email?token=...`) — landing page for
+    the link in the email. Success → auto-redirect to dashboard
+    after 3s; failure → "request a new link" copy.
+  - `AuthService.showVerifyEmail` signal; `showPaywall` is now
+    suppressed when this is true so the two takeovers never compete.
+- **Files:**
+  - `Application/Services/AuthService.cs` — verify grants trial +
+    bumps stamp; new `ResendVerificationAsync`; register sets null
+  - `Application/Interfaces/IAuthService.cs`
+  - `Application/Services/EntitlementService.cs` — `HasAccess` adds
+    EmailVerified gate
+  - `Application/DTOs/AuthDtos.cs` — new `ResendVerificationRequest`
+  - `Api/Controllers/AuthController.cs` — new resend endpoint
+  - `Api/Controllers/UsersController.cs` — capabilities exposes
+    EmailVerified
+  - `Common/EmailVerificationGuardMiddleware.cs`
+  - `Program.cs` — wires middleware + rate-limit rule
+  - `Migrations/20260527011709_GrandfatherEmailVerifiedForExistingUsers.cs`
+  - Frontend: `shared/verify-email-screen/`,
+    `features/auth/verify-email/`, `core/services/api.service.ts`
+    (new methods), `core/services/auth.service.ts` (showVerifyEmail),
+    `core/interceptors/auth.interceptor.ts` (402 comment), `app.ts`
+    (overlay slot), `app.routes.ts` (new route),
+    `core/models/models.ts` (capabilities field)
+- **Tests:**
+  - `SecurityHardeningTests.Register_does_not_grant_trial_until_email_verified`
+  - `SecurityHardeningTests.VerifyEmail_grants_trial_and_bumps_stamp`
+  - `SecurityHardeningTests.VerifyEmail_idempotent_for_trial_start`
+  - `SecurityHardeningTests.ResendVerification_silently_noops_for_already_verified_user`
+  - `SecurityHardeningTests.ResendVerification_silently_noops_for_unknown_email`
+  - `SecurityHardeningTests.ResendVerification_replaces_existing_live_token`
+  - `SecurityHardeningTests.EntitlementService_HasAccess_false_for_unverified_user_even_in_trial_window`
 
 ---
 
@@ -788,6 +873,11 @@ state:
   SecurityStamp bump on demote (+ activate/deactivate, password
   change/reset) invalidates outstanding access tokens within the
   2-min cache TTL via `OnTokenValidated`. See §1.10.
+- ~~#6 Email verification not required before trial granted~~ →
+  closed 2026-05-27. Trial timer now starts at verification;
+  `EmailVerificationGuardMiddleware` blocks all access pre-verify
+  except a small allowlist; backfill migration grandfathers
+  existing users so they're unaffected. See §1.11.
 
 **Deferred with reasoning (still risks, but accepted as-is):**
 - **#5** — Rate limit counters in-memory only (not distributed).
@@ -802,8 +892,7 @@ state:
 **Open:**
 - **#2** — Push subscription silent take-over
   (`PushController.Subscribe`). Needs threat-model discussion.
-- **#6** — Email verification not required before trial granted.
-  Product/policy call.
+  *(#6 moved to Closed — see Risk #6 closure above.)*
 - **#7** — Storage upload before DB row commit (R2 orphan
   reconciliation). Operational, not security-critical.
   *(#8 moved to Closed — see Phase 6 above.)*

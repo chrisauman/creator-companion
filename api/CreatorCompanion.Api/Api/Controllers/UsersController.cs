@@ -188,7 +188,16 @@ public class UsersController(
             HasAccess            = entitlements.HasAccess(user),
             IsInTrial            = entitlements.IsInTrial(user),
             HasActiveSubscription = entitlements.HasActiveSubscription(user),
-            TrialEndsAt          = user.TrialEndsAt
+            TrialEndsAt          = user.TrialEndsAt,
+            // Frontend reads this to decide whether to show the
+            // verify-email takeover screen (which takes precedence
+            // over the paywall) or proceed to the normal app. New
+            // signups will see this as false until they click their
+            // verification link; grandfathered users will see true.
+            // The email itself comes from /v1/users/me — keeping it
+            // out of this response avoids duplicating PII across two
+            // adjacent endpoints.
+            EmailVerified        = user.EmailVerified
         });
     }
 

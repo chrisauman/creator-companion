@@ -84,6 +84,23 @@ export class ApiService {
     return this.http.get<Capabilities>(`${this.base}/users/me/capabilities`);
   }
 
+  // ── Email verification ──────────────────────────────────────────────────
+  // Backend pairs: GET /v1/auth/verify-email?token=...  (link landing)
+  //                POST /v1/auth/resend-verification   (resend button)
+  // Both are AllowAnonymous server-side — they don't need an auth header.
+  // The interceptor's skipAuth list covers the verify-email path; resend
+  // is left as a normal POST because the user is typically signed-in
+  // (sitting on the verify-email screen) when they hit it.
+
+  verifyEmail(token: string): Observable<{ message: string }> {
+    const params = new HttpParams().set('token', token);
+    return this.http.get<{ message: string }>(`${this.base}/auth/verify-email`, { params });
+  }
+
+  resendVerification(email: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.base}/auth/resend-verification`, { email });
+  }
+
   // ── Journals ────────────────────────────────────────────────────────────
   getJournals(): Observable<Journal[]> {
     return this.http.get<Journal[]>(`${this.base}/journals`);

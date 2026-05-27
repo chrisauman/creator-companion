@@ -6,22 +6,28 @@ import { AuthService } from './core/services/auth.service';
 import { TokenService } from './core/services/token.service';
 import { JournalFilterService } from './core/services/journal-filter.service';
 import { PaywallComponent } from './shared/paywall/paywall.component';
+import { VerifyEmailScreenComponent } from './shared/verify-email-screen/verify-email-screen.component';
 
 /**
- * App root. Renders the router outlet for normal navigation and an
- * always-on-top <app-paywall> overlay whenever the user is logged in
- * but has lost access (trial expired AND no active subscription).
+ * App root. Renders the router outlet for normal navigation plus
+ * up to one always-on-top overlay:
+ * - <app-verify-email-screen> — when the user is logged in but
+ *   hasn't verified their email yet (Risk #6 closure). Takes
+ *   precedence over the paywall because an unverified user is
+ *   pre-trial; subscription framing would be wrong.
+ * - <app-paywall> — when the user has access lost (trial expired
+ *   AND no active subscription).
  *
  * Capabilities are loaded eagerly on user change (login + page refresh)
- * so the paywall reflects access state immediately rather than waiting
+ * so both overlays reflect access state immediately rather than waiting
  * for the user to navigate into a feature that happens to fetch
- * capabilities. The paywall component itself takes over the viewport
- * via fixed positioning + z-index.
+ * capabilities. The overlay components take over the viewport via
+ * fixed positioning + z-index.
  */
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, PaywallComponent],
+  imports: [CommonModule, RouterOutlet, PaywallComponent, VerifyEmailScreenComponent],
   template: `
     <!-- Skip-to-main-content link for WCAG 2.4.1 ("Bypass Blocks",
          Level A). Hidden until keyboard-focused. The inline style
@@ -39,7 +45,9 @@ import { PaywallComponent } from './shared/paywall/paywall.component';
       Skip to main content
     </a>
     <router-outlet />
-    @if (showPaywall()) {
+    @if (showVerifyEmail()) {
+      <app-verify-email-screen></app-verify-email-screen>
+    } @else if (showPaywall()) {
       <app-paywall></app-paywall>
     }
   `
@@ -54,6 +62,12 @@ export class App {
    *  rather than recomputed locally so the dismissal + preview logic
    *  lives in one place (the service). */
   showPaywall = this.auth.showPaywall;
+
+  /** Mirror of AuthService.showVerifyEmail. The signal already
+   *  suppresses paywall when this is true (see auth.service.ts), so
+   *  the @if/@else cascade in the template is the rendering contract
+   *  and the signal is the truth. */
+  showVerifyEmail = this.auth.showVerifyEmail;
 
   constructor() {
     // Load capabilities whenever the user signal changes. Fires once

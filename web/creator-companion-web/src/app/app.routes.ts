@@ -31,6 +31,14 @@ export const routes: Routes = [
     loadComponent: () => import('./features/auth/reset-password/reset-password.component').then(m => m.ResetPasswordComponent)
   },
   {
+    // Landing page for the link in the verification email. Always
+    // reachable — anonymous (the link arrives in an email; the
+    // recipient may not be signed in to the app at all), AND signed
+    // in (they may have left a tab open). No guards.
+    path: 'verify-email',
+    loadComponent: () => import('./features/auth/verify-email/verify-email.component').then(m => m.VerifyEmailComponent)
+  },
+  {
     path: 'onboarding',
     canActivate: [authGuard],
     loadComponent: () => import('./features/auth/onboarding/onboarding.component').then(m => m.OnboardingComponent)

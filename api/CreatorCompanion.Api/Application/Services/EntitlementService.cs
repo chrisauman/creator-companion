@@ -15,12 +15,25 @@ public class EntitlementService(AppDbContext db, IOptions<EntryLimitsConfig> lim
     // ── Access state ──────────────────────────────────────────────────
 
     /// <summary>
-    /// True iff the user has access right now: active subscription OR
-    /// inside their 10-day trial. The single source of truth — every
-    /// entitlement check + the global write-block filter routes here.
+    /// True iff the user has access right now. Three conditions:
+    /// 1) Email is verified (Risk #6 closure, 2026-05-27). The
+    ///    `EmailVerificationGuardMiddleware` blocks unverified users
+    ///    at the pipeline level too, but the service-layer check
+    ///    here is defense-in-depth — if the middleware is ever
+    ///    removed or ordered incorrectly, write paths still refuse.
+    /// 2) Active paid subscription OR
+    /// 3) Inside their 10-day trial.
+    ///
+    /// Single source of truth — every entitlement check + the global
+    /// write-block filter routes here. EmailVerified is the GATE on
+    /// trial+subscription, not an OR — an unverified user with a
+    /// paid subscription (an unusual state, but possible if a user
+    /// subscribed without verifying first) still has to verify
+    /// before using the app. Conservative posture; can revisit if
+    /// real users hit it.
     /// </summary>
     public bool HasAccess(User user) =>
-        HasActiveSubscription(user) || IsInTrial(user);
+        user.EmailVerified && (HasActiveSubscription(user) || IsInTrial(user));
 
     /// <summary>
     /// Subscription is "active" iff there's a Stripe sub on record AND

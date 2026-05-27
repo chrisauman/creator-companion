@@ -974,12 +974,6 @@ Document here so future audits don't re-spend the cycles deciding.
   `EmailVerificationTokens` and removes the legacy-fallback lookups
   in `AuthService.RefreshAsync` / `VerifyEmailAsync` /
   `ResetPasswordAsync`.
-- **Email verification before granting trial** — Policy call: today
-  the 10-day trial is issued at registration regardless of email
-  verification. An attacker can sign up with any email and get 10
-  days of full access. Tradeoff: requiring verification adds friction
-  to legitimate signups (mail-delivery race, typo recovery). Defer
-  until we see actual abuse.
 - **ImageSharp 4.x major bump** — Closes the remaining moderate CVE
   (GHSA-rxmq-m78w-7wmc). 4.x has breaking API changes; scope as a
   separate focused PR, not bundled with the audit pass.

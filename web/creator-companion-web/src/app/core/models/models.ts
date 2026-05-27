@@ -244,4 +244,12 @@ export interface Capabilities {
   /** ISO timestamp when the trial expires (or expired). Null for
    *  legacy accounts without a trial assigned. */
   trialEndsAt?: string;
+  /** True when the user has confirmed ownership of their email
+   *  address. When false, the verify-email takeover screen renders
+   *  (takes precedence over the paywall) and most API calls return
+   *  402 with code: "email_unverified" until they click the link.
+   *  Grandfathered users (created before the Risk #6 rollout) are
+   *  backfilled to true by the GrandfatherEmailVerifiedForExistingUsers
+   *  migration so they're unaffected. */
+  emailVerified: boolean;
 }

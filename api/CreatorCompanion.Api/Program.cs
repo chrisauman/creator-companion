@@ -273,10 +273,16 @@ try
         options.GeneralRules =
         [
             // Auth endpoints — tight window, low limit
-            new RateLimitRule { Endpoint = "POST:/v1/auth/login",            Limit = authMax, Period = $"{authWindow}s" },
-            new RateLimitRule { Endpoint = "POST:/v1/auth/register",         Limit = authMax, Period = $"{authWindow}s" },
-            new RateLimitRule { Endpoint = "POST:/v1/auth/forgot-password",  Limit = authMax, Period = $"{authWindow}s" },
-            new RateLimitRule { Endpoint = "POST:/v1/auth/reset-password",   Limit = authMax, Period = $"{authWindow}s" },
+            new RateLimitRule { Endpoint = "POST:/v1/auth/login",                 Limit = authMax, Period = $"{authWindow}s" },
+            new RateLimitRule { Endpoint = "POST:/v1/auth/register",              Limit = authMax, Period = $"{authWindow}s" },
+            new RateLimitRule { Endpoint = "POST:/v1/auth/forgot-password",       Limit = authMax, Period = $"{authWindow}s" },
+            new RateLimitRule { Endpoint = "POST:/v1/auth/reset-password",        Limit = authMax, Period = $"{authWindow}s" },
+            // Without a rate-limit, resend-verification becomes an
+            // email-flood weapon against arbitrary inboxes (the body
+            // takes any email; a user has to receive whatever the
+            // attacker triggers). Same auth-tier limit as the other
+            // pre-auth surfaces.
+            new RateLimitRule { Endpoint = "POST:/v1/auth/resend-verification",   Limit = authMax, Period = $"{authWindow}s" },
             // Write endpoints — broader limit
             new RateLimitRule { Endpoint = "POST:*",   Limit = writeMax, Period = $"{writeWindow}s" },
             new RateLimitRule { Endpoint = "PUT:*",    Limit = writeMax, Period = $"{writeWindow}s" },
@@ -584,6 +590,14 @@ try
     app.UseSerilogRequestLogging();
     app.UseAuthentication();
     app.UseAuthorization();
+
+    // Risk #6 closure: blocks every gated endpoint for unverified
+    // signed-in users. Runs AFTER auth (so we have a User identity)
+    // and BEFORE MapControllers (so it can short-circuit before any
+    // action). Allowlist + legacy-token grace are documented inside
+    // the middleware.
+    app.UseEmailVerificationGuard();
+
     app.MapControllers();
     app.MapGet("/health", () => Results.Ok(new { status = "healthy" }));
 
