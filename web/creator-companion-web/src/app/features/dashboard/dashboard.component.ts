@@ -658,7 +658,12 @@ import { ActivatedRoute } from '@angular/router';
 
     /* ── Mobile-only Today panel wrapper (above entry list on phones) ── */
     .today-panel--mobile-wrap {
-      margin-bottom: 1.5rem;
+      /* 1.25rem matches .entry-row's margin-bottom so the gap between
+         the Spark/Prompts collapse bar and the first entry equals the
+         gap between consecutive entries below it. Was 1.5rem (24px),
+         which read as 4px too big against the 20px entry-to-entry
+         rhythm. */
+      margin-bottom: 1.25rem;
     }
     @media (min-width: 768px) {
       .today-panel--mobile-wrap { display: none; }
