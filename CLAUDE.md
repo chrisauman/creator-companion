@@ -455,6 +455,56 @@ signal AND strips the URL param.
   came to edit). `resetReminders()` method retained in code for
   potential future wiring through a menu.
 
+## Marketing auto-poster (built)
+
+Admin-only `/admin/marketing` section. Auto-posts Daily Sparks to social
+platforms on a per-platform schedule, plus ad-hoc compose. Separate
+subsystem from the Substack email-reminder (which stays for the no-API
+Substack case). v1 platforms: **Bluesky + Mastodon** (free, open APIs);
+**Threads + Twitter** are reserved `SocialPlatform` enum members with no
+adapter yet.
+
+- **Decisions (locked with Chris, May 2026):** independent spark per
+  platform (each platform draws its own never-repeated spark) · auto-
+  publish under a global kill switch (no review queue) · per-platform
+  post time + jitter · truncate-to-fit long sparks (no threading) ·
+  text + image only (no video) · daily summary email + immediate
+  failure alert, both to **chris.auman@gmail.com** · auto-hashtags via
+  Claude Haiku, graceful-skip if no key.
+- **Backend:** `SocialPostingService` (picker/schedule/jitter/fire/
+  ad-hoc fan-out) + `SocialPostingBackgroundService` (60s worker,
+  independent of the reminder + Substack workers). `ISocialPoster`
+  adapters: `BlueskyPoster` (AT Protocol app-password), `MastodonPoster`
+  (instance + access token). `IHashtagService` → Anthropic Messages API.
+  Tables: `SocialSettings` (global kill switch + summary dedupe),
+  `SocialAccount` (per-platform creds + schedule, creds AES-GCM-encrypted
+  via `IEntryEncryptor`), `SocialDailyPlan` (unique `(Date,Platform)` —
+  per-platform never-repeat anti-join, mirrors `SubstackDailyPlan`),
+  `SocialPost` + `SocialPostTarget` (ad-hoc, per-platform leg status).
+  Controller: `AdminMarketingController` at `/v1/admin/marketing`.
+- **Frontend:** `admin-marketing.component.ts` — Settings / Today /
+  Compose / History tabs. Nav entry in `admin-shell`.
+- **Quote cards (built):** `QuoteCardRenderer` (ImageSharp.Drawing +
+  bundled OFL fonts in `wwwroot/fonts/`: Fraunces for the quote, Inter
+  for eyebrow/wordmark) renders a 1080² branded cream card. Daily posts
+  attach one when `SocialSettings.DailyQuoteCardsEnabled` (default on)
+  and the platform supports images; ad-hoc posts via
+  `SocialPost.GenerateQuoteCard` when no image is uploaded. Renderer
+  returns null on any failure → post still goes out text-only.
+- **Required env vars (Railway):** `Anthropic__ApiKey` (hashtags; absent
+  = posts go out without tags). Social creds are entered in the admin UI,
+  not env. Reuses `Entry__EncryptionKey` to encrypt stored creds.
+- **Safe by default:** `AutoPostEnabled` defaults false and no accounts
+  are connected, so nothing posts until Chris connects a platform in
+  Settings and flips the kill switch on.
+- **Adding a platform:** append the `SocialPlatform` enum member, write
+  an `ISocialPoster` adapter, register it in `Program.cs`. No core/
+  migration churn — `(Date,Platform)` keying already generalises.
+- **Known v1 limitations / fast-follows:** Bluesky posts are plain text
+  (hashtags/links not yet faceted-clickable); day-of-week peak-time
+  variation not built (per-platform fixed time + jitter only). Quote
+  cards shipped in v1 (see above).
+
 ## Profile model
 
 - **FirstName + LastName.** Username was removed — historical refactor.
@@ -1009,21 +1059,12 @@ Document here so future audits don't re-spend the cycles deciding.
   issued at registration regardless of email verification. Policy
   decision: require verified email before granting trial / before
   allowing writes?
-- **Multi-platform daily-spark posting.** Today's pipeline
-  (`SubstackPostingService` + `SubstackDailyPlans` table) emails the
-  daily spark to chris@sanctuarymg.com at 7am ET for manual posting
-  to Substack — chosen because Substack has no public posting API
-  and cookie-stealing broke weekly. When we add a platform that DOES
-  have an API (Bluesky/AT Protocol, Mastodon, Threads), extract
-  `IPlatformPoster` with `PostAsync(spark) → result`, add a
-  `Platform` enum column to `SubstackSettings` + `SubstackDailyPlans`
-  (default `Substack` for existing rows), rename tables to `Platform*`
-  in the same migration. Per-platform never-repeat tracking falls
-  out for free because the plan table is already keyed by (Date,
-  Platform). Substack's poster implementation becomes "email the
-  admin," others actually POST. Schedule + recipient still hardcoded
-  per-platform unless we need per-admin config later. Don't
-  pre-build the abstraction — wait for the second consumer (YAGNI).
+- **Multi-platform daily-spark posting — BUILT (May 2026).** Shipped
+  as the Marketing auto-poster (Bluesky + Mastodon v1). See the
+  "Marketing auto-poster (built)" section above. The old Substack
+  email-reminder pipeline stays as-is, separate, for the no-API
+  Substack case. Threads/Twitter are reserved enum members; ship an
+  `ISocialPoster` adapter to add them.
 - **Mobile search/sort bar — collapse for space.** The dashboard's
   search input + sort `<select>` row eats ~80px of vertical space at
   the top of every entry list view on mobile, pushing the entries

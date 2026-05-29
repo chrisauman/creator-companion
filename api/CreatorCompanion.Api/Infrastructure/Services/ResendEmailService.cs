@@ -1,3 +1,4 @@
+using CreatorCompanion.Api.Application.DTOs;
 using CreatorCompanion.Api.Application.Interfaces;
 using CreatorCompanion.Api.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -430,6 +431,89 @@ public class ResendEmailService(IResend resend, IConfiguration config, AppDbCont
         // Without this, debugging delivery problems required guessing
         // which Resend row corresponded to our send.
         return resendId == default ? null : resendId;
+    }
+
+    public async Task SendSocialDailySummaryAsync(
+        string toEmail, DateOnly date, IReadOnlyList<SocialSummaryLine> lines)
+    {
+        var fromEmail = config["Resend:FromEmail"] ?? "noreply@creatorcompanion.app";
+        var appName   = config["App:Name"] ?? "Creator Companion";
+
+        var postedCount = lines.Count(l => l.Status == "Posted");
+        var failedCount = lines.Count - postedCount;
+
+        // Build one row per platform. Posted rows link the permalink;
+        // failed rows show the error in the danger colour so a problem
+        // jumps out at a glance.
+        var rows = new System.Text.StringBuilder();
+        foreach (var l in lines)
+        {
+            var isPosted = l.Status == "Posted";
+            var excerpt  = System.Net.WebUtility.HtmlEncode((l.Excerpt ?? "").Trim());
+            var detail = isPosted
+                ? (string.IsNullOrWhiteSpace(l.Url)
+                    ? "<span style=\"color:#16a34a\">Posted</span>"
+                    : $"<a href=\"{l.Url}\" style=\"color:#0bd2f0;text-decoration:underline\">View post</a>")
+                : $"<span style=\"color:#e11d48\">Failed — {System.Net.WebUtility.HtmlEncode((l.Error ?? "").Trim())}</span>";
+
+            rows.Append($"""
+                <div style="padding:.875rem 0;border-bottom:1px solid #f0ebde">
+                  <div style="font-weight:700;font-size:.8125rem;letter-spacing:.04em;text-transform:uppercase;color:#0c0e13">{System.Net.WebUtility.HtmlEncode(l.Platform)}</div>
+                  <p style="margin:.25rem 0 .375rem;color:#444;line-height:1.5">{excerpt}</p>
+                  <div style="font-size:.875rem">{detail}</div>
+                </div>
+                """);
+        }
+
+        var body = $"""
+            <h2 style="margin:0 0 .5rem;font-size:1.25rem;font-weight:700;letter-spacing:-.01em;color:#0c0e13">
+              Marketing summary — {date:MMM d, yyyy}
+            </h2>
+            <p style="color:#555;line-height:1.6;margin:.5rem 0 1.25rem">
+              {postedCount} posted{(failedCount > 0 ? $", <span style=\"color:#e11d48\">{failedCount} failed</span>" : "")} today.
+            </p>
+            <div style="margin:1rem 0">{rows}</div>
+            """;
+
+        var message = new EmailMessage
+        {
+            From    = $"{appName} <{fromEmail}>",
+            To      = { toEmail },
+            Subject = $"Marketing summary — {postedCount} posted{(failedCount > 0 ? $", {failedCount} failed" : "")}",
+            HtmlBody = WrapInBrandedShell(body, appName)
+        };
+        await resend.EmailSendAsync(message);
+    }
+
+    public async Task SendSocialFailureAlertAsync(
+        string toEmail, string platform, string context, string error)
+    {
+        var fromEmail = config["Resend:FromEmail"] ?? "noreply@creatorcompanion.app";
+        var appName   = config["App:Name"] ?? "Creator Companion";
+
+        var body = $"""
+            <h2 style="margin:0 0 .5rem;font-size:1.25rem;font-weight:700;letter-spacing:-.01em;color:#0c0e13">
+              A post failed to publish
+            </h2>
+            <p style="color:#555;line-height:1.6;margin:.5rem 0 1rem">
+              {appName} couldn't publish a {System.Net.WebUtility.HtmlEncode(platform)} post ({System.Net.WebUtility.HtmlEncode(context)}).
+            </p>
+            <div style="background:#fff1f3;border:1px solid #f5c6ce;border-radius:10px;padding:1rem 1.25rem;margin:1rem 0;color:#9f1239;line-height:1.5">
+              {System.Net.WebUtility.HtmlEncode(error)}
+            </div>
+            <p style="color:#9aa0aa;font-size:.8125rem;line-height:1.5;margin:1rem 0 0">
+              Check the platform's connection on the Marketing → Settings tab. A common cause is an expired or revoked token.
+            </p>
+            """;
+
+        var message = new EmailMessage
+        {
+            From    = $"{appName} <{fromEmail}>",
+            To      = { toEmail },
+            Subject = $"{platform} post failed",
+            HtmlBody = WrapInBrandedShell(body, appName)
+        };
+        await resend.EmailSendAsync(message);
     }
 
     // ── Branded shell + CTA helpers ─────────────────────────────────

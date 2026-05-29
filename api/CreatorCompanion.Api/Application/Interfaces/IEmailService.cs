@@ -1,3 +1,5 @@
+using CreatorCompanion.Api.Application.DTOs;
+
 namespace CreatorCompanion.Api.Application.Interfaces;
 
 public interface IEmailService
@@ -48,4 +50,26 @@ public interface IEmailService
         string toEmail,
         string takeaway,
         string? fullContent);
+
+    /// <summary>
+    /// End-of-run summary for the Marketing auto-poster: one line per
+    /// platform the daily spark was posted to, with success permalink or
+    /// failure reason. Sent once per day after the day's scheduled posts
+    /// have all fired (deduped via SocialSettings.LastSummarySentForDate).
+    /// </summary>
+    Task SendSocialDailySummaryAsync(
+        string toEmail,
+        DateOnly date,
+        IReadOnlyList<SocialSummaryLine> lines);
+
+    /// <summary>
+    /// Immediate alert when a single post (daily or ad-hoc) fails, so the
+    /// admin learns about a broken token / API outage right away rather
+    /// than waiting for the daily summary. Fired per failure event.
+    /// </summary>
+    Task SendSocialFailureAlertAsync(
+        string toEmail,
+        string platform,
+        string context,
+        string error);
 }

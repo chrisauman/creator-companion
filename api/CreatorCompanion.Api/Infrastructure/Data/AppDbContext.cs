@@ -32,6 +32,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<ProcessedStripeEvent> ProcessedStripeEvents => Set<ProcessedStripeEvent>();
     public DbSet<SubstackSettings> SubstackSettings => Set<SubstackSettings>();
     public DbSet<SubstackDailyPlan> SubstackDailyPlans => Set<SubstackDailyPlan>();
+    public DbSet<SocialSettings> SocialSettings => Set<SocialSettings>();
+    public DbSet<SocialAccount> SocialAccounts => Set<SocialAccount>();
+    public DbSet<SocialDailyPlan> SocialDailyPlans => Set<SocialDailyPlan>();
+    public DbSet<SocialPost> SocialPosts => Set<SocialPost>();
+    public DbSet<SocialPostTarget> SocialPostTargets => Set<SocialPostTarget>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -60,5 +65,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.ApplyConfiguration(new ProcessedStripeEventConfiguration());
         modelBuilder.ApplyConfiguration(new SubstackSettingsConfiguration());
         modelBuilder.ApplyConfiguration(new SubstackDailyPlanConfiguration());
+        modelBuilder.ApplyConfiguration(new SocialSettingsConfiguration());
+        modelBuilder.ApplyConfiguration(new SocialAccountConfiguration());
+        modelBuilder.ApplyConfiguration(new SocialDailyPlanConfiguration());
+        modelBuilder.ApplyConfiguration(new SocialPostConfiguration());
+        modelBuilder.ApplyConfiguration(new SocialPostTargetConfiguration());
     }
 }

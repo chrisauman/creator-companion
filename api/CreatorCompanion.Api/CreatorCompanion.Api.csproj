@@ -12,6 +12,11 @@
     <PackageReference Include="BCrypt.Net-Next" Version="4.1.0" />
     <PackageReference Include="HtmlSanitizer" Version="9.0.892" />
     <PackageReference Include="SixLabors.ImageSharp" Version="3.1.10" />
+    <!-- Drawing + Fonts power the Marketing quote-card renderer
+         (QuoteCardRenderer): brand-styled spark images for social posts.
+         2.1.x targets ImageSharp 3.1.x. Brand fonts (Fraunces, Inter)
+         are bundled under wwwroot/fonts and loaded at startup. -->
+    <PackageReference Include="SixLabors.ImageSharp.Drawing" Version="2.1.6" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.6" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.6" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.4">

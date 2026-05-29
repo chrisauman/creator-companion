@@ -3,6 +3,7 @@ using System;
 using CreatorCompanion.Api.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CreatorCompanion.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260529142716_AddSocialMarketingTables")]
+    partial class AddSocialMarketingTables
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -940,9 +943,6 @@ namespace CreatorCompanion.Api.Migrations
                     b.Property<Guid>("CreatedByUserId")
                         .HasColumnType("uuid");
 
-                    b.Property<bool>("GenerateQuoteCard")
-                        .HasColumnType("boolean");
-
                     b.Property<string>("ImageContentType")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
@@ -1015,9 +1015,6 @@ namespace CreatorCompanion.Api.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<bool>("AutoPostEnabled")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("DailyQuoteCardsEnabled")
                         .HasColumnType("boolean");
 
                     b.Property<DateOnly?>("LastSummarySentForDate")

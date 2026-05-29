@@ -419,6 +419,23 @@ try
     builder.Services.AddScoped<ISubstackPostingService, SubstackPostingService>();
     builder.Services.AddHostedService<SubstackPostingBackgroundService>();
 
+    // ── Marketing auto-poster ────────────────────────────────────────
+    // Multi-platform social posting (Bluesky + Mastodon in v1; Threads/
+    // Twitter drop in as additional ISocialPoster adapters). One named
+    // HttpClient shared by the platform adapters AND the hashtag service,
+    // with a generous timeout for the slower social/LLM endpoints. Each
+    // poster is registered as ISocialPoster; SocialPostingService resolves
+    // the right one per platform from the injected IEnumerable.
+    builder.Services.AddHttpClient("social", c => c.Timeout = TimeSpan.FromSeconds(30));
+    builder.Services.AddScoped<ISocialPoster, CreatorCompanion.Api.Infrastructure.Social.BlueskyPoster>();
+    builder.Services.AddScoped<ISocialPoster, CreatorCompanion.Api.Infrastructure.Social.MastodonPoster>();
+    builder.Services.AddScoped<IHashtagService, HashtagService>();
+    // Branded quote-card renderer (ImageSharp.Drawing + bundled fonts).
+    // Singleton: FontCollection load is one-shot, rendering is stateless.
+    builder.Services.AddSingleton<IQuoteCardRenderer, QuoteCardRenderer>();
+    builder.Services.AddScoped<ISocialPostingService, SocialPostingService>();
+    builder.Services.AddHostedService<SocialPostingBackgroundService>();
+
     // Production safety: required env-driven settings must be set
     // BEFORE the app starts serving traffic. Missing values silently
     // crippled features at runtime (push delivery off, paywall broken,

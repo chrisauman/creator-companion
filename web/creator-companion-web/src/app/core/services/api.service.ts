@@ -570,6 +570,126 @@ export class ApiService {
   adminGetSubstackEligibleCount(): Observable<{ count: number }> {
     return this.http.get<{ count: number }>(`${this.base}/admin/substack/eligible-count`);
   }
+
+  // ── Admin: Marketing auto-poster (Bluesky / Mastodon / …) ───────────────
+  adminGetMarketingSettings(): Observable<SocialSettings> {
+    return this.http.get<SocialSettings>(`${this.base}/admin/marketing/settings`);
+  }
+
+  adminUpdateMarketingSettings(payload: { autoPostEnabled: boolean; autoHashtagsEnabled: boolean; dailyQuoteCardsEnabled: boolean }): Observable<SocialSettings> {
+    return this.http.put<SocialSettings>(`${this.base}/admin/marketing/settings`, payload);
+  }
+
+  /** Connect/update one platform. Credential fields are optional — blank leaves the stored secret untouched. */
+  adminUpdateMarketingAccount(platform: string, payload: {
+    enabled: boolean; handle?: string | null; endpoint?: string | null;
+    appPassword?: string | null; accessToken?: string | null;
+    postHourLocal: number; postMinuteLocal: number; jitterMinutes: number;
+  }): Observable<SocialSettings> {
+    return this.http.put<SocialSettings>(`${this.base}/admin/marketing/accounts/${platform}`, payload);
+  }
+
+  adminGetMarketingToday(): Observable<SocialPlan[]> {
+    return this.http.get<SocialPlan[]>(`${this.base}/admin/marketing/today`);
+  }
+
+  /** Force-post a platform's daily spark right now, bypassing the schedule. */
+  adminMarketingFireNow(platform: string): Observable<FireNowResult> {
+    const params = new HttpParams().set('platform', platform);
+    return this.http.post<FireNowResult>(`${this.base}/admin/marketing/today/fire-now`, {}, { params });
+  }
+
+  /** Drop a platform's still-pending plan so the worker re-picks a fresh spark. */
+  adminMarketingReroll(platform: string): Observable<void> {
+    const params = new HttpParams().set('platform', platform);
+    return this.http.post<void>(`${this.base}/admin/marketing/today/reroll`, {}, { params });
+  }
+
+  adminGetMarketingHistory(): Observable<SocialPlan[]> {
+    return this.http.get<SocialPlan[]>(`${this.base}/admin/marketing/history`);
+  }
+
+  adminGetMarketingEligible(): Observable<SocialEligibleCount[]> {
+    return this.http.get<SocialEligibleCount[]>(`${this.base}/admin/marketing/eligible-count`);
+  }
+
+  adminGetMarketingPosts(): Observable<AdHocPost[]> {
+    return this.http.get<AdHocPost[]>(`${this.base}/admin/marketing/posts`);
+  }
+
+  /** Create an ad-hoc post (multipart: body, includeHashtags, platforms[], scheduledFor?, image?). */
+  adminCreateMarketingPost(form: FormData): Observable<AdHocPost> {
+    return this.http.post<AdHocPost>(`${this.base}/admin/marketing/posts`, form);
+  }
+}
+
+// ── Marketing auto-poster types ───────────────────────────────────────────
+export interface SocialAccount {
+  platform: string;
+  enabled: boolean;
+  handle: string | null;
+  endpoint: string | null;
+  hasCredentials: boolean;
+  postHourLocal: number;
+  postMinuteLocal: number;
+  jitterMinutes: number;
+  characterLimit: number;
+  supportsImages: boolean;
+  lastSuccessAt: string | null;
+  lastFailureAt: string | null;
+  lastFailureMessage: string | null;
+  consecutiveFailures: number;
+}
+
+export interface SocialSettings {
+  autoPostEnabled: boolean;
+  autoHashtagsEnabled: boolean;
+  dailyQuoteCardsEnabled: boolean;
+  hashtagsAvailable: boolean;
+  quoteCardsAvailable: boolean;
+  accounts: SocialAccount[];
+}
+
+export interface SocialPlan {
+  id: number;
+  date: string;
+  platform: string;
+  scheduledFor: string;
+  status: 'Pending' | 'Posted' | 'Failed';
+  postedAt: string | null;
+  postedText: string | null;
+  postedUrl: string | null;
+  errorMessage: string | null;
+  sparkId: string;
+  sparkTakeaway: string;
+}
+
+export interface SocialEligibleCount { platform: string; count: number; }
+
+export interface FireNowResult {
+  platform: string;
+  success: boolean;
+  url: string | null;
+  externalId: string | null;
+  error: string | null;
+}
+
+export interface AdHocTarget {
+  platform: string;
+  status: 'Pending' | 'Posted' | 'Failed';
+  postedUrl: string | null;
+  errorMessage: string | null;
+  postedAt: string | null;
+}
+
+export interface AdHocPost {
+  id: number;
+  body: string;
+  includeHashtags: boolean;
+  imageUrl: string | null;
+  scheduledFor: string | null;
+  createdAt: string;
+  targets: AdHocTarget[];
 }
 
 // Settings shape — shrunk after the pivot. Schedule, timezone, and cookie
