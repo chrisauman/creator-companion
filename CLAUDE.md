@@ -1064,6 +1064,17 @@ Document here so future audits don't re-spend the cycles deciding.
 
 ## TODO / open questions
 
+- **Backups & rollback (REVISIT SOON — committed 2026-05-30).** Release
+  rollback works today (git revert + push, or Vercel Instant Rollback);
+  **DB backups are a known gap** — Railway has no configured backups and
+  R2 versioning is off, so the only irreplaceable data (Postgres entries,
+  R2 media) is currently unprotected. The `Entry__EncryptionKey` is a
+  catastrophic single point of failure (a DB backup is unreadable without
+  it). Full plan, runbook, restore caveats, and the verified per-platform
+  retention table live in [`docs/backups-and-rollback.md`](docs/backups-and-rollback.md).
+  Priority: (1) secure the encryption key + secrets offline, (2) stand up
+  DB backups (offsite `pg_dump`→R2 recommended), (3) write + TEST a
+  restore, (4) R2 versioning. Confirm Railway + Sentry plan tiers.
 - **Encryption at rest.** Railway Postgres is encrypted at rest per
   their docs; R2 buckets are encrypted at rest per Cloudflare's docs.
   Tokens (refresh / reset / verify) are SHA-256-hashed at rest as of
