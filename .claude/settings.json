@@ -1,4 +1,15 @@
 {
+  "env": {
+    "CC_VERCEL_ORG": "team_wv6NHwtrOwuk3b1oQXfKWYmm",
+    "CC_GITHUB_REPO": "chrisauman/creator-companion",
+    "CC_GIT_SSH_HOST": "github.com-chrisauman",
+    "CC_GIT_NAME": "Chris Auman",
+    "CC_GIT_EMAIL": "chris.auman@gmail.com",
+    "CC_SENTRY_ORG": "chris-auman",
+    "CC_DENY_VERCEL": "sanctuary-projects",
+    "CC_DENY_GIT_EMAIL": "chris@sanctuarymg.com",
+    "VERCEL_ORG_ID": "team_wv6NHwtrOwuk3b1oQXfKWYmm"
+  },
   "permissions": {
     "allow": [
       "Bash(dotnet *)",
@@ -33,17 +44,6 @@
       "Bash(open *)"
     ]
   },
-  "env": {
-    "CC_VERCEL_ORG": "team_wv6NHwtrOwuk3b1oQXfKWYmm",
-    "CC_GITHUB_REPO": "chrisauman/creator-companion",
-    "CC_GIT_SSH_HOST": "github.com-chrisauman",
-    "CC_GIT_NAME": "Chris Auman",
-    "CC_GIT_EMAIL": "chris.auman@gmail.com",
-    "CC_SENTRY_ORG": "chris-auman",
-    "CC_DENY_VERCEL": "sanctuary-projects",
-    "CC_DENY_GIT_EMAIL": "chris@sanctuarymg.com",
-    "VERCEL_ORG_ID": "team_wv6NHwtrOwuk3b1oQXfKWYmm"
-  },
   "hooks": {
     "PreToolUse": [
       {
@@ -56,5 +56,8 @@
         ]
       }
     ]
+  },
+  "enabledPlugins": {
+    "security-guidance@claude-plugins-official": true
   }
 }
