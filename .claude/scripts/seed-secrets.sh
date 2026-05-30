@@ -28,7 +28,14 @@ echo
 for k in "${KEYS[@]}"; do
   printf "  %s: " "$k"
   IFS= read -rs v; echo
+  v="${v//$'\r'/}"                        # strip stray CR from a paste
+  v="${v#"${v%%[![:space:]]*}"}"           # trim leading whitespace
+  v="${v%"${v##*[![:space:]]}"}"           # trim trailing whitespace
   [ -z "${v:-}" ] && { echo "    (skipped)"; continue; }
+  # Hidden input makes a double-paste easy AND invisible. Echo the
+  # captured length so you can sanity-check it (a Vercel token is ~60
+  # chars; 120 means it was pasted twice — re-run and paste once).
+  echo "    captured ${#v} characters"
   if command -v security >/dev/null 2>&1; then
     security add-generic-password -U -s creator-companion -a "$k" -w "$v" >/dev/null \
       && echo "    -> stored in Keychain"

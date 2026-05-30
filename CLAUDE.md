@@ -175,14 +175,18 @@ identity.
   integration.
 
 ### Vercel
-- **Account holder:** [TBD — confirm friendly name of the org below]
+- **Account holder:** `chrisauman` (Vercel user). Confirmed via a project-
+  scoped token: `vercel whoami` → `chrisauman`, `vercel teams ls` →
+  only `chrisauman's projects`.
 - **Login email:** [TBD]
-- **Org / Account ID:** `team_wv6NHwtrOwuk3b1oQXfKWYmm` (a Team org —
-  verified from the live `.vercel/` link + `repo.json`, NOT the
-  "Hobby/personal" the old note guessed). This is the `VERCEL_ORG_ID`
-  used by CI. **Deny:** the `sanctuary-projects` ("Sanctuary") team —
-  which is what the machine's globally-active `vercel` CLI was pointed at
-  when this was set up.
+- **Org / Account ID:** `team_wv6NHwtrOwuk3b1oQXfKWYmm` = the **Hobby
+  personal scope "chrisauman's projects"** (slug `chrisauman`,
+  `vercel.com/chrisauman`). It's a personal Hobby account — Vercel just
+  uses a `team_…`-style id for it. This is the `VERCEL_ORG_ID` used by CI.
+  **Deny:** the `sanctuary-projects` ("Sanctuary") team — which is what
+  the machine's globally-active `vercel` CLI was pointed at before the
+  account guard went in (`vercel teams ls` showed Sanctuary; the scoped
+  token now shows chrisauman's projects).
 - **Projects (both under the org above):**
   - `creator-companion-onti` — the PWA, `prj_VtXOth7fmOAnFkaJ8NoL1YgLZT2W`,
     custom domain `app.creatorcompanionapp.com`. Root dir
