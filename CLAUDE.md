@@ -10,6 +10,31 @@ Update when decisions land. Don't put transient state here.
 This app is your digital creator companion. It will give you the daily support,reminders, motivation, inspiration, advice, organization, encouragement that you need to maintain a daily, creative practice indefinitely. 
 
 
+## Roadmap / what's next (read this when Chris asks "what's next")
+
+Chris asked that these be surfaced whenever he asks what's next. Agent-
+memory was uninstalled, so THIS file is the cross-session memory — keep this
+list current as items land. Priority order:
+
+1. **Activate the Marketing auto-poster** (built + deployed, dormant).
+   Connect Bluesky/Mastodon in `/admin → Marketing → Settings`, do a test
+   post (Today → Post now), confirm the quote card renders + summary email,
+   then flip the global kill switch on. Optional: set `Anthropic__ApiKey`
+   on Railway for auto-hashtags. See "Marketing auto-poster (built)".
+2. **Backups & rollback** — `docs/backups-and-rollback.md`. Release
+   rollback works today; **DB backups are a real gap**. Do: secure the
+   encryption key + secrets offline → stand up DB backups (offsite
+   `pg_dump`→R2) → write + TEST a restore → enable R2 versioning.
+3. **Staging environment** — `docs/staging-environment.md`. Mirrored,
+   isolated env for testing features on fake data before users see them.
+   Sequence AFTER backups (a sanitized restore feeds staging).
+4. **Marketing fast-follows** — Threads/Twitter `ISocialPoster` adapters,
+   clickable Bluesky hashtags (facets), scheduled-post queue, weekly recap
+   post, occasional app-link CTA with UTM, day-of-week peak-time posting.
+
+Detail + caveats live in the linked docs and the deeper TODO section below.
+
+
 ## Features (product surface)
 
 Brief inventory so I can reason about the product without grepping.
@@ -1075,6 +1100,12 @@ Document here so future audits don't re-spend the cycles deciding.
   Priority: (1) secure the encryption key + secrets offline, (2) stand up
   DB backups (offsite `pg_dump`→R2 recommended), (3) write + TEST a
   restore, (4) R2 versioning. Confirm Railway + Sentry plan tiers.
+- **Staging environment (REVISIT — future, after backups).** Mirrored,
+  isolated env (own DB + own encryption key + synthetic data; Stripe TEST,
+  test-mode third-party, Marketing poster inert) for testing features
+  before they reach users. Full design in
+  [`docs/staging-environment.md`](docs/staging-environment.md). Sequence
+  after backups so a sanitized restore can feed staging's data.
 - **Encryption at rest.** Railway Postgres is encrypted at rest per
   their docs; R2 buckets are encrypted at rest per Cloudflare's docs.
   Tokens (refresh / reset / verify) are SHA-256-hashed at rest as of
