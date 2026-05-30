@@ -133,6 +133,16 @@ repo secrets).
 Fields with `[TBD]` need Chris to confirm; update them as you
 verify each.
 
+**Enforced, not just documented (May 2026).** A committed `PreToolUse`
+guard (`.claude/scripts/account-guard.sh`, wired in
+`.claude/settings.json`) blocks any command pointed at the wrong account
+(allow-list model; the denied account is **Sanctuary**). Full rules,
+secret storage (macOS Keychain + gitignored fallback), and the one-time
+`seed-secrets.sh` setup live in [`.claude/account-scope.md`](.claude/account-scope.md).
+The repo-local git identity is pinned to `Chris Auman
+<chris.auman@gmail.com>` so commits can't be authored as the Sanctuary
+identity.
+
 ### GitHub
 - **Account / owner:** `chrisauman`
 - **Login email:** [TBD — chris to confirm]
@@ -165,16 +175,22 @@ verify each.
   integration.
 
 ### Vercel
-- **Account holder:** [TBD]
+- **Account holder:** [TBD — confirm friendly name of the org below]
 - **Login email:** [TBD]
-- **Account type:** [TBD — Hobby or Team?]
-- **Projects:**
-  - `creator-companion-onti` — the PWA, custom domain
-    `app.creatorcompanionapp.com`. Deploys via CLI from
+- **Org / Account ID:** `team_wv6NHwtrOwuk3b1oQXfKWYmm` (a Team org —
+  verified from the live `.vercel/` link + `repo.json`, NOT the
+  "Hobby/personal" the old note guessed). This is the `VERCEL_ORG_ID`
+  used by CI. **Deny:** the `sanctuary-projects` ("Sanctuary") team —
+  which is what the machine's globally-active `vercel` CLI was pointed at
+  when this was set up.
+- **Projects (both under the org above):**
+  - `creator-companion-onti` — the PWA, `prj_VtXOth7fmOAnFkaJ8NoL1YgLZT2W`,
+    custom domain `app.creatorcompanionapp.com`. Root dir
+    `web/creator-companion-web`. Deploys via CLI from
     `.github/workflows/deploy.yml`.
-  - Marketing site project — custom domain `creatorcompanionapp.com`.
-    Project name: [TBD]. Deploys via Vercel's native GitHub
-    integration.
+  - `creator-companion` — marketing, `prj_t1qh8HpVcOAl0Qofr6ff6N3Mwree`,
+    custom domain `creatorcompanionapp.com`. Deploys via Vercel's native
+    GitHub integration.
 
 ### Cloudflare R2
 - **Account holder:** [TBD]
