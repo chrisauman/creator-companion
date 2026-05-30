@@ -24,6 +24,9 @@ appsettings.Production.json
 .claude/account.env.local
 .claude/settings.local.json
 
+# Claude Code agent worktrees (runtime scratch, never committed).
+.claude/worktrees/
+
 # ── Angular ──────────────────────────────────────────────────
 web/creator-companion-web/node_modules/
 web/creator-companion-web/dist/
