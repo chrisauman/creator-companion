@@ -559,6 +559,14 @@ adapter yet.
   legacy accounts: `"UTC"` (means a 9am reminder fires at 9am UTC for
   them — surface this if reminder timing seems wrong).
 
+## Showing visual output (Chris's preference)
+
+When there's something visual to show — rendered quote cards, generated
+images, UI mockups, screenshots — **render it to a file and `open` it in
+Preview so Chris can actually see it**, then add a brief "what you're
+looking at" + any honest caveats. Don't just describe it in text. (Pattern
+he asked to standardize, May 2026, after the quote-card preview.)
+
 ## Coding conventions
 
 - **Comments matter.** Explain *why*, not *what*. Future-Claude (and
