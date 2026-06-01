@@ -317,11 +317,14 @@ public class SocialPostingService(
         }
 
         // No uploaded image but the admin asked for a quote card → render
-        // one from the body text. Uploaded media always wins over a card.
+        // one from the post's HEADLINE only (first paragraph), not the whole
+        // body. The full text still goes in the caption; the card stays a
+        // punchy quote — mirroring how daily posts use just the spark's
+        // takeaway. Uploaded media always wins over a card.
         if (imageBytes is null && post.GenerateQuoteCard && quoteCards.IsAvailable
             && !string.IsNullOrWhiteSpace(post.Body))
         {
-            imageBytes = quoteCards.Render(post.Body);
+            imageBytes = quoteCards.Render(Headline(post.Body));
             imageContentType = imageBytes is null ? null : "image/png";
         }
 
@@ -461,6 +464,21 @@ public class SocialPostingService(
         // the takeaway one-liner if a spark has no body.
         var content = string.IsNullOrWhiteSpace(spark.FullContent) ? spark.Takeaway : spark.FullContent;
         return (content ?? string.Empty).Trim();
+    }
+
+    /// <summary>
+    /// The "headline" of a freeform post body, for the quote card: the
+    /// first paragraph (text before the first blank line). Posts (and
+    /// pasted sparks) lead with the takeaway, then a blank line, then the
+    /// supporting detail — so this keeps the card to the punchy hook while
+    /// the full text still rides in the caption. A single-paragraph body
+    /// returns unchanged.
+    /// </summary>
+    private static string Headline(string body)
+    {
+        var t = (body ?? string.Empty).Replace("\r\n", "\n").Replace("\r", "\n").Trim();
+        var i = t.IndexOf("\n\n", StringComparison.Ordinal);
+        return (i > 0 ? t[..i] : t).Trim();
     }
 
     /// <summary>Picks one spark Id not yet Posted FOR THIS PLATFORM. Independent per-platform rotation.</summary>
