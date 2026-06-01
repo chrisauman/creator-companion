@@ -34,9 +34,14 @@ public class QuoteCardRenderer : IQuoteCardRenderer
     private static readonly Color InkMuted   = Color.ParseHex("6B7280");
     private static readonly Color Cyan        = Color.ParseHex("12C4E3");
 
+    // Footer logo mark (the cyan-spiral brand icon) drawn above the
+    // wordmark. Rendered at this size on the 1080² card.
+    private const int LogoSize = 104;
+
     private readonly ILogger<QuoteCardRenderer> _log;
     private readonly FontFamily? _serif;   // Fraunces — the quote
     private readonly FontFamily? _sans;     // Inter — eyebrow + wordmark
+    private readonly byte[]? _logoBytes;    // logo-icon.png; null = wordmark only
 
     public bool IsAvailable => _serif is not null && _sans is not null;
 
@@ -45,12 +50,18 @@ public class QuoteCardRenderer : IQuoteCardRenderer
         _log = log;
         try
         {
-            var dir = Path.Combine(env.ContentRootPath, "wwwroot", "fonts");
+            var wwwroot = Path.Combine(env.ContentRootPath, "wwwroot");
+            var dir = Path.Combine(wwwroot, "fonts");
             var collection = new FontCollection();
             var fraunces = Path.Combine(dir, "Fraunces.ttf");
             var inter    = Path.Combine(dir, "Inter.ttf");
             if (File.Exists(fraunces)) _serif = collection.Add(fraunces);
             if (File.Exists(inter))    _sans  = collection.Add(inter);
+
+            // Logo is optional — if missing, the footer falls back to the
+            // wordmark text alone (so rendering never depends on it).
+            var logoPath = Path.Combine(wwwroot, "brand", "logo-icon.png");
+            if (File.Exists(logoPath)) _logoBytes = File.ReadAllBytes(logoPath);
 
             if (!IsAvailable)
                 _log.LogWarning("Quote card fonts not found in {Dir}; quote-card rendering disabled.", dir);
@@ -97,13 +108,15 @@ public class QuoteCardRenderer : IQuoteCardRenderer
                     ctx.DrawText(eyebrowOpts, eyebrow.ToUpperInvariant(), Cyan);
                 }
 
-                // Auto-size the quote to fit the central box.
+                // Auto-size the quote to fit the central box. Slightly
+                // shorter than the full height + nudged up to leave room for
+                // the logo + wordmark lockup at the foot.
                 var maxWidth  = Size - 2 * Margin;
-                var maxHeight = 600f;
+                var maxHeight = 540f;
                 var quoteFont = FitFont(display, maxWidth, maxHeight);
                 var quoteOpts = new RichTextOptions(quoteFont)
                 {
-                    Origin = new PointF(Size / 2f, Size / 2f),
+                    Origin = new PointF(Size / 2f, Size / 2f - 26f),
                     HorizontalAlignment = HorizontalAlignment.Center,
                     VerticalAlignment = VerticalAlignment.Center,
                     TextAlignment = TextAlignment.Center,
@@ -112,11 +125,18 @@ public class QuoteCardRenderer : IQuoteCardRenderer
                 };
                 ctx.DrawText(quoteOpts, display, Ink);
 
-                // Footer wordmark.
-                var markFont = _sans!.Value.CreateFont(28f, FontStyle.Bold);
+                // Footer: brand logo mark above the wordmark.
+                if (_logoBytes is not null)
+                {
+                    using var logo = Image.Load<Rgba32>(_logoBytes);
+                    logo.Mutate(x => x.Resize(LogoSize, LogoSize));
+                    ctx.DrawImage(logo, new Point((Size - LogoSize) / 2, Size - 250), 1f);
+                }
+
+                var markFont = _sans!.Value.CreateFont(26f, FontStyle.Bold);
                 var markOpts = new RichTextOptions(markFont)
                 {
-                    Origin = new PointF(Size / 2f, Size - 110f),
+                    Origin = new PointF(Size / 2f, Size - 92f),
                     HorizontalAlignment = HorizontalAlignment.Center,
                     VerticalAlignment = VerticalAlignment.Center,
                     TextAlignment = TextAlignment.Center,
