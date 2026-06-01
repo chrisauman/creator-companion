@@ -127,7 +127,10 @@ public class BlueskyPoster(IHttpClientFactory httpFactory, IEntryEncryptor encry
         if (!resp.IsSuccessStatusCode) return null;
         var body = await resp.Content.ReadAsStringAsync(ct);
         // Response: { "blob": { "$type": "blob", "ref": {...}, ... } }
-        return JsonNode.Parse(body)?["blob"];
+        // DeepClone() detaches the node from its parent (the parsed response
+        // root). Without it, assigning the blob into the embed JsonObject
+        // throws "The node already has a parent."
+        return JsonNode.Parse(body)?["blob"]?.DeepClone();
     }
 
     private string? ReadCredential(SocialAccount account, string key)
