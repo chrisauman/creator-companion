@@ -133,15 +133,17 @@ public class QuoteCardRenderer : IQuoteCardRenderer
                     ctx.DrawImage(logo, new Point((Size - LogoSize) / 2, Size - 250), 1f);
                 }
 
-                var markFont = _sans!.Value.CreateFont(26f, FontStyle.Bold);
+                // Wordmark in Fraunces (the brand wordmark font), bold —
+                // matching the logo's wordmark rather than the Inter UI font.
+                var markFont = _serif!.Value.CreateFont(34f, FontStyle.Bold);
                 var markOpts = new RichTextOptions(markFont)
                 {
-                    Origin = new PointF(Size / 2f, Size - 92f),
+                    Origin = new PointF(Size / 2f, Size - 90f),
                     HorizontalAlignment = HorizontalAlignment.Center,
                     VerticalAlignment = VerticalAlignment.Center,
                     TextAlignment = TextAlignment.Center,
                 };
-                ctx.DrawText(markOpts, "Creator Companion", InkMuted);
+                ctx.DrawText(markOpts, "Creator Companion", Ink);
             });
 
             using var ms = new MemoryStream();
