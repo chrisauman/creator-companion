@@ -34,9 +34,9 @@ public class QuoteCardRenderer : IQuoteCardRenderer
     private static readonly Color InkMuted   = Color.ParseHex("6B7280");
     private static readonly Color Cyan        = Color.ParseHex("12C4E3");
 
-    // Footer logo mark (the cyan-spiral brand icon) drawn above the
-    // wordmark. Rendered at this size on the 1080² card.
-    private const int LogoSize = 104;
+    // Footer logo mark (the cyan-spiral brand icon) drawn beside the
+    // wordmark in a horizontal lockup. Rendered at this size on the 1080² card.
+    private const int LogoSize = 78;
 
     private readonly ILogger<QuoteCardRenderer> _log;
     private readonly FontFamily? _serif;   // Fraunces — the quote
@@ -125,25 +125,36 @@ public class QuoteCardRenderer : IQuoteCardRenderer
                 };
                 ctx.DrawText(quoteOpts, display, Ink);
 
-                // Footer: brand logo mark above the wordmark.
-                if (_logoBytes is not null)
+                // Footer: HORIZONTAL logo + wordmark lockup — icon on the
+                // left, "Creator Companion" in Fraunces to its right, the whole
+                // group centered. Measure the text so the group centers as a
+                // unit and the two share a vertical center.
+                var markFont = _serif!.Value.CreateFont(40f, FontStyle.Bold);
+                const string wordmark = "Creator Companion";
+                var textW = TextMeasurer.MeasureSize(wordmark, new TextOptions(markFont)).Width;
+
+                var hasLogo = _logoBytes is not null;
+                const float gap = 26f;            // space between icon and text
+                var logoW   = hasLogo ? LogoSize : 0f;
+                var lockupW = logoW + (hasLogo ? gap : 0f) + textW;
+                var startX  = (Size - lockupW) / 2f;
+                var footerY = Size - 130f;        // shared vertical center
+
+                if (hasLogo)
                 {
-                    using var logo = Image.Load<Rgba32>(_logoBytes);
+                    using var logo = Image.Load<Rgba32>(_logoBytes!);
                     logo.Mutate(x => x.Resize(LogoSize, LogoSize));
-                    ctx.DrawImage(logo, new Point((Size - LogoSize) / 2, Size - 250), 1f);
+                    ctx.DrawImage(logo, new Point((int)startX, (int)(footerY - LogoSize / 2f)), 1f);
                 }
 
-                // Wordmark in Fraunces (the brand wordmark font), bold —
-                // matching the logo's wordmark rather than the Inter UI font.
-                var markFont = _serif!.Value.CreateFont(34f, FontStyle.Bold);
                 var markOpts = new RichTextOptions(markFont)
                 {
-                    Origin = new PointF(Size / 2f, Size - 90f),
-                    HorizontalAlignment = HorizontalAlignment.Center,
+                    Origin = new PointF(startX + logoW + (hasLogo ? gap : 0f), footerY),
+                    HorizontalAlignment = HorizontalAlignment.Left,
                     VerticalAlignment = VerticalAlignment.Center,
-                    TextAlignment = TextAlignment.Center,
+                    TextAlignment = TextAlignment.Start,
                 };
-                ctx.DrawText(markOpts, "Creator Companion", Ink);
+                ctx.DrawText(markOpts, wordmark, Ink);
             });
 
             using var ms = new MemoryStream();
