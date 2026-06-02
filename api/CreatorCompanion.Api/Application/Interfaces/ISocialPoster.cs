@@ -5,15 +5,22 @@ namespace CreatorCompanion.Api.Application.Interfaces;
 
 /// <summary>
 /// What to publish. Text is already truncated-to-fit + hashtag-appended
-/// by the posting service — adapters publish it verbatim. ImageBytes is
-/// the decrypted raw image (null for text-only); adapters that don't
-/// support images ignore it.
+/// by the posting service — adapters publish it verbatim.
+///
+/// The image is provided two ways so each adapter uses what its API wants:
+///   - <see cref="ImageBytes"/>: raw bytes for direct/multipart upload
+///     (Bluesky, Mastodon, Facebook).
+///   - <see cref="ImageUrl"/>: a publicly reachable URL of the same image
+///     (REQUIRED by Threads + Instagram, which don't accept binary upload).
+/// Both are null for a text-only post; adapters that don't support images
+/// ignore them.
 /// </summary>
 public record SocialPublishRequest(
     string  Text,
     byte[]? ImageBytes,
     string? ImageContentType,
-    string? ImageAltText
+    string? ImageAltText,
+    string? ImageUrl = null
 );
 
 /// <summary>
@@ -51,6 +58,15 @@ public interface ISocialPoster
     int CharacterLimit { get; }
 
     bool SupportsImages { get; }
+
+    /// <summary>
+    /// True if this platform needs the image as a public URL
+    /// (<see cref="SocialPublishRequest.ImageUrl"/>) rather than raw bytes —
+    /// Threads + Instagram. The posting service stages the card publicly only
+    /// when at least one target needs it. Defaults to false (Bluesky/Mastodon
+    /// upload bytes directly).
+    /// </summary>
+    bool RequiresImageUrl => false;
 
     /// <summary>
     /// Publishes one post for the given (already-connected) account.

@@ -17,8 +17,10 @@ namespace CreatorCompanion.Api.Domain.Enums;
 /// </summary>
 public enum SocialPlatform
 {
-    Bluesky  = 0,
-    Mastodon = 1,
-    Threads  = 2,
-    Twitter  = 3,
+    Bluesky   = 0,
+    Mastodon  = 1,
+    Threads   = 2,
+    Twitter   = 3,
+    Facebook  = 4,   // Meta Graph API → a Facebook Page
+    Instagram = 5,   // Meta Graph API → an IG Business/Creator account
 }

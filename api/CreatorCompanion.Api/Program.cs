@@ -429,6 +429,13 @@ try
     builder.Services.AddHttpClient("social", c => c.Timeout = TimeSpan.FromSeconds(30));
     builder.Services.AddScoped<ISocialPoster, CreatorCompanion.Api.Infrastructure.Social.BlueskyPoster>();
     builder.Services.AddScoped<ISocialPoster, CreatorCompanion.Api.Infrastructure.Social.MastodonPoster>();
+    // Meta Graph API adapters (Threads, Facebook Page, Instagram). Threads +
+    // Instagram require the card image at a public URL → IPublicImageHost
+    // stages it and SocialPublicCardController serves it.
+    builder.Services.AddScoped<ISocialPoster, CreatorCompanion.Api.Infrastructure.Social.ThreadsPoster>();
+    builder.Services.AddScoped<ISocialPoster, CreatorCompanion.Api.Infrastructure.Social.FacebookPoster>();
+    builder.Services.AddScoped<ISocialPoster, CreatorCompanion.Api.Infrastructure.Social.InstagramPoster>();
+    builder.Services.AddScoped<IPublicImageHost, PublicImageHost>();
     builder.Services.AddScoped<IHashtagService, HashtagService>();
     // Branded quote-card renderer (ImageSharp.Drawing + bundled fonts).
     // Singleton: FontCollection load is one-shot, rendering is stateless.

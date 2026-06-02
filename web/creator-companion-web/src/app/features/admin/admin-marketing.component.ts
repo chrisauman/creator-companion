@@ -498,8 +498,10 @@ export class AdminMarketingComponent implements OnInit {
       enabled: a.enabled,
       handle: a.handle.trim() || null,
       endpoint: a.endpoint.trim() || null,
+      // Bluesky uses an app password; everything else (Mastodon + the Meta
+      // platforms) authenticates with an access token.
       appPassword: a.platform === 'Bluesky' ? (a.credential.trim() || null) : null,
-      accessToken: a.platform === 'Mastodon' ? (a.credential.trim() || null) : null,
+      accessToken: a.platform !== 'Bluesky' ? (a.credential.trim() || null) : null,
       postHourLocal: a.postHourLocal, postMinuteLocal: a.postMinuteLocal, jitterMinutes: a.jitterMinutes,
     };
     this.api.adminUpdateMarketingAccount(a.platform, payload).subscribe({
@@ -599,17 +601,22 @@ export class AdminMarketingComponent implements OnInit {
       return 'Create an App Password at Settings → Privacy and Security → App Passwords on bsky.app — not your account password.';
     if (platform === 'Mastodon')
       return 'On your instance: Preferences → Development → New application with write:statuses + write:media, then copy the access token.';
+    if (platform === 'Threads')
+      return 'Paste your long-lived Threads access token (threads_basic + threads_content_publish). I’ll walk you through generating it in the Meta developer portal.';
+    if (platform === 'Facebook')
+      return 'Paste your Facebook Page access token (pages_manage_posts). Posts go to your Page, not your personal profile. I’ll walk you through getting it.';
+    if (platform === 'Instagram')
+      return 'Paste a Page/user access token (instagram_content_publish) for the IG Business account linked to your Page. Image-only. I’ll walk you through it.';
     return '';
   }
   handlePlaceholder(platform: string): string {
     if (platform === 'Bluesky') return 'alice.bsky.social';
     if (platform === 'Mastodon') return '@alice@mastodon.social';
-    return '';
+    return '@creatorcompanion';   // Threads/Facebook/Instagram: display only
   }
   credentialLabel(platform: string): string {
     if (platform === 'Bluesky') return 'App password';
-    if (platform === 'Mastodon') return 'Access token';
-    return 'Credential';
+    return 'Access token';   // Mastodon + all Meta platforms
   }
   needsEndpoint(platform: string): boolean { return platform === 'Mastodon'; }
 }

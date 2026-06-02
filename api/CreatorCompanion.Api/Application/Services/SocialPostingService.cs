@@ -56,6 +56,7 @@ public class SocialPostingService(
     IEnumerable<ISocialPoster> posters,
     IHashtagService hashtags,
     IQuoteCardRenderer quoteCards,
+    IPublicImageHost publicImageHost,
     IEmailService email,
     IStorageService storage,
     ILogger<SocialPostingService> log) : ISocialPostingService
@@ -223,6 +224,12 @@ public class SocialPostingService(
         if (settings.DailyQuoteCardsEnabled && poster.SupportsImages && quoteCards.IsAvailable)
             card = quoteCards.Render(plan.Spark.Takeaway, "Your Daily Spark");
 
+        // Stage the card at a public URL for platforms that need image_url
+        // (Threads/Facebook/Instagram); byte-upload platforms ignore it.
+        string? imageUrl = null;
+        if (card is not null && poster.RequiresImageUrl)
+            imageUrl = await publicImageHost.PublishAsync(card, "image/png", ct);
+
         // When the card is attached, the takeaway lives on the IMAGE, so the
         // caption is just the hashtags. Without a card (text-only platform or
         // a render failure), the caption carries the full spark text + tags so
@@ -233,7 +240,7 @@ public class SocialPostingService(
             poster, sparkText, settings.AutoHashtagsEnabled, textOnImage: card is not null, ct);
 
         var request = new SocialPublishRequest(
-            text, card, card is null ? null : "image/png", card is null ? null : plan.Spark.Takeaway);
+            text, card, card is null ? null : "image/png", card is null ? null : plan.Spark.Takeaway, imageUrl);
 
         SocialPublishResult result;
         try
@@ -336,6 +343,15 @@ public class SocialPostingService(
             cardAttached = imageBytes is not null;
         }
 
+        // Stage the image at a public URL once if any target platform needs it
+        // (Threads/Facebook/Instagram). Byte-upload platforms ignore the URL.
+        string? imageUrl = null;
+        if (imageBytes is not null &&
+            post.Targets.Any(t => ResolvePoster(t.Platform)?.RequiresImageUrl == true))
+        {
+            imageUrl = await publicImageHost.PublishAsync(imageBytes, imageContentType ?? "image/png", ct);
+        }
+
         foreach (var target in post.Targets.Where(t => t.Status == SocialPostStatus.Pending))
         {
             var poster = ResolvePoster(target.Platform);
@@ -359,7 +375,7 @@ public class SocialPostingService(
             try
             {
                 result = await poster.PublishAsync(account,
-                    new SocialPublishRequest(text, useImage, imageContentType, altText), ct);
+                    new SocialPublishRequest(text, useImage, imageContentType, altText, imageUrl), ct);
             }
             catch (Exception ex)
             {

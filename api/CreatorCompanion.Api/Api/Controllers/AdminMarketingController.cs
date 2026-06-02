@@ -270,7 +270,10 @@ public class AdminMarketingController(
     {
         SocialPlatform.Bluesky when !string.IsNullOrWhiteSpace(req.AppPassword)
             => JsonSerializer.Serialize(new { appPassword = req.AppPassword!.Trim() }),
-        SocialPlatform.Mastodon when !string.IsNullOrWhiteSpace(req.AccessToken)
+        // Mastodon + the Meta platforms (Threads / Facebook Page / Instagram)
+        // all authenticate with a single pasted access token.
+        (SocialPlatform.Mastodon or SocialPlatform.Threads or SocialPlatform.Facebook
+            or SocialPlatform.Instagram) when !string.IsNullOrWhiteSpace(req.AccessToken)
             => JsonSerializer.Serialize(new { accessToken = req.AccessToken!.Trim() }),
         _ => null,
     };

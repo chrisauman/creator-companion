@@ -37,6 +37,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<SocialDailyPlan> SocialDailyPlans => Set<SocialDailyPlan>();
     public DbSet<SocialPost> SocialPosts => Set<SocialPost>();
     public DbSet<SocialPostTarget> SocialPostTargets => Set<SocialPostTarget>();
+    public DbSet<SocialCardAsset> SocialCardAssets => Set<SocialCardAsset>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -70,5 +71,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.ApplyConfiguration(new SocialDailyPlanConfiguration());
         modelBuilder.ApplyConfiguration(new SocialPostConfiguration());
         modelBuilder.ApplyConfiguration(new SocialPostTargetConfiguration());
+        modelBuilder.ApplyConfiguration(new SocialCardAssetConfiguration());
     }
 }
