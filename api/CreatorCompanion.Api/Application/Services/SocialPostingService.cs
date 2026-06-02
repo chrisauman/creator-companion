@@ -216,16 +216,21 @@ public class SocialPostingService(
         if (plan.Spark is null)
             return await RecordDailyFailureAsync(account, plan, "Plan row had no associated spark.", ct);
 
-        var sparkText = ComposeSparkText(plan.Spark);
-        var text = await ComposeFinalTextAsync(poster, sparkText, settings.AutoHashtagsEnabled, ct);
-
         // Branded quote card from the spark's takeaway (the punchy one-
-        // liner) when enabled + supported. The body text still carries the
-        // full content + hashtags, so the image is the hook and the caption
-        // adds depth. Renderer returns null on any failure → text-only.
+        // liner) when enabled + supported. Renderer returns null on any
+        // failure → fall back to a text post.
         byte[]? card = null;
         if (settings.DailyQuoteCardsEnabled && poster.SupportsImages && quoteCards.IsAvailable)
             card = quoteCards.Render(plan.Spark.Takeaway, "Daily Spark");
+
+        // When the card is attached, the takeaway lives on the IMAGE, so the
+        // caption is just the hashtags. Without a card (text-only platform or
+        // a render failure), the caption carries the full spark text + tags so
+        // the post is never empty. The takeaway also rides as the image alt
+        // text for accessibility.
+        var sparkText = ComposeSparkText(plan.Spark);
+        var text = await ComposeFinalTextAsync(
+            poster, sparkText, settings.AutoHashtagsEnabled, textOnImage: card is not null, ct);
 
         var request = new SocialPublishRequest(
             text, card, card is null ? null : "image/png", card is null ? null : plan.Spark.Takeaway);
@@ -318,14 +323,17 @@ public class SocialPostingService(
 
         // No uploaded image but the admin asked for a quote card → render
         // one from the post's HEADLINE only (first paragraph), not the whole
-        // body. The full text still goes in the caption; the card stays a
-        // punchy quote — mirroring how daily posts use just the spark's
-        // takeaway. Uploaded media always wins over a card.
+        // body. When a card is attached the headline lives on the IMAGE, so
+        // the caption becomes hashtags-only (see the loop below). Uploaded
+        // media always wins over a card — and an upload is NOT a card, so its
+        // caption keeps the full body text.
+        var cardAttached = false;
         if (imageBytes is null && post.GenerateQuoteCard && quoteCards.IsAvailable
             && !string.IsNullOrWhiteSpace(post.Body))
         {
             imageBytes = quoteCards.Render(Headline(post.Body));
             imageContentType = imageBytes is null ? null : "image/png";
+            cardAttached = imageBytes is not null;
         }
 
         foreach (var target in post.Targets.Where(t => t.Status == SocialPostStatus.Pending))
@@ -340,14 +348,18 @@ public class SocialPostingService(
                 continue;
             }
 
-            var text = await ComposeFinalTextAsync(poster, post.Body, post.IncludeHashtags, ct);
             var useImage = poster.SupportsImages ? imageBytes : null;
+            // Card attached → caption is hashtags-only + headline rides as alt
+            // text. Uploaded image or no image → caption keeps the full body.
+            var textOnImage = cardAttached && useImage is not null;
+            var text = await ComposeFinalTextAsync(poster, post.Body, post.IncludeHashtags, textOnImage, ct);
+            var altText = textOnImage ? Headline(post.Body) : null;
 
             SocialPublishResult result;
             try
             {
                 result = await poster.PublishAsync(account,
-                    new SocialPublishRequest(text, useImage, imageContentType, null), ct);
+                    new SocialPublishRequest(text, useImage, imageContentType, altText), ct);
             }
             catch (Exception ex)
             {
@@ -429,33 +441,50 @@ public class SocialPostingService(
     // ── Shared helpers ───────────────────────────────────────────────
 
     /// <summary>
-    /// Truncate-to-fit text composition: reserve room for hashtags within
-    /// the platform's char budget, trim the body with an ellipsis if it
-    /// overflows, then append the hashtags. If the tags alone wouldn't
-    /// fit, drop them rather than the content.
+    /// Composes the post caption within the platform's char budget.
+    ///
+    /// When <paramref name="textOnImage"/> is true (a quote card carries the
+    /// takeaway), the caption is JUST the hashtags — the image is the message.
+    /// Otherwise the body is included, truncated at a WORD boundary (never
+    /// mid-word) with an ellipsis, and the hashtags appended.
     /// </summary>
     private async Task<string> ComposeFinalTextAsync(
-        ISocialPoster poster, string body, bool includeHashtags, CancellationToken ct)
+        ISocialPoster poster, string body, bool includeHashtags, bool textOnImage, CancellationToken ct)
     {
         body = (body ?? string.Empty).Trim();
         var limit = Math.Max(1, poster.CharacterLimit - SafetyMargin);
 
-        var tagSuffix = string.Empty;
+        var tagLine = string.Empty;
         if (includeHashtags)
         {
             var tags = await hashtags.GenerateAsync(body, MaxHashtags, ct);
-            if (tags.Count > 0)
-            {
-                var candidate = "\n\n" + string.Join(' ', tags);
-                if (candidate.Length < limit) tagSuffix = candidate;
-            }
+            if (tags.Count > 0) tagLine = string.Join(' ', tags);
         }
 
+        // Card carries the text → caption is hashtags only. (May be empty if
+        // hashtags are off; the image + its alt text still convey the takeaway.)
+        if (textOnImage)
+            return tagLine.Length <= limit ? tagLine : string.Empty;
+
+        var tagSuffix = tagLine.Length > 0 && ("\n\n" + tagLine).Length < limit
+            ? "\n\n" + tagLine : string.Empty;
         var available = limit - tagSuffix.Length;
         if (body.Length > available)
-            body = body[..Math.Max(0, available - 1)].TrimEnd() + "…";
+            body = TruncateAtWord(body, Math.Max(0, available - 1)) + "…";
 
         return body + tagSuffix;
+    }
+
+    /// <summary>Trim to at most <paramref name="max"/> chars without splitting a word.</summary>
+    private static string TruncateAtWord(string s, int max)
+    {
+        if (s.Length <= max) return s;
+        var cut = s[..max];
+        var lastSpace = cut.LastIndexOf(' ');
+        // Honour the last space only if it isn't absurdly early (avoid a
+        // near-empty result when the head is one long token).
+        if (lastSpace > max / 2) cut = cut[..lastSpace];
+        return cut.TrimEnd();
     }
 
     private static string ComposeSparkText(MotivationEntry spark)
