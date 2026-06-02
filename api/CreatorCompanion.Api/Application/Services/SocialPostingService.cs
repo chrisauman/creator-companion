@@ -221,7 +221,7 @@ public class SocialPostingService(
         // failure → fall back to a text post.
         byte[]? card = null;
         if (settings.DailyQuoteCardsEnabled && poster.SupportsImages && quoteCards.IsAvailable)
-            card = quoteCards.Render(plan.Spark.Takeaway, "Daily Spark");
+            card = quoteCards.Render(plan.Spark.Takeaway, "Your Daily Spark");
 
         // When the card is attached, the takeaway lives on the IMAGE, so the
         // caption is just the hashtags. Without a card (text-only platform or
