@@ -435,6 +435,7 @@ try
     builder.Services.AddScoped<ISocialPoster, CreatorCompanion.Api.Infrastructure.Social.ThreadsPoster>();
     builder.Services.AddScoped<ISocialPoster, CreatorCompanion.Api.Infrastructure.Social.FacebookPoster>();
     builder.Services.AddScoped<ISocialPoster, CreatorCompanion.Api.Infrastructure.Social.InstagramPoster>();
+    builder.Services.AddScoped<ISocialPoster, CreatorCompanion.Api.Infrastructure.Social.YouTubePoster>();
     builder.Services.AddScoped<IPublicImageHost, PublicImageHost>();
     builder.Services.AddScoped<IHashtagService, HashtagService>();
     // Branded quote-card renderer (ImageSharp.Drawing + bundled fonts).

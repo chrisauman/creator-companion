@@ -584,6 +584,7 @@ export class ApiService {
   adminUpdateMarketingAccount(platform: string, payload: {
     enabled: boolean; handle?: string | null; endpoint?: string | null;
     appPassword?: string | null; accessToken?: string | null;
+    clientId?: string | null; clientSecret?: string | null; refreshToken?: string | null;
     postHourLocal: number; postMinuteLocal: number; jitterMinutes: number;
   }): Observable<SocialSettings> {
     return this.http.put<SocialSettings>(`${this.base}/admin/marketing/accounts/${platform}`, payload);

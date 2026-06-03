@@ -29,6 +29,10 @@ interface AccountForm {
   handle: string;
   endpoint: string;
   credential: string;      // blank = keep stored secret
+  // YouTube only: three OAuth values (blank = keep stored).
+  ytClientId: string;
+  ytClientSecret: string;
+  ytRefresh: string;
   postHourLocal: number;
   postMinuteLocal: number;
   jitterMinutes: number;
@@ -115,23 +119,41 @@ interface AccountForm {
                 <input type="text" [(ngModel)]="a.handle" [placeholder]="handlePlaceholder(a.platform)" />
               </div>
 
-              @if (needsEndpoint(a.platform)) {
+              @if (a.platform === 'Mastodon') {
                 <div class="mk-field">
                   <label>Instance URL</label>
                   <input type="text" [(ngModel)]="a.endpoint" placeholder="https://mastodon.social" />
                 </div>
-              } @else {
+              } @else if (a.platform === 'Bluesky') {
                 <div class="mk-field">
                   <label>PDS host <span class="mk-optional">(optional)</span></label>
                   <input type="text" [(ngModel)]="a.endpoint" placeholder="https://bsky.social" />
                 </div>
               }
 
-              <div class="mk-field">
-                <label>{{ credentialLabel(a.platform) }}</label>
-                <input type="password" [(ngModel)]="a.credential"
-                       [placeholder]="a.hasCredentials ? 'Stored — leave blank to keep' : 'Paste here'" />
-              </div>
+              @if (a.platform === 'YouTube') {
+                <div class="mk-field">
+                  <label>OAuth Client ID</label>
+                  <input type="password" [(ngModel)]="a.ytClientId"
+                         [placeholder]="a.hasCredentials ? 'Stored — leave all three blank to keep' : 'xxxxx.apps.googleusercontent.com'" />
+                </div>
+                <div class="mk-field">
+                  <label>OAuth Client Secret</label>
+                  <input type="password" [(ngModel)]="a.ytClientSecret"
+                         [placeholder]="a.hasCredentials ? 'Stored — leave blank to keep' : 'GOCSPX-…'" />
+                </div>
+                <div class="mk-field">
+                  <label>Refresh token</label>
+                  <input type="password" [(ngModel)]="a.ytRefresh"
+                         [placeholder]="a.hasCredentials ? 'Stored — leave blank to keep' : '1//0…'" />
+                </div>
+              } @else {
+                <div class="mk-field">
+                  <label>{{ credentialLabel(a.platform) }}</label>
+                  <input type="password" [(ngModel)]="a.credential"
+                         [placeholder]="a.hasCredentials ? 'Stored — leave blank to keep' : 'Paste here'" />
+                </div>
+              }
 
               <div class="mk-row">
                 <div class="mk-field mk-field--sm">
@@ -470,6 +492,7 @@ export class AdminMarketingComponent implements OnInit {
     return {
       platform: a.platform, enabled: a.enabled,
       handle: a.handle ?? '', endpoint: a.endpoint ?? '', credential: '',
+      ytClientId: '', ytClientSecret: '', ytRefresh: '',
       postHourLocal: a.postHourLocal, postMinuteLocal: a.postMinuteLocal, jitterMinutes: a.jitterMinutes,
       hasCredentials: a.hasCredentials, characterLimit: a.characterLimit, supportsImages: a.supportsImages,
       lastSuccessAt: a.lastSuccessAt, lastFailureAt: a.lastFailureAt,
@@ -501,7 +524,12 @@ export class AdminMarketingComponent implements OnInit {
       // Bluesky uses an app password; everything else (Mastodon + the Meta
       // platforms) authenticates with an access token.
       appPassword: a.platform === 'Bluesky' ? (a.credential.trim() || null) : null,
-      accessToken: a.platform !== 'Bluesky' ? (a.credential.trim() || null) : null,
+      // Mastodon + the Meta platforms use a single access token; YouTube uses
+      // its own three OAuth fields below (so its access-token slot stays null).
+      accessToken: (a.platform !== 'Bluesky' && a.platform !== 'YouTube') ? (a.credential.trim() || null) : null,
+      clientId: a.platform === 'YouTube' ? (a.ytClientId.trim() || null) : null,
+      clientSecret: a.platform === 'YouTube' ? (a.ytClientSecret.trim() || null) : null,
+      refreshToken: a.platform === 'YouTube' ? (a.ytRefresh.trim() || null) : null,
       postHourLocal: a.postHourLocal, postMinuteLocal: a.postMinuteLocal, jitterMinutes: a.jitterMinutes,
     };
     this.api.adminUpdateMarketingAccount(a.platform, payload).subscribe({
@@ -607,6 +635,8 @@ export class AdminMarketingComponent implements OnInit {
       return 'Paste your Facebook Page access token (pages_manage_posts). Posts go to your Page, not your personal profile. I’ll walk you through getting it.';
     if (platform === 'Instagram')
       return 'Paste a Page/user access token (instagram_content_publish) for the IG Business account linked to your Page. Image-only. I’ll walk you through it.';
+    if (platform === 'YouTube')
+      return 'Posts a daily themed Short (video). Paste your OAuth Client ID + Secret and a refresh token with the youtube.upload scope — I’ll walk you through the Google Cloud setup.';
     return '';
   }
   handlePlaceholder(platform: string): string {

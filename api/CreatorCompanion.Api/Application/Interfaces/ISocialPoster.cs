@@ -20,7 +20,13 @@ public record SocialPublishRequest(
     byte[]? ImageBytes,
     string? ImageContentType,
     string? ImageAltText,
-    string? ImageUrl = null
+    string? ImageUrl = null,
+    // Video platforms (YouTube) carry the rendered MP4 here instead of an
+    // image. The posting service renders the daily themed Short and supplies
+    // the bytes + a short title; image fields are null for these posts.
+    byte[]? VideoBytes = null,
+    string? VideoContentType = null,
+    string? VideoTitle = null
 );
 
 /// <summary>
@@ -67,6 +73,13 @@ public interface ISocialPoster
     /// upload bytes directly).
     /// </summary>
     bool RequiresImageUrl => false;
+
+    /// <summary>
+    /// True for video platforms (YouTube): the posting service renders the
+    /// daily themed Short and passes it as <see cref="SocialPublishRequest.VideoBytes"/>
+    /// instead of rendering a quote-card image. Defaults to false.
+    /// </summary>
+    bool IsVideo => false;
 
     /// <summary>
     /// Publishes one post for the given (already-connected) account.

@@ -63,7 +63,12 @@ public record UpdateSocialAccountRequest(
     string? AccessToken,
     int     PostHourLocal,
     int     PostMinuteLocal,
-    int     JitterMinutes
+    int     JitterMinutes,
+    // YouTube only: OAuth client + long-lived refresh token. Blank = keep
+    // the stored credential (same convention as AppPassword/AccessToken).
+    string? ClientId = null,
+    string? ClientSecret = null,
+    string? RefreshToken = null
 );
 
 public record SocialPlanResponse(

@@ -56,6 +56,7 @@ public class SocialPostingService(
     IEnumerable<ISocialPoster> posters,
     IHashtagService hashtags,
     IQuoteCardRenderer quoteCards,
+    IVideoRenderer video,
     IPublicImageHost publicImageHost,
     IEmailService email,
     IStorageService storage,
@@ -230,6 +231,22 @@ public class SocialPostingService(
         if (card is not null && poster.RequiresImageUrl)
             imageUrl = await publicImageHost.PublishAsync(card, "image/png", ct);
 
+        // Video platforms (YouTube): render today's themed "Daily Spark" Short
+        // instead of a card. The theme rotates by date (DayNumber) through the
+        // renderer's library, so every day's video looks different. The quote
+        // shown in the video is the takeaway (the punchy one-liner).
+        byte[]? videoBytes = null; string? videoCt = null; string? videoTitle = null;
+        if (poster.IsVideo)
+        {
+            if (!video.IsAvailable)
+                return await RecordDailyFailureAsync(account, plan, "Video renderer unavailable (fonts/FFmpeg missing).", ct);
+            videoBytes = await video.RenderAsync(plan.Spark.Takeaway, "Your Daily Spark", plan.Date.DayNumber, ct);
+            if (videoBytes is null)
+                return await RecordDailyFailureAsync(account, plan, "Video render failed.", ct);
+            videoCt = "video/mp4";
+            videoTitle = plan.Spark.Takeaway;
+        }
+
         // When the card is attached, the takeaway lives on the IMAGE, so the
         // caption is just the hashtags. Without a card (text-only platform or
         // a render failure), the caption carries the full spark text + tags so
@@ -240,7 +257,8 @@ public class SocialPostingService(
             poster, sparkText, settings.AutoHashtagsEnabled, textOnImage: card is not null, ct);
 
         var request = new SocialPublishRequest(
-            text, card, card is null ? null : "image/png", card is null ? null : plan.Spark.Takeaway, imageUrl);
+            text, card, card is null ? null : "image/png", card is null ? null : plan.Spark.Takeaway, imageUrl,
+            videoBytes, videoCt, videoTitle);
 
         SocialPublishResult result;
         try
@@ -371,11 +389,33 @@ public class SocialPostingService(
             var text = await ComposeFinalTextAsync(poster, post.Body, post.IncludeHashtags, textOnImage, ct);
             var altText = textOnImage ? Headline(post.Body) : null;
 
+            // Video platforms (YouTube): render a Short from the post's headline.
+            byte[]? videoBytes = null; string? videoCt = null; string? videoTitle = null;
+            if (poster.IsVideo)
+            {
+                if (!video.IsAvailable)
+                {
+                    await RecordTargetFailureAsync(target, "Video renderer unavailable (fonts/FFmpeg missing).", ct);
+                    results.Add((target.Platform, new SocialPublishResult(false, null, null, "Video renderer unavailable.", null)));
+                    continue;
+                }
+                var headline = Headline(post.Body);
+                videoBytes = await video.RenderAsync(headline, "Your Daily Spark", DateOnly.FromDateTime(DateTime.UtcNow).DayNumber, ct);
+                if (videoBytes is null)
+                {
+                    await RecordTargetFailureAsync(target, "Video render failed.", ct);
+                    results.Add((target.Platform, new SocialPublishResult(false, null, null, "Video render failed.", null)));
+                    continue;
+                }
+                videoCt = "video/mp4"; videoTitle = headline;
+            }
+
             SocialPublishResult result;
             try
             {
                 result = await poster.PublishAsync(account,
-                    new SocialPublishRequest(text, useImage, imageContentType, altText, imageUrl), ct);
+                    new SocialPublishRequest(text, useImage, imageContentType, altText, imageUrl,
+                        videoBytes, videoCt, videoTitle), ct);
             }
             catch (Exception ex)
             {

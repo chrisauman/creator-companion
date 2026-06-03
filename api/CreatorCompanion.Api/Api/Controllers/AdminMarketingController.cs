@@ -275,6 +275,17 @@ public class AdminMarketingController(
         (SocialPlatform.Mastodon or SocialPlatform.Threads or SocialPlatform.Facebook
             or SocialPlatform.Instagram) when !string.IsNullOrWhiteSpace(req.AccessToken)
             => JsonSerializer.Serialize(new { accessToken = req.AccessToken!.Trim() }),
+        // YouTube: OAuth client id/secret + a long-lived refresh token. Only
+        // (re)write the credential when all three are supplied — a partial
+        // submit (e.g. editing the schedule) leaves the stored creds intact.
+        SocialPlatform.YouTube when !string.IsNullOrWhiteSpace(req.ClientId)
+            && !string.IsNullOrWhiteSpace(req.ClientSecret) && !string.IsNullOrWhiteSpace(req.RefreshToken)
+            => JsonSerializer.Serialize(new
+            {
+                clientId = req.ClientId!.Trim(),
+                clientSecret = req.ClientSecret!.Trim(),
+                refreshToken = req.RefreshToken!.Trim(),
+            }),
         _ => null,
     };
 

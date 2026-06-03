@@ -23,4 +23,5 @@ public enum SocialPlatform
     Twitter   = 3,
     Facebook  = 4,   // Meta Graph API → a Facebook Page
     Instagram = 5,   // Meta Graph API → an IG Business/Creator account
+    YouTube   = 6,   // YouTube Data API v3 → uploads a daily Short (video, not image)
 }
