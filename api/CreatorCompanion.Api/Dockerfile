@@ -22,6 +22,17 @@ RUN dotnet publish CreatorCompanion.Api.csproj \
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
+# FFmpeg — used by VideoRenderer to encode the daily "Daily Spark" Short
+# (ImageSharp draws the frames; FFmpeg muxes them to an H.264 MP4 for
+# YouTube/TikTok). The .NET ASP.NET base is Debian-based, so apt IS
+# available here (unlike `adduser`, which was a missing *binary*, not a
+# missing package manager). --no-install-recommends + cleaning the apt
+# lists keeps the layer lean. Installed as root, before the USER 10001
+# switch below.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
 # Run as non-root via a numeric UID. The .NET 10 ASP.NET base image
 # is a minimal Debian variant that doesn't ship `adduser` — an
 # earlier version of this Dockerfile tried `adduser …` and broke

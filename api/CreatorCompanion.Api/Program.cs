@@ -440,6 +440,9 @@ try
     // Branded quote-card renderer (ImageSharp.Drawing + bundled fonts).
     // Singleton: FontCollection load is one-shot, rendering is stateless.
     builder.Services.AddSingleton<IQuoteCardRenderer, QuoteCardRenderer>();
+    // Vertical "Daily Spark" Short renderer (ImageSharp frames -> FFmpeg MP4).
+    // Singleton for the same reason; degrades to null if fonts/FFmpeg absent.
+    builder.Services.AddSingleton<IVideoRenderer, VideoRenderer>();
     builder.Services.AddScoped<ISocialPostingService, SocialPostingService>();
     builder.Services.AddHostedService<SocialPostingBackgroundService>();
 
