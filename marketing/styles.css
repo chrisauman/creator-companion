@@ -1463,7 +1463,32 @@ a:hover { text-decoration: underline; }
 .site-footer__nav { display: flex; gap: 2rem; flex-wrap: wrap; }
 .site-footer__nav a { font-size: .875rem; color: rgba(255,255,255,.35); transition: color .15s; text-decoration: none; }
 .site-footer__nav a:hover { color: rgba(255,255,255,.7); text-decoration: none; }
-.site-footer__bottom { font-size: .8125rem; color: rgba(255,255,255,.2); }
+.site-footer__bottom {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1.25rem; flex-wrap: wrap;
+  font-size: .8125rem; color: rgba(255,255,255,.2);
+}
+/* Circular social links — clean monochrome marks (Bluesky, Mastodon,
+   Substack) that read as a set; muted on the dark footer, cyan-accented
+   on hover. Hover gated to pointer-fine so iOS doesn't two-tap. */
+.site-footer__socials { display: flex; gap: .625rem; }
+.site-footer__social {
+  width: 38px; height: 38px; border-radius: 50%;
+  display: grid; place-items: center;
+  color: rgba(255,255,255,.5);
+  border: 1px solid rgba(255,255,255,.14);
+  transition: color .15s, border-color .15s, background .15s, transform .15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.site-footer__social svg { display: block; }
+@media (hover: hover) and (pointer: fine) {
+  .site-footer__social:hover {
+    color: #fff;
+    border-color: var(--cyan, #12C4E3);
+    background: rgba(18,196,227,.12);
+    transform: translateY(-1px);
+  }
+}
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Inner pages — shared styles used by pricing.html, signup.html

@@ -3,268 +3,695 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Creator Companion — Coming soon</title>
-  <meta name="description" content="A daily companion for your creative practice. Launching soon.">
-
+  <title>Creator Companion — The daily journal for creative people</title>
+  <meta name="description" content="Build your creative streak. Write every day, track your progress, and never lose what you create. Try free for 10 days.">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
-
-  <!-- Open Graph / social previews. Falls back to the existing
-       og-image while the marketing site is paused; will be refreshed
-       at launch. -->
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://www.creatorcompanionapp.com">
-  <meta property="og:title" content="Creator Companion — Coming soon">
-  <meta property="og:description" content="A daily companion for your creative practice. Launching soon.">
-  <meta property="og:image" content="https://www.creatorcompanionapp.com/og-image.png">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Creator Companion — Coming soon">
-  <meta name="twitter:description" content="A daily companion for your creative practice. Launching soon.">
-  <meta name="twitter:image" content="https://www.creatorcompanionapp.com/og-image.png">
-
-  <!-- Hide from search engines while we're in pre-launch — we don't
-       want Google indexing the placeholder ahead of the real homepage. -->
-  <meta name="robots" content="noindex, nofollow">
-
-  <link rel="canonical" href="https://www.creatorcompanionapp.com/">
-
-  <!-- Fraunces (brand wordmark) + Plus Jakarta Sans (body). Same
-       stack the full marketing site uses, so the visual handoff at
-       launch will be seamless. -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-  <style>
-    /* ── Tokens (mirror the in-app brand palette per CLAUDE.md) ── */
-    :root {
-      --accent:        #12C4E3;
-      --accent-hover:  #0bd2f0;
-      --ink:           #0c0e13;
-      --ink-soft:      #1a1d24;
-      --text-muted:    #5a6072;
-      --cream-1:       #fdfaf2;
-      --cream-2:       #f6f1e6;
-      --border-warm:   rgba(190, 170, 130, 0.22);
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    html, body {
-      min-height: 100vh;
-      min-height: 100dvh; /* iOS Safari URL-bar correction */
-    }
-
-    body {
-      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
-      color: var(--ink);
-      background: linear-gradient(180deg, var(--cream-1) 0%, var(--cream-2) 100%);
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      display: flex;
-      flex-direction: column;
-    }
-
-    /* Soft radial halo in the top-right matches the in-app column-3
-       card visual identity. Decorative; not interactive. */
-    body::before {
-      content: '';
-      position: fixed;
-      top: -20vh;
-      right: -20vw;
-      width: 70vw;
-      height: 70vw;
-      max-width: 800px;
-      max-height: 800px;
-      background: radial-gradient(circle at center, rgba(18, 196, 227, 0.12), transparent 60%);
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    .page {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 4rem 1.5rem;
-      position: relative;
-      z-index: 1;
-    }
-
-    .card {
-      max-width: 560px;
-      width: 100%;
-      text-align: center;
-    }
-
-    /* Logo + wordmark cluster. Block-level flex so the eyebrow
-       beneath drops cleanly to its own line; justify-content keeps
-       icon + wordmark centered as a pair. (Earlier inline-flex let
-       the eyebrow pack onto the same row as the wordmark, which
-       read as a noisy "[icon] Creator Companion   COMING SOON"
-       triplet instead of a stacked hierarchy.) */
-    .brand {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 0.625rem;
-      margin-bottom: 2rem;
-    }
-    .brand__icon {
-      width: 44px;
-      height: 44px;
-      border-radius: 11px;
-      display: block;
-    }
-    .brand__wordmark {
-      font-family: 'Fraunces', Georgia, serif;
-      font-weight: 800;
-      font-size: 1.25rem;
-      letter-spacing: -0.015em;
-      color: var(--ink);
-    }
-
-    /* Eyebrow — small caps label above the headline, accent-coloured.
-       Mirrors the column-3 card eyebrows in the app for consistency. */
-    .eyebrow {
-      display: inline-block;
-      font-size: 0.8125rem;
-      font-weight: 700;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--accent);
-      margin-bottom: 1.25rem;
-    }
-
-    .headline {
-      font-family: 'Fraunces', Georgia, serif;
-      font-weight: 800;
-      font-size: clamp(2.25rem, 5vw + 1rem, 3.75rem);
-      line-height: 1.05;
-      letter-spacing: -0.02em;
-      color: var(--ink);
-      margin-bottom: 1.5rem;
-    }
-
-    .lede {
-      font-size: 1.125rem;
-      line-height: 1.6;
-      color: var(--text-muted);
-      max-width: 460px;
-      margin: 0 auto 2.5rem;
-    }
-
-    /* Lightweight CTA — black-ink pill matching in-app primary CTAs.
-       Links to the Creator Companion Substack where Chris already
-       posts the daily spark; interested visitors subscribe there and
-       get launch updates via the same channel — no separate email-
-       capture backend needed. */
-    .cta {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.875rem 1.75rem;
-      font-family: inherit;
-      font-size: 0.9375rem;
-      font-weight: 600;
-      letter-spacing: -0.005em;
-      color: #fff;
-      background: var(--ink);
-      border-radius: 999px;
-      text-decoration: none;
-      transition: background 0.15s ease, transform 0.15s ease;
-    }
-    @media (hover: hover) and (pointer: fine) {
-      .cta:hover {
-        background: var(--accent-hover);
-        transform: translateY(-1px);
-      }
-    }
-    .cta__arrow {
-      transition: transform 0.15s ease;
-    }
-    @media (hover: hover) and (pointer: fine) {
-      .cta:hover .cta__arrow { transform: translateX(2px); }
-    }
-
-    /* Footer — small print at the bottom of the viewport. Always
-       visible because of the page's flex-column layout. */
-    .footer {
-      padding: 1.5rem 1.5rem calc(1.5rem + env(safe-area-inset-bottom, 0));
-      text-align: center;
-      font-size: 0.8125rem;
-      color: var(--text-muted);
-      position: relative;
-      z-index: 1;
-    }
-    .footer a {
-      color: var(--text-muted);
-      text-decoration: none;
-      border-bottom: 1px solid transparent;
-      transition: color 0.15s ease, border-color 0.15s ease;
-    }
-    @media (hover: hover) and (pointer: fine) {
-      .footer a:hover {
-        color: var(--ink);
-        border-bottom-color: var(--text-muted);
-      }
-    }
-    .footer__sep {
-      margin: 0 0.5rem;
-      opacity: 0.5;
-    }
-
-    @media (max-width: 480px) {
-      .brand { margin-bottom: 2rem; }
-      .lede  { font-size: 1rem; }
-    }
-  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@700;800&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,600;1,700;1,800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://www.creatorcompanionapp.com">
+  <meta property="og:title" content="Creator Companion — The daily journal for creative people">
+  <meta property="og:description" content="Build your creative streak. Write every day, track your progress, and never lose what you create. Try free for 10 days.">
+  <meta property="og:image" content="https://www.creatorcompanionapp.com/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Creator Companion — The daily journal for creative people">
+  <meta name="twitter:description" content="Build your creative streak. Write every day, track your progress, and never lose what you create. Try free for 10 days.">
+  <meta name="twitter:image" content="https://www.creatorcompanionapp.com/og-image.png">
+  <link rel="canonical" href="https://www.creatorcompanionapp.com/">
 </head>
 <body>
 
-  <main class="page">
-    <div class="card">
+  <!-- Shared SVG defs — referenced by hero wave strokes. Hidden from
+       layout (width/height 0); just a place to declare the rainbow
+       gradient that the hero waves use as their stroke. -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <linearGradient id="hero-rainbow" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%"   stop-color="#12C4E3"/>
+        <stop offset="25%"  stop-color="#6366f1"/>
+        <stop offset="50%"  stop-color="#a855f7"/>
+        <stop offset="75%"  stop-color="#ec4899"/>
+        <stop offset="100%" stop-color="#f59e0b"/>
+      </linearGradient>
+    </defs>
+  </svg>
 
-      <div class="brand">
-        <img src="logo-icon.png" alt="" class="brand__icon">
-        <span class="brand__wordmark">Creator Companion</span>
+  <!-- ── Nav ─────────────────────────────────────────────────────────── -->
+  <nav class="nav" id="nav">
+    <div class="nav__inner">
+      <a href="/" class="nav__logo">
+        <img src="logo-icon.png" alt="" class="nav__logo-icon">
+        <span class="nav__logo-name">Creator Companion</span>
+      </a>
+      <div class="nav__links">
+        <a href="#pricing">Pricing</a>
+        <a href="#faq-home">FAQ</a>
+        <a href="https://app.creatorcompanionapp.com/login" class="nav__login">Log in</a>
+        <a href="signup.html" class="btn btn--primary btn--sm">Start free trial</a>
+      </div>
+      <button class="nav__hamburger" id="hamburger" aria-label="Open menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Mobile menu overlay -->
+  <div class="mobile-menu" id="mobileMenu">
+    <a href="#pricing">Pricing</a>
+    <a href="#faq-home">FAQ</a>
+    <a href="https://app.creatorcompanionapp.com/login">Log in</a>
+    <a href="signup.html" class="btn btn--primary btn--sm">Start free trial</a>
+  </div>
+
+  <!-- ── Hero ─────────────────────────────────────────────────────────── -->
+  <section class="hero">
+    <!-- Animated background: hue-cycling radial glow + three slow-
+         drifting waves whose strokes share the rainbow linear-gradient
+         declared in the <defs> at the top of the body. The gradient
+         stays fixed; the waves drift through it so the same wave
+         reads cyan on the left and amber on the right. -->
+    <div class="hero__glow" aria-hidden="true"></div>
+    <svg class="hero__wave hero__wave--1" aria-hidden="true"
+         viewBox="0 0 1200 480" preserveAspectRatio="none">
+      <path d="M-50 240 C 200 120, 400 360, 600 240 C 800 120, 1000 360, 1250 240"/>
+    </svg>
+    <svg class="hero__wave hero__wave--2" aria-hidden="true"
+         viewBox="0 0 1200 480" preserveAspectRatio="none">
+      <path d="M-50 300 C 250 180, 500 420, 750 300 C 950 200, 1100 360, 1250 300"/>
+    </svg>
+    <svg class="hero__wave hero__wave--3" aria-hidden="true"
+         viewBox="0 0 1200 480" preserveAspectRatio="none">
+      <path d="M-50 180 C 200 60, 500 300, 750 180 C 950 80, 1100 240, 1250 180"/>
+    </svg>
+
+    <div class="hero__content">
+      <!-- Badge ("Free 10-day trial — no credit card required") and
+           audience line removed May 2026 — the trial pitch is
+           reinforced by the hero strip below the CTA + the closing
+           CTA, and the audience naming proved redundant once the
+           new sub copy made the "support for creative practice"
+           positioning explicit. Tighter hero reads cleaner. -->
+      <h1 class="hero__title">
+        The digital companion<br>for <em>creative people</em>
+      </h1>
+      <p class="hero__sub">
+        If you struggle to sustain your creative practice, Creator Companion is here to support you every day.
+      </p>
+      <!-- Single CTA — the previous "See pricing →" ghost button
+           split the click. Trial is the only primary path; pricing
+           has its own section one scroll down. -->
+      <div class="hero__actions">
+        <a href="signup.html" class="btn btn--hero-primary">Start free trial</a>
+      </div>
+    </div>
+    <!-- Trust strip trimmed 4 → 3. "Cancel any time" moved into the
+         final CTA's note line — it's reassurance at the moment of
+         decision, not a hero header. -->
+    <div class="hero__strips" aria-hidden="true">
+      <div class="hero__strip">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        10-day free trial
+      </div>
+      <div class="hero__strip-div" aria-hidden="true"></div>
+      <div class="hero__strip">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        Private &amp; encrypted
+      </div>
+      <div class="hero__strip-div" aria-hidden="true"></div>
+      <div class="hero__strip">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22V12"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/><circle cx="12" cy="5" r="3"/></svg>
+        Install on any device
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Section 1: A Creative Journal ────────────────────────────────── -->
+  <section class="feat-section feat-section--light">
+    <div class="container">
+      <div class="feat feat--text-left">
+
+        <div class="feat__copy">
+          <span class="feat__eyebrow">YOUR DAILY PROGRESS RECORD</span>
+          <h2 class="feat__heading">Creator Companion keeps you on track and accountable.</h2>
+          <p class="feat__body">Log your progress on a daily basis and keep a record of your projects, feelings and thoughts.</p>
+          <ul class="feat__bullets">
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Record what you did and how you felt — small, daily steps turn into big accomplishments over time.
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Track your creative streaks and earn fun status rewards.
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Create custom tags to organize your thoughts, projects, and topics. Search, sort, and save your favorite entries.
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Get encouraged, prompted, and supported when you need a good place to start writing and reflecting on your practice.
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Forget a day? You have 48 hours to go back and log your progress and keep your streak alive.
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Reflect and revisit your entries to celebrate your progress.
+            </li>
+          </ul>
+        </div>
+
+        <div class="feat__visual">
+          <!-- Phone mockup: journal screen (image) -->
+          <div class="mock-phone" style="--mock-edge: url('images/mock-journal-edge.png')">
+            <div class="mock-phone__notch"></div>
+            <div class="mock-phone__screen mock-phone__screen--img">
+              <img src="images/mock-journal-mobile.jpg" alt="Creator Companion journal screen on mobile" class="mock-phone__img">
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Section 2: Simple Reminders ──────────────────────────────────── -->
+  <!-- Background swapped from --dim to --dark May 2026 so the four
+       sections alternate cleanly light/dark/light/dark down the
+       page — gives the scroll a stronger rhythm than the earlier
+       light/dim/light/dark sequence. Phone mockup already had a
+       dark frame so it carries across either treatment; text
+       elements gain --inv modifiers below to read on the dark
+       background. -->
+  <section class="feat-section feat-section--dark">
+    <div class="container">
+      <div class="feat feat--text-right">
+
+        <div class="feat__visual">
+          <!-- Phone mockup: reminders screen (image) -->
+          <div class="mock-phone" style="--mock-edge: url('images/reminders-edge.png')">
+            <div class="mock-phone__notch"></div>
+            <div class="mock-phone__screen mock-phone__screen--img">
+              <img src="images/reminders-mockup.jpg" alt="Creator Companion reminders screen on mobile" class="mock-phone__img">
+            </div>
+          </div>
+        </div>
+
+        <div class="feat__copy">
+          <span class="feat__eyebrow feat__eyebrow--inv">POWERFUL REMINDERS</span>
+          <h2 class="feat__heading feat__heading--inv">Creator Companion is there for you when life gets busy.</h2>
+          <p class="feat__body feat__body--inv">Every creative person needs a little help and support. Creator Companion is like having an accountability coach in your back pocket — keeping you on track and consistent.</p>
+          <ul class="feat__bullets feat__bullets--inv">
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Set up to 5 custom reminders per day — for journaling or any daily creative task that you need to remember to do.
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              You choose the time of day and exactly what each reminder says.
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Convenient push notifications on your phone and computer.
+            </li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Section 3: Getting Things Done ───────────────────────────────── -->
+  <section class="feat-section feat-section--light">
+    <div class="container">
+      <div class="feat feat--text-left">
+
+        <div class="feat__copy">
+          <span class="feat__eyebrow">Getting Things Done</span>
+          <h2 class="feat__heading">A simple list<br>for everything else.</h2>
+          <p class="feat__body">There's always something a creative person needs to track outside of the work itself. There's nothing better than a simple to-do list, ready when you need it.</p>
+          <ul class="feat__bullets">
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Use it for recurring daily tasks, things to buy, next steps in a project, or longer-term goals.
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Up to 100 active items — plenty of room for any list, project, or running set of goals.
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Drag and drop to prioritize the order that works for you.
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Enjoy checking off items — and looking back at your completed history.
+            </li>
+          </ul>
+        </div>
+
+        <div class="feat__visual">
+          <!-- Phone mockup: to-do list (image) -->
+          <div class="mock-phone" style="--mock-edge: url('images/todos-edge.png')">
+            <div class="mock-phone__notch"></div>
+            <div class="mock-phone__screen mock-phone__screen--img">
+              <img src="images/todos-mockup.jpg" alt="Creator Companion to-do list screen on mobile" class="mock-phone__img">
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Section 4: Advice and Encouragement ──────────────────────────── -->
+  <section class="feat-section feat-section--dark">
+    <div class="container">
+      <div class="feat feat--text-right">
+
+        <div class="feat__visual">
+          <!-- Phone mockup: daily spark (image) -->
+          <div class="mock-phone" style="--mock-edge: url('images/spark-edge.png')">
+            <div class="mock-phone__notch"></div>
+            <div class="mock-phone__screen mock-phone__screen--img">
+              <img src="images/spark-mockup.jpg" alt="Creator Companion daily spark screen on mobile" class="mock-phone__img">
+            </div>
+          </div>
+        </div>
+
+        <div class="feat__copy">
+          <span class="feat__eyebrow feat__eyebrow--inv">Advice &amp; Encouragement</span>
+          <h2 class="feat__heading feat__heading--inv">A spark of insight,<br>every morning.</h2>
+          <p class="feat__body feat__body--inv">Daily encouragement and coaching are critical for any sustained practice. Let Creator Companion support you every day.</p>
+          <ul class="feat__bullets feat__bullets--inv">
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Enjoy "Daily Sparks" of advice, best practices, and simple encouragement to help you grow and stay motivated.
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Save your favorite Sparks to look back on, reflect, and be reminded of what's important.
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              More unique, inspirational, and motivational content coming for members in the future.
+            </li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Privacy + Ownership feature section removed May 2026 — it was
+       a trust check, not a buying trigger, and ate a full screen of
+       scroll for a message that should be a quick confirm rather
+       than a sales pitch. The four bullets that lived here are now
+       distributed: "No social features", "Your data exports", and
+       "48h trash recovery" live in the compact trust band that
+       sits below pricing (just before the install strip). "Cancel
+       any time" moved into the final CTA's note line, where it
+       lands at the moment of decision. -->
+
+
+  <!-- "How it works" section removed May 2026 — the four story
+       sections above (A Creative Journal / Simple Reminders /
+       Getting Things Done / Advice and Encouragement) already
+       explain what the product does in real depth, so the
+       3-step "Sign up → Log → Build the habit" recap was
+       redundant and was slowing the path from feature story to
+       pricing. Pricing now flows directly after Section 4. -->
+
+  <!-- Standalone Pricing section removed May 2026 — the feature
+       showcase below now does double duty, presenting the full
+       value inventory AND the price in its closing micro-CTA.
+       Having both was repeating the $5.99 ask back-to-back. The
+       .pricing-section / .plan* CSS rules stay in styles.css as
+       orphan code; cleanup deferred. -->
+
+  <!-- ── Feature showcase — the full toolkit + price reveal ───────────
+       Comprehensive everything-you-get presentation, also serving
+       as the page's primary pricing moment (the closing micro-CTA
+       at the bottom of the showcase carries the $5.99/month +
+       trial pitch). Eight cards covering every meaningful feature,
+       paired with benefit-first writing. Cream gradient surface
+       matches the app's Daily Spark hero cards — feels "abundant
+       and warm" against the dark Section 4 above and the white
+       Install strip below. -->
+  <section class="feature-showcase" id="pricing">
+    <div class="container">
+
+      <div class="feature-showcase__head">
+        <span class="feature-showcase__eyebrow">Everything Included</span>
+        <h2 class="feature-showcase__title">A complete toolkit<br>for your creative practice.</h2>
+        <p class="feature-showcase__sub">One simple subscription. Every feature, every screen, every day — designed to keep you showing up for the work you care about.</p>
       </div>
 
-      <span class="eyebrow">Coming soon</span>
+      <div class="feature-showcase__grid">
 
-      <h1 class="headline">A quiet companion<br>for your creative practice.</h1>
+        <!-- Card 1: Daily Journaling -->
+        <div class="feat-card">
+          <div class="feat-card__icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>
+          </div>
+          <span class="feat-card__eyebrow">Daily Journaling</span>
+          <h3 class="feat-card__heading">Show up for your work, every single day.</h3>
+          <p class="feat-card__benefit">A clean, distraction-free writing surface that meets you where you are — whether today's entry is a single sentence or two thousand words.</p>
+          <ul class="feat-card__list">
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Rich text editor with bold, italic, headings, and lists</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Up to 20 photo attachments per entry</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>12 mood options to capture how you're feeling</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Optional titles for the entries that matter most</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Up to 2,500 words per entry — room for any thought</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Auto-saves as you write — nothing is ever lost</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Backfill missed days within 48 hours</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Browse your complete archive any time</li>
+          </ul>
+        </div>
 
-      <p class="lede">
-        Show up daily. Track your streak. Capture the small moments that
-        compound into a body of work. We're finishing the last details &mdash;
-        thank you for your patience.
-      </p>
+        <!-- Card 2: Streak Tracking -->
+        <div class="feat-card">
+          <div class="feat-card__icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+          </div>
+          <span class="feat-card__eyebrow">Streak Tracking</span>
+          <h3 class="feat-card__heading">Build a habit that compounds.</h3>
+          <p class="feat-card__benefit">Streaks are the heartbeat of a sustained practice. We protect yours — gently, without shame, and with grace built in for when life happens.</p>
+          <ul class="feat-card__list">
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Live streak counter visible on every page</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Lifetime longest streak — always banked, never lost</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Milestone badges as your streaks grow</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Streak history — see every chapter of your journey</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>48-hour grace window if you forget a day</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Pause your streak up to 10 days per month — life happens</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Gentle warning before a streak is at risk</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Welcome screen after a break — start fresh ,no shame</li>
+          </ul>
+        </div>
 
-      <a class="cta" href="https://substack.com/@creatorcompanion"
-         target="_blank" rel="noopener noreferrer">
-        Subscribe on Substack
-        <svg class="cta__arrow" width="14" height="14" viewBox="0 0 24 24" fill="none"
-             stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"
-             aria-hidden="true">
-          <path d="M5 12h14M13 5l7 7-7 7"/>
-        </svg>
-      </a>
+        <!-- Card 3: Smart Reminders -->
+        <div class="feat-card">
+          <div class="feat-card__icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          </div>
+          <span class="feat-card__eyebrow">Smart Reminders</span>
+          <h3 class="feat-card__heading">A coach in your back pocket.</h3>
+          <p class="feat-card__benefit">Consistency comes from showing up — and showing up gets easier when something gently nudges you at the right time, with the right message.</p>
+          <ul class="feat-card__list">
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>5 fully customizable daily reminder slots</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Set the time and the message for each one</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Push notifications on phone and desktop</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Time-zone aware — always fires at your local time</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Toggle slots on or off without losing your settings</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Send test notifications to verify delivery</li>
+          </ul>
+        </div>
+
+        <!-- Card 4: Daily Inspiration -->
+        <div class="feat-card">
+          <div class="feat-card__icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8M5.6 18.4 18.4 5.6"/></svg>
+          </div>
+          <span class="feat-card__eyebrow">Daily Inspiration</span>
+          <h3 class="feat-card__heading">Creative fuel, every morning.</h3>
+          <p class="feat-card__benefit">A curated piece of insight, advice, or encouragement waiting for you each day — plus prompts and starters for the moments when the page feels intimidating.</p>
+          <ul class="feat-card__list">
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Hundreds of curated Daily Sparks</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Spark categories spanning your whole creative life</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Favorite the Sparks that hit hardest</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Personal Sparks library to revisit anytime</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Daily Prompts — fresh writing starters every day</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Shuffle for a new prompt anytime</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Mood-first entry starter — tap how you feel to begin</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>"Just begin" blank canvas — always one tap away</li>
+          </ul>
+        </div>
+
+        <!-- Card 5: To-Do List -->
+        <div class="feat-card">
+          <div class="feat-card__icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          </div>
+          <span class="feat-card__eyebrow">To-Do List</span>
+          <h3 class="feat-card__heading">Track everything else in one simple list.</h3>
+          <p class="feat-card__benefit">Creative life is full of small moving pieces — errands, follow-ups, supplies, ideas. Keep them all here so they're not living in your head.</p>
+          <ul class="feat-card__list">
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Up to 100 active items — clear completed ones to make room for more</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Drag-and-drop to reorder by priority</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Tap-anywhere-to-edit on mobile</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>"Done" section keeps your completion history</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Clear completed when you're ready for a fresh slate</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Synced everywhere your account signs in</li>
+          </ul>
+        </div>
+
+        <!-- Card 6: Tags & Organization -->
+        <div class="feat-card">
+          <div class="feat-card__icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+          </div>
+          <span class="feat-card__eyebrow">Tags &amp; Organization</span>
+          <h3 class="feat-card__heading">Find anything, instantly.</h3>
+          <p class="feat-card__benefit">As your archive grows, reflecting on the entry you wrote three months ago matters more than ever. Tags, search, and favorites keep your history navigable.</p>
+          <ul class="feat-card__list">
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Build your own custom tag library</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Tag entries to organize ideas, projects, and themes</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Full-text search across every entry you've written</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Sort by newest, oldest, or favorites</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Favorite key entries to surface them later</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Browse all favorited entries in one curated place</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Rename or delete tags any time without losing entries</li>
+          </ul>
+        </div>
+
+        <!-- Card 7: Privacy & Ownership -->
+        <div class="feat-card">
+          <div class="feat-card__icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <span class="feat-card__eyebrow">Privacy &amp; Ownership</span>
+          <h3 class="feat-card__heading">Your words belong to you. Full stop.</h3>
+          <p class="feat-card__benefit">A journal is one of the most intimate things you'll ever write. Creator Companion has no social layer, no advertising, and no incentive to monetize your work — only you.</p>
+          <ul class="feat-card__list">
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Completely private — no social features, no public profiles</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>No advertising, no third-party tracking, no algorithms</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Your entries, photos, and filenames are encrypted in our database (AES-256)</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Export everything to JSON or plain text, any time</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>48-hour trash recovery for deleted entries</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Delete your account and all your data at any time</li>
+          </ul>
+        </div>
+
+        <!-- Card 8: Built for Real Life -->
+        <div class="feat-card">
+          <div class="feat-card__icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+          </div>
+          <span class="feat-card__eyebrow">Built for Real Life</span>
+          <h3 class="feat-card__heading">Works the way you do.</h3>
+          <p class="feat-card__benefit">Install it on every device you own. Manage your account from anywhere. Change plans without friction. Cancel without a conversation. It's your tool — we earn your subscription each month.</p>
+          <ul class="feat-card__list">
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Install on iPhone, iPad, Android, Mac, or PC</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Add to your home screen — feels like a native app</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Sync automatically across every signed-in device</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Profile, email, photo, password — all manageable in-app</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Cancel, upgrade, or downgrade plans any time</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Month-to-month — never any long-term commitment</li>
+          </ul>
+        </div>
+
+      </div>
+
+      <!-- Closing micro-CTA — reframes the cost at the moment the
+           visitor finishes scrolling the full value inventory.
+           "Less than a single coffee" is the durable anchor; the
+           trial fine-print under the button removes last-mile
+           friction (no credit card, cancel anytime). -->
+      <div class="feature-showcase__close">
+        <p class="feature-showcase__close-price">All this for <strong>$5.99/month</strong> — or $49.99/year.</p>
+        <p class="feature-showcase__close-line">Less than a single coffee. And it shows up for your creativity every day.</p>
+        <a href="signup.html" class="btn btn--cta-primary feature-showcase__close-btn">Start your 10-day free trial</a>
+        <p class="feature-showcase__close-fine">No credit card required · Cancel any time · Full feature access from day one</p>
+      </div>
 
     </div>
-  </main>
+  </section>
 
-  <footer class="footer">
-    &copy; <span id="year">2026</span> Creator Companion
-    <span class="footer__sep">&middot;</span>
-    <a href="/privacy.html">Privacy</a>
-    <span class="footer__sep">&middot;</span>
-    <a href="/terms.html">Terms</a>
+  <!-- Trust band removed May 2026 — its three messages ("no social/
+       no ads", "exportable", "48-hour trash recovery") are now
+       covered in full inside the Privacy & Ownership card of the
+       feature-showcase section above. Keeping both was redundant
+       reassurance. The .trust-band / .trust-item* CSS rules stay
+       in styles.css as orphan code; cleanup deferred to a future
+       polish pass. -->
+
+  <!-- Install strip ("Take it with you") removed 2026-05-27 — install
+       instructions live in the FAQ now. .install-strip / .install-inner /
+       .install-text / .install-step* CSS rules stay in styles.css as
+       orphan code; cleanup deferred to a future polish pass. -->
+
+  <!-- ── FAQ accordion ─────────────────────────────────────────────────
+       Curated subset of the in-app FAQ. Admins toggle individual entries
+       to "Show on public homepage FAQ" via /admin/faq; this section
+       fetches /v1/faq/public, filters by `isFeaturedOnHomepage`, and
+       renders <details>/<summary> accordion items. If no entries are
+       flagged (or the API is unreachable) the whole section hides
+       so the page degrades cleanly. -->
+  <section class="faq-home" id="faq-home" hidden>
+    <div class="container">
+      <h2 class="faq-home__heading">Frequently asked</h2>
+      <div class="faq-home__list" id="faq-home-list" role="list">
+        <!-- Items injected by inline script at the bottom of <body> -->
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Final CTA ─────────────────────────────────────────────────────── -->
+  <section class="cta-final">
+    <div class="cta-final__glow" aria-hidden="true"></div>
+    <div class="container">
+      <p class="cta-final__eyebrow">Start today</p>
+      <h2 class="cta-final__title">Your streak starts<br><em>right now.</em></h2>
+      <p class="cta-final__sub">Join creative people who show up every day. Try free for 10 days, no credit card needed.</p>
+      <a href="signup.html" class="btn btn--cta-primary">Start free trial</a>
+      <!-- Friction-killer line, placed right under the button at
+           the moment of decision. Removes the "is this going to be
+           a 10-form-field onboarding?" anxiety. -->
+      <p class="cta-final__friction">Email + password. Start writing in 30 seconds.</p>
+      <!-- Note line picks up "Cancel any time" from the (now slimmed
+           three-item) hero strip — reassurance lands harder here,
+           next to the button, than as a header item. -->
+      <p class="cta-final__note">10-day free trial · $5.99/mo or $49.99/yr · Cancel any time</p>
+    </div>
+  </section>
+
+  <!-- ── Footer ────────────────────────────────────────────────────────── -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="site-footer__top">
+        <a href="/" class="site-footer__logo">
+          <img src="logo-icon.png" alt="" class="site-footer__logo-icon">
+          <span class="site-footer__logo-name">Creator Companion</span>
+        </a>
+        <nav class="site-footer__nav">
+          <a href="#pricing">Pricing</a>
+          <a href="#faq-home">FAQ</a>
+          <a href="signup.html">Sign up</a>
+          <a href="https://app.creatorcompanionapp.com/login">Log in</a>
+          <a href="privacy.html">Privacy</a>
+          <a href="terms.html">Terms</a>
+        </nav>
+      </div>
+      <div class="site-footer__bottom">
+        <span>© 2026 Creator Companion. All rights reserved.</span>
+        <div class="site-footer__socials">
+          <a class="site-footer__social" href="https://bsky.app/profile/creatorcompanion.bsky.social"
+             target="_blank" rel="noopener noreferrer" aria-label="Creator Companion on Bluesky">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor" aria-hidden="true">
+              <path d="M12 10.8c-1.087-2.114-4.046-6.053-6.798-7.995C2.566.944 1.561 1.266.902 1.565.139 1.908 0 3.08 0 3.768c0 .69.378 5.65.624 6.479.815 2.736 3.713 3.66 6.383 3.364.136-.02.275-.039.415-.056-.138.022-.276.04-.415.056-3.912.58-7.387 2.005-2.83 7.078 5.013 5.19 6.87-1.113 7.823-4.308.953 3.195 2.05 9.271 7.733 4.308 4.267-4.308 1.172-6.498-2.74-7.078a8.741 8.741 0 0 1-.415-.056c.14.017.279.036.415.056 2.67.296 5.568-.628 6.383-3.364.246-.828.624-5.79.624-6.478 0-.69-.139-1.861-.902-2.206-.659-.298-1.664-.62-4.3 1.24C16.046 4.748 13.087 8.687 12 10.8Z"/>
+            </svg>
+          </a>
+          <a class="site-footer__social" href="https://mastodon.social/@creatorcompanion"
+             target="_blank" rel="noopener noreferrer me" aria-label="Creator Companion on Mastodon">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor" aria-hidden="true">
+              <path d="M23.268 5.313c-.35-2.578-2.617-4.61-5.304-5.004C17.51.242 15.792 0 11.813 0h-.03c-3.98 0-4.835.242-5.288.309C3.882.692 1.496 2.518.917 5.127.64 6.412.61 7.837.661 9.143c.074 1.874.088 3.745.26 5.611.118 1.24.325 2.47.62 3.68.55 2.237 2.777 4.098 4.96 4.857 2.336.792 4.849.923 7.256.38.265-.061.527-.132.786-.213.585-.184 1.27-.39 1.774-.753a.057.057 0 0 0 .023-.043v-1.809a.052.052 0 0 0-.02-.041.053.053 0 0 0-.046-.01 20.282 20.282 0 0 1-4.709.545c-2.73 0-3.463-1.284-3.674-1.818a5.593 5.593 0 0 1-.319-1.433.053.053 0 0 1 .066-.054c1.517.363 3.072.546 4.632.546.376 0 .75 0 1.125-.01 1.57-.044 3.224-.124 4.768-.422.038-.008.077-.015.11-.024 2.435-.464 4.753-1.92 4.989-5.604.008-.145.03-1.52.03-1.67.002-.512.167-3.63-.024-5.545zm-3.748 9.195h-2.561V8.29c0-1.309-.55-1.976-1.67-1.976-1.23 0-1.846.79-1.846 2.35v3.403h-2.546V8.663c0-1.56-.617-2.35-1.848-2.35-1.112 0-1.668.668-1.67 1.977v6.218H4.822V8.102c0-1.31.337-2.35 1.011-3.12.696-.77 1.608-1.164 2.74-1.164 1.311 0 2.302.5 2.962 1.498l.638 1.06.638-1.06c.66-.999 1.65-1.498 2.96-1.498 1.13 0 2.043.395 2.74 1.164.675.77 1.012 1.81 1.012 3.12z"/>
+            </svg>
+          </a>
+          <a class="site-footer__social" href="https://substack.com/@creatorcompanion"
+             target="_blank" rel="noopener noreferrer" aria-label="Creator Companion on Substack">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor" aria-hidden="true">
+              <path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812H1.46zM22.54 0H1.46v2.836h21.08V0z"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+    </div>
   </footer>
 
   <script>
-    // Year auto-updates so the copyright never goes stale.
-    document.getElementById('year').textContent = new Date().getFullYear();
-  </script>
+    // Nav scroll behaviour
+    const nav = document.getElementById('nav');
+    const observer = new IntersectionObserver(
+      ([e]) => nav.classList.toggle('nav--scrolled', !e.isIntersecting),
+      { threshold: 0 }
+    );
+    observer.observe(document.querySelector('.hero'));
 
+    // Mobile hamburger
+    const hamburger = document.getElementById('hamburger');
+    const menu = document.getElementById('mobileMenu');
+    hamburger.addEventListener('click', () => {
+      hamburger.classList.toggle('open');
+      menu.classList.toggle('open');
+    });
+    menu.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+      hamburger.classList.remove('open');
+      menu.classList.remove('open');
+    }));
+
+    // Fade-in on scroll
+    const fadeEls = document.querySelectorAll('.feat, .step, .plan');
+    const fadeObserver = new IntersectionObserver(
+      (entries) => entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); fadeObserver.unobserve(e.target); } }),
+      { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
+    );
+    fadeEls.forEach(el => fadeObserver.observe(el));
+
+    /* ── Homepage FAQ accordion ─────────────────────────────────────────
+       Fetches the public FAQ endpoint (proxied through marketing/vercel.json
+       to Railway — see CLAUDE.md "api.creatorcompanionapp.com SSL cert"
+       gotcha for why we use /v1/* not the api.* hostname directly),
+       filters for admin-curated homepage entries, and renders accordion
+       items. Hides the section entirely on fetch failure or zero results
+       so the page degrades cleanly. */
+    (async () => {
+      const section = document.getElementById('faq-home');
+      const list = document.getElementById('faq-home-list');
+      if (!section || !list) return;
+
+      try {
+        const res = await fetch('/v1/faq/public', { credentials: 'omit' });
+        if (!res.ok) return;
+        const all = await res.json();
+        // Defensive: only render items explicitly flagged for the homepage.
+        // Sort by the admin-set SortOrder so reordering in admin reflects here.
+        const items = all
+          .filter(f => f && f.isFeaturedOnHomepage === true)
+          .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+        if (items.length === 0) return;
+
+        // Question text is escaped (defensive — questions rarely contain
+        // HTML and stray markup would break the <summary> layout).
+        // Answer body is rendered as raw HTML to mirror the in-app FAQ
+        // (support.component.ts uses bypassSecurityTrustHtml): admins
+        // legitimately embed anchor tags, <br>, <strong>, etc. and
+        // expect them to render. FAQ writes are admin-role-gated on
+        // the backend (AdminFaqController), so the content is trusted.
+        const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c =>
+          ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])
+        );
+
+        list.innerHTML = items.map(f => `
+          <details class="faq-home__item" role="listitem">
+            <summary class="faq-home__q">
+              <span class="faq-home__q-text">${esc(f.question)}</span>
+              <span class="faq-home__icon" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+              </span>
+            </summary>
+            <div class="faq-home__a">${String(f.answer ?? '')}</div>
+          </details>
+        `).join('');
+
+        section.hidden = false;
+      } catch {
+        // Stay hidden on any network/parse error — the rest of the page
+        // is still useful without the FAQ block.
+      }
+    })();
+  </script>
 </body>
 </html>
