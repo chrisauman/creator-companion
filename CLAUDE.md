@@ -505,17 +505,20 @@ signal AND strips the URL param.
 Admin-only `/admin/marketing` section. Auto-posts Daily Sparks to social
 platforms on a per-platform schedule, plus ad-hoc compose. Separate
 subsystem from the Substack email-reminder (which stays for the no-API
-Substack case). v1 platforms: **Bluesky + Mastodon** (free, open APIs);
-**Threads + Twitter** are reserved `SocialPlatform` enum members with no
-adapter yet.
+Substack case). Shipped platforms: **Bluesky, Mastodon, Facebook,
+Instagram, Threads** (image/text) + **YouTube** (a daily video Short).
+**Twitter** is a reserved `SocialPlatform` enum member with no adapter
+(paid API). Meta trio (FB/IG/Threads) needs public `image_url` → see
+`IPublicImageHost`.
 
-- **Decisions (locked with Chris, May 2026):** independent spark per
+- **Decisions (locked with Chris, May–Jun 2026):** independent spark per
   platform (each platform draws its own never-repeated spark) · auto-
   publish under a global kill switch (no review queue) · per-platform
   post time + jitter · truncate-to-fit long sparks (no threading) ·
-  text + image only (no video) · daily summary email + immediate
-  failure alert, both to **chris.auman@gmail.com** · auto-hashtags via
-  Claude Haiku, graceful-skip if no key.
+  image cards + video Shorts (YouTube) · optional Evening Spark (2nd
+  daily post, dark card, own spark, later time) · daily summary email +
+  immediate failure alert, both to **chris.auman@gmail.com** · auto-
+  hashtags via Claude Haiku, graceful-skip if no key.
 - **Backend:** `SocialPostingService` (picker/schedule/jitter/fire/
   ad-hoc fan-out) + `SocialPostingBackgroundService` (60s worker,
   independent of the reminder + Substack workers). `ISocialPoster`
@@ -523,10 +526,13 @@ adapter yet.
   (instance + access token). `IHashtagService` → Anthropic Messages API.
   Tables: `SocialSettings` (global kill switch + summary dedupe),
   `SocialAccount` (per-platform creds + schedule, creds AES-GCM-encrypted
-  via `IEntryEncryptor`), `SocialDailyPlan` (unique `(Date,Platform)` —
-  per-platform never-repeat anti-join, mirrors `SubstackDailyPlan`),
+  via `IEntryEncryptor`), `SocialDailyPlan` (unique `(Date,Platform,Slot)`
+  — per-platform never-repeat anti-join, mirrors `SubstackDailyPlan`),
   `SocialPost` + `SocialPostTarget` (ad-hoc, per-platform leg status).
-  Controller: `AdminMarketingController` at `/v1/admin/marketing`.
+  Adapters also: `Bluesky/Mastodon` (byte upload), `MetaPosterBase` →
+  `Threads/Facebook/Instagram` (Graph API, public image_url), `YouTubePoster`
+  (Data API v3 video upload). Controller: `AdminMarketingController` at
+  `/v1/admin/marketing`.
 - **Frontend:** `admin-marketing.component.ts` — Settings / Today /
   Compose / History tabs. Nav entry in `admin-shell`.
 - **Quote cards (built):** `QuoteCardRenderer` (ImageSharp.Drawing +
@@ -536,6 +542,21 @@ adapter yet.
   and the platform supports images; ad-hoc posts via
   `SocialPost.GenerateQuoteCard` when no image is uploaded. Renderer
   returns null on any failure → post still goes out text-only.
+- **Evening Spark (built, Jun 2026):** optional SECOND daily post per
+  platform. `SocialDailyPlan.Slot` (Morning/Evening); unique key
+  `(Date,Platform,Slot)`. Evening draws its OWN never-repeated spark
+  (picker excludes any spark already planned that day for the platform, so
+  Morning ≠ Evening) and renders the **dark "Blue Wash" card**
+  (`QuoteCardRenderer.Render(..., dark: true)` — deep blue-teal surface +
+  central cyan wash + cream text, eyebrow "EVENING SPARK"). Opt-in per
+  platform: `SocialAccount.EveningEnabled` + `EveningPostHourLocal/Minute`
+  (default 6pm, off). Admin Settings has the toggle + time; Today shows a
+  Morning and an Evening row per platform with independent post-now/reroll.
+- **Video Shorts (built):** `IVideoRenderer` (`VideoRenderer`) draws
+  1080×1920 frames via ImageSharp and FFmpeg-encodes an H.264 MP4 (FFmpeg
+  in the API Dockerfile). 12-theme rotating library (theme = day-of-year %
+  12). Used by `YouTubePoster`; evening slot offsets the theme so the two
+  daily clips differ. Degrades to null (skips video) if fonts/FFmpeg absent.
 - **Required env vars (Railway):** `Anthropic__ApiKey` (hashtags; absent
   = posts go out without tags). Social creds are entered in the admin UI,
   not env. Reuses `Entry__EncryptionKey` to encrypt stored creds.
@@ -544,11 +565,15 @@ adapter yet.
   Settings and flips the kill switch on.
 - **Adding a platform:** append the `SocialPlatform` enum member, write
   an `ISocialPoster` adapter, register it in `Program.cs`. No core/
-  migration churn — `(Date,Platform)` keying already generalises.
-- **Known v1 limitations / fast-follows:** Bluesky posts are plain text
+  migration churn — `(Date,Platform,Slot)` keying already generalises.
+  Set `IsVideo`/`RequiresImageUrl`/`SupportsImages` on the adapter as fits.
+- **Known limitations / fast-follows:** Bluesky posts are plain text
   (hashtags/links not yet faceted-clickable); day-of-week peak-time
-  variation not built (per-platform fixed time + jitter only). Quote
-  cards shipped in v1 (see above).
+  variation not built (per-platform fixed time + jitter only). YouTube
+  upload is built but untested live (needs Chris's Google OAuth creds);
+  Google/YouTube setup walkthrough still pending (`docs/youtube-setup.md`
+  TBD). Optional AI-condensed short spark text for a text-only post is
+  discussed-not-built (CSV export endpoint shipped for offline editing).
 
 ## Profile model
 
