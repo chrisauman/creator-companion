@@ -67,6 +67,20 @@ public class SocialAccount
     /// <summary>Local-time minute (0–59) for the daily post.</summary>
     public int PostMinuteLocal { get; set; } = 0;
 
+    // ── Evening Spark (optional second daily post) ───────────────────
+    /// <summary>
+    /// Opt-in: when true, this platform posts a SECOND card later in the day
+    /// — a different (never-repeated) spark rendered on the dark "Blue Wash"
+    /// card. Off by default so nothing changes until the admin enables it.
+    /// </summary>
+    public bool EveningEnabled { get; set; } = false;
+
+    /// <summary>Local-time hour (0–23) for the evening post. Defaults to 6pm.</summary>
+    public int EveningPostHourLocal { get; set; } = 18;
+
+    /// <summary>Local-time minute (0–59) for the evening post.</summary>
+    public int EveningPostMinuteLocal { get; set; } = 0;
+
     /// <summary>
     /// +/- jitter window in minutes applied to the scheduled time when
     /// each day's plan is created. A uniform random offset within

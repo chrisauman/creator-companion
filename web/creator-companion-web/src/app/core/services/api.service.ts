@@ -591,6 +591,7 @@ export class ApiService {
     appPassword?: string | null; accessToken?: string | null;
     clientId?: string | null; clientSecret?: string | null; refreshToken?: string | null;
     postHourLocal: number; postMinuteLocal: number; jitterMinutes: number;
+    eveningEnabled?: boolean; eveningPostHourLocal?: number; eveningPostMinuteLocal?: number;
   }): Observable<SocialSettings> {
     return this.http.put<SocialSettings>(`${this.base}/admin/marketing/accounts/${platform}`, payload);
   }
@@ -599,15 +600,15 @@ export class ApiService {
     return this.http.get<SocialPlan[]>(`${this.base}/admin/marketing/today`);
   }
 
-  /** Force-post a platform's daily spark right now, bypassing the schedule. */
-  adminMarketingFireNow(platform: string): Observable<FireNowResult> {
-    const params = new HttpParams().set('platform', platform);
+  /** Force-post a platform's daily spark (slot) right now, bypassing the schedule. */
+  adminMarketingFireNow(platform: string, slot = 'Morning'): Observable<FireNowResult> {
+    const params = new HttpParams().set('platform', platform).set('slot', slot);
     return this.http.post<FireNowResult>(`${this.base}/admin/marketing/today/fire-now`, {}, { params });
   }
 
-  /** Drop a platform's still-pending plan so the worker re-picks a fresh spark. */
-  adminMarketingReroll(platform: string): Observable<void> {
-    const params = new HttpParams().set('platform', platform);
+  /** Drop a platform's still-pending plan (slot) so the worker re-picks a fresh spark. */
+  adminMarketingReroll(platform: string, slot = 'Morning'): Observable<void> {
+    const params = new HttpParams().set('platform', platform).set('slot', slot);
     return this.http.post<void>(`${this.base}/admin/marketing/today/reroll`, {}, { params });
   }
 
@@ -645,6 +646,9 @@ export interface SocialAccount {
   lastFailureAt: string | null;
   lastFailureMessage: string | null;
   consecutiveFailures: number;
+  eveningEnabled: boolean;
+  eveningPostHourLocal: number;
+  eveningPostMinuteLocal: number;
 }
 
 export interface SocialSettings {
@@ -660,6 +664,7 @@ export interface SocialPlan {
   id: number;
   date: string;
   platform: string;
+  slot: 'Morning' | 'Evening';
   scheduledFor: string;
   status: 'Pending' | 'Posted' | 'Failed';
   postedAt: string | null;

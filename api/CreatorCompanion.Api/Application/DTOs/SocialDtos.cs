@@ -30,7 +30,11 @@ public record SocialAccountResponse(
     DateTime? LastSuccessAt,
     DateTime? LastFailureAt,
     string?   LastFailureMessage,
-    int       ConsecutiveFailures
+    int       ConsecutiveFailures,
+    // Evening Spark (optional second daily post — the dark card).
+    bool      EveningEnabled,
+    int       EveningPostHourLocal,
+    int       EveningPostMinuteLocal
 );
 
 public record SocialSettingsResponse(
@@ -68,13 +72,18 @@ public record UpdateSocialAccountRequest(
     // the stored credential (same convention as AppPassword/AccessToken).
     string? ClientId = null,
     string? ClientSecret = null,
-    string? RefreshToken = null
+    string? RefreshToken = null,
+    // Evening Spark (optional second daily post).
+    bool    EveningEnabled = false,
+    int     EveningPostHourLocal = 18,
+    int     EveningPostMinuteLocal = 0
 );
 
 public record SocialPlanResponse(
     int       Id,
     DateOnly  Date,
     string    Platform,
+    string    Slot,        // "Morning" | "Evening"
     DateTime  ScheduledFor,
     string    Status,
     DateTime? PostedAt,

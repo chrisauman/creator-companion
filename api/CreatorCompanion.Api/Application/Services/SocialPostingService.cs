@@ -21,13 +21,13 @@ public interface ISocialPostingService
     /// schedule. Creates/replaces today's plan and fires immediately,
     /// returning the outcome so the UI can show it inline.
     /// </summary>
-    Task<SocialPublishResult> FireDailyNowAsync(SocialPlatform platform, CancellationToken ct);
+    Task<SocialPublishResult> FireDailyNowAsync(SocialPlatform platform, SocialDailySlot slot, CancellationToken ct);
 
     /// <summary>
-    /// Drop today's still-Pending plan for a platform so the next tick
+    /// Drop today's still-Pending plan for a platform + slot so the next tick
     /// re-picks a fresh spark. No-op if already posted/failed.
     /// </summary>
-    Task RerollTodayAsync(SocialPlatform platform, CancellationToken ct);
+    Task RerollTodayAsync(SocialPlatform platform, SocialDailySlot slot, CancellationToken ct);
 
     /// <summary>
     /// Publish an ad-hoc post's Pending targets right now (used by the
@@ -106,34 +106,46 @@ public class SocialPostingService(
             // reserved but adapter not shipped yet).
             if (ResolvePoster(account.Platform) is null) continue;
 
-            var exists = await db.SocialDailyPlans
-                .AnyAsync(p => p.Date == today && p.Platform == account.Platform, ct);
-            if (exists) continue;
+            // Morning post always; Evening post only when opted in. Each slot
+            // draws its own spark (the picker excludes the other slot's spark
+            // for today, so the two are always different).
+            await EnsureSlotPlanAsync(account, today, tz, SocialDailySlot.Morning, ct);
+            if (account.EveningEnabled)
+                await EnsureSlotPlanAsync(account, today, tz, SocialDailySlot.Evening, ct);
+        }
+    }
 
-            var sparkId = await PickSparkIdAsync(account.Platform, ct);
-            if (sparkId is null)
-            {
-                log.LogWarning("No eligible sparks left for {Platform}; skipping today's plan.", account.Platform);
-                continue;
-            }
+    private async Task EnsureSlotPlanAsync(
+        SocialAccount account, DateOnly today, TimeZoneInfo tz, SocialDailySlot slot, CancellationToken ct)
+    {
+        var exists = await db.SocialDailyPlans
+            .AnyAsync(p => p.Date == today && p.Platform == account.Platform && p.Slot == slot, ct);
+        if (exists) return;
 
-            var plan = new SocialDailyPlan
-            {
-                Date         = today,
-                Platform     = account.Platform,
-                SparkId      = sparkId.Value,
-                ScheduledFor = ComputeScheduledUtc(today, account, tz),
-                Status       = SocialPostStatus.Pending,
-                CreatedAt    = DateTime.UtcNow,
-            };
-            db.SocialDailyPlans.Add(plan);
+        var sparkId = await PickSparkIdAsync(account.Platform, today, ct);
+        if (sparkId is null)
+        {
+            log.LogWarning("No eligible sparks left for {Platform} ({Slot}); skipping today's plan.", account.Platform, slot);
+            return;
+        }
 
-            try { await db.SaveChangesAsync(ct); }
-            catch (DbUpdateException)
-            {
-                // Lost a race against another tick (unique (Date,Platform)).
-                db.Entry(plan).State = EntityState.Detached;
-            }
+        var plan = new SocialDailyPlan
+        {
+            Date         = today,
+            Platform     = account.Platform,
+            Slot         = slot,
+            SparkId      = sparkId.Value,
+            ScheduledFor = ComputeScheduledUtc(today, account, slot, tz),
+            Status       = SocialPostStatus.Pending,
+            CreatedAt    = DateTime.UtcNow,
+        };
+        db.SocialDailyPlans.Add(plan);
+
+        try { await db.SaveChangesAsync(ct); }
+        catch (DbUpdateException)
+        {
+            // Lost a race against another tick (unique (Date,Platform,Slot)).
+            db.Entry(plan).State = EntityState.Detached;
         }
     }
 
@@ -153,7 +165,7 @@ public class SocialPostingService(
         }
     }
 
-    public async Task<SocialPublishResult> FireDailyNowAsync(SocialPlatform platform, CancellationToken ct)
+    public async Task<SocialPublishResult> FireDailyNowAsync(SocialPlatform platform, SocialDailySlot slot, CancellationToken ct)
     {
         var account = await db.SocialAccounts.FirstOrDefaultAsync(a => a.Platform == platform, ct);
         if (account is null || string.IsNullOrWhiteSpace(account.CredentialsEncrypted))
@@ -165,10 +177,10 @@ public class SocialPostingService(
         var tz = ResolveTimeZone();
         var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz));
 
-        // If today already resolved (Posted/Failed), drop it and re-pick a
-        // fresh spark so the admin can re-test. Keep a Pending plan as-is.
+        // If this slot already resolved today (Posted/Failed), drop it and
+        // re-pick a fresh spark so the admin can re-test. Keep a Pending one.
         var existing = await db.SocialDailyPlans
-            .FirstOrDefaultAsync(p => p.Date == today && p.Platform == platform, ct);
+            .FirstOrDefaultAsync(p => p.Date == today && p.Platform == platform && p.Slot == slot, ct);
         if (existing is not null && existing.Status != SocialPostStatus.Pending)
         {
             db.SocialDailyPlans.Remove(existing);
@@ -178,13 +190,13 @@ public class SocialPostingService(
 
         if (existing is null)
         {
-            var sparkId = await PickSparkIdAsync(platform, ct);
+            var sparkId = await PickSparkIdAsync(platform, today, ct);
             if (sparkId is null)
                 return new SocialPublishResult(false, null, null, "No eligible sparks remaining. Add more in Content Library.", null);
 
             existing = new SocialDailyPlan
             {
-                Date = today, Platform = platform, SparkId = sparkId.Value,
+                Date = today, Platform = platform, Slot = slot, SparkId = sparkId.Value,
                 ScheduledFor = DateTime.UtcNow, Status = SocialPostStatus.Pending, CreatedAt = DateTime.UtcNow,
             };
             db.SocialDailyPlans.Add(existing);
@@ -196,12 +208,12 @@ public class SocialPostingService(
         return await FireDailyPlanAsync(settings, account, plan, ct);
     }
 
-    public async Task RerollTodayAsync(SocialPlatform platform, CancellationToken ct)
+    public async Task RerollTodayAsync(SocialPlatform platform, SocialDailySlot slot, CancellationToken ct)
     {
         var tz = ResolveTimeZone();
         var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz));
         var plan = await db.SocialDailyPlans
-            .FirstOrDefaultAsync(p => p.Date == today && p.Platform == platform, ct);
+            .FirstOrDefaultAsync(p => p.Date == today && p.Platform == platform && p.Slot == slot, ct);
         if (plan is null || plan.Status != SocialPostStatus.Pending) return;
 
         db.SocialDailyPlans.Remove(plan);
@@ -218,12 +230,18 @@ public class SocialPostingService(
         if (plan.Spark is null)
             return await RecordDailyFailureAsync(account, plan, "Plan row had no associated spark.", ct);
 
+        // Morning = daytime cream card + "Your Daily Spark"; Evening = the
+        // dark "Blue Wash" card + "Evening Spark". The eyebrow + dark flag are
+        // the only per-slot differences in the card itself.
+        var evening = plan.Slot == SocialDailySlot.Evening;
+        var eyebrow = evening ? "Evening Spark" : "Your Daily Spark";
+
         // Branded quote card from the spark's takeaway (the punchy one-
         // liner) when enabled + supported. Renderer returns null on any
         // failure → fall back to a text post.
         byte[]? card = null;
         if (settings.DailyQuoteCardsEnabled && poster.SupportsImages && quoteCards.IsAvailable)
-            card = quoteCards.Render(plan.Spark.Takeaway, "Your Daily Spark");
+            card = quoteCards.Render(plan.Spark.Takeaway, eyebrow, dark: evening);
 
         // Stage the card at a public URL for platforms that need image_url
         // (Threads/Facebook/Instagram); byte-upload platforms ignore it.
@@ -240,7 +258,10 @@ public class SocialPostingService(
         {
             if (!video.IsAvailable)
                 return await RecordDailyFailureAsync(account, plan, "Video renderer unavailable (fonts/FFmpeg missing).", ct);
-            videoBytes = await video.RenderAsync(plan.Spark.Takeaway, "Your Daily Spark", plan.Date.DayNumber, ct);
+            // Offset the evening video's theme so the two daily clips look
+            // distinct even on the same calendar day.
+            var themeIndex = plan.Date.DayNumber + (evening ? 6 : 0);
+            videoBytes = await video.RenderAsync(plan.Spark.Takeaway, eyebrow, themeIndex, ct);
             if (videoBytes is null)
                 return await RecordDailyFailureAsync(account, plan, "Video render failed.", ct);
             videoCt = "video/mp4";
@@ -472,7 +493,7 @@ public class SocialPostingService(
         if (plans.Count == 0 || plans.Any(p => p.Status == SocialPostStatus.Pending)) return;
 
         var lines = plans.Select(p => new SocialSummaryLine(
-            Platform: p.Platform.ToString(),
+            Platform: p.Slot == SocialDailySlot.Evening ? $"{p.Platform} (Evening)" : p.Platform.ToString(),
             Status:   p.Status.ToString(),
             Excerpt:  p.PostedText ?? p.Spark?.Takeaway,
             Url:      p.PostedUrl,
@@ -566,8 +587,13 @@ public class SocialPostingService(
         return (i > 0 ? t[..i] : t).Trim();
     }
 
-    /// <summary>Picks one spark Id not yet Posted FOR THIS PLATFORM. Independent per-platform rotation.</summary>
-    private async Task<Guid?> PickSparkIdAsync(SocialPlatform platform, CancellationToken ct)
+    /// <summary>
+    /// Picks one spark Id that (a) has never been Posted for this platform
+    /// (the never-repeat rule) AND (b) isn't already planned for this platform
+    /// TODAY — so the Morning and Evening slots always land on different
+    /// sparks. Independent per-platform rotation.
+    /// </summary>
+    private async Task<Guid?> PickSparkIdAsync(SocialPlatform platform, DateOnly today, CancellationToken ct)
     {
         var platformInt = (int)platform;
         if (db.Database.IsRelational())
@@ -579,21 +605,26 @@ public class SocialPostingService(
                         SELECT 1 FROM "SocialDailyPlans" p
                         WHERE p."SparkId" = s."Id" AND p."Platform" = {0} AND p."Status" = 1
                     )
+                    AND NOT EXISTS (
+                        SELECT 1 FROM "SocialDailyPlans" p2
+                        WHERE p2."SparkId" = s."Id" AND p2."Platform" = {0} AND p2."Date" = {1}
+                    )
                     ORDER BY random()
                     LIMIT 1
-                    """, platformInt)
+                    """, platformInt, today)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(ct);
             return raw?.Id;
         }
         else
         {
-            var postedIds = await db.SocialDailyPlans
-                .Where(p => p.Platform == platform && p.Status == SocialPostStatus.Posted)
+            var excludedIds = await db.SocialDailyPlans
+                .Where(p => p.Platform == platform
+                    && (p.Status == SocialPostStatus.Posted || p.Date == today))
                 .Select(p => p.SparkId)
                 .ToListAsync(ct);
             var candidates = await db.MotivationEntries
-                .Where(s => !postedIds.Contains(s.Id))
+                .Where(s => !excludedIds.Contains(s.Id))
                 .Select(s => s.Id)
                 .ToListAsync(ct);
             if (candidates.Count == 0) return null;
@@ -603,11 +634,15 @@ public class SocialPostingService(
         }
     }
 
-    /// <summary>Configured local post time +/- random jitter, converted to UTC.</summary>
-    private static DateTime ComputeScheduledUtc(DateOnly today, SocialAccount account, TimeZoneInfo tz)
+    /// <summary>Configured local post time for the slot +/- random jitter, converted to UTC.</summary>
+    private static DateTime ComputeScheduledUtc(DateOnly today, SocialAccount account, SocialDailySlot slot, TimeZoneInfo tz)
     {
+        var (hour, minute) = slot == SocialDailySlot.Evening
+            ? (account.EveningPostHourLocal, account.EveningPostMinuteLocal)
+            : (account.PostHourLocal, account.PostMinuteLocal);
+
         var local = new DateTime(today.Year, today.Month, today.Day,
-            Math.Clamp(account.PostHourLocal, 0, 23), Math.Clamp(account.PostMinuteLocal, 0, 59), 0,
+            Math.Clamp(hour, 0, 23), Math.Clamp(minute, 0, 59), 0,
             DateTimeKind.Unspecified);
 
         if (account.JitterMinutes > 0)

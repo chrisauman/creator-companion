@@ -27,6 +27,14 @@ public class SocialDailyPlan
     public SocialPlatform Platform { get; set; }
 
     /// <summary>
+    /// Which of the day's two posts this is (Morning cream card / Evening
+    /// dark card). Part of the unique key with (Date, Platform) so a platform
+    /// can have one plan per slot per day. Defaults to Morning, so every
+    /// pre-existing row reads as the original daytime post.
+    /// </summary>
+    public SocialDailySlot Slot { get; set; } = SocialDailySlot.Morning;
+
+    /// <summary>
     /// The spark chosen for this (day, platform). Never chosen twice for
     /// the same platform (enforced by the picker anti-join, not the
     /// schema — same approach as the Substack pipeline).

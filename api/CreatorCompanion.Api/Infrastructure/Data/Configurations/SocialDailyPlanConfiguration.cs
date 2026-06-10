@@ -10,10 +10,11 @@ public class SocialDailyPlanConfiguration : IEntityTypeConfiguration<SocialDaily
     {
         builder.HasKey(p => p.Id);
 
-        // (Date, Platform) unique — at most one plan per platform per day.
-        // This is the worker's idempotence guard: a double-firing tick
-        // can't insert two rows for the same platform/day.
-        builder.HasIndex(p => new { p.Date, p.Platform }).IsUnique();
+        // (Date, Platform, Slot) unique — at most one plan per platform per
+        // day PER SLOT (Morning/Evening). This is the worker's idempotence
+        // guard: a double-firing tick can't insert two rows for the same
+        // platform/day/slot.
+        builder.HasIndex(p => new { p.Date, p.Platform, p.Slot }).IsUnique();
 
         // Worker's hot lookup: pending plans whose ScheduledFor has passed.
         builder.HasIndex(p => new { p.Status, p.ScheduledFor });

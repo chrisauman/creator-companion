@@ -33,6 +33,9 @@ interface AccountForm {
   ytClientId: string;
   ytClientSecret: string;
   ytRefresh: string;
+  eveningEnabled: boolean;
+  eveningPostHourLocal: number;
+  eveningPostMinuteLocal: number;
   postHourLocal: number;
   postMinuteLocal: number;
   jitterMinutes: number;
@@ -171,6 +174,23 @@ interface AccountForm {
               </div>
 
               <label class="mk-switch">
+                <input type="checkbox" [(ngModel)]="a.eveningEnabled" />
+                <span>Evening Spark — post a second, dark card later in the day (its own spark)</span>
+              </label>
+              @if (a.eveningEnabled) {
+                <div class="mk-row">
+                  <div class="mk-field mk-field--sm">
+                    <label>Evening time (ET)</label>
+                    <div class="mk-time">
+                      <input type="number" min="0" max="23" [(ngModel)]="a.eveningPostHourLocal" />
+                      <span>:</span>
+                      <input type="number" min="0" max="59" [(ngModel)]="a.eveningPostMinuteLocal" />
+                    </div>
+                  </div>
+                </div>
+              }
+
+              <label class="mk-switch">
                 <input type="checkbox" [(ngModel)]="a.enabled" />
                 <span>Enabled — include in the daily auto-post run</span>
               </label>
@@ -216,7 +236,7 @@ interface AccountForm {
           @for (p of today(); track p.id) {
             <section class="mk-card">
               <div class="mk-acct-head">
-                <h3>{{ p.platform }}</h3>
+                <h3>{{ p.platform }} <span class="mk-slot-tag" [class.mk-slot-tag--evening]="p.slot === 'Evening'">{{ p.slot }}</span></h3>
                 <span class="mk-pill" [ngClass]="statusClass(p.status)">{{ p.status }}</span>
               </div>
               <p class="mk-spark">{{ p.sparkTakeaway }}</p>
@@ -228,11 +248,11 @@ interface AccountForm {
                 <p class="mk-danger mk-small">{{ p.errorMessage }}</p>
               }
               <div class="mk-actions">
-                <button class="btn btn--sm" [disabled]="busyPlatform() === p.platform" (click)="fireNow(p.platform)">
-                  {{ busyPlatform() === p.platform ? 'Posting…' : (p.status === 'Pending' ? 'Post now' : 'Re-post (new spark)') }}
+                <button class="btn btn--sm" [disabled]="busyPlatform() === p.platform + ':' + p.slot" (click)="fireNow(p.platform, p.slot)">
+                  {{ busyPlatform() === p.platform + ':' + p.slot ? 'Posting…' : (p.status === 'Pending' ? 'Post now' : 'Re-post (new spark)') }}
                 </button>
                 @if (p.status === 'Pending') {
-                  <button class="btn btn--sm btn--ghost" (click)="reroll(p.platform)">Reroll spark</button>
+                  <button class="btn btn--sm btn--ghost" (click)="reroll(p.platform, p.slot)">Reroll spark</button>
                 }
               </div>
             </section>
@@ -401,6 +421,10 @@ interface AccountForm {
     .mk-actions { display: flex; align-items: center; gap: .75rem; margin-top: 1rem; }
     .mk-meta { color: var(--color-text-3); font-size: .8125rem; margin: .75rem 0 0; }
     .mk-spark { font-size: 1rem; line-height: 1.5; color: var(--color-text); margin: .25rem 0 .5rem; }
+    .mk-slot-tag { font-size: .6875rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+      padding: .12rem .45rem; border-radius: 6px; background: var(--color-accent-light); color: var(--color-accent-dark);
+      vertical-align: middle; margin-left: .4rem; }
+    .mk-slot-tag--evening { background: #0a1a2a; color: #12C4E3; }
     .mk-small { font-size: .8125rem; }
     .mk-muted { color: var(--color-text-2); }
     .mk-ok { color: #16a34a; font-size: .875rem; font-weight: 600; }
@@ -493,6 +517,7 @@ export class AdminMarketingComponent implements OnInit {
       platform: a.platform, enabled: a.enabled,
       handle: a.handle ?? '', endpoint: a.endpoint ?? '', credential: '',
       ytClientId: '', ytClientSecret: '', ytRefresh: '',
+      eveningEnabled: a.eveningEnabled, eveningPostHourLocal: a.eveningPostHourLocal, eveningPostMinuteLocal: a.eveningPostMinuteLocal,
       postHourLocal: a.postHourLocal, postMinuteLocal: a.postMinuteLocal, jitterMinutes: a.jitterMinutes,
       hasCredentials: a.hasCredentials, characterLimit: a.characterLimit, supportsImages: a.supportsImages,
       lastSuccessAt: a.lastSuccessAt, lastFailureAt: a.lastFailureAt,
@@ -530,6 +555,9 @@ export class AdminMarketingComponent implements OnInit {
       clientId: a.platform === 'YouTube' ? (a.ytClientId.trim() || null) : null,
       clientSecret: a.platform === 'YouTube' ? (a.ytClientSecret.trim() || null) : null,
       refreshToken: a.platform === 'YouTube' ? (a.ytRefresh.trim() || null) : null,
+      eveningEnabled: a.eveningEnabled,
+      eveningPostHourLocal: a.eveningPostHourLocal,
+      eveningPostMinuteLocal: a.eveningPostMinuteLocal,
       postHourLocal: a.postHourLocal, postMinuteLocal: a.postMinuteLocal, jitterMinutes: a.jitterMinutes,
     };
     this.api.adminUpdateMarketingAccount(a.platform, payload).subscribe({
@@ -550,16 +578,16 @@ export class AdminMarketingComponent implements OnInit {
   }
 
   // ── Today actions ─────────────────────────────────────────────────
-  fireNow(platform: string): void {
-    this.busyPlatform.set(platform);
-    this.api.adminMarketingFireNow(platform).subscribe({
+  fireNow(platform: string, slot = 'Morning'): void {
+    this.busyPlatform.set(platform + ':' + slot);
+    this.api.adminMarketingFireNow(platform, slot).subscribe({
       next: () => { this.busyPlatform.set(null); this.refreshToday(); },
       error: () => { this.busyPlatform.set(null); this.refreshToday(); },
     });
   }
 
-  reroll(platform: string): void {
-    this.api.adminMarketingReroll(platform).subscribe(() => this.refreshToday());
+  reroll(platform: string, slot = 'Morning'): void {
+    this.api.adminMarketingReroll(platform, slot).subscribe(() => this.refreshToday());
   }
 
   private refreshToday(): void {

@@ -63,7 +63,10 @@ public class AdminMarketingController(
                     LastSuccessAt:       a?.LastSuccessAt,
                     LastFailureAt:       a?.LastFailureAt,
                     LastFailureMessage:  a?.LastFailureMessage,
-                    ConsecutiveFailures: a?.ConsecutiveFailures ?? 0);
+                    ConsecutiveFailures: a?.ConsecutiveFailures ?? 0,
+                    EveningEnabled:         a?.EveningEnabled ?? false,
+                    EveningPostHourLocal:   a?.EveningPostHourLocal ?? 18,
+                    EveningPostMinuteLocal: a?.EveningPostMinuteLocal ?? 0);
             })
             .ToList();
 
@@ -106,6 +109,9 @@ public class AdminMarketingController(
         account.PostHourLocal   = Math.Clamp(req.PostHourLocal, 0, 23);
         account.PostMinuteLocal = Math.Clamp(req.PostMinuteLocal, 0, 59);
         account.JitterMinutes   = Math.Clamp(req.JitterMinutes, 0, 240);
+        account.EveningEnabled         = req.EveningEnabled;
+        account.EveningPostHourLocal   = Math.Clamp(req.EveningPostHourLocal, 0, 23);
+        account.EveningPostMinuteLocal = Math.Clamp(req.EveningPostMinuteLocal, 0, 59);
         account.UpdatedAt       = DateTime.UtcNow;
 
         // Only (re)write credentials when a new secret is actually
@@ -133,23 +139,27 @@ public class AdminMarketingController(
     }
 
     [HttpPost("today/fire-now")]
-    public async Task<IActionResult> FireNow([FromQuery] string platform, CancellationToken ct)
+    public async Task<IActionResult> FireNow([FromQuery] string platform, [FromQuery] string? slot, CancellationToken ct)
     {
         if (!TryParsePlatform(platform, out var p))
             return BadRequest(new { error = $"Unknown platform '{platform}'." });
 
-        var result = await posting.FireDailyNowAsync(p, ct);
+        var result = await posting.FireDailyNowAsync(p, ParseSlot(slot), ct);
         return Ok(new FireNowResponse(p.ToString(), result.Success, result.PostedUrl, result.ExternalId, result.ErrorMessage));
     }
 
     [HttpPost("today/reroll")]
-    public async Task<IActionResult> Reroll([FromQuery] string platform, CancellationToken ct)
+    public async Task<IActionResult> Reroll([FromQuery] string platform, [FromQuery] string? slot, CancellationToken ct)
     {
         if (!TryParsePlatform(platform, out var p))
             return BadRequest(new { error = $"Unknown platform '{platform}'." });
-        await posting.RerollTodayAsync(p, ct);
+        await posting.RerollTodayAsync(p, ParseSlot(slot), ct);
         return NoContent();
     }
+
+    // Defaults to Morning when the query param is absent/unrecognised.
+    private static SocialDailySlot ParseSlot(string? slot) =>
+        Enum.TryParse<SocialDailySlot>(slot, ignoreCase: true, out var s) ? s : SocialDailySlot.Morning;
 
     // ── History + eligible counts ─────────────────────────────────────
 
@@ -253,7 +263,7 @@ public class AdminMarketingController(
     // ── Helpers ───────────────────────────────────────────────────────
 
     private SocialPlanResponse MapPlan(SocialDailyPlan p) => new(
-        Id: p.Id, Date: p.Date, Platform: p.Platform.ToString(), ScheduledFor: p.ScheduledFor,
+        Id: p.Id, Date: p.Date, Platform: p.Platform.ToString(), Slot: p.Slot.ToString(), ScheduledFor: p.ScheduledFor,
         Status: p.Status.ToString(), PostedAt: p.PostedAt, PostedText: p.PostedText,
         PostedUrl: p.PostedUrl, ErrorMessage: p.ErrorMessage, SparkId: p.SparkId,
         SparkTakeaway: p.Spark?.Takeaway ?? "(spark missing)");
