@@ -1036,7 +1036,11 @@ export class NewEntryComponent implements OnInit, AfterViewInit, OnDestroy {
       extensions: [
         StarterKit,
         Placeholder.configure({
-          placeholder: "What are you working on today? Start writing — it doesn't have to be perfect."
+          // Generic on purpose: the entry can be started from a mood or a
+          // prompt (which set their own context above the editor), so a
+          // task-specific "What are you working on today?" prompt no longer
+          // fit. Keep it neutral.
+          placeholder: "Begin writing…"
         })
       ],
       content: initialContent,
