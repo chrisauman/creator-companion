@@ -1,3 +1,4 @@
+using System.Text;
 using CreatorCompanion.Api.Application.DTOs;
 using CreatorCompanion.Api.Domain.Enums;
 using CreatorCompanion.Api.Domain.Models;
@@ -25,6 +26,44 @@ public class AdminMotivationController(AppDbContext db) : ControllerBase
             .ToListAsync();
 
         return Ok(entries);
+    }
+
+    /// <summary>
+    /// Exports every spark as a CSV for offline editing (e.g. drafting
+    /// shorter, social-length versions in a spreadsheet + AI, then
+    /// re-importing). The <c>Id</c> column is the stable match key for
+    /// re-import — leave it untouched. The trailing <c>ShortText</c> column
+    /// is intentionally blank: that's the one to fill in.
+    ///
+    /// Bearer-auth (admin) like the rest of this controller, so the download
+    /// is triggered from the authenticated app, not a raw browser link.
+    /// </summary>
+    [HttpGet("export")]
+    public async Task<IActionResult> ExportCsv()
+    {
+        var entries = await db.MotivationEntries
+            .OrderBy(e => e.Category)
+            .ThenBy(e => e.CreatedAt)
+            .Select(e => new { e.Id, e.Category, e.Title, e.Takeaway, e.FullContent })
+            .ToListAsync();
+
+        var sb = new StringBuilder();
+        sb.Append('\uFEFF'); // UTF-8 BOM so Excel/Sheets render accents + curly quotes correctly
+        sb.Append("Id,Category,Title,Takeaway,FullContent,ShortText\r\n");
+        foreach (var e in entries)
+        {
+            sb.Append(string.Join(',',
+                Csv(e.Id.ToString()), Csv(e.Category.ToString()), Csv(e.Title),
+                Csv(e.Takeaway), Csv(e.FullContent), Csv("")));
+            sb.Append("\r\n");
+        }
+
+        var bytes = Encoding.UTF8.GetBytes(sb.ToString());
+        return File(bytes, "text/csv", "creator-companion-sparks.csv");
+
+        // RFC-4180 field: always quote, double any embedded quotes. This makes
+        // commas, newlines, and quotes inside the spark text safe.
+        static string Csv(string? s) => "\"" + (s ?? string.Empty).Replace("\"", "\"\"") + "\"";
     }
 
     [HttpPost]

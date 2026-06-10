@@ -99,6 +99,9 @@ const CATEGORY_LABELS: Record<string, string> = {
       <!-- Library list -->
       <div class="library-header">
         <h2>Library <span class="count-badge">{{ entries().length }}</span></h2>
+        <button class="btn btn--ghost btn--sm" (click)="exportCsv()" [disabled]="exporting()">
+          {{ exporting() ? 'Exporting…' : 'Export CSV' }}
+        </button>
         <div class="filter-tabs">
           <button class="filter-tab" [class.filter-tab--active]="filterCat() === ''"
                   (click)="filterCat.set('')">All</button>
@@ -213,6 +216,7 @@ export class AdminMotivationComponent implements OnInit {
   editingId = signal<string | null>(null);
   filterCat = signal<string>('');
   formError = signal('');
+  exporting = signal(false);
 
   form = { takeaway: '', fullContent: '', category: 'Encouragement' as Category };
 
@@ -223,6 +227,25 @@ export class AdminMotivationComponent implements OnInit {
 
   ngOnInit(): void {
     this.load();
+  }
+
+  /** Download all sparks as a CSV (Bearer-authed fetch → client-side save). */
+  exportCsv(): void {
+    this.exporting.set(true);
+    this.api.adminExportMotivationCsv().subscribe({
+      next: blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'creator-companion-sparks.csv';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        this.exporting.set(false);
+      },
+      error: () => this.exporting.set(false),
+    });
   }
 
   private load(): void {

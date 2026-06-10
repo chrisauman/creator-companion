@@ -294,6 +294,11 @@ export class ApiService {
     return this.http.get<MotivationEntry[]>(`${this.base}/admin/motivation`);
   }
 
+  /** Download all sparks as a CSV blob (Bearer-authed) for offline editing. */
+  adminExportMotivationCsv(): Observable<Blob> {
+    return this.http.get(`${this.base}/admin/motivation/export`, { responseType: 'blob' });
+  }
+
   adminCreateMotivation(payload: { takeaway: string; fullContent: string; category: string }): Observable<MotivationEntry> {
     return this.http.post<MotivationEntry>(`${this.base}/admin/motivation`, payload);
   }
