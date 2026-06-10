@@ -19,6 +19,10 @@ public interface IQuoteCardRenderer
     /// Renders <paramref name="quote"/> centered on the brand cream card,
     /// with an optional small caps eyebrow above it. Returns PNG bytes,
     /// or null on any failure.
+    ///
+    /// <paramref name="dark"/> selects the "Evening Spark" treatment — a
+    /// deep blue-teal surface with a central cyan wash and cream text
+    /// (vs. the default daytime cream card). Same layout either way.
     /// </summary>
-    byte[]? Render(string quote, string? eyebrow = null);
+    byte[]? Render(string quote, string? eyebrow = null, bool dark = false);
 }

@@ -34,6 +34,13 @@ public class QuoteCardRenderer : IQuoteCardRenderer
     private static readonly Color InkMuted   = Color.ParseHex("6B7280");
     private static readonly Color Cyan        = Color.ParseHex("12C4E3");
 
+    // "Evening Spark" dark variant (the Blue Wash concept): a deep blue-teal
+    // surface lit by a central cyan wash, with cream text. Same layout as the
+    // cream card — only the surface + text colors change.
+    private static readonly Color DarkTop   = Color.ParseHex("08303C");
+    private static readonly Color DarkBot   = Color.ParseHex("0A1A2A");
+    private static readonly Color Cream      = Color.ParseHex("FAF6EC");
+
     // Footer logo mark (the cyan-spiral brand icon) drawn beside the
     // wordmark in a horizontal lockup. Rendered at this size on the 1080² card.
     private const int LogoSize = 78;
@@ -72,9 +79,13 @@ public class QuoteCardRenderer : IQuoteCardRenderer
         }
     }
 
-    public byte[]? Render(string quote, string? eyebrow = null)
+    public byte[]? Render(string quote, string? eyebrow = null, bool dark = false)
     {
         if (!IsAvailable || string.IsNullOrWhiteSpace(quote)) return null;
+
+        // Text color flips for the dark "Evening Spark" card so the quote +
+        // wordmark stay legible on the deep surface; eyebrow stays cyan.
+        var textColor = dark ? Cream : Ink;
 
         try
         {
@@ -86,13 +97,31 @@ public class QuoteCardRenderer : IQuoteCardRenderer
             using var image = new Image<Rgba32>(Size, Size);
             image.Mutate(ctx =>
             {
-                // Cream vertical gradient background.
+                // Vertical gradient background — cream by day, deep blue-teal
+                // by evening.
                 var bg = new LinearGradientBrush(
                     new PointF(0, 0), new PointF(0, Size),
                     GradientRepetitionMode.None,
-                    new ColorStop(0f, CreamTop),
-                    new ColorStop(1f, CreamBot));
+                    new ColorStop(0f, dark ? DarkTop : CreamTop),
+                    new ColorStop(1f, dark ? DarkBot : CreamBot));
                 ctx.Fill(bg, new RectangleF(0, 0, Size, Size));
+
+                // Evening card: a soft central cyan wash lights the surface
+                // from behind the quote (Screen-blended so it glows rather
+                // than flattens). Daytime card stays a clean cream surface.
+                if (dark)
+                {
+                    var glowOpts = new DrawingOptions
+                    {
+                        GraphicsOptions = new GraphicsOptions { ColorBlendingMode = PixelColorBlendingMode.Screen }
+                    };
+                    var glow = new RadialGradientBrush(
+                        new PointF(Size * 0.5f, Size * 0.46f), Size * 0.62f,
+                        GradientRepetitionMode.None,
+                        new ColorStop(0f, Cyan.WithAlpha(0.30f)),
+                        new ColorStop(0.7f, Cyan.WithAlpha(0f)));
+                    ctx.Fill(glowOpts, glow);   // fills the whole canvas; transparent outside the wash
+                }
 
                 // Optional cyan caps eyebrow near the top.
                 if (!string.IsNullOrWhiteSpace(eyebrow))
@@ -123,7 +152,7 @@ public class QuoteCardRenderer : IQuoteCardRenderer
                     WrappingLength = maxWidth,
                     LineSpacing = 1.18f,
                 };
-                ctx.DrawText(quoteOpts, display, Ink);
+                ctx.DrawText(quoteOpts, display, textColor);
 
                 // Footer: HORIZONTAL logo + wordmark lockup — icon on the
                 // left, "Creator Companion" in Fraunces to its right, the whole
@@ -154,7 +183,7 @@ public class QuoteCardRenderer : IQuoteCardRenderer
                     VerticalAlignment = VerticalAlignment.Center,
                     TextAlignment = TextAlignment.Start,
                 };
-                ctx.DrawText(markOpts, wordmark, Ink);
+                ctx.DrawText(markOpts, wordmark, textColor);
             });
 
             using var ms = new MemoryStream();
