@@ -62,7 +62,7 @@ const DEFAULT_REMINDER_MESSAGE = "Remember to log today's progress to keep your 
               <p class="block__body">Push notifications are not supported in this browser.</p>
             } @else if (!pushEnabled()) {
               <div class="push-prompt">
-                <p class="block__body">Enable notifications on this device to receive daily reminders.</p>
+                <p class="block__body">Enable reminders for daily push notifications.</p>
                 <!-- Promoted from .action-btn (light cream pill) to the
                      standard black btn--primary to match every other
                      primary CTA in the app. The bell emoji stays as
