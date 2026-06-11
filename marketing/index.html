@@ -20,6 +20,48 @@
   <meta name="twitter:description" content="Build your creative streak. Write every day, track your progress, and never lose what you create. Try free for 10 days.">
   <meta name="twitter:image" content="https://www.creatorcompanionapp.com/og-image.png">
   <link rel="canonical" href="https://www.creatorcompanionapp.com/">
+  <!-- Structured data: helps Google understand the brand + that this is a
+       paid app with a free trial. Keep prices in sync with the real plans. -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://www.creatorcompanionapp.com/#org",
+        "name": "Creator Companion",
+        "url": "https://www.creatorcompanionapp.com/",
+        "logo": "https://www.creatorcompanionapp.com/logo-icon.png",
+        "sameAs": [
+          "https://bsky.app/profile/creatorcompanion.bsky.social",
+          "https://mastodon.social/@creatorcompanion",
+          "https://substack.com/@creatorcompanion"
+        ]
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://www.creatorcompanionapp.com/#website",
+        "url": "https://www.creatorcompanionapp.com/",
+        "name": "Creator Companion",
+        "publisher": { "@id": "https://www.creatorcompanionapp.com/#org" }
+      },
+      {
+        "@type": "SoftwareApplication",
+        "name": "Creator Companion",
+        "applicationCategory": "LifestyleApplication",
+        "operatingSystem": "Web, iOS, Android",
+        "description": "A daily journal for creative people. Build your creative streak, track your progress, and keep a private, ad-free practice.",
+        "offers": {
+          "@type": "Offer",
+          "price": "5.99",
+          "priceCurrency": "USD",
+          "description": "Monthly subscription after a 10-day free trial. Annual plan $49.99."
+        },
+        "publisher": { "@id": "https://www.creatorcompanionapp.com/#org" }
+      }
+    ]
+  }
+  </script>
 </head>
 <body>
 
