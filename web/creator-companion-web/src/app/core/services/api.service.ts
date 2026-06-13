@@ -628,6 +628,28 @@ export class ApiService {
   adminCreateMarketingPost(form: FormData): Observable<AdHocPost> {
     return this.http.post<AdHocPost>(`${this.base}/admin/marketing/posts`, form);
   }
+
+  // ── Landing page builder ────────────────────────────────────────────────
+  adminLpList(p: { search?: string; status?: string; sort?: string; skip?: number; take?: number }): Observable<LpListResponse> {
+    let params = new HttpParams().set('skip', String(p.skip ?? 0)).set('take', String(p.take ?? 50));
+    if (p.search) params = params.set('search', p.search);
+    if (p.status) params = params.set('status', p.status);
+    if (p.sort) params = params.set('sort', p.sort);
+    return this.http.get<LpListResponse>(`${this.base}/admin/landing/pages`, { params });
+  }
+  adminLpGet(id: string): Observable<LpDetail> { return this.http.get<LpDetail>(`${this.base}/admin/landing/pages/${id}`); }
+  adminLpCreate(payload: LpUpsert): Observable<LpDetail> { return this.http.post<LpDetail>(`${this.base}/admin/landing/pages`, payload); }
+  adminLpUpdate(id: string, payload: LpUpsert): Observable<LpDetail> { return this.http.put<LpDetail>(`${this.base}/admin/landing/pages/${id}`, payload); }
+  adminLpSetStatus(id: string, status: string): Observable<void> { return this.http.post<void>(`${this.base}/admin/landing/pages/${id}/status`, { status }); }
+  adminLpDelete(id: string): Observable<void> { return this.http.delete<void>(`${this.base}/admin/landing/pages/${id}`); }
+  adminLpRevert(id: string): Observable<LpDetail> { return this.http.post<LpDetail>(`${this.base}/admin/landing/pages/${id}/revert`, {}); }
+  adminLpPreview(id: string): Observable<string> { return this.http.get(`${this.base}/admin/landing/pages/${id}/preview`, { responseType: 'text' }); }
+  adminLpKeywords(): Observable<LpKeyword[]> { return this.http.get<LpKeyword[]>(`${this.base}/admin/landing/keywords`); }
+  adminLpCreateKeyword(p: { keyword: string; brief?: string | null; priority: number; status?: string | null }): Observable<LpKeyword> { return this.http.post<LpKeyword>(`${this.base}/admin/landing/keywords`, p); }
+  adminLpUpdateKeyword(id: string, p: { keyword: string; brief?: string | null; priority: number; status?: string | null }): Observable<LpKeyword> { return this.http.put<LpKeyword>(`${this.base}/admin/landing/keywords/${id}`, p); }
+  adminLpDeleteKeyword(id: string): Observable<void> { return this.http.delete<void>(`${this.base}/admin/landing/keywords/${id}`); }
+  adminLpSettings(): Observable<LpSettings> { return this.http.get<LpSettings>(`${this.base}/admin/landing/settings`); }
+  adminLpUpdateSettings(p: { autoGenerateEnabled: boolean; autoPublishEnabled: boolean; qualityThreshold: number; generateHourLocalEt: number }): Observable<LpSettings> { return this.http.put<LpSettings>(`${this.base}/admin/landing/settings`, p); }
 }
 
 // ── Marketing auto-poster types ───────────────────────────────────────────
@@ -740,3 +762,24 @@ export interface SubstackPlan {
   sparkId: string;
   sparkTakeaway: string;
 }
+
+// ── Landing page builder types ────────────────────────────────────────────
+export interface LpHero { kicker?: string; h1?: string; subhead?: string; ctaLabel?: string; videoUrl?: string; posterUrl?: string; }
+export interface LpHook { heading?: string; lead?: string; chips?: string[]; }
+export interface LpExplainer { kicker?: string; h2?: string; paragraphs?: string[]; imageUrl?: string; imageAlt?: string; }
+export interface LpCard { icon?: string; title?: string; body?: string; }
+export interface LpBand { heading?: string; subtext?: string; imageUrl?: string; }
+export interface LpTip { title?: string; body?: string; }
+export interface LpFeatureRow { kicker?: string; h2?: string; body?: string; mediaUrl?: string; mediaAlt?: string; phone?: boolean; reverse?: boolean; }
+export interface LpQa { q?: string; a?: string; }
+export interface LpFinalCta { heading?: string; subtext?: string; ctaLabel?: string; }
+export interface LpContent {
+  hero?: LpHero; hook?: LpHook; explainer?: LpExplainer; benefitCards?: LpCard[]; band?: LpBand;
+  tips?: LpTip[]; featureRows?: LpFeatureRow[]; objections?: LpQa[]; faq?: LpQa[]; finalCta?: LpFinalCta;
+}
+export interface LpListItem { id: string; slug: string; status: string; targetKeyword: string; metaTitle: string; noIndex: boolean; qualityScore: number | null; generatedByAi: boolean; updatedAt: string; publishedAt: string | null; }
+export interface LpListResponse { items: LpListItem[]; total: number; }
+export interface LpDetail { id: string; slug: string; status: string; targetKeyword: string; metaTitle: string; metaDescription: string; noIndex: boolean; qualityScore: number | null; generatedByAi: boolean; content: LpContent; hasOriginal: boolean; createdAt: string; updatedAt: string; publishedAt: string | null; }
+export interface LpUpsert { slug: string; targetKeyword: string; metaTitle: string; metaDescription: string; noIndex: boolean; content: LpContent; }
+export interface LpKeyword { id: string; keyword: string; brief: string | null; priority: number; status: string; generatedPageId: string | null; lastError: string | null; createdAt: string; }
+export interface LpSettings { autoGenerateEnabled: boolean; autoPublishEnabled: boolean; qualityThreshold: number; generateHourLocalEt: number; lastGeneratedDate: string | null; ga4Configured: boolean; pexelsConfigured: boolean; anthropicConfigured: boolean; }

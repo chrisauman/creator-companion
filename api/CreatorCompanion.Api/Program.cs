@@ -447,6 +447,7 @@ try
     // Landing-page HTML renderer (content JSON -> template HTML). Singleton:
     // stateless, just reads config.
     builder.Services.AddSingleton<ILandingPageRenderer, LandingPageRenderer>();
+    builder.Services.AddScoped<ILandingPageService, LandingPageService>();
     builder.Services.AddScoped<ISocialPostingService, SocialPostingService>();
     builder.Services.AddHostedService<SocialPostingBackgroundService>();
 

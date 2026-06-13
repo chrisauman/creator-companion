@@ -156,6 +156,12 @@ export const routes: Routes = [
   },
 
   {
+    path: 'admin/landing',
+    canActivate: [adminGuard],
+    loadComponent: () => import('./features/admin/admin-landing.component').then(m => m.AdminLandingComponent)
+  },
+
+  {
     path: 'billing/success',
     canActivate: [authGuard],
     loadComponent: () => import('./features/billing/billing-success.component').then(m => m.BillingSuccessComponent)
