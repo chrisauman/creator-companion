@@ -31,6 +31,14 @@
     {
       "source": "/v1/:path*",
       "destination": "https://creator-companion-api-production.up.railway.app/v1/:path*"
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "https://creator-companion-api-production.up.railway.app/v1/lp/sitemap.xml"
+    },
+    {
+      "source": "/:slug",
+      "destination": "https://creator-companion-api-production.up.railway.app/v1/lp/:slug"
     }
   ],
   "headers": [
