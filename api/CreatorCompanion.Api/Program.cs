@@ -444,6 +444,9 @@ try
     // Vertical "Daily Spark" Short renderer (ImageSharp frames -> FFmpeg MP4).
     // Singleton for the same reason; degrades to null if fonts/FFmpeg absent.
     builder.Services.AddSingleton<IVideoRenderer, VideoRenderer>();
+    // Landing-page HTML renderer (content JSON -> template HTML). Singleton:
+    // stateless, just reads config.
+    builder.Services.AddSingleton<ILandingPageRenderer, LandingPageRenderer>();
     builder.Services.AddScoped<ISocialPostingService, SocialPostingService>();
     builder.Services.AddHostedService<SocialPostingBackgroundService>();
 
