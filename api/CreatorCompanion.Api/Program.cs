@@ -642,6 +642,8 @@ try
         SerilogLog.Information("Motivation library seeded.");
         await DailyPromptsSeeder.SeedAsync(db);
         SerilogLog.Information("Daily prompts seeded.");
+        await LandingPageSeeder.SeedAsync(db);
+        SerilogLog.Information("Landing pages seeded.");
     }
 
     app.Run();

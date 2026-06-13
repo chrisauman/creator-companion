@@ -2,6 +2,11 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "redirects": [
     {
+      "source": "/morning-pages-app.html",
+      "destination": "/morning-pages-app",
+      "permanent": true
+    },
+    {
       "source": "/preview.html",
       "destination": "/",
       "permanent": true
