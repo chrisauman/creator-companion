@@ -516,6 +516,44 @@ public class ResendEmailService(IResend resend, IConfiguration config, AppDbCont
         await resend.EmailSendAsync(message);
     }
 
+    public async Task SendLandingPageReviewAsync(
+        string toEmail, string title, string slug, string status, int score, string pageUrl, string adminUrl)
+    {
+        var fromEmail = config["Resend:FromEmail"] ?? "noreply@creatorcompanion.app";
+        var appName   = config["App:Name"] ?? "Creator Companion";
+        static string enc(string? s) => System.Net.WebUtility.HtmlEncode(s ?? "");
+        var published = string.Equals(status, "Published", StringComparison.OrdinalIgnoreCase);
+        var statusLine = published
+            ? "It cleared the quality bar and was <strong>published</strong>."
+            : "It fell short of the quality bar and is <strong>held as a draft</strong> for your review.";
+
+        var body = $"""
+            <h2 style="margin:0 0 .5rem;font-size:1.25rem;font-weight:700;letter-spacing:-.01em;color:#0c0e13">
+              A new landing page was generated
+            </h2>
+            <p style="color:#555;line-height:1.6;margin:.5rem 0 1rem">
+              {appName} drafted a page for <strong>{enc(title)}</strong> (<code>/{enc(slug)}</code>).
+              {statusLine} Quality score: <strong>{score}/100</strong>.
+            </p>
+            <p style="margin:1.25rem 0">
+              <a href="{enc(adminUrl)}" style="display:inline-block;background:#0c0e13;color:#fff;text-decoration:none;font-weight:700;padding:.7rem 1.3rem;border-radius:999px">Review &amp; edit</a>
+              {(published ? $"&nbsp;&nbsp;<a href=\"{enc(pageUrl)}\" style=\"color:#0a93ab;font-weight:600\">View live ↗</a>" : "")}
+            </p>
+            <p style="color:#9aa0aa;font-size:.8125rem;line-height:1.5;margin:1rem 0 0">
+              Generated automatically from your keyword queue. Edit any section, swap images, or unpublish from the Landing Pages admin.
+            </p>
+            """;
+
+        var message = new EmailMessage
+        {
+            From    = $"{appName} <{fromEmail}>",
+            To      = { toEmail },
+            Subject = published ? $"New landing page published: {title}" : $"New landing page draft to review: {title}",
+            HtmlBody = WrapInBrandedShell(body, appName)
+        };
+        await resend.EmailSendAsync(message);
+    }
+
     // ── Branded shell + CTA helpers ─────────────────────────────────
     /// <summary>
     /// Wraps an email body in the shared branded shell: logo header,

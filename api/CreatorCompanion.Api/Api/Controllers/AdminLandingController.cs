@@ -13,8 +13,16 @@ namespace CreatorCompanion.Api.Api.Controllers;
 [ApiController]
 [Authorize(Roles = "Admin")]
 [Route("v1/admin/landing")]
-public class AdminLandingController(ILandingPageService svc) : ControllerBase
+public class AdminLandingController(ILandingPageService svc, ILandingPageGenerationService generation) : ControllerBase
 {
+    /// <summary>Generate one page from the next queued keyword right now (for testing without waiting for 7am).</summary>
+    [HttpPost("generate-now")]
+    public async Task<IActionResult> GenerateNow(CancellationToken ct)
+    {
+        var (ok, message) = await generation.GenerateNextAsync(ct);
+        return Ok(new { ok, message });
+    }
+
     // ── Pages ─────────────────────────────────────────────────────────
     [HttpGet("pages")]
     public async Task<IActionResult> List([FromQuery] string? search, [FromQuery] string? status,

@@ -72,4 +72,8 @@ public interface IEmailService
         string platform,
         string context,
         string error);
+
+    /// <summary>Daily "a landing page was generated — review it" notification.</summary>
+    Task SendLandingPageReviewAsync(
+        string toEmail, string title, string slug, string status, int score, string pageUrl, string adminUrl);
 }
