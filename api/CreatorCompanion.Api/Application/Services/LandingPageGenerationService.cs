@@ -26,6 +26,7 @@ public class LandingPageGenerationService(
     AppDbContext db,
     ILandingPageGenerator generator,
     ILandingPageService pages,
+    ILandingImageService images,
     IEmailService email,
     IConfiguration config,
     ILogger<LandingPageGenerationService> log) : ILandingPageGenerationService
@@ -80,6 +81,7 @@ public class LandingPageGenerationService(
             return (false, $"Generation failed for '{keyword.Keyword}'.");
         }
 
+        await EnrichImagesAsync(gen, keyword.Keyword, ct);
         var score = await generator.ScoreQualityAsync(gen, existingKeywords, ct);
         var slug = await UniqueSlugAsync(gen.Slug, gen.MetaTitle, ct);
 
@@ -109,6 +111,29 @@ public class LandingPageGenerationService(
 
         await SafeEmailAsync(detail.MetaTitle, detail.Slug, status, score, ct);
         return (true, $"Generated '{detail.MetaTitle}' (score {score}, {status}).");
+    }
+
+    /// <summary>
+    /// Fill the photographic image slots the generator left empty (explainer,
+    /// band, and the non-screenshot feature row) with sourced stock photos.
+    /// No-op when Pexels isn't configured — the page still renders without them.
+    /// </summary>
+    private async Task EnrichImagesAsync(GeneratedPage gen, string keyword, CancellationToken ct)
+    {
+        if (!images.IsConfigured) return;
+        var c = gen.Content;
+        try
+        {
+            if (c.Explainer is not null && string.IsNullOrWhiteSpace(c.Explainer.ImageUrl))
+                c.Explainer.ImageUrl = await images.SourceForAsync(Query(c.Explainer.ImageAlt, keyword), ct);
+            if (c.Band is not null && string.IsNullOrWhiteSpace(c.Band.ImageUrl))
+                c.Band.ImageUrl = await images.SourceForAsync($"{keyword} calm atmospheric", ct);
+            foreach (var r in c.FeatureRows.Where(r => !r.Phone && string.IsNullOrWhiteSpace(r.MediaUrl)))
+                r.MediaUrl = await images.SourceForAsync(Query(r.MediaAlt, keyword), ct);
+        }
+        catch (Exception ex) { log.LogWarning(ex, "Image enrichment partly failed for '{Keyword}'.", keyword); }
+
+        static string Query(string? alt, string fallback) => string.IsNullOrWhiteSpace(alt) ? fallback : alt!;
     }
 
     private async Task<string> UniqueSlugAsync(string preferred, string fallback, CancellationToken ct)

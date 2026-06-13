@@ -448,6 +448,7 @@ try
     // stateless, just reads config.
     builder.Services.AddSingleton<ILandingPageRenderer, LandingPageRenderer>();
     builder.Services.AddScoped<ILandingPageService, LandingPageService>();
+    builder.Services.AddScoped<ILandingImageService, LandingImageService>();
     builder.Services.AddScoped<ILandingPageGenerator, LandingPageGenerator>();
     builder.Services.AddScoped<ILandingPageGenerationService, LandingPageGenerationService>();
     builder.Services.AddHostedService<LandingPageBackgroundService>();

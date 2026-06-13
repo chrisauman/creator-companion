@@ -13,8 +13,27 @@ namespace CreatorCompanion.Api.Api.Controllers;
 [ApiController]
 [Authorize(Roles = "Admin")]
 [Route("v1/admin/landing")]
-public class AdminLandingController(ILandingPageService svc, ILandingPageGenerationService generation) : ControllerBase
+public class AdminLandingController(
+    ILandingPageService svc,
+    ILandingPageGenerationService generation,
+    ILandingImageService images) : ControllerBase
 {
+    // ── Images (Pexels) ───────────────────────────────────────────────
+    /// <summary>Search free stock (Pexels) for the editor's image picker.</summary>
+    [HttpGet("images/search")]
+    public async Task<IActionResult> SearchImages([FromQuery] string q, CancellationToken ct)
+        => Ok(await images.SearchAsync(q, 24, ct));
+
+    /// <summary>Download a chosen photo + return a same-origin lp-img/{id} URL to assign to a slot.</summary>
+    [HttpPost("images/use")]
+    public async Task<IActionResult> UseImage([FromBody] UseImageBody body, CancellationToken ct)
+    {
+        var url = await images.StoreFromUrlAsync(body.Url, ct);
+        return url is null ? BadRequest(new { error = "Could not store that image." }) : Ok(new { url });
+    }
+
+    public record UseImageBody(string Url);
+
     /// <summary>Generate one page from the next queued keyword right now (for testing without waiting for 7am).</summary>
     [HttpPost("generate-now")]
     public async Task<IActionResult> GenerateNow(CancellationToken ct)

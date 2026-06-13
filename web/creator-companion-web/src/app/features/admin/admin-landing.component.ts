@@ -2,7 +2,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminShellComponent } from './admin-shell.component';
-import { ApiService, LpListItem, LpDetail, LpKeyword, LpSettings, LpUpsert, LpContent } from '../../core/services/api.service';
+import { ApiService, LpListItem, LpDetail, LpKeyword, LpSettings, LpUpsert, LpContent, PexelsPhoto } from '../../core/services/api.service';
 
 /**
  * Admin for the automated landing-page builder. Three tabs:
@@ -118,7 +118,7 @@ import { ApiService, LpListItem, LpDetail, LpKeyword, LpSettings, LpUpsert, LpCo
               }
               <button class="lpa-add" (click)="e.content.explainer!.paragraphs!.push('')">+ paragraph</button>
             </div>
-            <label class="lpa-f"><span>Image URL</span><input class="lpa-input" [(ngModel)]="e.content.explainer!.imageUrl"></label>
+            <label class="lpa-f"><span>Image URL <button type="button" class="lpa-imgbtn" (click)="openImg('explainer')">🔍 Find photo</button></span><input class="lpa-input" [(ngModel)]="e.content.explainer!.imageUrl"></label>
             <label class="lpa-f"><span>Image alt</span><input class="lpa-input" [(ngModel)]="e.content.explainer!.imageAlt"></label>
           </div>
 
@@ -140,7 +140,7 @@ import { ApiService, LpListItem, LpDetail, LpKeyword, LpSettings, LpUpsert, LpCo
             <h3>Photo band</h3>
             <label class="lpa-f"><span>Heading</span><input class="lpa-input" [(ngModel)]="e.content.band!.heading"></label>
             <label class="lpa-f"><span>Subtext</span><textarea class="lpa-input" rows="2" [(ngModel)]="e.content.band!.subtext"></textarea></label>
-            <label class="lpa-f"><span>Background image URL</span><input class="lpa-input" [(ngModel)]="e.content.band!.imageUrl"></label>
+            <label class="lpa-f"><span>Background image URL <button type="button" class="lpa-imgbtn" (click)="openImg('band')">🔍 Find photo</button></span><input class="lpa-input" [(ngModel)]="e.content.band!.imageUrl"></label>
           </div>
 
           <div class="lpa-card">
@@ -158,7 +158,7 @@ import { ApiService, LpListItem, LpDetail, LpKeyword, LpSettings, LpUpsert, LpCo
               <div class="lpa-sub">
                 <div class="lpa-row"><input class="lpa-input" placeholder="Kicker" [(ngModel)]="r.kicker"><input class="lpa-input" placeholder="Heading" [(ngModel)]="r.h2"><button class="lpa-x" (click)="e.content.featureRows!.splice($index,1)">×</button></div>
                 <textarea class="lpa-input" rows="2" placeholder="Body" [(ngModel)]="r.body"></textarea>
-                <div class="lpa-row"><input class="lpa-input" placeholder="Media URL (screenshot or photo)" [(ngModel)]="r.mediaUrl"><input class="lpa-input" placeholder="Alt" [(ngModel)]="r.mediaAlt"></div>
+                <div class="lpa-row"><input class="lpa-input" placeholder="Media URL (screenshot or photo)" [(ngModel)]="r.mediaUrl"><button type="button" class="lpa-x" title="Find photo" (click)="openImg('row:' + $index)">🔍</button><input class="lpa-input" placeholder="Alt" [(ngModel)]="r.mediaAlt"></div>
                 <div class="lpa-row"><label class="lpa-check"><input type="checkbox" [(ngModel)]="r.phone"> phone frame</label><label class="lpa-check"><input type="checkbox" [(ngModel)]="r.reverse"> image right</label></div>
               </div>
             }
@@ -199,6 +199,7 @@ import { ApiService, LpListItem, LpDetail, LpKeyword, LpSettings, LpUpsert, LpCo
               <input class="lpa-input lpa-input--sm" type="number" placeholder="Priority" [(ngModel)]="kwNew.priority">
               <button class="lpa-btn" [disabled]="!kwNew.keyword.trim()" (click)="addKeyword()">Add</button></div>
             <textarea class="lpa-input" rows="2" placeholder="Optional brief — angle / audience / must-haves" [(ngModel)]="kwNew.brief"></textarea>
+            <div class="lpa-row" style="margin-top:.6rem"><button class="lpa-link" [disabled]="genBusy()" (click)="generateNow()">{{ genBusy() ? 'Generating…' : 'Generate next page now (test)' }}</button></div>
           </div>
           @if (!keywords().length) { <p class="lpa-muted">No keywords queued. Add some above; the 7am worker generates one page per day.</p> }
           @else {
@@ -238,6 +239,21 @@ import { ApiService, LpListItem, LpDetail, LpKeyword, LpSettings, LpUpsert, LpCo
             @if (s.lastGeneratedDate) { <p class="lpa-muted">Last generated: {{ s.lastGeneratedDate }}</p> }
           </div>
         }
+        <!-- ── IMAGE PICKER ── -->
+        @if (imgOpen()) {
+          <div class="lpa-modal" (click)="imgOpen.set(false)">
+            <div class="lpa-modal__box" (click)="$event.stopPropagation()">
+              <div class="lpa-row"><input class="lpa-input" placeholder="Search free photos (Pexels)…" [(ngModel)]="imgQuery" (keyup.enter)="searchImg()"><button class="lpa-btn" (click)="searchImg()">Search</button><button class="lpa-x" (click)="imgOpen.set(false)">×</button></div>
+              @if (imgBusy()) { <p class="lpa-muted">Working…</p> }
+              <div class="lpa-imggrid">
+                @for (ph of imgResults(); track ph.id) {
+                  <button class="lpa-imgcard" [disabled]="imgBusy()" (click)="chooseImg(ph)"><img [src]="ph.thumbUrl" [alt]="ph.alt" loading="lazy"><span>{{ ph.photographer }}</span></button>
+                }
+              </div>
+              @if (!imgResults().length && !imgBusy()) { <p class="lpa-muted">Type a search and press enter. Photos are from Pexels (free, commercial use). Requires the Pexels API key.</p> }
+            </div>
+          </div>
+        }
       </div>
     </app-admin-shell>
   `,
@@ -275,6 +291,14 @@ import { ApiService, LpListItem, LpDetail, LpKeyword, LpSettings, LpUpsert, LpCo
     .lpa-ok { color: #047857; font-weight: 600; } .lpa-err { color: #e11d48; } .lpa-err-inline { color: #e11d48; font-weight: 800; margin-left: .3rem; cursor: help; }
     .lpa-int { margin: .3rem 0; font-size: .9rem; } .lpa-on { color: #047857; font-weight: 600; } .lpa-off { color: #b45309; font-weight: 600; }
     code { font-size: .85em; color: #4b5563; }
+    .lpa-imgbtn { background: #eef9fb; border: 1px solid #bdeef5; color: #0a93ab; border-radius: 8px; padding: .15rem .5rem; font-size: .75rem; font-weight: 700; cursor: pointer; margin-left: .5rem; }
+    .lpa-modal { position: fixed; inset: 0; background: rgba(12,14,19,.5); display: grid; place-items: center; z-index: 1000; padding: 1.5rem; }
+    .lpa-modal__box { background: #fff; border-radius: 16px; padding: 1.25rem; width: 100%; max-width: 720px; max-height: 84vh; overflow: auto; }
+    .lpa-imggrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: .6rem; margin-top: .8rem; }
+    .lpa-imgcard { border: 1px solid #e5e7eb; border-radius: 10px; overflow: hidden; background: #fff; cursor: pointer; padding: 0; text-align: left; }
+    .lpa-imgcard img { width: 100%; height: 110px; object-fit: cover; display: block; }
+    .lpa-imgcard span { display: block; font-size: .7rem; color: #9ca3af; padding: .3rem .5rem; }
+    .lpa-imgcard:hover { border-color: #12C4E3; }
   `]
 })
 export class AdminLandingComponent implements OnInit {
@@ -299,7 +323,45 @@ export class AdminLandingComponent implements OnInit {
 
   icons = ['spark', 'shield', 'clock', 'chart', 'music', 'plus', 'heart', 'feather'];
 
+  // Image picker
+  imgOpen = signal(false);
+  imgQuery = '';
+  imgResults = signal<PexelsPhoto[]>([]);
+  imgBusy = signal(false);
+  private imgTargetKey = '';
+
+  genBusy = signal(false);
+
   ngOnInit(): void { this.loadPages(); }
+
+  openImg(target: string): void { this.imgTargetKey = target; this.imgResults.set([]); this.imgQuery = ''; this.imgOpen.set(true); }
+  searchImg(): void {
+    if (!this.imgQuery.trim()) return;
+    this.imgBusy.set(true);
+    this.api.adminLpSearchImages(this.imgQuery).subscribe({ next: r => { this.imgResults.set(r); this.imgBusy.set(false); }, error: () => this.imgBusy.set(false) });
+  }
+  chooseImg(ph: PexelsPhoto): void {
+    this.imgBusy.set(true);
+    this.api.adminLpUseImage(ph.fullUrl).subscribe({ next: r => { this.applyImg(r.url); this.imgBusy.set(false); this.imgOpen.set(false); }, error: () => this.imgBusy.set(false) });
+  }
+  private applyImg(url: string): void {
+    const e = this.editing(); if (!e) return;
+    const c = e.content;
+    if (this.imgTargetKey === 'explainer') { c.explainer ??= {}; c.explainer.imageUrl = url; }
+    else if (this.imgTargetKey === 'band') { c.band ??= {}; c.band.imageUrl = url; }
+    else if (this.imgTargetKey.startsWith('row:')) {
+      const i = +this.imgTargetKey.slice(4);
+      if (c.featureRows && c.featureRows[i]) c.featureRows[i].mediaUrl = url;
+    }
+  }
+
+  generateNow(): void {
+    this.genBusy.set(true);
+    this.api.adminLpGenerateNow().subscribe({
+      next: r => { this.genBusy.set(false); this.msg.set(r.message); setTimeout(() => this.msg.set(''), 6000); this.loadKeywords(); },
+      error: () => { this.genBusy.set(false); this.msg.set('Generation failed.'); },
+    });
+  }
 
   loadPages(): void {
     this.loading.set(true);

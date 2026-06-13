@@ -650,6 +650,9 @@ export class ApiService {
   adminLpDeleteKeyword(id: string): Observable<void> { return this.http.delete<void>(`${this.base}/admin/landing/keywords/${id}`); }
   adminLpSettings(): Observable<LpSettings> { return this.http.get<LpSettings>(`${this.base}/admin/landing/settings`); }
   adminLpUpdateSettings(p: { autoGenerateEnabled: boolean; autoPublishEnabled: boolean; qualityThreshold: number; generateHourLocalEt: number }): Observable<LpSettings> { return this.http.put<LpSettings>(`${this.base}/admin/landing/settings`, p); }
+  adminLpGenerateNow(): Observable<{ ok: boolean; message: string }> { return this.http.post<{ ok: boolean; message: string }>(`${this.base}/admin/landing/generate-now`, {}); }
+  adminLpSearchImages(q: string): Observable<PexelsPhoto[]> { return this.http.get<PexelsPhoto[]>(`${this.base}/admin/landing/images/search`, { params: new HttpParams().set('q', q) }); }
+  adminLpUseImage(url: string): Observable<{ url: string }> { return this.http.post<{ url: string }>(`${this.base}/admin/landing/images/use`, { url }); }
 }
 
 // ── Marketing auto-poster types ───────────────────────────────────────────
@@ -783,3 +786,4 @@ export interface LpDetail { id: string; slug: string; status: string; targetKeyw
 export interface LpUpsert { slug: string; targetKeyword: string; metaTitle: string; metaDescription: string; noIndex: boolean; content: LpContent; }
 export interface LpKeyword { id: string; keyword: string; brief: string | null; priority: number; status: string; generatedPageId: string | null; lastError: string | null; createdAt: string; }
 export interface LpSettings { autoGenerateEnabled: boolean; autoPublishEnabled: boolean; qualityThreshold: number; generateHourLocalEt: number; lastGeneratedDate: string | null; ga4Configured: boolean; pexelsConfigured: boolean; anthropicConfigured: boolean; }
+export interface PexelsPhoto { id: number; photographer: string; alt: string; thumbUrl: string; fullUrl: string; }
