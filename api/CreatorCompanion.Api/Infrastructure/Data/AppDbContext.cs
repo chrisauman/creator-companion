@@ -38,6 +38,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<SocialPost> SocialPosts => Set<SocialPost>();
     public DbSet<SocialPostTarget> SocialPostTargets => Set<SocialPostTarget>();
     public DbSet<SocialCardAsset> SocialCardAssets => Set<SocialCardAsset>();
+    public DbSet<LandingPage> LandingPages => Set<LandingPage>();
+    public DbSet<LandingPageKeyword> LandingPageKeywords => Set<LandingPageKeyword>();
+    public DbSet<LandingPageSettings> LandingPageSettings => Set<LandingPageSettings>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -72,5 +75,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.ApplyConfiguration(new SocialPostConfiguration());
         modelBuilder.ApplyConfiguration(new SocialPostTargetConfiguration());
         modelBuilder.ApplyConfiguration(new SocialCardAssetConfiguration());
+        modelBuilder.ApplyConfiguration(new LandingPageConfiguration());
+        modelBuilder.ApplyConfiguration(new LandingPageKeywordConfiguration());
     }
 }
