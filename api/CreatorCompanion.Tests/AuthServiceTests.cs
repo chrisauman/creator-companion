@@ -25,6 +25,7 @@ public class AuthServiceTests
         public Task<Guid?> SendDailySparkReminderAsync(string toEmail, string takeaway, string? fullContent) => Task.FromResult<Guid?>(null);
         public Task SendSocialDailySummaryAsync(string toEmail, DateOnly date, IReadOnlyList<SocialSummaryLine> lines) => Task.CompletedTask;
         public Task SendSocialFailureAlertAsync(string toEmail, string platform, string context, string error) => Task.CompletedTask;
+        public Task SendLandingPageReviewAsync(string toEmail, string title, string slug, string status, int score, string pageUrl, string adminUrl) => Task.CompletedTask;
     }
 
     private sealed class NullAuditService : IAuditService

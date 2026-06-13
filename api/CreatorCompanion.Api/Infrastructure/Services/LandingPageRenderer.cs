@@ -274,6 +274,18 @@ public partial class LandingPageRenderer(IConfiguration config) : ILandingPageRe
         {
             new Dictionary<string, object>
             {
+                ["@type"] = "WebPage",
+                ["@id"] = url + "#webpage",
+                ["url"] = url,
+                ["name"] = page.MetaTitle,
+                ["description"] = page.MetaDescription,
+                ["inLanguage"] = "en-US",
+                ["isPartOf"] = new Dictionary<string, object> { ["@id"] = _base + "/#website" },
+                ["datePublished"] = (page.PublishedAt ?? page.CreatedAt).ToString("yyyy-MM-dd"),
+                ["dateModified"] = page.UpdatedAt.ToString("yyyy-MM-dd"),
+            },
+            new Dictionary<string, object>
+            {
                 ["@type"] = "BreadcrumbList",
                 ["itemListElement"] = new object[]
                 {
