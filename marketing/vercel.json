@@ -37,6 +37,10 @@
       "destination": "https://creator-companion-api-production.up.railway.app/v1/lp/sitemap.xml"
     },
     {
+      "source": "/resources",
+      "destination": "https://creator-companion-api-production.up.railway.app/v1/lp/hub"
+    },
+    {
       "source": "/:slug",
       "destination": "https://creator-companion-api-production.up.railway.app/v1/lp/:slug"
     }

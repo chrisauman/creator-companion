@@ -19,4 +19,10 @@ public interface ILandingPageRenderer
     /// pages used to build the internal-linking "Related" block.
     /// </summary>
     string Render(LandingPage page, IReadOnlyList<LandingPage> related);
+
+    /// <summary>
+    /// Renders the /resources hub — an on-brand index linking to every
+    /// published page (crawl discovery + internal-linking surface).
+    /// </summary>
+    string RenderHub(IReadOnlyList<LandingPage> pages);
 }

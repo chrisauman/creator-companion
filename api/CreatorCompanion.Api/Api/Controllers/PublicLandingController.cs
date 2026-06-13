@@ -1,3 +1,5 @@
+using System.Net;
+using System.Text;
 using CreatorCompanion.Api.Application.Interfaces;
 using CreatorCompanion.Api.Domain.Enums;
 using CreatorCompanion.Api.Infrastructure.Data;
@@ -24,16 +26,68 @@ namespace CreatorCompanion.Api.Api.Controllers;
 [ApiController]
 [AllowAnonymous]
 [Route("v1/lp")]
-public class PublicLandingController(AppDbContext db, ILandingPageRenderer renderer) : ControllerBase
+public class PublicLandingController(AppDbContext db, ILandingPageRenderer renderer, IConfiguration config) : ControllerBase
 {
+    private readonly string _base = (config["Marketing:BaseUrl"] ?? "https://www.creatorcompanionapp.com").TrimEnd('/');
+
+    private const string CacheHeader = "public, max-age=60, s-maxage=300, stale-while-revalidate=86400";
+
     // Names that must always resolve to a static file / dedicated route, never
     // a landing page — so we never shadow the real marketing site.
     private static readonly HashSet<string> Reserved = new(StringComparer.OrdinalIgnoreCase)
     {
         "", "index", "privacy", "terms", "signup", "favicon", "favicon.ico",
         "robots.txt", "sitemap", "logo-icon", "logo-full", "og-image",
-        "manifest", "404", "500", "v1", "resources",
+        "manifest", "404", "500", "v1", "resources", "hub",
     };
+
+    /// <summary>
+    /// Dynamic sitemap: the key static pages + every published, indexable
+    /// landing page, with lastmod. Replaces the static sitemap.xml (the
+    /// marketing vercel.json rewrites /sitemap.xml here). This literal route
+    /// out-ranks the {slug} catch-all below.
+    /// </summary>
+    [HttpGet("sitemap.xml")]
+    public async Task<IActionResult> Sitemap(CancellationToken ct)
+    {
+        var pages = await db.LandingPages.AsNoTracking()
+            .Where(p => p.Status == LandingPageStatus.Published && p.DeletedAt == null && !p.NoIndex)
+            .Select(p => new { p.Slug, p.UpdatedAt })
+            .ToListAsync(ct);
+
+        var sb = new StringBuilder();
+        sb.Append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+        sb.Append("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">");
+        void Url(string loc, DateTime mod, string freq, string pri) => sb
+            .Append("<url><loc>").Append(WebUtility.HtmlEncode(loc)).Append("</loc>")
+            .Append("<lastmod>").Append(mod.ToString("yyyy-MM-dd")).Append("</lastmod>")
+            .Append("<changefreq>").Append(freq).Append("</changefreq>")
+            .Append("<priority>").Append(pri).Append("</priority></url>");
+
+        Url($"{_base}/", DateTime.UtcNow, "weekly", "1.0");
+        Url($"{_base}/resources", DateTime.UtcNow, "weekly", "0.6");
+        Url($"{_base}/signup.html", DateTime.UtcNow, "monthly", "0.7");
+        foreach (var p in pages) Url($"{_base}/{p.Slug}", p.UpdatedAt, "monthly", "0.8");
+        sb.Append("</urlset>");
+
+        Response.Headers.CacheControl = CacheHeader;
+        return Content(sb.ToString(), "application/xml; charset=utf-8");
+    }
+
+    /// <summary>
+    /// The /resources hub (rewritten here): an on-brand index of every
+    /// published page — crawl discovery + an internal-linking surface.
+    /// </summary>
+    [HttpGet("hub")]
+    public async Task<IActionResult> Hub(CancellationToken ct)
+    {
+        var pages = await db.LandingPages.AsNoTracking()
+            .Where(p => p.Status == LandingPageStatus.Published && p.DeletedAt == null && !p.NoIndex)
+            .OrderByDescending(p => p.PublishedAt)
+            .ToListAsync(ct);
+        Response.Headers.CacheControl = CacheHeader;
+        return Content(renderer.RenderHub(pages), "text/html; charset=utf-8");
+    }
 
     [HttpGet("{slug}")]
     public async Task<IActionResult> Get(string slug, CancellationToken ct)
@@ -64,7 +118,7 @@ public class PublicLandingController(AppDbContext db, ILandingPageRenderer rende
             // Static-fast via CDN, but editable: short browser cache, longer CDN
             // cache, and serve-stale-while-revalidating so edits propagate within
             // minutes without ever blocking a request.
-            Response.Headers.CacheControl = "public, max-age=60, s-maxage=300, stale-while-revalidate=86400";
+            Response.Headers.CacheControl = CacheHeader;
             return Content(html, "text/html; charset=utf-8");
         }
 

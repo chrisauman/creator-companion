@@ -71,6 +71,54 @@ public partial class LandingPageRenderer(IConfiguration config) : ILandingPageRe
         return sb.ToString();
     }
 
+    public string RenderHub(IReadOnlyList<LandingPage> pages)
+    {
+        var url = $"{_base}/resources";
+        var sb = new StringBuilder(8192);
+        sb.Append("<!DOCTYPE html><html lang=\"en\"><head>");
+        sb.Append("<meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">");
+        sb.Append("<title>Resources — Guides for a Daily Creative Practice | Creator Companion</title>");
+        sb.Append("<meta name=\"description\" content=\"Guides and ideas for building a daily creative practice — morning pages, streaks, journaling habits, and more.\">");
+        sb.Append("<link rel=\"icon\" type=\"image/x-icon\" href=\"favicon.ico\">");
+        sb.Append("<link rel=\"preconnect\" href=\"https://fonts.googleapis.com\"><link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>");
+        sb.Append("<link href=\"https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700;800;900&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,600;1,700&display=swap\" rel=\"stylesheet\">");
+        sb.Append("<link rel=\"stylesheet\" href=\"styles.css\">");
+        sb.Append($"<link rel=\"canonical\" href=\"{E(url)}\">");
+        AppendGa4(sb);
+        sb.Append("<style>").Append(Css).Append(HubCss).Append("</style>");
+        sb.Append("</head><body class=\"page-inner\">");
+        AppendNav(sb);
+
+        sb.Append("<section class=\"lp-section lp-section--cream\" style=\"padding-top:8rem\"><div class=\"lp-wrap lp-center\">");
+        sb.Append("<p class=\"lp-kicker\">Resources</p>");
+        sb.Append("<h1 class=\"lp-h2\" style=\"font-size:clamp(2rem,5vw,3rem)\">Guides for your daily creative practice</h1>");
+        sb.Append("<p class=\"lp-lead\">Ideas, methods, and gentle encouragement for showing up to your work — one day at a time.</p></div></section>");
+
+        sb.Append("<section class=\"lp-section lp-section--white\"><div class=\"lp-wrap\"><div class=\"lp-hub-grid\">");
+        foreach (var p in pages)
+        {
+            var title = string.IsNullOrWhiteSpace(p.MetaTitle) ? p.TargetKeyword : p.MetaTitle;
+            sb.Append("<a class=\"lp-hub-card\" href=\"/").Append(E(p.Slug)).Append("\"><h3>").Append(E(title))
+              .Append("</h3><p>").Append(E(p.MetaDescription)).Append("</p><span class=\"lp-hub-more\">Read →</span></a>");
+        }
+        if (pages.Count == 0) sb.Append("<p class=\"lp-lead\">New guides are on the way.</p>");
+        sb.Append("</div></div></section>");
+
+        AppendFooter(sb);
+        AppendScripts(sb);   // hamburger; the hero-video + reveal IIFEs no-op when absent
+        sb.Append("</body></html>");
+        return sb.ToString();
+    }
+
+    private const string HubCss = """
+.lp-hub-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.25rem;}
+.lp-hub-card{display:block;background:#fff;border:1px solid rgba(190,170,130,.3);border-radius:18px;padding:1.6rem 1.75rem;text-decoration:none;transition:border-color .15s,transform .15s,box-shadow .15s;}
+.lp-hub-card h3{font-size:1.15rem;font-weight:800;color:#0c0e13;margin:0 0 .5rem;}
+.lp-hub-card p{font-size:.9875rem;line-height:1.6;color:#4a4f5e;margin:0 0 .75rem;}
+.lp-hub-more{font-size:.875rem;font-weight:700;color:#0a93ab;}
+@media (hover:hover) and (pointer:fine){.lp-hub-card:hover{border-color:#12C4E3;transform:translateY(-2px);box-shadow:0 18px 40px -24px rgba(12,14,19,.3);}}
+""";
+
     // ── sections ─────────────────────────────────────────────────────
     private void AppendHero(StringBuilder sb, LpHero? h)
     {
