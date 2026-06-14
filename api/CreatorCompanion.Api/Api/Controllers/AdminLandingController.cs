@@ -96,6 +96,16 @@ public class AdminLandingController(
     public async Task<IActionResult> CreateKeyword([FromBody] LpKeywordUpsert req, CancellationToken ct)
         => Ok(await svc.CreateKeywordAsync(req, ct));
 
+    /// <summary>Bulk-import keywords from an uploaded CSV (columns: keyword, brief).</summary>
+    [HttpPost("keywords/import")]
+    public async Task<IActionResult> ImportKeywords(IFormFile? file, CancellationToken ct)
+    {
+        if (file is null || file.Length == 0) return BadRequest(new { error = "No file uploaded." });
+        using var reader = new StreamReader(file.OpenReadStream());
+        var csv = await reader.ReadToEndAsync(ct);
+        return Ok(new { imported = await svc.ImportKeywordsAsync(csv, ct) });
+    }
+
     [HttpPut("keywords/{id:guid}")]
     public async Task<IActionResult> UpdateKeyword(Guid id, [FromBody] LpKeywordUpsert req, CancellationToken ct)
         => await svc.UpdateKeywordAsync(id, req, ct) is { } k ? Ok(k) : NotFound();

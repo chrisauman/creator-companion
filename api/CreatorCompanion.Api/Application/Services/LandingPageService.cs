@@ -22,6 +22,8 @@ public interface ILandingPageService
 
     Task<IReadOnlyList<LpKeywordDto>> ListKeywordsAsync(CancellationToken ct);
     Task<LpKeywordDto> CreateKeywordAsync(LpKeywordUpsert req, CancellationToken ct);
+    /// <summary>Bulk-add keywords from CSV text (columns: keyword, brief). Skips dupes + an optional header. Returns count added.</summary>
+    Task<int> ImportKeywordsAsync(string csv, CancellationToken ct);
     Task<LpKeywordDto?> UpdateKeywordAsync(Guid id, LpKeywordUpsert req, CancellationToken ct);
     Task<bool> DeleteKeywordAsync(Guid id, CancellationToken ct);
 
@@ -188,6 +190,54 @@ public class LandingPageService(AppDbContext db, ILandingPageRenderer renderer, 
         db.LandingPageKeywords.Add(k);
         await db.SaveChangesAsync(ct);
         return new LpKeywordDto(k.Id, k.Keyword, k.Brief, k.Priority, k.Status.ToString(), null, null, k.CreatedAt);
+    }
+
+    public async Task<int> ImportKeywordsAsync(string csv, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(csv)) return 0;
+        var existing = new HashSet<string>(
+            await db.LandingPageKeywords.Select(k => k.Keyword).ToListAsync(ct), StringComparer.OrdinalIgnoreCase);
+
+        var rows = csv.Replace("\r\n", "\n").Replace("\r", "\n").Split('\n')
+            .Where(l => !string.IsNullOrWhiteSpace(l)).Select(ParseCsvLine).ToList();
+        // Skip a header row (first cell == "keyword").
+        if (rows.Count > 0 && rows[0].Count > 0 && rows[0][0].Trim().Equals("keyword", StringComparison.OrdinalIgnoreCase))
+            rows.RemoveAt(0);
+
+        var added = 0;
+        foreach (var fields in rows)
+        {
+            var keyword = (fields.Count > 0 ? fields[0] : "").Trim();
+            if (string.IsNullOrWhiteSpace(keyword) || existing.Contains(keyword)) continue;
+            var brief = fields.Count > 1 ? fields[1].Trim() : null;
+            db.LandingPageKeywords.Add(new LandingPageKeyword { Keyword = keyword, Brief = string.IsNullOrWhiteSpace(brief) ? null : brief });
+            existing.Add(keyword);
+            added++;
+        }
+        if (added > 0) await db.SaveChangesAsync(ct);
+        return added;
+    }
+
+    // RFC-4180-ish: handles quoted fields containing commas and doubled quotes.
+    private static List<string> ParseCsvLine(string line)
+    {
+        var fields = new List<string>();
+        var sb = new System.Text.StringBuilder();
+        var inQuotes = false;
+        for (var i = 0; i < line.Length; i++)
+        {
+            var c = line[i];
+            if (inQuotes)
+            {
+                if (c == '"') { if (i + 1 < line.Length && line[i + 1] == '"') { sb.Append('"'); i++; } else inQuotes = false; }
+                else sb.Append(c);
+            }
+            else if (c == '"') inQuotes = true;
+            else if (c == ',') { fields.Add(sb.ToString()); sb.Clear(); }
+            else sb.Append(c);
+        }
+        fields.Add(sb.ToString());
+        return fields;
     }
 
     public async Task<LpKeywordDto?> UpdateKeywordAsync(Guid id, LpKeywordUpsert req, CancellationToken ct)

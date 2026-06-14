@@ -646,6 +646,7 @@ export class ApiService {
   adminLpPreview(id: string): Observable<string> { return this.http.get(`${this.base}/admin/landing/pages/${id}/preview`, { responseType: 'text' }); }
   adminLpKeywords(): Observable<LpKeyword[]> { return this.http.get<LpKeyword[]>(`${this.base}/admin/landing/keywords`); }
   adminLpCreateKeyword(p: { keyword: string; brief?: string | null; priority: number; status?: string | null }): Observable<LpKeyword> { return this.http.post<LpKeyword>(`${this.base}/admin/landing/keywords`, p); }
+  adminLpImportKeywords(file: File): Observable<{ imported: number }> { const fd = new FormData(); fd.append('file', file, file.name); return this.http.post<{ imported: number }>(`${this.base}/admin/landing/keywords/import`, fd); }
   adminLpUpdateKeyword(id: string, p: { keyword: string; brief?: string | null; priority: number; status?: string | null }): Observable<LpKeyword> { return this.http.put<LpKeyword>(`${this.base}/admin/landing/keywords/${id}`, p); }
   adminLpDeleteKeyword(id: string): Observable<void> { return this.http.delete<void>(`${this.base}/admin/landing/keywords/${id}`); }
   adminLpSettings(): Observable<LpSettings> { return this.http.get<LpSettings>(`${this.base}/admin/landing/settings`); }

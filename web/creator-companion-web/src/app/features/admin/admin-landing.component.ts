@@ -199,7 +199,14 @@ import { ApiService, LpListItem, LpDetail, LpKeyword, LpSettings, LpUpsert, LpCo
               <input class="lpa-input lpa-input--sm" type="number" placeholder="Priority" [(ngModel)]="kwNew.priority">
               <button class="lpa-btn" [disabled]="!kwNew.keyword.trim()" (click)="addKeyword()">Add</button></div>
             <textarea class="lpa-input" rows="2" placeholder="Optional brief — angle / audience / must-haves" [(ngModel)]="kwNew.brief"></textarea>
-            <div class="lpa-row" style="margin-top:.6rem"><button class="lpa-link" [disabled]="genBusy()" (click)="generateNow()">{{ genBusy() ? 'Generating…' : 'Generate next page now (test)' }}</button></div>
+            <p class="lpa-hint">Priority orders the queue — higher generates first (ties: oldest added first). Leave at 0 for first-come order.</p>
+            <div class="lpa-row" style="margin-top:.6rem; align-items:center; flex-wrap:wrap">
+              <label class="lpa-link" style="cursor:pointer">⬆ Import CSV<input type="file" accept=".csv,text/csv" hidden (change)="importKeywords($event)"></label>
+              <span class="lpa-hint" style="margin:0">columns: <code>keyword, brief</code></span>
+              @if (importMsg()) { <span class="lpa-ok">{{ importMsg() }}</span> }
+              <span class="lpa-spacer"></span>
+              <button class="lpa-link" [disabled]="genBusy()" (click)="generateNow()">{{ genBusy() ? 'Generating…' : 'Generate next page now (test)' }}</button>
+            </div>
           </div>
           @if (!keywords().length) { <p class="lpa-muted">No keywords queued. Add some above; the 7am worker generates one page per day.</p> }
           @else {
@@ -276,6 +283,7 @@ import { ApiService, LpListItem, LpDetail, LpKeyword, LpSettings, LpUpsert, LpCo
     .lpa-title { font-weight: 600; }
     .lpa-actions { white-space: nowrap; text-align: right; }
     .lpa-muted { color: #9ca3af; }
+    .lpa-hint { font-size: .8rem; color: #9ca3af; margin: .5rem 0 0; }
     .lpa-pill { font-size: .7rem; font-weight: 700; padding: .15rem .5rem; border-radius: 999px; background: #eef0f2; color: #4b5563; }
     .lpa-pill--pub { background: #d1fae5; color: #047857; } .lpa-pill--draft { background: #fef3c7; color: #92400e; } .lpa-pill--mute { background: #f3f4f6; color: #9ca3af; margin-left: .4rem; }
     .lpa-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 1.25rem; margin-bottom: 1rem; }
@@ -331,8 +339,20 @@ export class AdminLandingComponent implements OnInit {
   private imgTargetKey = '';
 
   genBusy = signal(false);
+  importMsg = signal('');
 
   ngOnInit(): void { this.loadPages(); }
+
+  importKeywords(ev: Event): void {
+    const input = ev.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    this.api.adminLpImportKeywords(file).subscribe({
+      next: r => { this.importMsg.set(`Imported ${r.imported}.`); this.loadKeywords(); setTimeout(() => this.importMsg.set(''), 4000); },
+      error: () => this.importMsg.set('Import failed.'),
+    });
+    input.value = '';
+  }
 
   openImg(target: string): void { this.imgTargetKey = target; this.imgResults.set([]); this.imgQuery = ''; this.imgOpen.set(true); }
   searchImg(): void {
