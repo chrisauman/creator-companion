@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text;
 using CreatorCompanion.Api.Application.Interfaces;
+using CreatorCompanion.Api.Application.Services;
 using CreatorCompanion.Api.Domain.Enums;
 using CreatorCompanion.Api.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
@@ -90,7 +91,7 @@ public class PublicLandingController(AppDbContext db, ILandingPageRenderer rende
     }
 
     [HttpGet("{slug}")]
-    public async Task<IActionResult> Get(string slug, CancellationToken ct)
+    public async Task<IActionResult> Get(string slug, [FromQuery(Name = "lp_preview")] string? preview, CancellationToken ct)
     {
         slug = (slug ?? string.Empty).Trim().ToLowerInvariant();
 
@@ -104,8 +105,14 @@ public class PublicLandingController(AppDbContext db, ILandingPageRenderer rende
         {
             if (page.DeletedAt is not null)
                 return StatusCode(StatusCodes.Status410Gone);     // removed → tell crawlers it's gone
-            if (page.Status != LandingPageStatus.Published)
-                return NotFound();                                  // drafts aren't public
+
+            // Drafts are private UNLESS a valid signed preview token is presented
+            // (the admin "Preview" opens this on the marketing domain so all
+            // assets resolve, unlike a cross-origin blob on the app domain).
+            var isPreview = !string.IsNullOrEmpty(preview) && string.Equals(
+                preview, LandingPageService.ComputePreviewToken(page.Id, config["Entry:EncryptionKey"]), StringComparison.Ordinal);
+            if (page.Status != LandingPageStatus.Published && !isPreview)
+                return NotFound();
 
             var related = await db.LandingPages.AsNoTracking()
                 .Where(p => p.Id != page.Id && p.Status == LandingPageStatus.Published
@@ -115,10 +122,19 @@ public class PublicLandingController(AppDbContext db, ILandingPageRenderer rende
                 .ToListAsync(ct);
 
             var html = renderer.Render(page, related);
-            // Static-fast via CDN, but editable: short browser cache, longer CDN
-            // cache, and serve-stale-while-revalidating so edits propagate within
-            // minutes without ever blocking a request.
-            Response.Headers.CacheControl = CacheHeader;
+            if (page.Status != LandingPageStatus.Published)
+            {
+                // Draft preview: never index, never cache.
+                if (!html.Contains("name=\"robots\"", StringComparison.OrdinalIgnoreCase))
+                    html = html.Replace("<head>", "<head><meta name=\"robots\" content=\"noindex, nofollow\">");
+                Response.Headers.CacheControl = "no-store";
+            }
+            else
+            {
+                // Static-fast via CDN, but editable: short browser cache, longer
+                // CDN cache, serve-stale-while-revalidating so edits propagate.
+                Response.Headers.CacheControl = CacheHeader;
+            }
             return Content(html, "text/html; charset=utf-8");
         }
 

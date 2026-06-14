@@ -18,7 +18,8 @@ public interface ILandingPageService
     Task<bool> SetStatusAsync(Guid id, LandingPageStatus status, CancellationToken ct);
     Task<bool> SoftDeleteAsync(Guid id, CancellationToken ct);
     Task<LpDetail?> RevertAsync(Guid id, CancellationToken ct);
-    Task<string?> RenderPreviewAsync(Guid id, CancellationToken ct);
+    /// <summary>Marketing-domain preview URL with a signed token (renders drafts on the real domain, all assets resolving).</summary>
+    Task<string?> PreviewUrlAsync(Guid id, CancellationToken ct);
 
     Task<IReadOnlyList<LpKeywordDto>> ListKeywordsAsync(CancellationToken ct);
     Task<LpKeywordDto> CreateKeywordAsync(LpKeywordUpsert req, CancellationToken ct);
@@ -162,19 +163,25 @@ public class LandingPageService(AppDbContext db, ILandingPageRenderer renderer, 
         return ToDetail(page);
     }
 
-    public async Task<string?> RenderPreviewAsync(Guid id, CancellationToken ct)
+    public async Task<string?> PreviewUrlAsync(Guid id, CancellationToken ct)
     {
         var page = await db.LandingPages.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id && x.DeletedAt == null, ct);
         if (page is null) return null;
-        var related = await db.LandingPages.AsNoTracking()
-            .Where(p => p.Id != id && p.Status == LandingPageStatus.Published && p.DeletedAt == null && !p.NoIndex)
-            .OrderByDescending(p => p.PublishedAt).Take(6).ToListAsync(ct);
-        var html = renderer.Render(page, related);
-        // Preview is opened on the APP domain (not marketing), so inject a <base>
-        // pointing at the marketing site — relative styles.css/images/video then
-        // resolve. (In-page #anchors are slightly off in preview only; fine.)
-        var baseUrl = (config["Marketing:BaseUrl"] ?? "https://www.creatorcompanionapp.com").TrimEnd('/');
-        return html.Replace("<head>", $"<head><base href=\"{baseUrl}/\">");
+        var b = (config["Marketing:BaseUrl"] ?? "https://www.creatorcompanionapp.com").TrimEnd('/');
+        return $"{b}/{page.Slug}?lp_preview={ComputePreviewToken(page.Id, config["Entry:EncryptionKey"])}";
+    }
+
+    /// <summary>
+    /// A stable, secret-derived token that authorizes previewing a (draft) page
+    /// on the public marketing domain. HMAC of the page id under the app's
+    /// existing encryption key — so no new secret/env var is needed, and the
+    /// token is unguessable without the server key.
+    /// </summary>
+    public static string ComputePreviewToken(Guid id, string? secret)
+    {
+        using var h = new System.Security.Cryptography.HMACSHA256(System.Text.Encoding.UTF8.GetBytes(secret ?? "lp-preview-dev-secret"));
+        var hash = h.ComputeHash(System.Text.Encoding.UTF8.GetBytes("lp-preview:" + id));
+        return Convert.ToBase64String(hash).Replace("+", "-").Replace("/", "_").Replace("=", "")[..20];
     }
 
     // ── Keyword queue ────────────────────────────────────────────────

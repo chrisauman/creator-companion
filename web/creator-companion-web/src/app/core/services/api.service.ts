@@ -643,7 +643,7 @@ export class ApiService {
   adminLpSetStatus(id: string, status: string): Observable<void> { return this.http.post<void>(`${this.base}/admin/landing/pages/${id}/status`, { status }); }
   adminLpDelete(id: string): Observable<void> { return this.http.delete<void>(`${this.base}/admin/landing/pages/${id}`); }
   adminLpRevert(id: string): Observable<LpDetail> { return this.http.post<LpDetail>(`${this.base}/admin/landing/pages/${id}/revert`, {}); }
-  adminLpPreview(id: string): Observable<string> { return this.http.get(`${this.base}/admin/landing/pages/${id}/preview`, { responseType: 'text' }); }
+  adminLpPreview(id: string): Observable<{ url: string }> { return this.http.get<{ url: string }>(`${this.base}/admin/landing/pages/${id}/preview`); }
   adminLpKeywords(): Observable<LpKeyword[]> { return this.http.get<LpKeyword[]>(`${this.base}/admin/landing/keywords`); }
   adminLpCreateKeyword(p: { keyword: string; brief?: string | null; priority: number; status?: string | null }): Observable<LpKeyword> { return this.http.post<LpKeyword>(`${this.base}/admin/landing/keywords`, p); }
   adminLpImportKeywords(file: File): Observable<{ imported: number }> { const fd = new FormData(); fd.append('file', file, file.name); return this.http.post<{ imported: number }>(`${this.base}/admin/landing/keywords/import`, fd); }

@@ -83,10 +83,10 @@ public class AdminLandingController(
     public async Task<IActionResult> Revert(Guid id, CancellationToken ct)
         => await svc.RevertAsync(id, ct) is { } d ? Ok(d) : NotFound();
 
-    /// <summary>Renders the page exactly as it will appear (for the editor's preview pane).</summary>
+    /// <summary>Returns a marketing-domain preview URL (signed token) — renders the page, drafts included, where all assets resolve.</summary>
     [HttpGet("pages/{id:guid}/preview")]
     public async Task<IActionResult> Preview(Guid id, CancellationToken ct)
-        => await svc.RenderPreviewAsync(id, ct) is { } html ? Content(html, "text/html; charset=utf-8") : NotFound();
+        => await svc.PreviewUrlAsync(id, ct) is { } url ? Ok(new { url }) : NotFound();
 
     // ── Keyword queue ─────────────────────────────────────────────────
     [HttpGet("keywords")]

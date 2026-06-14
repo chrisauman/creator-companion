@@ -428,13 +428,9 @@ export class AdminLandingComponent implements OnInit {
   del(p: LpListItem): void { if (confirm(`Delete "${p.metaTitle || p.slug}"? It will 410 for crawlers.`)) this.api.adminLpDelete(p.id).subscribe(() => this.loadPages()); }
   revert(id: string): void { if (confirm('Discard your edits and restore the AI original?')) this.api.adminLpRevert(id).subscribe(d => { d.content = this.hydrate(d.content || {}); this.editing.set(d); this.msg.set('Reverted.'); }); }
 
-  /** Open the live-rendered HTML in a new tab via a Blob URL (no document.write). */
+  /** Open the page on the marketing domain (signed preview token) so all assets resolve. */
   preview(id: string): void {
-    this.api.adminLpPreview(id).subscribe(html => {
-      const url = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
-      window.open(url, '_blank');
-      setTimeout(() => URL.revokeObjectURL(url), 60_000);
-    });
+    this.api.adminLpPreview(id).subscribe(r => window.open(r.url, '_blank'));
   }
 
   // Keywords
