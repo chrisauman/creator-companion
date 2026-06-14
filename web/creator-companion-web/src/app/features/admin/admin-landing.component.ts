@@ -44,15 +44,13 @@ import { ApiService, LpListItem, LpDetail, LpKeyword, LpSettings, LpUpsert, LpCo
           @else if (!pages().length) { <p class="lpa-muted">No pages yet. Add keywords and let the daily generator build them — or create one manually.</p> }
           @else {
             <table class="lpa-table">
-              <thead><tr><th>Title</th><th>Slug</th><th>Status</th><th>Source</th><th>Updated</th><th></th></tr></thead>
+              <thead><tr><th>Keyword/Topic</th><th>Title</th><th>Status</th><th></th></tr></thead>
               <tbody>
                 @for (p of pages(); track p.id) {
                   <tr>
-                    <td class="lpa-title">{{ p.metaTitle || p.targetKeyword }}@if (p.noIndex) { <span class="lpa-pill lpa-pill--mute">noindex</span> }</td>
-                    <td><code>/{{ p.slug }}</code></td>
+                    <td class="lpa-kw">{{ p.targetKeyword || '—' }}</td>
+                    <td class="lpa-title">{{ p.metaTitle || '—' }}@if (p.noIndex) { <span class="lpa-pill lpa-pill--mute">noindex</span> }</td>
                     <td><span class="lpa-pill" [class.lpa-pill--pub]="p.status==='Published'" [class.lpa-pill--draft]="p.status==='Draft'">{{ p.status }}</span></td>
-                    <td class="lpa-muted">{{ p.generatedByAi ? 'AI' : 'Manual' }}@if (p.qualityScore != null) { · {{ p.qualityScore }} }</td>
-                    <td class="lpa-muted">{{ p.updatedAt | date:'MMM d, h:mm a' }}</td>
                     <td class="lpa-actions">
                       <button class="lpa-link" (click)="edit(p)">Edit</button>
                       <button class="lpa-link" (click)="preview(p.id)">Preview</button>
@@ -303,6 +301,7 @@ import { ApiService, LpListItem, LpDetail, LpKeyword, LpSettings, LpUpsert, LpCo
     .lpa-table th { text-align: left; color: #6b7280; font-size: .75rem; text-transform: uppercase; letter-spacing: .05em; padding: .4rem .5rem; border-bottom: 1px solid #e5e7eb; }
     .lpa-table td { padding: .55rem .5rem; border-bottom: 1px solid #f1f1f1; vertical-align: middle; }
     .lpa-title { font-weight: 600; }
+    .lpa-kw { color: #374151; }
     .lpa-actions { white-space: nowrap; text-align: right; }
     .lpa-muted { color: #9ca3af; }
     .lpa-hint { font-size: .8rem; color: #9ca3af; margin: .5rem 0 0; }
