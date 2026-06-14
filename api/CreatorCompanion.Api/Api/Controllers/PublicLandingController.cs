@@ -91,7 +91,8 @@ public class PublicLandingController(AppDbContext db, ILandingPageRenderer rende
     }
 
     [HttpGet("{slug}")]
-    public async Task<IActionResult> Get(string slug, [FromQuery(Name = "lp_preview")] string? preview, CancellationToken ct)
+    public async Task<IActionResult> Get(string slug, [FromQuery(Name = "lp_preview")] string? preview,
+        [FromQuery(Name = "edit")] string? edit, CancellationToken ct)
     {
         slug = (slug ?? string.Empty).Trim().ToLowerInvariant();
 
@@ -122,9 +123,11 @@ public class PublicLandingController(AppDbContext db, ILandingPageRenderer rende
                 .ToListAsync(ct);
 
             var html = renderer.Render(page, related);
-            if (page.Status != LandingPageStatus.Published)
+            var editMode = isPreview && string.Equals(edit, "1", StringComparison.Ordinal);
+
+            if (page.Status != LandingPageStatus.Published || editMode)
             {
-                // Draft preview: never index, never cache.
+                // Draft / edit preview: never index, never cache.
                 if (!html.Contains("name=\"robots\"", StringComparison.OrdinalIgnoreCase))
                     html = html.Replace("<head>", "<head><meta name=\"robots\" content=\"noindex, nofollow\">");
                 Response.Headers.CacheControl = "no-store";
@@ -135,6 +138,10 @@ public class PublicLandingController(AppDbContext db, ILandingPageRenderer rende
                 // CDN cache, serve-stale-while-revalidating so edits propagate.
                 Response.Headers.CacheControl = CacheHeader;
             }
+
+            if (editMode)
+                html = html.Replace("</body>", EditBridge() + "</body>");
+
             return Content(html, "text/html; charset=utf-8");
         }
 
@@ -146,5 +153,29 @@ public class PublicLandingController(AppDbContext db, ILandingPageRenderer rende
             return RedirectPermanent("/" + moved.Slug);
 
         return NotFound();
+    }
+
+    /// <summary>
+    /// Visual-editor bridge injected only in authenticated edit-preview. Makes
+    /// every [data-lp] text element contenteditable, posts edits + section
+    /// clicks to the admin (cross-origin postMessage, locked to the app origin),
+    /// and accepts lp-set / lp-reload back. Source of truth stays the admin form.
+    /// </summary>
+    private string EditBridge()
+    {
+        var appOrigin = (config["App:WebUrl"] ?? "https://app.creatorcompanionapp.com").TrimEnd('/');
+        const string bridge = """"
+<style>[data-lp]{outline:1px dashed rgba(18,196,227,.55);outline-offset:3px;border-radius:2px;cursor:text}[data-lp]:hover{outline:2px solid #12C4E3}[data-lp]:focus{outline:2px solid #12C4E3;background:rgba(18,196,227,.08)}</style>
+<script>(function(){var APP="__APP__";function send(m){try{parent.postMessage(m,APP);}catch(e){}}
+document.querySelectorAll('details').forEach(function(d){d.open=true;});
+document.querySelectorAll('a,summary').forEach(function(el){el.addEventListener('click',function(e){e.preventDefault();});});
+document.querySelectorAll('[data-lp]').forEach(function(el){el.setAttribute('contenteditable','true');el.setAttribute('spellcheck','false');
+el.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();el.blur();}});
+el.addEventListener('blur',function(){send({type:'lp-edit',path:el.getAttribute('data-lp'),value:(el.innerText||'').replace(/\s+/g,' ').trim()});});});
+document.querySelectorAll('[data-lp-section]').forEach(function(s){s.addEventListener('click',function(e){if(e.target.closest('[data-lp]'))return;send({type:'lp-focus',section:s.getAttribute('data-lp-section')});});});
+window.addEventListener('message',function(e){if(e.origin!==APP)return;var d=e.data||{};if(d.type==='lp-set'){var el=document.querySelector('[data-lp="'+d.path+'"]');if(el)el.innerText=d.value;}else if(d.type==='lp-reload'){location.reload();}});
+send({type:'lp-ready'});})();</script>
+"""";
+        return bridge.Replace("__APP__", appOrigin);
     }
 }

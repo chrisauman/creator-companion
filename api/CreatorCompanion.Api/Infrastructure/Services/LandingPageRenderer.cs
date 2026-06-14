@@ -127,10 +127,10 @@ public partial class LandingPageRenderer(IConfiguration config) : ILandingPageRe
         var poster = string.IsNullOrWhiteSpace(h.PosterUrl) ? "video/hero-poster.jpg" : h.PosterUrl!;
         sb.Append("<header class=\"lp-hero\" style=\"background:#0a0d14 url('").Append(E(poster)).Append("') center/cover no-repeat\">");
         sb.Append("<video class=\"lp-hero__video\" data-src=\"").Append(E(video)).Append("\" muted loop playsinline poster=\"").Append(E(poster)).Append("\" aria-hidden=\"true\"></video>");
-        sb.Append("<div class=\"lp-hero__scrim\"></div><div class=\"lp-hero__inner\">");
-        if (!string.IsNullOrWhiteSpace(h.Kicker)) sb.Append("<p class=\"lp-kicker\">").Append(Inline(h.Kicker)).Append("</p>");
-        sb.Append("<h1>").Append(Inline(h.H1)).Append("</h1>");
-        if (!string.IsNullOrWhiteSpace(h.Subhead)) sb.Append("<p class=\"lp-sub\">").Append(Inline(h.Subhead)).Append("</p>");
+        sb.Append("<div class=\"lp-hero__scrim\"></div><div class=\"lp-hero__inner\"").Append(Ds("hero")).Append(">");
+        if (!string.IsNullOrWhiteSpace(h.Kicker)) sb.Append("<p class=\"lp-kicker\"").Append(D("hero.kicker")).Append(">").Append(Inline(h.Kicker)).Append("</p>");
+        sb.Append("<h1").Append(D("hero.h1")).Append(">").Append(Inline(h.H1)).Append("</h1>");
+        if (!string.IsNullOrWhiteSpace(h.Subhead)) sb.Append("<p class=\"lp-sub\"").Append(D("hero.subhead")).Append(">").Append(Inline(h.Subhead)).Append("</p>");
         sb.Append("<div class=\"lp-cta-row\"><a href=\"signup.html\" class=\"lp-btn lp-btn--primary\">").Append(E(h.CtaLabel ?? "Start your free trial")).Append("</a>");
         sb.Append("<a href=\"#what\" class=\"lp-btn lp-btn--ghost\">Learn more</a></div></div></header>");
     }
@@ -138,9 +138,9 @@ public partial class LandingPageRenderer(IConfiguration config) : ILandingPageRe
     private void AppendHook(StringBuilder sb, LpHook? h)
     {
         if (h is null || (string.IsNullOrWhiteSpace(h.Heading) && string.IsNullOrWhiteSpace(h.Lead))) return;
-        sb.Append("<section class=\"lp-section lp-section--cream\" id=\"what\"><div class=\"lp-wrap lp-center reveal\">");
-        if (!string.IsNullOrWhiteSpace(h.Heading)) sb.Append("<h2 class=\"lp-h2\">").Append(Inline(h.Heading)).Append("</h2>");
-        if (!string.IsNullOrWhiteSpace(h.Lead)) sb.Append("<p class=\"lp-lead\">").Append(Inline(h.Lead)).Append("</p>");
+        sb.Append("<section class=\"lp-section lp-section--cream\" id=\"what\"").Append(Ds("hook")).Append("><div class=\"lp-wrap lp-center reveal\">");
+        if (!string.IsNullOrWhiteSpace(h.Heading)) sb.Append("<h2 class=\"lp-h2\"").Append(D("hook.heading")).Append(">").Append(Inline(h.Heading)).Append("</h2>");
+        if (!string.IsNullOrWhiteSpace(h.Lead)) sb.Append("<p class=\"lp-lead\"").Append(D("hook.lead")).Append(">").Append(Inline(h.Lead)).Append("</p>");
         if (h.Chips.Count > 0)
         {
             sb.Append("<div class=\"lp-chips\">");
@@ -154,10 +154,10 @@ public partial class LandingPageRenderer(IConfiguration config) : ILandingPageRe
     private void AppendExplainer(StringBuilder sb, LpExplainer? e)
     {
         if (e is null || string.IsNullOrWhiteSpace(e.H2)) return;
-        sb.Append("<section class=\"lp-section lp-section--white\"><div class=\"lp-wrap\"><div class=\"lp-row reveal\"><div class=\"lp-row__text\">");
-        if (!string.IsNullOrWhiteSpace(e.Kicker)) sb.Append("<p class=\"lp-kicker\">").Append(Inline(e.Kicker)).Append("</p>");
-        sb.Append("<h2 class=\"lp-h2\">").Append(Inline(e.H2)).Append("</h2>");
-        foreach (var p in e.Paragraphs) sb.Append("<p class=\"lp-lead\">").Append(Inline(p)).Append("</p>");
+        sb.Append("<section class=\"lp-section lp-section--white\"").Append(Ds("explainer")).Append("><div class=\"lp-wrap\"><div class=\"lp-row reveal\"><div class=\"lp-row__text\">");
+        if (!string.IsNullOrWhiteSpace(e.Kicker)) sb.Append("<p class=\"lp-kicker\"").Append(D("explainer.kicker")).Append(">").Append(Inline(e.Kicker)).Append("</p>");
+        sb.Append("<h2 class=\"lp-h2\"").Append(D("explainer.h2")).Append(">").Append(Inline(e.H2)).Append("</h2>");
+        for (var i = 0; i < e.Paragraphs.Count; i++) sb.Append("<p class=\"lp-lead\"").Append(D($"explainer.paragraphs.{i}")).Append(">").Append(Inline(e.Paragraphs[i])).Append("</p>");
         sb.Append("</div>");
         if (!string.IsNullOrWhiteSpace(e.ImageUrl))
             sb.Append("<div class=\"lp-row__media\"><img src=\"").Append(E(e.ImageUrl)).Append("\" alt=\"").Append(E(e.ImageAlt)).Append("\" loading=\"lazy\"></div>");
@@ -167,11 +167,12 @@ public partial class LandingPageRenderer(IConfiguration config) : ILandingPageRe
     private void AppendCards(StringBuilder sb, List<LpCard> cards)
     {
         if (cards.Count == 0) return;
-        sb.Append("<section class=\"lp-section lp-section--cream\"><div class=\"lp-wrap\"><div class=\"lp-cards reveal\">");
-        foreach (var card in cards)
+        sb.Append("<section class=\"lp-section lp-section--cream\"").Append(Ds("benefitCards")).Append("><div class=\"lp-wrap\"><div class=\"lp-cards reveal\">");
+        for (var i = 0; i < cards.Count; i++)
         {
+            var card = cards[i];
             sb.Append("<div class=\"lp-card\"><div class=\"lp-card__icon\">").Append(Icon(card.Icon)).Append("</div>");
-            sb.Append("<h3>").Append(Inline(card.Title)).Append("</h3><p>").Append(Inline(card.Body)).Append("</p></div>");
+            sb.Append("<h3").Append(D($"benefitCards.{i}.title")).Append(">").Append(Inline(card.Title)).Append("</h3><p").Append(D($"benefitCards.{i}.body")).Append(">").Append(Inline(card.Body)).Append("</p></div>");
         }
         sb.Append("</div></div></section>");
     }
@@ -180,21 +181,21 @@ public partial class LandingPageRenderer(IConfiguration config) : ILandingPageRe
     {
         if (b is null || string.IsNullOrWhiteSpace(b.Heading)) return;
         var img = string.IsNullOrWhiteSpace(b.ImageUrl) ? "images/lp-morning-ritual.jpg" : b.ImageUrl!;
-        sb.Append("<section class=\"lp-band\" style=\"background:#0a0d14 url('").Append(E(img)).Append("') center/cover no-repeat\"><div class=\"lp-band__inner reveal\">");
-        sb.Append("<h2>").Append(Inline(b.Heading)).Append("</h2>");
-        if (!string.IsNullOrWhiteSpace(b.Subtext)) sb.Append("<p>").Append(Inline(b.Subtext)).Append("</p>");
+        sb.Append("<section class=\"lp-band\"").Append(Ds("band")).Append(" style=\"background:#0a0d14 url('").Append(E(img)).Append("') center/cover no-repeat\"><div class=\"lp-band__inner reveal\">");
+        sb.Append("<h2").Append(D("band.heading")).Append(">").Append(Inline(b.Heading)).Append("</h2>");
+        if (!string.IsNullOrWhiteSpace(b.Subtext)) sb.Append("<p").Append(D("band.subtext")).Append(">").Append(Inline(b.Subtext)).Append("</p>");
         sb.Append("</div></section>");
     }
 
     private void AppendTips(StringBuilder sb, List<LpTip> tips)
     {
         if (tips.Count == 0) return;
-        sb.Append("<section class=\"lp-section lp-section--white\"><div class=\"lp-wrap\"><div class=\"lp-tips reveal\">");
-        var n = 1;
-        foreach (var t in tips)
+        sb.Append("<section class=\"lp-section lp-section--white\"").Append(Ds("tips")).Append("><div class=\"lp-wrap\"><div class=\"lp-tips reveal\">");
+        for (var i = 0; i < tips.Count; i++)
         {
-            sb.Append("<div class=\"lp-tip\"><div class=\"lp-tip__num\">").Append(n++).Append("</div><div><h3>")
-              .Append(Inline(t.Title)).Append("</h3><p>").Append(Inline(t.Body)).Append("</p></div></div>");
+            var t = tips[i];
+            sb.Append("<div class=\"lp-tip\"><div class=\"lp-tip__num\">").Append(i + 1).Append("</div><div><h3").Append(D($"tips.{i}.title")).Append(">")
+              .Append(Inline(t.Title)).Append("</h3><p").Append(D($"tips.{i}.body")).Append(">").Append(Inline(t.Body)).Append("</p></div></div>");
         }
         sb.Append("</div></div></section>");
     }
@@ -202,14 +203,15 @@ public partial class LandingPageRenderer(IConfiguration config) : ILandingPageRe
     private void AppendFeatureRows(StringBuilder sb, List<LpFeatureRow> rows)
     {
         if (rows.Count == 0) return;
-        sb.Append("<section class=\"lp-section lp-section--cream\"><div class=\"lp-wrap\">");
-        foreach (var r in rows)
+        sb.Append("<section class=\"lp-section lp-section--cream\"").Append(Ds("featureRows")).Append("><div class=\"lp-wrap\">");
+        for (var i = 0; i < rows.Count; i++)
         {
+            var r = rows[i];
             sb.Append("<div class=\"lp-row").Append(r.Reverse ? " lp-row--reverse" : "").Append(" reveal\">");
             var text = new StringBuilder("<div class=\"lp-row__text\">");
-            if (!string.IsNullOrWhiteSpace(r.Kicker)) text.Append("<p class=\"lp-kicker\">").Append(Inline(r.Kicker)).Append("</p>");
-            text.Append("<h2 class=\"lp-h2\" style=\"font-size:clamp(1.5rem,3vw,2rem)\">").Append(Inline(r.H2)).Append("</h2>");
-            text.Append("<p class=\"lp-lead\">").Append(Inline(r.Body)).Append("</p></div>");
+            if (!string.IsNullOrWhiteSpace(r.Kicker)) text.Append("<p class=\"lp-kicker\"").Append(D($"featureRows.{i}.kicker")).Append(">").Append(Inline(r.Kicker)).Append("</p>");
+            text.Append("<h2 class=\"lp-h2\"").Append(D($"featureRows.{i}.h2")).Append(" style=\"font-size:clamp(1.5rem,3vw,2rem)\">").Append(Inline(r.H2)).Append("</h2>");
+            text.Append("<p class=\"lp-lead\"").Append(D($"featureRows.{i}.body")).Append(">").Append(Inline(r.Body)).Append("</p></div>");
             var media = new StringBuilder("<div class=\"lp-row__media\">");
             if (!string.IsNullOrWhiteSpace(r.MediaUrl))
             {
@@ -227,22 +229,18 @@ public partial class LandingPageRenderer(IConfiguration config) : ILandingPageRe
     private void AppendObjections(StringBuilder sb, List<LpQa> items)
     {
         if (items.Count == 0) return;
-        sb.Append("<section class=\"lp-section lp-section--white\"><div class=\"lp-wrap\"><div class=\"lp-obj reveal\">");
-        foreach (var i in items)
-            sb.Append("<div class=\"lp-obj__item\"><p class=\"lp-obj__q\">").Append(Inline(i.Q)).Append("</p><p class=\"lp-obj__a\">").Append(Inline(i.A)).Append("</p></div>");
+        sb.Append("<section class=\"lp-section lp-section--white\"").Append(Ds("objections")).Append("><div class=\"lp-wrap\"><div class=\"lp-obj reveal\">");
+        for (var i = 0; i < items.Count; i++)
+            sb.Append("<div class=\"lp-obj__item\"><p class=\"lp-obj__q\"").Append(D($"objections.{i}.q")).Append(">").Append(Inline(items[i].Q)).Append("</p><p class=\"lp-obj__a\"").Append(D($"objections.{i}.a")).Append(">").Append(Inline(items[i].A)).Append("</p></div>");
         sb.Append("</div></div></section>");
     }
 
     private void AppendFaq(StringBuilder sb, List<LpQa> faq)
     {
         if (faq.Count == 0) return;
-        sb.Append("<section class=\"lp-section lp-section--cream\"><div class=\"lp-wrap\"><div class=\"lp-center reveal\"><h2 class=\"lp-h2\">Questions, answered</h2></div><div class=\"lp-faq reveal\">");
-        var first = true;
-        foreach (var qa in faq)
-        {
-            sb.Append("<details").Append(first ? " open" : "").Append("><summary>").Append(Inline(qa.Q)).Append("</summary><p>").Append(Inline(qa.A)).Append("</p></details>");
-            first = false;
-        }
+        sb.Append("<section class=\"lp-section lp-section--cream\"").Append(Ds("faq")).Append("><div class=\"lp-wrap\"><div class=\"lp-center reveal\"><h2 class=\"lp-h2\">Questions, answered</h2></div><div class=\"lp-faq reveal\">");
+        for (var i = 0; i < faq.Count; i++)
+            sb.Append("<details").Append(i == 0 ? " open" : "").Append("><summary").Append(D($"faq.{i}.q")).Append(">").Append(Inline(faq[i].Q)).Append("</summary><p").Append(D($"faq.{i}.a")).Append(">").Append(Inline(faq[i].A)).Append("</p></details>");
         sb.Append("</div></div></section>");
     }
 
@@ -263,7 +261,7 @@ public partial class LandingPageRenderer(IConfiguration config) : ILandingPageRe
         var heading = f?.Heading ?? "Start today.";
         var sub = f?.Subtext ?? "Ten days free. No credit card to start.";
         var cta = f?.CtaLabel ?? "Start your free trial";
-        sb.Append("<section class=\"lp-final\"><h2>").Append(Inline(heading)).Append("</h2><p>").Append(Inline(sub)).Append("</p>");
+        sb.Append("<section class=\"lp-final\"").Append(Ds("finalCta")).Append("><h2").Append(D("finalCta.heading")).Append(">").Append(Inline(heading)).Append("</h2><p").Append(D("finalCta.subtext")).Append(">").Append(Inline(sub)).Append("</p>");
         sb.Append("<a href=\"signup.html\" class=\"lp-btn lp-btn--primary\">").Append(E(cta)).Append("</a></section>");
     }
 
@@ -322,6 +320,13 @@ public partial class LandingPageRenderer(IConfiguration config) : ILandingPageRe
 
     // ── helpers ──────────────────────────────────────────────────────
     private static string E(string? s) => WebUtility.HtmlEncode(s ?? string.Empty);
+
+    // Stable markers for the visual editor: data-lp on an editable text element
+    // (the JSONB content path), data-lp-section on a section wrapper (for
+    // click-to-jump). Tiny + inert on live pages; the edit-mode script (injected
+    // only in authenticated preview) reads them to wire inline editing.
+    private static string D(string path) => $" data-lp=\"{path}\"";
+    private static string Ds(string section) => $" data-lp-section=\"{section}\"";
 
     /// <summary>Escape, then turn *text* into &lt;em&gt;text&lt;/em&gt; — safe because we escape first.</summary>
     private static string Inline(string? s) => EmphasisRegex().Replace(E(s), "<em>$1</em>");

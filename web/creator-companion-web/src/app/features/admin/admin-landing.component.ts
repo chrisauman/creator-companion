@@ -1,6 +1,7 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, NgZone, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { AdminShellComponent } from './admin-shell.component';
 import { ApiService, LpListItem, LpDetail, LpKeyword, LpSettings, LpUpsert, LpContent, PexelsPhoto } from '../../core/services/api.service';
 
@@ -79,6 +80,8 @@ import { ApiService, LpListItem, LpDetail, LpKeyword, LpSettings, LpUpsert, LpCo
           </div>
           @if (editError()) { <p class="lpa-err">{{ editError() }}</p> }
 
+          <div class="lpe-split">
+          <div class="lpe-form">
           <div class="lpa-card">
             <h3>SEO &amp; URL</h3>
             <label class="lpa-f"><span>Target keyword</span><input class="lpa-input" [(ngModel)]="e.targetKeyword"></label>
@@ -89,7 +92,7 @@ import { ApiService, LpListItem, LpDetail, LpKeyword, LpSettings, LpUpsert, LpCo
           </div>
 
           <div class="lpa-card">
-            <h3>Hero</h3>
+            <h3 id="lp-sec-hero">Hero</h3>
             <label class="lpa-f"><span>Kicker</span><input class="lpa-input" [(ngModel)]="e.content.hero!.kicker"></label>
             <label class="lpa-f"><span>Headline (H1)</span><input class="lpa-input" [(ngModel)]="e.content.hero!.h1"></label>
             <label class="lpa-f"><span>Subhead</span><textarea class="lpa-input" rows="2" [(ngModel)]="e.content.hero!.subhead"></textarea></label>
@@ -97,7 +100,7 @@ import { ApiService, LpListItem, LpDetail, LpKeyword, LpSettings, LpUpsert, LpCo
           </div>
 
           <div class="lpa-card">
-            <h3>Hook</h3>
+            <h3 id="lp-sec-hook">Hook</h3>
             <label class="lpa-f"><span>Heading</span><input class="lpa-input" [(ngModel)]="e.content.hook!.heading"></label>
             <label class="lpa-f"><span>Lead</span><textarea class="lpa-input" rows="2" [(ngModel)]="e.content.hook!.lead"></textarea></label>
             <div class="lpa-arr"><span>Chips</span>
@@ -109,7 +112,7 @@ import { ApiService, LpListItem, LpDetail, LpKeyword, LpSettings, LpUpsert, LpCo
           </div>
 
           <div class="lpa-card">
-            <h3>Explainer</h3>
+            <h3 id="lp-sec-explainer">Explainer</h3>
             <label class="lpa-f"><span>Kicker</span><input class="lpa-input" [(ngModel)]="e.content.explainer!.kicker"></label>
             <label class="lpa-f"><span>Heading (H2)</span><input class="lpa-input" [(ngModel)]="e.content.explainer!.h2"></label>
             <div class="lpa-arr"><span>Paragraphs</span>
@@ -123,7 +126,7 @@ import { ApiService, LpListItem, LpDetail, LpKeyword, LpSettings, LpUpsert, LpCo
           </div>
 
           <div class="lpa-card">
-            <h3>Benefit cards</h3>
+            <h3 id="lp-sec-benefitCards">Benefit cards</h3>
             @for (c of e.content.benefitCards!; track $index) {
               <div class="lpa-sub">
                 <div class="lpa-row">
@@ -137,14 +140,14 @@ import { ApiService, LpListItem, LpDetail, LpKeyword, LpSettings, LpUpsert, LpCo
           </div>
 
           <div class="lpa-card">
-            <h3>Photo band</h3>
+            <h3 id="lp-sec-band">Photo band</h3>
             <label class="lpa-f"><span>Heading</span><input class="lpa-input" [(ngModel)]="e.content.band!.heading"></label>
             <label class="lpa-f"><span>Subtext</span><textarea class="lpa-input" rows="2" [(ngModel)]="e.content.band!.subtext"></textarea></label>
             <label class="lpa-f"><span>Background image URL <button type="button" class="lpa-imgbtn" (click)="openImg('band')">🔍 Find photo</button></span><input class="lpa-input" [(ngModel)]="e.content.band!.imageUrl"></label>
           </div>
 
           <div class="lpa-card">
-            <h3>Tips</h3>
+            <h3 id="lp-sec-tips">Tips</h3>
             @for (t of e.content.tips!; track $index) {
               <div class="lpa-sub"><div class="lpa-row"><input class="lpa-input" placeholder="Title" [(ngModel)]="t.title"><button class="lpa-x" (click)="e.content.tips!.splice($index,1)">×</button></div>
                 <textarea class="lpa-input" rows="2" placeholder="Body" [(ngModel)]="t.body"></textarea></div>
@@ -153,7 +156,7 @@ import { ApiService, LpListItem, LpDetail, LpKeyword, LpSettings, LpUpsert, LpCo
           </div>
 
           <div class="lpa-card">
-            <h3>Feature rows</h3>
+            <h3 id="lp-sec-featureRows">Feature rows</h3>
             @for (r of e.content.featureRows!; track $index) {
               <div class="lpa-sub">
                 <div class="lpa-row"><input class="lpa-input" placeholder="Kicker" [(ngModel)]="r.kicker"><input class="lpa-input" placeholder="Heading" [(ngModel)]="r.h2"><button class="lpa-x" (click)="e.content.featureRows!.splice($index,1)">×</button></div>
@@ -166,7 +169,7 @@ import { ApiService, LpListItem, LpDetail, LpKeyword, LpSettings, LpUpsert, LpCo
           </div>
 
           <div class="lpa-card">
-            <h3>Objections</h3>
+            <h3 id="lp-sec-objections">Objections</h3>
             @for (o of e.content.objections!; track $index) {
               <div class="lpa-sub"><div class="lpa-row"><input class="lpa-input" placeholder="Question" [(ngModel)]="o.q"><button class="lpa-x" (click)="e.content.objections!.splice($index,1)">×</button></div>
                 <textarea class="lpa-input" rows="2" placeholder="Answer" [(ngModel)]="o.a"></textarea></div>
@@ -175,7 +178,7 @@ import { ApiService, LpListItem, LpDetail, LpKeyword, LpSettings, LpUpsert, LpCo
           </div>
 
           <div class="lpa-card">
-            <h3>FAQ</h3>
+            <h3 id="lp-sec-faq">FAQ</h3>
             @for (q of e.content.faq!; track $index) {
               <div class="lpa-sub"><div class="lpa-row"><input class="lpa-input" placeholder="Question" [(ngModel)]="q.q"><button class="lpa-x" (click)="e.content.faq!.splice($index,1)">×</button></div>
                 <textarea class="lpa-input" rows="2" placeholder="Answer" [(ngModel)]="q.a"></textarea></div>
@@ -184,11 +187,22 @@ import { ApiService, LpListItem, LpDetail, LpKeyword, LpSettings, LpUpsert, LpCo
           </div>
 
           <div class="lpa-card">
-            <h3>Final CTA</h3>
+            <h3 id="lp-sec-finalCta">Final CTA</h3>
             <label class="lpa-f"><span>Heading</span><input class="lpa-input" [(ngModel)]="e.content.finalCta!.heading"></label>
             <label class="lpa-f"><span>Subtext</span><input class="lpa-input" [(ngModel)]="e.content.finalCta!.subtext"></label>
             <label class="lpa-f"><span>CTA label</span><input class="lpa-input" [(ngModel)]="e.content.finalCta!.ctaLabel"></label>
           </div>
+          </div><!-- /lpe-form -->
+
+          <div class="lpe-preview">
+            @if (previewUrl()) {
+              <p class="lpe-tip">Click any <strong>text</strong> in the preview to edit it inline · click a <strong>section</strong> to jump to its fields · then <strong>Save</strong>.</p>
+              <iframe id="lpe-iframe" class="lpe-frame" [src]="previewUrl()" title="Live preview"></iframe>
+            } @else {
+              <p class="lpa-muted" style="padding:1rem">Save the page to open the live, click-to-edit preview here.</p>
+            }
+          </div>
+          </div><!-- /lpe-split -->
         }
 
         <!-- ── KEYWORDS ── -->
@@ -265,7 +279,15 @@ import { ApiService, LpListItem, LpDetail, LpKeyword, LpSettings, LpUpsert, LpCo
     </app-admin-shell>
   `,
   styles: [`
-    .lpa { max-width: 920px; margin: 0 auto; padding: 1.5rem; }
+    .lpa { max-width: 1240px; margin: 0 auto; padding: 1.5rem; }
+    .lpe-split { display: flex; gap: 1.25rem; align-items: flex-start; }
+    .lpe-form { flex: 1 1 440px; min-width: 0; }
+    .lpe-preview { flex: 1 1 540px; position: sticky; top: 1rem; align-self: flex-start; }
+    .lpe-tip { font-size: .8rem; color: #0a6b7d; margin: 0 0 .5rem; background: #eef9fb; border: 1px solid #bdeef5; border-radius: 8px; padding: .5rem .75rem; }
+    .lpe-frame { width: 100%; height: calc(100vh - 170px); min-height: 480px; border: 1px solid #e5e7eb; border-radius: 12px; background: #fff; }
+    .lpe-flash { animation: lpe-flash 1.2s ease; border-radius: 4px; }
+    @keyframes lpe-flash { 0% { background: rgba(18,196,227,.22); } 100% { background: transparent; } }
+    @media (max-width: 1080px) { .lpe-split { flex-direction: column; } .lpe-preview { position: static; width: 100%; } .lpe-frame { height: 72vh; } }
     .lpa-tabs { display: flex; gap: .5rem; margin-bottom: 1.25rem; border-bottom: 1px solid #e5e7eb; }
     .lpa-tab { background: none; border: none; padding: .6rem .9rem; font-weight: 700; color: #6b7280; cursor: pointer; border-bottom: 2px solid transparent; }
     .lpa-tab--on { color: #0c0e13; border-bottom-color: #12C4E3; }
@@ -309,8 +331,12 @@ import { ApiService, LpListItem, LpDetail, LpKeyword, LpSettings, LpUpsert, LpCo
     .lpa-imgcard:hover { border-color: #12C4E3; }
   `]
 })
-export class AdminLandingComponent implements OnInit {
+export class AdminLandingComponent implements OnInit, OnDestroy {
   private api = inject(ApiService);
+  private zone = inject(NgZone);
+  private sanitizer = inject(DomSanitizer);
+  private readonly previewOrigin = 'https://www.creatorcompanionapp.com';
+  previewUrl = signal<SafeResourceUrl | null>(null);
 
   tab = signal<'pages' | 'keywords' | 'settings'>('pages');
   loading = signal(false);
@@ -341,7 +367,53 @@ export class AdminLandingComponent implements OnInit {
   genBusy = signal(false);
   importMsg = signal('');
 
-  ngOnInit(): void { this.loadPages(); }
+  ngOnInit(): void {
+    this.loadPages();
+    window.addEventListener('message', this.onMessage);
+  }
+  ngOnDestroy(): void { window.removeEventListener('message', this.onMessage); }
+
+  // ── Live-preview bridge (messages from the edit-mode iframe) ──────────
+  private onMessage = (e: MessageEvent): void => {
+    if (e.origin !== this.previewOrigin) return;
+    const d = e.data || {};
+    this.zone.run(() => {
+      if (d.type === 'lp-edit') this.applyInline(d.path, d.value);
+      else if (d.type === 'lp-focus') this.focusSection(d.section);
+    });
+  };
+  private applyInline(path: string, value: string): void {
+    const e = this.editing(); if (!e) return;
+    this.setByPath(e.content as Record<string, unknown>, path, value);
+  }
+  private setByPath(obj: Record<string, unknown>, path: string, value: unknown): void {
+    const segs = path.split('.');
+    let cur: any = obj;
+    for (let i = 0; i < segs.length - 1; i++) {
+      const k: any = /^\d+$/.test(segs[i]) ? +segs[i] : segs[i];
+      if (cur[k] == null) return;
+      cur = cur[k];
+    }
+    const last: any = /^\d+$/.test(segs[segs.length - 1]) ? +segs[segs.length - 1] : segs[segs.length - 1];
+    cur[last] = value;
+  }
+  private focusSection(section: string): void {
+    const el = document.getElementById('lp-sec-' + section);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    el.classList.add('lpe-flash');
+    setTimeout(() => el.classList.remove('lpe-flash'), 1200);
+  }
+  private loadPreview(id: string): void {
+    this.api.adminLpPreview(id).subscribe(r =>
+      this.previewUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(r.url + '&edit=1')));
+  }
+  private reloadPreview(): void {
+    const e = this.editing();
+    if (!this.previewUrl() && e?.id) { this.loadPreview(e.id); return; }
+    const f = document.getElementById('lpe-iframe') as HTMLIFrameElement | null;
+    f?.contentWindow?.postMessage({ type: 'lp-reload' }, this.previewOrigin);
+  }
 
   importKeywords(ev: Event): void {
     const input = ev.target as HTMLInputElement;
@@ -402,16 +474,16 @@ export class AdminLandingComponent implements OnInit {
   }
 
   newPage(): void {
-    this.editError.set(''); this.msg.set('');
+    this.editError.set(''); this.msg.set(''); this.previewUrl.set(null);
     this.editing.set({ id: '', slug: '', status: 'Draft', targetKeyword: '', metaTitle: '', metaDescription: '', noIndex: false, qualityScore: null, generatedByAi: false, content: this.blankContent(), hasOriginal: false, createdAt: '', updatedAt: '', publishedAt: null });
   }
 
   edit(p: LpListItem): void {
-    this.editError.set(''); this.msg.set('');
-    this.api.adminLpGet(p.id).subscribe(d => { d.content = this.hydrate(d.content || {}); this.editing.set(d); });
+    this.editError.set(''); this.msg.set(''); this.previewUrl.set(null);
+    this.api.adminLpGet(p.id).subscribe(d => { d.content = this.hydrate(d.content || {}); this.editing.set(d); this.loadPreview(d.id); });
   }
 
-  closeEditor(): void { this.editing.set(null); this.loadPages(); }
+  closeEditor(): void { this.editing.set(null); this.previewUrl.set(null); this.loadPages(); }
 
   save(): void {
     const e = this.editing(); if (!e) return;
@@ -419,7 +491,7 @@ export class AdminLandingComponent implements OnInit {
     const payload: LpUpsert = { slug: e.slug, targetKeyword: e.targetKeyword, metaTitle: e.metaTitle, metaDescription: e.metaDescription, noIndex: e.noIndex, content: e.content };
     const obs = e.id ? this.api.adminLpUpdate(e.id, payload) : this.api.adminLpCreate(payload);
     obs.subscribe({
-      next: d => { d.content = this.hydrate(d.content || {}); this.editing.set(d); this.saving.set(false); this.msg.set('Saved.'); setTimeout(() => this.msg.set(''), 2000); },
+      next: d => { d.content = this.hydrate(d.content || {}); this.editing.set(d); this.saving.set(false); this.msg.set('Saved.'); setTimeout(() => this.msg.set(''), 2000); this.reloadPreview(); },
       error: err => { this.saving.set(false); this.editError.set(err?.error?.error ?? 'Save failed.'); },
     });
   }
