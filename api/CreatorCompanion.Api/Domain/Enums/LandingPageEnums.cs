@@ -15,9 +15,17 @@ public enum LandingPageStatus
 }
 
 /// <summary>
-/// Status of a keyword in the generation queue. The daily worker draws the
-/// highest-priority <see cref="Pending"/> keyword, generates a page, and marks
-/// it Generated (or Failed, with the error retained for the admin).
+/// Lifecycle of a keyword/topic in the research → build pipeline. Stored as int
+/// (append-only). The flow: research surfaces candidates as <see cref="Idea"/>
+/// (remembered so they're never re-suggested), promoting one to <see cref="Pending"/>
+/// (the build queue, where a brief is generated); the daily worker draws the
+/// highest-priority Pending keyword, generates a page, and marks it Generated
+/// (or Failed). <see cref="Rejected"/> = deliberately won't build (still
+/// remembered for dedup). <see cref="Skipped"/> = the worker passed it over.
+///
+/// The "master index" for dedup = every keyword NOT Rejected, unioned with every
+/// live page's TargetKeyword — so research can't resurface anything already
+/// queued, built, or held as an idea.
 /// </summary>
 public enum LandingPageKeywordStatus
 {
@@ -25,4 +33,6 @@ public enum LandingPageKeywordStatus
     Generated = 1,
     Skipped   = 2,
     Failed    = 3,
+    Idea      = 4,
+    Rejected  = 5,
 }

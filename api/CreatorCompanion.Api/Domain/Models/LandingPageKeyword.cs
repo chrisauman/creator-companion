@@ -29,6 +29,30 @@ public class LandingPageKeyword
     /// <summary>Last generation error (retained for the admin to see/retry).</summary>
     public string? LastError { get; set; }
 
+    // ── Research metadata (drives the coverage matrix + smarter dedup) ──────
+    /// <summary>Free-text angle this came from, e.g. "Musicians — practice consistency".</summary>
+    public string? Theme { get; set; }
+
+    /// <summary>Controlled-vocab discipline (e.g. "Musicians"). Null = cross-discipline.</summary>
+    public string? Discipline { get; set; }
+
+    /// <summary>Controlled-vocab pain-point (e.g. "Consistency"). Null = unset.</summary>
+    public string? PainPoint { get; set; }
+
+    /// <summary>Search intent: informational | commercial | method | navigational.</summary>
+    public string? Intent { get; set; }
+
+    /// <summary>
+    /// Normalized token signature for fast near-duplicate detection: keyword
+    /// lowercased, filler words dropped, remaining tokens sorted + space-joined.
+    /// "best morning pages app" and "app for morning pages" share a signature.
+    /// Computed by <see cref="Application.Services.KeywordDedup"/> on write.
+    /// </summary>
+    public string? Signature { get; set; }
+
+    /// <summary>The research batch that surfaced this keyword, if any.</summary>
+    public Guid? BatchId { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }

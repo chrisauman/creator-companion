@@ -41,6 +41,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<LandingPage> LandingPages => Set<LandingPage>();
     public DbSet<LandingPageKeyword> LandingPageKeywords => Set<LandingPageKeyword>();
     public DbSet<LandingPageSettings> LandingPageSettings => Set<LandingPageSettings>();
+    public DbSet<ResearchBatch> ResearchBatches => Set<ResearchBatch>();
+    public DbSet<ResearchVocabulary> ResearchVocabulary => Set<ResearchVocabulary>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -77,5 +79,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.ApplyConfiguration(new SocialCardAssetConfiguration());
         modelBuilder.ApplyConfiguration(new LandingPageConfiguration());
         modelBuilder.ApplyConfiguration(new LandingPageKeywordConfiguration());
+        modelBuilder.ApplyConfiguration(new ResearchBatchConfiguration());
+        modelBuilder.ApplyConfiguration(new ResearchVocabularyConfiguration());
     }
 }

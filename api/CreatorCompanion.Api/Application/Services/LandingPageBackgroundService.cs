@@ -21,6 +21,10 @@ public class LandingPageBackgroundService(IServiceProvider services, ILogger<Lan
             {
                 using var scope = services.CreateScope();
                 var gen = scope.ServiceProvider.GetRequiredService<ILandingPageGenerationService>();
+                // Brief-on-add: fill one queued keyword's brief per tick (cheap,
+                // throttled) so briefs appear soon after queueing without a burst.
+                await gen.FillNextBriefAsync(stoppingToken);
+                // Daily page generation (no-ops until the scheduled hour).
                 await gen.TickAsync(stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { break; }

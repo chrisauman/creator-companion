@@ -9,7 +9,7 @@ public record LpListResponse(IReadOnlyList<LpListItem> Items, int Total);
 
 public record LpDetail(
     Guid Id, string Slug, string Status, string TargetKeyword, string MetaTitle, string MetaDescription,
-    bool NoIndex, int? QualityScore, bool GeneratedByAi, LpContent Content, bool HasOriginal,
+    bool NoIndex, int? QualityScore, bool GeneratedByAi, LpContent Content, bool HasOriginal, bool HasPrevious,
     DateTime CreatedAt, DateTime UpdatedAt, DateTime? PublishedAt);
 
 /// <summary>Create/update payload — page SEO fields + the full section content.</summary>
@@ -19,7 +19,7 @@ public record LpUpsertRequest(
 // ── Keyword queue ────────────────────────────────────────────────────
 public record LpKeywordDto(
     Guid Id, string Keyword, string? Brief, int Priority, string Status, Guid? GeneratedPageId,
-    string? LastError, DateTime CreatedAt);
+    string? LastError, string? Theme, string? Discipline, string? PainPoint, string? Intent, DateTime CreatedAt);
 
 public record LpKeywordUpsert(string Keyword, string? Brief, int Priority, string? Status);
 

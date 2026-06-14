@@ -44,6 +44,13 @@ public class LandingPage
     /// <summary>The AI's original content, kept so the admin can revert manual edits.</summary>
     public string? OriginalContentJson { get; set; }
 
+    /// <summary>
+    /// The content immediately before the most recent edit — enables a one-step
+    /// "undo last edit" that's distinct from "revert to original". Set on every
+    /// save/AI-edit; null until the first edit.
+    /// </summary>
+    public string? PreviousContentJson { get; set; }
+
     /// <summary>R2 storage key of the auto-generated 1200×630 OG/share image.</summary>
     public string? OgImageKey { get; set; }
 

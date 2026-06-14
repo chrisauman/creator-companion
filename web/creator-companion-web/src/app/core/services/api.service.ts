@@ -654,6 +654,18 @@ export class ApiService {
   adminLpGenerateNow(): Observable<{ ok: boolean; message: string }> { return this.http.post<{ ok: boolean; message: string }>(`${this.base}/admin/landing/generate-now`, {}); }
   adminLpSearchImages(q: string): Observable<PexelsPhoto[]> { return this.http.get<PexelsPhoto[]>(`${this.base}/admin/landing/images/search`, { params: new HttpParams().set('q', q) }); }
   adminLpUseImage(url: string): Observable<{ url: string }> { return this.http.post<{ url: string }>(`${this.base}/admin/landing/images/use`, { url }); }
+
+  // Page content history + AI editing
+  adminLpUndo(id: string): Observable<LpDetail> { return this.http.post<LpDetail>(`${this.base}/admin/landing/pages/${id}/undo`, {}); }
+  adminLpAiEdit(id: string, instruction: string): Observable<AiEditProposal> { return this.http.post<AiEditProposal>(`${this.base}/admin/landing/pages/${id}/ai-edit`, { instruction }); }
+
+  // Keyword research
+  adminLpVocab(): Observable<VocabList> { return this.http.get<VocabList>(`${this.base}/admin/landing/research/vocab`); }
+  adminLpAddVocab(kind: string, value: string): Observable<Vocab> { return this.http.post<Vocab>(`${this.base}/admin/landing/research/vocab`, { kind, value }); }
+  adminLpDeleteVocab(id: string): Observable<void> { return this.http.delete<void>(`${this.base}/admin/landing/research/vocab/${id}`); }
+  adminLpBrainstorm(p: { theme: string; discipline?: string | null; painPoint?: string | null; hints?: string | null }): Observable<BrainstormResponse> { return this.http.post<BrainstormResponse>(`${this.base}/admin/landing/research/brainstorm`, p); }
+  adminLpCommitResearch(p: CommitRequest): Observable<CommitResponse> { return this.http.post<CommitResponse>(`${this.base}/admin/landing/research/commit`, p); }
+  adminLpBatches(): Observable<ResearchBatch[]> { return this.http.get<ResearchBatch[]>(`${this.base}/admin/landing/research/batches`); }
 }
 
 // ── Marketing auto-poster types ───────────────────────────────────────────
@@ -783,8 +795,19 @@ export interface LpContent {
 }
 export interface LpListItem { id: string; slug: string; status: string; targetKeyword: string; metaTitle: string; noIndex: boolean; qualityScore: number | null; generatedByAi: boolean; updatedAt: string; publishedAt: string | null; }
 export interface LpListResponse { items: LpListItem[]; total: number; }
-export interface LpDetail { id: string; slug: string; status: string; targetKeyword: string; metaTitle: string; metaDescription: string; noIndex: boolean; qualityScore: number | null; generatedByAi: boolean; content: LpContent; hasOriginal: boolean; createdAt: string; updatedAt: string; publishedAt: string | null; }
+export interface LpDetail { id: string; slug: string; status: string; targetKeyword: string; metaTitle: string; metaDescription: string; noIndex: boolean; qualityScore: number | null; generatedByAi: boolean; content: LpContent; hasOriginal: boolean; hasPrevious: boolean; createdAt: string; updatedAt: string; publishedAt: string | null; }
 export interface LpUpsert { slug: string; targetKeyword: string; metaTitle: string; metaDescription: string; noIndex: boolean; content: LpContent; }
-export interface LpKeyword { id: string; keyword: string; brief: string | null; priority: number; status: string; generatedPageId: string | null; lastError: string | null; createdAt: string; }
+export interface LpKeyword { id: string; keyword: string; brief: string | null; priority: number; status: string; generatedPageId: string | null; lastError: string | null; theme: string | null; discipline: string | null; painPoint: string | null; intent: string | null; createdAt: string; }
 export interface LpSettings { autoGenerateEnabled: boolean; autoPublishEnabled: boolean; qualityThreshold: number; generateHourLocalEt: number; lastGeneratedDate: string | null; ga4Configured: boolean; pexelsConfigured: boolean; anthropicConfigured: boolean; }
 export interface PexelsPhoto { id: number; photographer: string; alt: string; thumbUrl: string; fullUrl: string; }
+
+// ── Keyword research types ────────────────────────────────────────────────
+export interface AiEditProposal { content: LpContent; changes: string[]; }
+export interface Vocab { id: string; kind: string; value: string; sortOrder: number; }
+export interface VocabList { disciplines: Vocab[]; painPoints: Vocab[]; }
+export interface CandidateResult { keyword: string; intent: string | null; bucket: 'New' | 'NearDuplicate' | 'Duplicate'; matchedKeyword: string | null; matchedSlug: string | null; }
+export interface BrainstormResponse { candidates: CandidateResult[]; newCount: number; nearCount: number; dupCount: number; }
+export interface CommitItem { keyword: string; intent?: string | null; action: 'queue' | 'idea'; }
+export interface CommitRequest { theme: string; method: string; discipline?: string | null; painPoint?: string | null; notes?: string | null; items: CommitItem[]; }
+export interface CommitResponse { batchId: string; queued: number; ideas: number; skippedAsDup: number; }
+export interface ResearchBatch { id: string; theme: string; method: string; discipline: string | null; painPoint: string | null; candidateCount: number; addedCount: number; createdAt: string; }

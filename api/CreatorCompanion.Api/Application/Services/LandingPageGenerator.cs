@@ -7,6 +7,12 @@ namespace CreatorCompanion.Api.Application.Services;
 
 public record GeneratedPage(string Slug, string MetaTitle, string MetaDescription, LpContent Content);
 
+/// <summary>One brainstormed research candidate: the term + its inferred intent.</summary>
+public record KeywordCandidate(string Keyword, string? Intent);
+
+/// <summary>Result of an AI content edit: the new content + a human-readable change list.</summary>
+public record AiEditResult(LpContent Content, IReadOnlyList<string> Changes);
+
 public interface ILandingPageGenerator
 {
     bool IsConfigured { get; }
@@ -22,6 +28,31 @@ public interface ILandingPageGenerator
     /// and value — the auto-publish quality gate. Returns a conservative 50 on failure.
     /// </summary>
     Task<int> ScoreQualityAsync(GeneratedPage page, IReadOnlyList<string> existingKeywords, CancellationToken ct);
+
+    /// <summary>
+    /// Brainstorm keyword/topic candidates for a research angle (Sonnet). Returns
+    /// raw candidates — dedup against the master index happens downstream. Empty
+    /// list on failure/no-key.
+    /// </summary>
+    Task<IReadOnlyList<KeywordCandidate>> BrainstormAsync(
+        string theme, string? discipline, string? painPoint, string? hints, IReadOnlyList<string> avoid, CancellationToken ct);
+
+    /// <summary>
+    /// Write the descriptive brief a page will be built around when a keyword is
+    /// committed to the queue (Sonnet). Returns null on failure — the page can
+    /// still be generated keyword-only.
+    /// </summary>
+    Task<string?> GenerateBriefAsync(
+        string keyword, string? theme, string? discipline, string? painPoint, string? intent,
+        IReadOnlyList<string> relatedTitles, CancellationToken ct);
+
+    /// <summary>
+    /// Apply a natural-language edit to an existing page's content (Sonnet),
+    /// staying strictly inside the template schema and changing ONLY what the
+    /// instruction asks. Returns null if the key is unset or the result is
+    /// invalid — callers must never apply a null/partial result.
+    /// </summary>
+    Task<AiEditResult?> EditContentAsync(LpContent current, string instruction, CancellationToken ct);
 }
 
 /// <summary>
@@ -98,6 +129,102 @@ public class LandingPageGenerator(IHttpClientFactory httpFactory, IConfiguration
         return 50;
     }
 
+    public async Task<IReadOnlyList<KeywordCandidate>> BrainstormAsync(
+        string theme, string? discipline, string? painPoint, string? hints, IReadOnlyList<string> avoid, CancellationToken ct)
+    {
+        if (!IsConfigured || string.IsNullOrWhiteSpace(theme)) return Array.Empty<KeywordCandidate>();
+        var avoidStr = avoid.Count == 0 ? "(none yet)" : string.Join("; ", avoid.Take(80));
+        var user =
+            $"Research angle: {theme}\n" +
+            (string.IsNullOrWhiteSpace(discipline) ? "" : $"Creative discipline: {discipline}\n") +
+            (string.IsNullOrWhiteSpace(painPoint) ? "" : $"Pain-point / job-to-be-done: {painPoint}\n") +
+            (string.IsNullOrWhiteSpace(hints) ? "" : $"Extra direction from the editor: {hints}\n") +
+            $"\nAlready covered — do NOT repeat these or trivial rewordings of them: {avoidStr}\n\n" +
+            "Brainstorm 25-35 fresh keyword/topic candidates for this angle. Return ONLY the JSON object.";
+        var payload = new
+        {
+            model = _genModel,
+            max_tokens = 2000,
+            system = BrainstormPrompt,
+            messages = new[] { new { role = "user", content = user } },
+        };
+        try
+        {
+            var text = await CallAsync(payload, ct);
+            var dto = text is null ? null : ParseJson<BrainstormDto>(text);
+            if (dto?.Candidates is null) return Array.Empty<KeywordCandidate>();
+            return dto.Candidates
+                .Where(c => !string.IsNullOrWhiteSpace(c.Keyword))
+                .Select(c => new KeywordCandidate(c.Keyword!.Trim(), Normalize(c.Intent)))
+                .ToList();
+        }
+        catch (Exception ex) { log.LogWarning(ex, "Keyword brainstorm failed for '{Theme}'.", theme); return Array.Empty<KeywordCandidate>(); }
+
+        static string? Normalize(string? intent)
+        {
+            intent = intent?.Trim().ToLowerInvariant();
+            return intent is "informational" or "commercial" or "method" or "navigational" ? intent : null;
+        }
+    }
+
+    public async Task<string?> GenerateBriefAsync(
+        string keyword, string? theme, string? discipline, string? painPoint, string? intent,
+        IReadOnlyList<string> relatedTitles, CancellationToken ct)
+    {
+        if (!IsConfigured || string.IsNullOrWhiteSpace(keyword)) return null;
+        var related = relatedTitles.Count == 0 ? "(none yet)" : string.Join("; ", relatedTitles.Take(30));
+        var user =
+            $"Keyword/topic: \"{keyword}\"\n" +
+            (string.IsNullOrWhiteSpace(theme) ? "" : $"Angle: {theme}\n") +
+            (string.IsNullOrWhiteSpace(discipline) ? "" : $"Discipline: {discipline}\n") +
+            (string.IsNullOrWhiteSpace(painPoint) ? "" : $"Pain-point: {painPoint}\n") +
+            (string.IsNullOrWhiteSpace(intent) ? "" : $"Search intent: {intent}\n") +
+            $"Existing pages (for internal-link ideas): {related}\n\n" +
+            "Write the page brief now.";
+        var payload = new
+        {
+            model = _genModel,
+            max_tokens = 1200,
+            system = BriefPrompt,
+            messages = new[] { new { role = "user", content = user } },
+        };
+        try
+        {
+            var text = await CallAsync(payload, ct);
+            return string.IsNullOrWhiteSpace(text) ? null : text.Trim();
+        }
+        catch (Exception ex) { log.LogWarning(ex, "Brief generation failed for '{Keyword}'.", keyword); return null; }
+    }
+
+    public async Task<AiEditResult?> EditContentAsync(LpContent current, string instruction, CancellationToken ct)
+    {
+        if (!IsConfigured || string.IsNullOrWhiteSpace(instruction)) return null;
+        var currentJson = JsonSerializer.Serialize(current, Json);
+        var user =
+            "Here is the current page content JSON:\n\n" + currentJson +
+            "\n\nInstruction: " + instruction.Trim() +
+            "\n\nReturn ONLY the JSON object {\"content\": {...}, \"changes\": [...]}.";
+        var payload = new
+        {
+            model = _genModel,
+            max_tokens = 5000,
+            system = EditPrompt,
+            messages = new[] { new { role = "user", content = user } },
+        };
+        try
+        {
+            var text = await CallAsync(payload, ct);
+            if (text is null) return null;
+            var dto = ParseJson<EditDto>(text);
+            // Guard: a valid edit must return the full content object. A null
+            // content means the model misbehaved — never partial-apply.
+            if (dto?.Content is null) return null;
+            var changes = (dto.Changes ?? new()).Where(s => !string.IsNullOrWhiteSpace(s)).Select(s => s.Trim()).ToList();
+            return new AiEditResult(dto.Content, changes);
+        }
+        catch (Exception ex) { log.LogWarning(ex, "AI content edit failed."); return null; }
+    }
+
     private async Task<string?> CallAsync(object payload, CancellationToken ct)
     {
         var http = httpFactory.CreateClient("social");
@@ -133,6 +260,54 @@ public class LandingPageGenerator(IHttpClientFactory httpFactory, IConfiguration
         public string? MetaDescription { get; set; }
         public LpContent? Content { get; set; }
     }
+
+    private class BrainstormDto { public List<CandidateDto>? Candidates { get; set; } }
+    private class CandidateDto { public string? Keyword { get; set; } public string? Intent { get; set; } }
+    private class EditDto { public LpContent? Content { get; set; } public List<string>? Changes { get; set; } }
+
+    private const string BrainstormPrompt = """
+You are an SEO keyword researcher for Creator Companion — a private daily journaling app that helps creative people (writers, musicians, visual artists, filmmakers, photographers, and more) keep a consistent creative practice. Features you can lean on: streaks / "don't break the chain", a daily Spark + rotating prompts, up to 5 custom reminders, fully private (no feed/ads), 10-day free trial.
+
+Given a research angle, brainstorm specific, realistic search terms a creative person might type — long-tail and mid-tail, not generic head terms. Mix intents. Avoid near-duplicates of each other and of the "already covered" list. Each must be genuinely buildable into a useful page for THIS app.
+
+Tag each with intent: "informational" (how-to/learn), "commercial" (best/app/comparison), "method" (a named practice e.g. morning pages, artist's way), or "navigational".
+
+Return ONLY this JSON (no prose):
+{ "candidates": [ { "keyword": "lowercase search phrase", "intent": "informational|commercial|method|navigational" } ] }
+""";
+
+    private const string BriefPrompt = """
+You are a senior content strategist for Creator Companion (a private daily journaling app for creative people — streaks, daily Spark, prompts, reminders, fully private, 10-day trial then $5.99/mo).
+
+Write a tight, build-ready brief for ONE landing page so a writer can build a genuinely useful, on-brand page around it. Voice is warm, calm, literary, encouraging — speaks to ALL creatives, never just writers, never shames.
+
+Return PLAIN TEXT (no JSON, no markdown headers like ##) using exactly these labelled lines:
+Audience: who is searching this and the emotional moment they're in
+Intent: what they actually want from the result
+Promise: the single argument this page makes
+Key points: 4-6 semicolon-separated points the page must cover
+Suggested blocks: which sections fit (hero, hook, explainer, benefit cards, tips, feature rows, objections, faq, final cta) and why a couple of them matter here
+Tone: any angle-specific tone notes
+Internal links: which existing pages (from the list) to link, or "none yet"
+Keep it under ~220 words. Be specific to the keyword, not generic.
+""";
+
+    private const string EditPrompt = """
+You edit the structured CONTENT of an existing Creator Companion landing page. You do NOT control layout, styling, or branding — a fixed template renders whatever content you return, so you can only change the DATA within the schema below.
+
+ABSOLUTE RULES:
+- Return the ENTIRE content object, not a fragment.
+- Change ONLY what the instruction asks. Every other field must be preserved BYTE-FOR-BYTE.
+- To remove a section, set it to null (objects) or an empty array (lists). The template hides empty sections.
+- Stay on-brand: warm, calm, encouraging, speaks to all creatives, never shames. American English.
+- Never invent new top-level fields or change the schema shape.
+
+Schema (same as generation): content = { hero:{kicker,h1,subhead,ctaLabel,videoUrl,posterUrl}, hook:{heading,lead,chips[]}, explainer:{kicker,h2,paragraphs[],imageUrl,imageAlt}, benefitCards:[{icon,title,body}], band:{heading,subtext,imageUrl}, tips:[{title,body}], featureRows:[{kicker,h2,body,mediaUrl,mediaAlt,phone,reverse}], objections:[{q,a}], faq:[{q,a}], finalCta:{heading,subtext,ctaLabel} }
+
+Return ONLY this JSON:
+{ "content": { ...the full edited content... }, "changes": ["+ added X", "- removed Y", "~ reworded Z"] }
+The "changes" array is a short human-readable summary (use +/-/~ prefixes), one line per distinct change.
+""";
 
     private const string SystemPrompt = """
 You are the senior content + SEO writer for Creator Companion — a daily journaling app for creative people (writers, musicians, visual artists, filmmakers) that helps them keep a consistent creative practice. Key facts you may use: streak / "don't break the chain" with milestone badges + a 48-hour grace window; a daily Spark of encouragement + rotating prompts; up to 5 custom daily reminders; fully private (no social feed, no public profiles, no ads; encrypted; export/delete anytime); 10-day free trial then $5.99/month or $49.99/year.

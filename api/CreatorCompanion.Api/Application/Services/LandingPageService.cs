@@ -18,6 +18,10 @@ public interface ILandingPageService
     Task<bool> SetStatusAsync(Guid id, LandingPageStatus status, CancellationToken ct);
     Task<bool> SoftDeleteAsync(Guid id, CancellationToken ct);
     Task<LpDetail?> RevertAsync(Guid id, CancellationToken ct);
+    /// <summary>Undo the most recent edit (swap current ↔ previous content). Null if nothing to undo.</summary>
+    Task<LpDetail?> UndoAsync(Guid id, CancellationToken ct);
+    /// <summary>Compute an AI edit proposal for a page (NOT saved — the caller saves on accept). Null on failure.</summary>
+    Task<AiEditProposal?> AiEditAsync(Guid id, string instruction, CancellationToken ct);
     /// <summary>Marketing-domain preview URL with a signed token (renders drafts on the real domain, all assets resolving).</summary>
     Task<string?> PreviewUrlAsync(Guid id, CancellationToken ct);
 
@@ -42,7 +46,7 @@ public interface ILandingPageService
 /// settings) — also the shared create/update path the AI generator uses.
 /// Centralises slug rules + the 301-history (old slugs) so renames never break SEO.
 /// </summary>
-public class LandingPageService(AppDbContext db, ILandingPageRenderer renderer, IConfiguration config) : ILandingPageService
+public class LandingPageService(AppDbContext db, ILandingPageRenderer renderer, ILandingPageGenerator generator, IConfiguration config) : ILandingPageService
 {
     private static readonly JsonSerializerOptions Json = new() { PropertyNameCaseInsensitive = true };
 
@@ -125,7 +129,13 @@ public class LandingPageService(AppDbContext db, ILandingPageRenderer renderer, 
         page.MetaTitle = Trim(req.MetaTitle, 180);
         page.MetaDescription = Trim(req.MetaDescription, 360);
         page.NoIndex = req.NoIndex;
-        page.ContentJson = JsonSerializer.Serialize(req.Content ?? new());
+        var newJson = JsonSerializer.Serialize(req.Content ?? new());
+        // Snapshot the pre-edit content so "undo last edit" can step back exactly
+        // once — distinct from "revert to original". Only when content actually
+        // changed, so an SEO-only save doesn't burn the undo slot.
+        if (!string.Equals(newJson, page.ContentJson, StringComparison.Ordinal))
+            page.PreviousContentJson = page.ContentJson;
+        page.ContentJson = newJson;
         page.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
         return (ToDetail(page), null);
@@ -149,8 +159,38 @@ public class LandingPageService(AppDbContext db, ILandingPageRenderer renderer, 
         page.DeletedAt = DateTime.UtcNow;
         page.Status = LandingPageStatus.Archived;
         page.UpdatedAt = DateTime.UtcNow;
+
+        // The topic is now available again — flip its keyword back to the queue so
+        // it doesn't look permanently "done" (and the daily worker can rebuild it).
+        var src = await db.LandingPageKeywords.FirstOrDefaultAsync(k => k.GeneratedPageId == id, ct);
+        if (src is not null)
+        {
+            src.Status = LandingPageKeywordStatus.Pending;
+            src.GeneratedPageId = null;
+            src.UpdatedAt = DateTime.UtcNow;
+        }
+
         await db.SaveChangesAsync(ct);
         return true;
+    }
+
+    public async Task<LpDetail?> UndoAsync(Guid id, CancellationToken ct)
+    {
+        var page = await db.LandingPages.FirstOrDefaultAsync(x => x.Id == id && x.DeletedAt == null, ct);
+        if (page is null || page.PreviousContentJson is null) return null;
+        // Swap so undo is itself reversible (toggle back and forth).
+        (page.ContentJson, page.PreviousContentJson) = (page.PreviousContentJson, page.ContentJson);
+        page.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync(ct);
+        return ToDetail(page);
+    }
+
+    public async Task<AiEditProposal?> AiEditAsync(Guid id, string instruction, CancellationToken ct)
+    {
+        var page = await db.LandingPages.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id && x.DeletedAt == null, ct);
+        if (page is null) return null;
+        var result = await generator.EditContentAsync(ParseContent(page.ContentJson), instruction, ct);
+        return result is null ? null : new AiEditProposal(result.Content, result.Changes);
     }
 
     public async Task<LpDetail?> RevertAsync(Guid id, CancellationToken ct)
@@ -188,15 +228,21 @@ public class LandingPageService(AppDbContext db, ILandingPageRenderer renderer, 
     public async Task<IReadOnlyList<LpKeywordDto>> ListKeywordsAsync(CancellationToken ct) =>
         await db.LandingPageKeywords.AsNoTracking()
             .OrderBy(k => k.Status).ThenByDescending(k => k.Priority).ThenBy(k => k.CreatedAt)
-            .Select(k => new LpKeywordDto(k.Id, k.Keyword, k.Brief, k.Priority, k.Status.ToString(), k.GeneratedPageId, k.LastError, k.CreatedAt))
+            .Select(k => new LpKeywordDto(k.Id, k.Keyword, k.Brief, k.Priority, k.Status.ToString(), k.GeneratedPageId,
+                k.LastError, k.Theme, k.Discipline, k.PainPoint, k.Intent, k.CreatedAt))
             .ToListAsync(ct);
 
     public async Task<LpKeywordDto> CreateKeywordAsync(LpKeywordUpsert req, CancellationToken ct)
     {
-        var k = new LandingPageKeyword { Keyword = req.Keyword.Trim(), Brief = req.Brief?.Trim(), Priority = req.Priority };
+        var k = new LandingPageKeyword
+        {
+            Keyword = req.Keyword.Trim(), Brief = req.Brief?.Trim(), Priority = req.Priority,
+            Signature = KeywordDedup.Signature(req.Keyword),
+        };
         db.LandingPageKeywords.Add(k);
         await db.SaveChangesAsync(ct);
-        return new LpKeywordDto(k.Id, k.Keyword, k.Brief, k.Priority, k.Status.ToString(), null, null, k.CreatedAt);
+        return new LpKeywordDto(k.Id, k.Keyword, k.Brief, k.Priority, k.Status.ToString(), null, null,
+            k.Theme, k.Discipline, k.PainPoint, k.Intent, k.CreatedAt);
     }
 
     public async Task<int> ImportKeywordsAsync(string csv, CancellationToken ct)
@@ -217,7 +263,11 @@ public class LandingPageService(AppDbContext db, ILandingPageRenderer renderer, 
             var keyword = (fields.Count > 0 ? fields[0] : "").Trim();
             if (string.IsNullOrWhiteSpace(keyword) || existing.Contains(keyword)) continue;
             var brief = fields.Count > 1 ? fields[1].Trim() : null;
-            db.LandingPageKeywords.Add(new LandingPageKeyword { Keyword = keyword, Brief = string.IsNullOrWhiteSpace(brief) ? null : brief });
+            db.LandingPageKeywords.Add(new LandingPageKeyword
+            {
+                Keyword = keyword, Brief = string.IsNullOrWhiteSpace(brief) ? null : brief,
+                Signature = KeywordDedup.Signature(keyword),
+            });
             existing.Add(keyword);
             added++;
         }
@@ -254,10 +304,12 @@ public class LandingPageService(AppDbContext db, ILandingPageRenderer renderer, 
         k.Keyword = req.Keyword.Trim();
         k.Brief = req.Brief?.Trim();
         k.Priority = req.Priority;
+        k.Signature = KeywordDedup.Signature(req.Keyword);
         if (Enum.TryParse<LandingPageKeywordStatus>(req.Status, true, out var st)) k.Status = st;
         k.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
-        return new LpKeywordDto(k.Id, k.Keyword, k.Brief, k.Priority, k.Status.ToString(), k.GeneratedPageId, k.LastError, k.CreatedAt);
+        return new LpKeywordDto(k.Id, k.Keyword, k.Brief, k.Priority, k.Status.ToString(), k.GeneratedPageId,
+            k.LastError, k.Theme, k.Discipline, k.PainPoint, k.Intent, k.CreatedAt);
     }
 
     public async Task<bool> DeleteKeywordAsync(Guid id, CancellationToken ct)
@@ -340,6 +392,7 @@ public class LandingPageService(AppDbContext db, ILandingPageRenderer renderer, 
 
     private static LpDetail ToDetail(LandingPage p) => new(
         p.Id, p.Slug, p.Status.ToString(), p.TargetKeyword, p.MetaTitle, p.MetaDescription, p.NoIndex,
-        p.QualityScore, p.GeneratedByAi, ParseContent(p.ContentJson), p.OriginalContentJson is not null,
+        p.QualityScore, p.GeneratedByAi, ParseContent(p.ContentJson),
+        p.OriginalContentJson is not null, p.PreviousContentJson is not null,
         p.CreatedAt, p.UpdatedAt, p.PublishedAt);
 }

@@ -24,6 +24,7 @@ public class LandingPageConfiguration : IEntityTypeConfiguration<LandingPage>
         // without migrations. Postgres-only column type; harmless on others.
         b.Property(p => p.ContentJson).HasColumnType("jsonb");
         b.Property(p => p.OriginalContentJson).HasColumnType("jsonb");
+        b.Property(p => p.PreviousContentJson).HasColumnType("jsonb");
         b.Property(p => p.OldSlugsJson).HasColumnType("jsonb");
 
         // Directory queries filter on status + sort by dates; index the hot path.
@@ -37,9 +38,42 @@ public class LandingPageKeywordConfiguration : IEntityTypeConfiguration<LandingP
     {
         b.HasKey(k => k.Id);
         b.Property(k => k.Keyword).HasMaxLength(200).IsRequired();
-        b.Property(k => k.Brief).HasMaxLength(2000);
+        b.Property(k => k.Brief).HasMaxLength(8000);     // structured brief is richer than the old free-text note
         b.Property(k => k.LastError).HasMaxLength(2000);
+        b.Property(k => k.Theme).HasMaxLength(200);
+        b.Property(k => k.Discipline).HasMaxLength(80);
+        b.Property(k => k.PainPoint).HasMaxLength(80);
+        b.Property(k => k.Intent).HasMaxLength(40);
+        b.Property(k => k.Signature).HasMaxLength(300);
         // Worker draws the next Pending keyword by priority then age.
         b.HasIndex(k => new { k.Status, k.Priority });
+        // Dedup checks hit Signature constantly — index it.
+        b.HasIndex(k => k.Signature);
+    }
+}
+
+public class ResearchBatchConfiguration : IEntityTypeConfiguration<ResearchBatch>
+{
+    public void Configure(EntityTypeBuilder<ResearchBatch> b)
+    {
+        b.HasKey(x => x.Id);
+        b.Property(x => x.Theme).HasMaxLength(200);
+        b.Property(x => x.Method).HasMaxLength(20);
+        b.Property(x => x.Discipline).HasMaxLength(80);
+        b.Property(x => x.PainPoint).HasMaxLength(80);
+        b.Property(x => x.Notes).HasMaxLength(2000);
+        b.HasIndex(x => x.CreatedAt);
+    }
+}
+
+public class ResearchVocabularyConfiguration : IEntityTypeConfiguration<ResearchVocabulary>
+{
+    public void Configure(EntityTypeBuilder<ResearchVocabulary> b)
+    {
+        b.HasKey(x => x.Id);
+        b.Property(x => x.Kind).HasMaxLength(20).IsRequired();
+        b.Property(x => x.Value).HasMaxLength(80).IsRequired();
+        // One value per kind — no duplicate "Musicians" disciplines.
+        b.HasIndex(x => new { x.Kind, x.Value }).IsUnique();
     }
 }

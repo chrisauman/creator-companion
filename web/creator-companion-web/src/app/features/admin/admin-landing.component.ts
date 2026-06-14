@@ -3,7 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { AdminShellComponent } from './admin-shell.component';
-import { ApiService, LpListItem, LpDetail, LpKeyword, LpSettings, LpUpsert, LpContent, PexelsPhoto } from '../../core/services/api.service';
+import { ApiService, LpListItem, LpDetail, LpKeyword, LpSettings, LpUpsert, LpContent, PexelsPhoto,
+  Vocab, CandidateResult, ResearchBatch } from '../../core/services/api.service';
 
 /**
  * Admin for the automated landing-page builder. Three tabs:
@@ -22,6 +23,7 @@ import { ApiService, LpListItem, LpDetail, LpKeyword, LpSettings, LpUpsert, LpCo
       <div class="lpa">
         <div class="lpa-tabs">
           <button class="lpa-tab" [class.lpa-tab--on]="tab() === 'pages'" (click)="tab.set('pages')">Pages</button>
+          <button class="lpa-tab" [class.lpa-tab--on]="tab() === 'research'" (click)="tab.set('research'); loadResearch()">Research</button>
           <button class="lpa-tab" [class.lpa-tab--on]="tab() === 'keywords'" (click)="tab.set('keywords'); loadKeywords()">Keywords</button>
           <button class="lpa-tab" [class.lpa-tab--on]="tab() === 'settings'" (click)="tab.set('settings'); loadSettings()">Settings</button>
         </div>
@@ -80,6 +82,33 @@ import { ApiService, LpListItem, LpDetail, LpKeyword, LpSettings, LpUpsert, LpCo
 
           <div class="lpe-split">
           <div class="lpe-form">
+
+          @if (e.id) {
+          <div class="lpa-card lpa-ai">
+            <h3>✨ Edit with AI</h3>
+            <p class="lpa-hint" style="margin-top:0">Describe a change in plain English. It stays inside the approved template — only the content changes. You review the diff before it's applied.</p>
+            <textarea class="lpa-input" rows="2" placeholder="e.g. Add two FAQ items about anxiety journaling, and remove the objections section." [(ngModel)]="aiInstruction"></textarea>
+            <div class="lpa-row" style="margin-top:.5rem; flex-wrap:wrap; align-items:center">
+              <button class="lpa-btn" [disabled]="aiBusy() || !aiInstruction.trim()" (click)="runAiEdit()">{{ aiBusy() ? 'Thinking…' : 'Propose changes' }}</button>
+              @if (e.hasPrevious) { <button class="lpa-link" (click)="undo(e.id)">↩ Undo last edit</button> }
+              @for (chip of aiChips; track chip) { <button class="lpa-chip" (click)="aiInstruction = chip">{{ chip }}</button> }
+            </div>
+            @if (aiError()) { <p class="lpa-err">{{ aiError() }}</p> }
+            @if (aiChanges().length) {
+              <div class="lpa-diff">
+                <div class="lpa-diff__h">Proposed changes — review, then Accept</div>
+                @for (c of aiChanges(); track $index) {
+                  <div class="lpa-diff__l" [class.lpa-diff__l--add]="c.startsWith('+')" [class.lpa-diff__l--del]="c.startsWith('-')">{{ c }}</div>
+                }
+                <div class="lpa-row" style="margin-top:.6rem">
+                  <button class="lpa-btn" (click)="acceptAiEdit()">Accept changes</button>
+                  <button class="lpa-link" (click)="discardAiEdit()">Discard</button>
+                </div>
+              </div>
+            }
+          </div>
+          }
+
           <div class="lpa-card">
             <h3>SEO &amp; URL</h3>
             <label class="lpa-f"><span>Target keyword</span><input class="lpa-input" [(ngModel)]="e.targetKeyword"></label>
@@ -227,15 +256,108 @@ import { ApiService, LpListItem, LpDetail, LpKeyword, LpSettings, LpUpsert, LpCo
               <tbody>
                 @for (k of keywords(); track k.id) {
                   <tr>
-                    <td>{{ k.keyword }}</td>
-                    <td class="lpa-muted">{{ k.brief }}</td>
+                    <td>{{ k.keyword }}@if (k.intent) { <span class="lpa-tag lpa-tag--sm">{{ k.intent }}</span> }
+                      @if (k.discipline || k.painPoint) { <div class="lpa-kwmeta">{{ k.discipline }}@if (k.discipline && k.painPoint) { · }{{ k.painPoint }}</div> }</td>
+                    <td class="lpa-muted lpa-brief">
+                      @if (k.brief) { <span [title]="k.brief">{{ k.brief.slice(0, 90) }}{{ k.brief.length > 90 ? '…' : '' }}</span> }
+                      @else if (k.status === 'Pending') { <span class="lpa-gen">generating…</span> }
+                      @else { — }
+                    </td>
                     <td><input class="lpa-input lpa-input--xs" type="number" [(ngModel)]="k.priority" (change)="saveKeyword(k)"></td>
-                    <td><span class="lpa-pill">{{ k.status }}</span>@if (k.lastError) { <span class="lpa-err-inline" [title]="k.lastError">!</span> }</td>
-                    <td class="lpa-actions"><button class="lpa-link lpa-link--danger" (click)="delKeyword(k)">Delete</button></td>
+                    <td><span class="lpa-pill" [class.lpa-pill--idea]="k.status==='Idea'">{{ k.status }}</span>@if (k.lastError) { <span class="lpa-err-inline" [title]="k.lastError">!</span> }</td>
+                    <td class="lpa-actions">
+                      @if (k.status === 'Idea') { <button class="lpa-link" (click)="promote(k)">Queue it</button> }
+                      <button class="lpa-link lpa-link--danger" (click)="delKeyword(k)">Delete</button>
+                    </td>
                   </tr>
                 }
               </tbody>
             </table>
+          }
+        }
+
+        <!-- ── RESEARCH ── -->
+        @if (tab() === 'research') {
+          <div class="lpa-card">
+            <h3>New research batch</h3>
+            <p class="lpa-hint" style="margin-top:0">Pick an angle and let AI brainstorm candidates. Everything is auto-checked against what's already queued, built, or saved as an idea — so you never duplicate over time.</p>
+            <label class="lpa-f"><span>Theme / angle</span><input class="lpa-input" placeholder="e.g. Musicians — practice consistency" [(ngModel)]="rTheme"></label>
+            <div class="lpa-row" style="flex-wrap:wrap">
+              <label class="lpa-f" style="flex:1; min-width:180px"><span>Discipline</span>
+                <select class="lpa-input" [(ngModel)]="rDiscipline"><option [ngValue]="null">— any —</option>@for (v of disciplines(); track v.id) { <option [ngValue]="v.value">{{ v.value }}</option> }</select></label>
+              <label class="lpa-f" style="flex:1; min-width:180px"><span>Pain-point</span>
+                <select class="lpa-input" [(ngModel)]="rPainPoint"><option [ngValue]="null">— any —</option>@for (v of painPoints(); track v.id) { <option [ngValue]="v.value">{{ v.value }}</option> }</select></label>
+            </div>
+            <label class="lpa-f"><span>Extra direction (optional)</span><input class="lpa-input" placeholder="anything specific to steer the brainstorm" [(ngModel)]="rHints"></label>
+            <div class="lpa-row" style="align-items:center; flex-wrap:wrap">
+              <button class="lpa-btn" [disabled]="rBusy() || !rTheme.trim()" (click)="brainstorm()">{{ rBusy() ? 'Researching…' : '✨ Research with AI' }}</button>
+              @if (settings() && !settings()!.anthropicConfigured) { <span class="lpa-hint" style="margin:0; color:#b45309">Needs the Anthropic key (Settings).</span> }
+              @if (rMsg()) { <span class="lpa-ok">{{ rMsg() }}</span> }
+            </div>
+          </div>
+
+          @if (cands().length) {
+            <div class="lpa-card">
+              <div class="lpa-row" style="align-items:center; margin-bottom:.4rem">
+                <div class="lpa-counts">
+                  <span class="lpa-count lpa-count--new">{{ newCount() }} new</span>
+                  <span class="lpa-count lpa-count--near">{{ nearCount() }} near-dup</span>
+                  <span class="lpa-count lpa-count--dup">{{ dupCount() }} duplicate</span>
+                </div>
+                <span class="lpa-spacer"></span>
+                <span class="lpa-hint" style="margin:0">Unchecked non-duplicates are saved as ideas (remembered, never re-suggested).</span>
+              </div>
+              @for (c of cands(); track $index) {
+                <div class="lpa-cand" [class.lpa-cand--dup]="c.bucket==='Duplicate'">
+                  @if (c.bucket !== 'Duplicate') {
+                    <input type="checkbox" [(ngModel)]="c.sel">
+                  } @else { <span class="lpa-cand__ban">⊘</span> }
+                  <div class="lpa-cand__body">
+                    <span class="lpa-cand__kw">{{ c.keyword }}</span>
+                    @if (c.bucket==='NearDuplicate' && c.matchedKeyword) { <span class="lpa-cand__match">~ like: {{ c.matchedKeyword }}@if (c.matchedSlug) { (built) }</span> }
+                    @if (c.bucket==='Duplicate' && c.matchedKeyword) { <span class="lpa-cand__match lpa-cand__match--dup">already: {{ c.matchedSlug ? ('/' + c.matchedSlug) : c.matchedKeyword }}</span> }
+                  </div>
+                  @if (c.intent) { <span class="lpa-tag">{{ c.intent }}</span> }
+                  <span class="lpa-bk" [class.lpa-bk--new]="c.bucket==='New'" [class.lpa-bk--near]="c.bucket==='NearDuplicate'" [class.lpa-bk--dup]="c.bucket==='Duplicate'">{{ bucketLabel(c.bucket) }}</span>
+                </div>
+              }
+              <div class="lpa-row" style="margin-top:.8rem; align-items:center">
+                <button class="lpa-btn" [disabled]="rCommitting()" (click)="commitResearch()">{{ rCommitting() ? 'Adding…' : ('Add ' + selectedCount() + ' to queue') }}</button>
+                <span class="lpa-hint" style="margin:0">Briefs auto-generate once queued.</span>
+              </div>
+            </div>
+          }
+
+          <div class="lpa-card">
+            <h3>Vocabulary</h3>
+            <p class="lpa-hint" style="margin-top:0">The disciplines &amp; pain-points that anchor research. Prune or extend freely.</p>
+            <div class="lpa-vocols">
+              <div>
+                <div class="lpa-voch">Disciplines</div>
+                <div class="lpa-chips">@for (v of disciplines(); track v.id) { <span class="lpa-vchip">{{ v.value }}<button (click)="delVocab(v)">×</button></span> }</div>
+                <div class="lpa-row" style="margin-top:.4rem"><input class="lpa-input lpa-input--sm" placeholder="add discipline" [(ngModel)]="newDiscipline" (keyup.enter)="addVocab('discipline')"><button class="lpa-add" (click)="addVocab('discipline')">+</button></div>
+              </div>
+              <div>
+                <div class="lpa-voch">Pain-points</div>
+                <div class="lpa-chips">@for (v of painPoints(); track v.id) { <span class="lpa-vchip">{{ v.value }}<button (click)="delVocab(v)">×</button></span> }</div>
+                <div class="lpa-row" style="margin-top:.4rem"><input class="lpa-input lpa-input--sm" placeholder="add pain-point" [(ngModel)]="newPainPoint" (keyup.enter)="addVocab('painpoint')"><button class="lpa-add" (click)="addVocab('painpoint')">+</button></div>
+              </div>
+            </div>
+          </div>
+
+          @if (batches().length) {
+            <div class="lpa-card">
+              <h3>Recent research</h3>
+              <table class="lpa-table">
+                <thead><tr><th>Angle</th><th>Discipline</th><th>Pain-point</th><th>Found</th><th>Added</th><th>When</th></tr></thead>
+                <tbody>
+                  @for (b of batches(); track b.id) {
+                    <tr><td>{{ b.theme }}</td><td class="lpa-muted">{{ b.discipline || '—' }}</td><td class="lpa-muted">{{ b.painPoint || '—' }}</td>
+                      <td>{{ b.candidateCount }}</td><td>{{ b.addedCount }}</td><td class="lpa-muted">{{ b.createdAt | date:'MMM d' }}</td></tr>
+                  }
+                </tbody>
+              </table>
+            </div>
           }
         }
 
@@ -328,6 +450,37 @@ import { ApiService, LpListItem, LpDetail, LpKeyword, LpSettings, LpUpsert, LpCo
     .lpa-imgcard img { width: 100%; height: 110px; object-fit: cover; display: block; }
     .lpa-imgcard span { display: block; font-size: .7rem; color: #9ca3af; padding: .3rem .5rem; }
     .lpa-imgcard:hover { border-color: #12C4E3; }
+    .lpa-ai { border-color: #bdeef5; background: #f7fdfe; }
+    .lpa-chip { background: #fff; border: 1px solid #e5e7eb; border-radius: 999px; padding: .25rem .7rem; font-size: .78rem; color: #4b5563; cursor: pointer; }
+    .lpa-chip:hover { border-color: #12C4E3; color: #0a93ab; }
+    .lpa-diff { margin-top: .8rem; border: 1px solid #e5e7eb; border-radius: 10px; padding: .75rem; background: #fff; }
+    .lpa-diff__h { font-size: .75rem; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: .04em; margin-bottom: .5rem; }
+    .lpa-diff__l { font-size: .85rem; padding: .2rem 0; color: #374151; }
+    .lpa-diff__l--add { color: #047857; } .lpa-diff__l--del { color: #b91c1c; }
+    .lpa-counts { display: flex; gap: .5rem; }
+    .lpa-count { font-size: .78rem; font-weight: 700; padding: .15rem .55rem; border-radius: 999px; }
+    .lpa-count--new { background: #eaf3de; color: #27500a; } .lpa-count--near { background: #faeeda; color: #633806; } .lpa-count--dup { background: #fcebeb; color: #791f1f; }
+    .lpa-cand { display: flex; align-items: center; gap: .6rem; padding: .5rem .1rem; border-bottom: 1px solid #f1f1f1; }
+    .lpa-cand--dup { opacity: .6; }
+    .lpa-cand__ban { width: 16px; text-align: center; color: #a32d2d; }
+    .lpa-cand__body { flex: 1; min-width: 0; }
+    .lpa-cand__kw { font-size: .9375rem; }
+    .lpa-cand__match { display: block; font-size: .75rem; color: #854f0b; margin-top: .1rem; }
+    .lpa-cand__match--dup { color: #a32d2d; }
+    .lpa-tag { font-size: .7rem; font-weight: 700; color: #6b7280; background: #eef0f2; padding: .12rem .5rem; border-radius: 999px; white-space: nowrap; }
+    .lpa-tag--sm { margin-left: .4rem; font-size: .65rem; padding: .05rem .4rem; }
+    .lpa-bk { font-size: .68rem; font-weight: 700; padding: .12rem .5rem; border-radius: 999px; white-space: nowrap; }
+    .lpa-bk--new { background: #eaf3de; color: #27500a; } .lpa-bk--near { background: #faeeda; color: #633806; } .lpa-bk--dup { background: #fcebeb; color: #791f1f; }
+    .lpa-vocols { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+    @media (max-width: 700px) { .lpa-vocols { grid-template-columns: 1fr; } }
+    .lpa-voch { font-size: .8125rem; font-weight: 700; color: #374151; margin-bottom: .5rem; }
+    .lpa-chips { display: flex; flex-wrap: wrap; gap: .35rem; }
+    .lpa-vchip { display: inline-flex; align-items: center; gap: .3rem; background: #f3f4f6; border-radius: 999px; padding: .2rem .3rem .2rem .6rem; font-size: .8rem; color: #374151; }
+    .lpa-vchip button { background: none; border: none; color: #9ca3af; cursor: pointer; font-weight: 700; font-size: .9rem; line-height: 1; padding: 0 .2rem; }
+    .lpa-vchip button:hover { color: #e11d48; }
+    .lpa-kwmeta { font-size: .72rem; color: #9ca3af; margin-top: .1rem; }
+    .lpa-brief { max-width: 320px; } .lpa-gen { color: #0a93ab; font-style: italic; }
+    .lpa-pill--idea { background: #ede9fe; color: #6d28d9; }
   `]
 })
 export class AdminLandingComponent implements OnInit, OnDestroy {
@@ -337,11 +490,28 @@ export class AdminLandingComponent implements OnInit, OnDestroy {
   private readonly previewOrigin = 'https://www.creatorcompanionapp.com';
   previewUrl = signal<SafeResourceUrl | null>(null);
 
-  tab = signal<'pages' | 'keywords' | 'settings'>('pages');
+  tab = signal<'pages' | 'research' | 'keywords' | 'settings'>('pages');
   loading = signal(false);
   saving = signal(false);
   msg = signal('');
   editError = signal('');
+
+  // Edit-with-AI
+  aiInstruction = '';
+  aiBusy = signal(false);
+  aiError = signal('');
+  aiChanges = signal<string[]>([]);
+  private aiProposedContent: LpContent | null = null;
+  aiChips = ['Make the hook punchier', 'Rewrite for visual artists', 'Add 3 more FAQ items', 'Shorten the explainer'];
+
+  // Research
+  rTheme = ''; rDiscipline: string | null = null; rPainPoint: string | null = null; rHints = '';
+  rBusy = signal(false); rCommitting = signal(false); rMsg = signal('');
+  cands = signal<Array<CandidateResult & { sel: boolean }>>([]);
+  newCount = signal(0); nearCount = signal(0); dupCount = signal(0);
+  disciplines = signal<Vocab[]>([]); painPoints = signal<Vocab[]>([]);
+  newDiscipline = ''; newPainPoint = '';
+  batches = signal<ResearchBatch[]>([]);
 
   pages = signal<LpListItem[]>([]);
   total = signal(0);
@@ -474,7 +644,7 @@ export class AdminLandingComponent implements OnInit, OnDestroy {
 
   newPage(): void {
     this.editError.set(''); this.msg.set(''); this.previewUrl.set(null);
-    this.editing.set({ id: '', slug: '', status: 'Draft', targetKeyword: '', metaTitle: '', metaDescription: '', noIndex: false, qualityScore: null, generatedByAi: false, content: this.blankContent(), hasOriginal: false, createdAt: '', updatedAt: '', publishedAt: null });
+    this.editing.set({ id: '', slug: '', status: 'Draft', targetKeyword: '', metaTitle: '', metaDescription: '', noIndex: false, qualityScore: null, generatedByAi: false, content: this.blankContent(), hasOriginal: false, hasPrevious: false, createdAt: '', updatedAt: '', publishedAt: null });
   }
 
   edit(p: LpListItem): void {
@@ -509,6 +679,73 @@ export class AdminLandingComponent implements OnInit, OnDestroy {
   addKeyword(): void { this.api.adminLpCreateKeyword({ keyword: this.kwNew.keyword, brief: this.kwNew.brief || null, priority: this.kwNew.priority }).subscribe(() => { this.kwNew = { keyword: '', brief: '', priority: 0 }; this.loadKeywords(); }); }
   saveKeyword(k: LpKeyword): void { this.api.adminLpUpdateKeyword(k.id, { keyword: k.keyword, brief: k.brief, priority: k.priority, status: k.status }).subscribe(); }
   delKeyword(k: LpKeyword): void { if (confirm(`Remove keyword "${k.keyword}"?`)) this.api.adminLpDeleteKeyword(k.id).subscribe(() => this.loadKeywords()); }
+
+  // ── Edit with AI ──────────────────────────────────────────────────
+  runAiEdit(): void {
+    const e = this.editing(); if (!e?.id || !this.aiInstruction.trim()) return;
+    this.aiBusy.set(true); this.aiError.set(''); this.aiChanges.set([]); this.aiProposedContent = null;
+    this.api.adminLpAiEdit(e.id, this.aiInstruction.trim()).subscribe({
+      next: p => { this.aiBusy.set(false); this.aiProposedContent = p.content; this.aiChanges.set(p.changes.length ? p.changes : ['Updated the page content.']); },
+      error: err => { this.aiBusy.set(false); this.aiError.set(err?.error?.error ?? 'Could not generate that edit.'); },
+    });
+  }
+  acceptAiEdit(): void {
+    const e = this.editing(); if (!e || !this.aiProposedContent) return;
+    e.content = this.hydrate(this.aiProposedContent);
+    this.editing.set({ ...e });
+    this.discardAiEdit();
+    this.aiInstruction = '';
+    this.save();   // persists (snapshots previous for undo) + reloads the live preview
+  }
+  discardAiEdit(): void { this.aiChanges.set([]); this.aiProposedContent = null; }
+  undo(id: string): void {
+    this.api.adminLpUndo(id).subscribe(d => { d.content = this.hydrate(d.content || {}); this.editing.set(d); this.msg.set('Undid last edit.'); setTimeout(() => this.msg.set(''), 2500); this.reloadPreview(); });
+  }
+
+  // ── Research ──────────────────────────────────────────────────────
+  loadResearch(): void {
+    this.api.adminLpVocab().subscribe(v => { this.disciplines.set(v.disciplines); this.painPoints.set(v.painPoints); });
+    this.api.adminLpBatches().subscribe(b => this.batches.set(b));
+    if (!this.settings()) this.loadSettings();
+  }
+  brainstorm(): void {
+    if (!this.rTheme.trim()) return;
+    this.rBusy.set(true); this.rMsg.set(''); this.cands.set([]);
+    this.api.adminLpBrainstorm({ theme: this.rTheme.trim(), discipline: this.rDiscipline, painPoint: this.rPainPoint, hints: this.rHints || null }).subscribe({
+      next: r => {
+        this.rBusy.set(false);
+        this.cands.set(r.candidates.map(c => ({ ...c, sel: c.bucket === 'New' })));
+        this.newCount.set(r.newCount); this.nearCount.set(r.nearCount); this.dupCount.set(r.dupCount);
+        if (!r.candidates.length) this.rMsg.set('No candidates came back — try a different angle or check the Anthropic key.');
+      },
+      error: () => { this.rBusy.set(false); this.rMsg.set('Research failed.'); },
+    });
+  }
+  bucketLabel(b: string): string { return b === 'New' ? 'new' : b === 'NearDuplicate' ? 'near-dup' : 'duplicate'; }
+  selectedCount(): number { return this.cands().filter(c => c.sel && c.bucket !== 'Duplicate').length; }
+  commitResearch(): void {
+    const items = this.cands().filter(c => c.bucket !== 'Duplicate')
+      .map(c => ({ keyword: c.keyword, intent: c.intent, action: (c.sel ? 'queue' : 'idea') as 'queue' | 'idea' }));
+    if (!items.length) { this.rMsg.set('Nothing to add.'); return; }
+    this.rCommitting.set(true);
+    this.api.adminLpCommitResearch({ theme: this.rTheme.trim(), method: 'ai', discipline: this.rDiscipline, painPoint: this.rPainPoint, notes: null, items }).subscribe({
+      next: r => {
+        this.rCommitting.set(false); this.cands.set([]);
+        this.rMsg.set(`Queued ${r.queued}, saved ${r.ideas} as ideas${r.skippedAsDup ? `, skipped ${r.skippedAsDup} duplicate` : ''}.`);
+        this.api.adminLpBatches().subscribe(b => this.batches.set(b));
+      },
+      error: () => { this.rCommitting.set(false); this.rMsg.set('Could not add those.'); },
+    });
+  }
+  addVocab(kind: 'discipline' | 'painpoint'): void {
+    const value = (kind === 'discipline' ? this.newDiscipline : this.newPainPoint).trim();
+    if (!value) return;
+    this.api.adminLpAddVocab(kind, value).subscribe(() => { if (kind === 'discipline') this.newDiscipline = ''; else this.newPainPoint = ''; this.loadResearch(); });
+  }
+  delVocab(v: Vocab): void { this.api.adminLpDeleteVocab(v.id).subscribe(() => this.loadResearch()); }
+  promote(k: LpKeyword): void {
+    this.api.adminLpUpdateKeyword(k.id, { keyword: k.keyword, brief: k.brief, priority: k.priority, status: 'Pending' }).subscribe(() => this.loadKeywords());
+  }
 
   // Settings
   loadSettings(): void { this.api.adminLpSettings().subscribe(s => this.settings.set(s)); }

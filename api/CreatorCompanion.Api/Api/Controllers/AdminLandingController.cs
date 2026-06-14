@@ -16,8 +16,38 @@ namespace CreatorCompanion.Api.Api.Controllers;
 public class AdminLandingController(
     ILandingPageService svc,
     ILandingPageGenerationService generation,
-    ILandingImageService images) : ControllerBase
+    ILandingImageService images,
+    IResearchService research) : ControllerBase
 {
+    // ── Research: vocabulary ──────────────────────────────────────────
+    [HttpGet("research/vocab")]
+    public async Task<IActionResult> Vocab(CancellationToken ct) => Ok(await research.GetVocabAsync(ct));
+
+    [HttpPost("research/vocab")]
+    public async Task<IActionResult> AddVocab([FromBody] VocabAddRequest req, CancellationToken ct)
+        => await research.AddVocabAsync(req, ct) is { } v ? Ok(v) : BadRequest(new { error = "Invalid kind or value." });
+
+    [HttpDelete("research/vocab/{id:guid}")]
+    public async Task<IActionResult> DeleteVocab(Guid id, CancellationToken ct)
+        => await research.DeleteVocabAsync(id, ct) ? NoContent() : NotFound();
+
+    // ── Research: brainstorm → commit ─────────────────────────────────
+    /// <summary>Brainstorm candidates for an angle, each classified New/NearDuplicate/Duplicate. Saves nothing.</summary>
+    [HttpPost("research/brainstorm")]
+    public async Task<IActionResult> Brainstorm([FromBody] BrainstormRequest req, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(req.Theme)) return BadRequest(new { error = "A theme/angle is required." });
+        return Ok(await research.BrainstormAsync(req, ct));
+    }
+
+    /// <summary>Persist the chosen candidates (queue/idea), logging the batch; true-duplicates are dropped.</summary>
+    [HttpPost("research/commit")]
+    public async Task<IActionResult> Commit([FromBody] CommitRequest req, CancellationToken ct)
+        => Ok(await research.CommitAsync(req, ct));
+
+    [HttpGet("research/batches")]
+    public async Task<IActionResult> Batches(CancellationToken ct) => Ok(await research.ListBatchesAsync(ct));
+
     // ── Images (Pexels) ───────────────────────────────────────────────
     /// <summary>Search free stock (Pexels) for the editor's image picker.</summary>
     [HttpGet("images/search")]
@@ -82,6 +112,21 @@ public class AdminLandingController(
     [HttpPost("pages/{id:guid}/revert")]
     public async Task<IActionResult> Revert(Guid id, CancellationToken ct)
         => await svc.RevertAsync(id, ct) is { } d ? Ok(d) : NotFound();
+
+    /// <summary>Undo the most recent content edit (one step). 404 if there's nothing to undo.</summary>
+    [HttpPost("pages/{id:guid}/undo")]
+    public async Task<IActionResult> Undo(Guid id, CancellationToken ct)
+        => await svc.UndoAsync(id, ct) is { } d ? Ok(d) : NotFound();
+
+    /// <summary>Propose an AI edit from a natural-language instruction (NOT saved — accept = a normal PUT).</summary>
+    [HttpPost("pages/{id:guid}/ai-edit")]
+    public async Task<IActionResult> AiEdit(Guid id, [FromBody] AiEditRequest req, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(req.Instruction)) return BadRequest(new { error = "Describe the change you want." });
+        return await svc.AiEditAsync(id, req.Instruction, ct) is { } p
+            ? Ok(p)
+            : BadRequest(new { error = "Couldn't generate that edit. Try rephrasing, or check the Anthropic key." });
+    }
 
     /// <summary>Returns a marketing-domain preview URL (signed token) — renders the page, drafts included, where all assets resolve.</summary>
     [HttpGet("pages/{id:guid}/preview")]

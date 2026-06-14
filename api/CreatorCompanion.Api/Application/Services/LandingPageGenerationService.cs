@@ -13,6 +13,14 @@ public interface ILandingPageGenerationService
 
     /// <summary>Generate one page from the next pending keyword right now (manual trigger or scheduled run).</summary>
     Task<(bool ok, string message)> GenerateNextAsync(CancellationToken ct);
+
+    /// <summary>
+    /// Generate the descriptive brief for ONE queued keyword that doesn't have one
+    /// yet (the brief-on-add step). Returns true if it filled one — the worker
+    /// calls this once per tick so briefs appear shortly after a keyword is queued,
+    /// without a burst of API calls. Runs regardless of the auto-generate switch.
+    /// </summary>
+    Task<bool> FillNextBriefAsync(CancellationToken ct);
 }
 
 /// <summary>
@@ -111,6 +119,32 @@ public class LandingPageGenerationService(
 
         await SafeEmailAsync(detail.MetaTitle, detail.Slug, status, score, ct);
         return (true, $"Generated '{detail.MetaTitle}' (score {score}, {status}).");
+    }
+
+    public async Task<bool> FillNextBriefAsync(CancellationToken ct)
+    {
+        if (!generator.IsConfigured) return false;
+
+        // Oldest queued keyword still missing its brief. Idea-status rows wait
+        // until promoted to Pending — no point briefing something not committed.
+        var k = await db.LandingPageKeywords
+            .Where(x => x.Status == LandingPageKeywordStatus.Pending && (x.Brief == null || x.Brief == ""))
+            .OrderBy(x => x.UpdatedAt)
+            .FirstOrDefaultAsync(ct);
+        if (k is null) return false;
+
+        var relatedTitles = await db.LandingPages.AsNoTracking()
+            .Where(p => p.DeletedAt == null && p.Status == LandingPageStatus.Published)
+            .OrderByDescending(p => p.PublishedAt).Select(p => p.MetaTitle).Take(30).ToListAsync(ct);
+
+        var brief = await generator.GenerateBriefAsync(k.Keyword, k.Theme, k.Discipline, k.PainPoint, k.Intent, relatedTitles, ct);
+        if (string.IsNullOrWhiteSpace(brief)) return false;   // try again next tick
+
+        k.Brief = brief;
+        k.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync(ct);
+        log.LogInformation("Generated brief for queued keyword '{Keyword}'.", k.Keyword);
+        return true;
     }
 
     /// <summary>
