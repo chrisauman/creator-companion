@@ -632,6 +632,57 @@ auto-poster. Tabs: **Pages / Research / Keywords / Settings**.
   pain-point coverage matrix (both want research volume first); per-page OG
   image; blog. Migrations append-only — `(slug)` unique, never destructive.
 
+## Blog platform (built)
+
+Admin-only `/admin/blog`. The **same** keyword pipeline that builds landing
+pages also publishes **blog posts** — one pipeline, two outputs, routed by a
+`ContentType` (Page/Post) on each keyword. Adapted from the Sanctuary blog spec
+(`sanctuary-websites/docs/specs/blog.md`, decision 0291) — product decisions
+ported, the multi-tenant/module/Prisma machinery dropped (CC is single-tenant).
+
+- **Routing of keyword → output:** `LandingPageKeyword.ContentType` (Page=0,
+  Post=1), admin-set per keyword (intent is only a hint — Chris chose
+  "always ask me", so the research candidate row + Keywords tab carry a
+  Page/Post toggle). `LandingPageGenerationService.GenerateNextAsync` branches:
+  Post → `GeneratePostAsync` (Sonnet writes a 700–1100w post: semantic-HTML
+  body + dek + suggested category + FAQ), else the page flow. Same quality gate
+  + **auto-publish** (Chris's choice) under the global kill switch + review
+  email. `GeneratedPostId` on the keyword; delete-post reverts it to the queue.
+- **Public serving** (marketing domain via `/blog` proxy, `PublicBlogController`
+  route `v1/blog`): nested URLs `/blog/{category}/{slug}` (uncategorized
+  explicit); paginated index + category listings (`/blog/page/N`,
+  `/blog/{cat}/page/N`, `page` reserved); slug/category change → 301 to current
+  path (`OldSlugsJson` stores old "cat/slug" paths); draft→404 (or render with a
+  signed `lp_preview` token, noindex/no-store); deleted→410. RSS at
+  `/blog/rss.xml`. Blog URLs added to `sitemap.xml` (published + non-noindex).
+- **SEO:** `BlogPosting + BreadcrumbList + Organization` JSON-LD, `og:type=article`
+  + published/modified times + section, canonical + per-post override, OG image
+  from featured image, `noindex` toggle; listings emit `CollectionPage + ItemList
+  + BreadcrumbList` with rel prev/next. Single voice (no bylines). Reading time
+  (ceil words/200), last-updated, auto-snippet (~140c), pinned posts.
+- **Content model + safety:** `BlogPost` + `BlogCategory` tables (separate from
+  landing pages; one category per post + permanent "Uncategorized" system
+  category, seeded starter set). Body = **sanitized rich-text HTML** (`BlogHtml`):
+  H2/H3 only (the post title is the only H1), inline images w/ alt, **safe-listed
+  YouTube/Vimeo embeds** (iframe host validated server-side via the sanitizer's
+  PostProcessNode; marketing CSP `frame-src` allows youtube/vimeo). Reuses the
+  `IEntryEncryptor`-free HtmlSanitizer allowlist pattern; 9 unit tests
+  (`BlogHtmlTests`). Scheduled publish = `ScheduledFor` + the 60s worker flips
+  due drafts to Published (no rebuild — dynamic render).
+- **Admin UI:** `/admin/blog` (Posts + Categories tabs). Editor: TipTap WYSIWYG
+  body (`blog-body-editor.component.ts` — StarterKit H2/H3, lists, quote, Link,
+  Image via Pexels picker, Youtube embed; installed `@tiptap/extension-image`,
+  `-link`, `-youtube`) + featured image + category + SEO + pin + schedule +
+  **Edit-with-AI** (body/FAQ/CTA, diff → accept/undo, `PreviousContentJson`) +
+  live preview iframe (signed token, read-only). Categories manager (CRUD,
+  rename→301, delete→reassign-to-Uncategorized).
+- **Deferred (per plan):** on-site search, 90-day version history, post
+  duplication, autosave guard, Related Posts (shared PostCard + after-body
+  region left in place so it drops in without rework).
+- **Shared chrome:** `MarketingChrome` (nav/footer/scripts/fonts/GA4) used by the
+  blog renderer; the landing renderer keeps its own in-file copies (kept identical
+  — update both if the footer/nav changes).
+
 ## Profile model
 
 - **FirstName + LastName.** Username was removed — historical refactor.
