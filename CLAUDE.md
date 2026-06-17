@@ -575,6 +575,63 @@ Instagram, Threads** (image/text) + **YouTube** (a daily video Short).
   TBD). Optional AI-condensed short spark text for a text-only post is
   discussed-not-built (CSV export endpoint shipped for offline editing).
 
+## Landing-page builder + keyword research (built)
+
+Admin-only `/admin/landing` (route `admin/landing`, nav in admin-shell).
+Auto-generates SEO landing pages from a researched keyword queue, served on
+the **marketing** domain via a flat-slug proxy. Separate from the Marketing
+auto-poster. Tabs: **Pages / Research / Keywords / Settings**.
+
+- **Architecture:** pages live in Postgres (`LandingPage`), section content is
+  a schema-flexible JSONB blob (`ContentJson`) matching `LpContent`; the
+  server renders it to HTML (`ILandingPageRenderer`). Marketing `vercel.json`
+  rewrites `creatorcompanionapp.com/{slug}` → `GET /v1/lp/{slug}`
+  (`PublicLandingController`), filesystem-precedence + a `Reserved` blocklist.
+  Published→200 (CDN-cached), draft+valid token→noindex/no-store, deleted→410,
+  renamed→301 (`OldSlugsJson`). Dynamic `sitemap.xml` + `/resources` hub.
+- **Daily generation:** `LandingPageBackgroundService` (60s) → each tick fills
+  ONE missing brief then runs `TickAsync` (7am ET, once/day, dedupe via
+  `LastGeneratedDate`). `LandingPageGenerationService.GenerateNextAsync` picks
+  the top-priority Pending keyword → Sonnet generates → Pexels fills empty image
+  slots → Haiku quality-scores → auto-publish if ≥ threshold else hold as draft
+  + email chris.auman@gmail.com. Safe by default (`AutoGenerateEnabled` false).
+- **Keyword research (the dedup system):** the master index = keyword queue ∪
+  every live page's `TargetKeyword`, minus `Rejected`. `KeywordDedup` does two
+  cheap no-API tiers — exact `Normalize` + order-insensitive `Signature`
+  (drops filler words). Research tab: Sonnet brainstorm for an angle (theme +
+  controlled-vocab `Discipline`/`PainPoint`) → candidates classified
+  New/NearDuplicate/Duplicate (`MasterKeywordIndex.Classify`, also dedups
+  within the batch). Accept→queue (`Pending`); unchecked non-dups→`Idea`
+  (remembered, never re-suggested). Each session logged as a `ResearchBatch`.
+  `ResearchVocabulary` (kind=discipline|painpoint) seeded + admin-editable.
+  Near-dups are ALWAYS a human decision — only exact dups auto-block.
+- **Brief-on-add:** queueing a keyword (or promoting an Idea→Pending) → the
+  worker generates the build-ready brief (Sonnet, one/tick) the page is built
+  around. Stored in `LandingPageKeyword.Brief`, editable before build.
+- **Visual editor (Tier 3):** the page editor shows a live preview iframe of
+  the real rendered page on the marketing domain (signed HMAC token, `edit=1`).
+  Renderer stamps `data-lp="<path>"` on text + `data-lp-section` on sections;
+  an injected bridge makes them contenteditable and postMessages edits/section-
+  clicks to the app (origin-locked both ways). Requires the cross-origin frame
+  headers (app `frame-src` allows the marketing domain; marketing dropped
+  `X-Frame-Options: DENY` for `frame-ancestors 'self' app-domain`).
+- **Edit with AI (content within the template):** `pages/{id}/ai-edit` →
+  Sonnet returns the FULL `ContentJson` changing ONLY what's asked (schema-
+  locked, never partial-applied) + a change list → shown as a diff → Accept =
+  normal PUT. One-step undo via `PreviousContentJson` (distinct from
+  revert-to-AI-original). Genuinely NEW block *types* are a code change (add a
+  schema sub-type + renderer + editor fields) — then reusable everywhere.
+- **Env (Railway):** `Anthropic__ApiKey` (generation/brief/research/edit),
+  `Pexels__ApiKey` (images), `Ga4__MeasurementId` (analytics). Preview token +
+  stored-image encryption reuse `Entry__EncryptionKey`. All degrade gracefully
+  when a key is absent.
+- **Models:** Sonnet (`Anthropic:GeneratorModel`, `claude-sonnet-4-6`) for
+  quality-critical low-volume (generate/brief/brainstorm/edit); Haiku
+  (`Anthropic:Model`) for cheap classification (quality score).
+- **Deferred fast-follows:** tier-3 AI overlap dedup pass; discipline ×
+  pain-point coverage matrix (both want research volume first); per-page OG
+  image; blog. Migrations append-only — `(slug)` unique, never destructive.
+
 ## Profile model
 
 - **FirstName + LastName.** Username was removed — historical refactor.
