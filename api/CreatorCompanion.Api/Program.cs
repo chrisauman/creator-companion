@@ -453,6 +453,8 @@ try
     builder.Services.AddScoped<ILandingPageGenerationService, LandingPageGenerationService>();
     builder.Services.AddScoped<IKeywordDedupService, KeywordDedupService>();
     builder.Services.AddScoped<IResearchService, ResearchService>();
+    builder.Services.AddSingleton<IBlogRenderer, BlogRenderer>();
+    builder.Services.AddScoped<IBlogService, BlogService>();
     builder.Services.AddHostedService<LandingPageBackgroundService>();
     builder.Services.AddScoped<ISocialPostingService, SocialPostingService>();
     builder.Services.AddHostedService<SocialPostingBackgroundService>();
@@ -653,6 +655,8 @@ try
         SerilogLog.Information("Landing pages seeded.");
         await ResearchVocabularySeeder.SeedAsync(db);
         SerilogLog.Information("Research vocabulary seeded.");
+        await BlogCategorySeeder.SeedAsync(db);
+        SerilogLog.Information("Blog categories seeded.");
     }
 
     app.Run();

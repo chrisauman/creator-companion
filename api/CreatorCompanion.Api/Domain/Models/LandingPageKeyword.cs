@@ -23,8 +23,14 @@ public class LandingPageKeyword
 
     public LandingPageKeywordStatus Status { get; set; } = LandingPageKeywordStatus.Pending;
 
-    /// <summary>The page produced from this keyword, once generated.</summary>
+    /// <summary>Whether this keyword builds a landing Page or a blog Post. Admin-set.</summary>
+    public LandingPageContentType ContentType { get; set; } = LandingPageContentType.Page;
+
+    /// <summary>The landing page produced from this keyword (when ContentType=Page).</summary>
     public Guid? GeneratedPageId { get; set; }
+
+    /// <summary>The blog post produced from this keyword (when ContentType=Post).</summary>
+    public Guid? GeneratedPostId { get; set; }
 
     /// <summary>Last generation error (retained for the admin to see/retry).</summary>
     public string? LastError { get; set; }

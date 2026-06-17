@@ -1,6 +1,7 @@
 using CreatorCompanion.Api.Application.DTOs;
 using CreatorCompanion.Api.Application.Interfaces;
 using CreatorCompanion.Api.Domain.Enums;
+using CreatorCompanion.Api.Domain.Models;
 using CreatorCompanion.Api.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -21,6 +22,9 @@ public interface ILandingPageGenerationService
     /// without a burst of API calls. Runs regardless of the auto-generate switch.
     /// </summary>
     Task<bool> FillNextBriefAsync(CancellationToken ct);
+
+    /// <summary>Publish any scheduled posts whose time has arrived (worker, each tick). Returns count published.</summary>
+    Task<int> PublishDueScheduledPostsAsync(CancellationToken ct);
 }
 
 /// <summary>
@@ -34,6 +38,7 @@ public class LandingPageGenerationService(
     AppDbContext db,
     ILandingPageGenerator generator,
     ILandingPageService pages,
+    IBlogService blog,
     ILandingImageService images,
     IEmailService email,
     IConfiguration config,
@@ -73,6 +78,10 @@ public class LandingPageGenerationService(
             .OrderByDescending(k => k.Priority).ThenBy(k => k.CreatedAt)
             .FirstOrDefaultAsync(ct);
         if (keyword is null) return (false, "No pending keywords in the queue.");
+
+        // Route blog-type keywords to the post generator; pages fall through.
+        if (keyword.ContentType == LandingPageContentType.Post)
+            return await GeneratePostAsync(keyword, ct);
 
         var existingTitles = await db.LandingPages.AsNoTracking().Where(p => p.DeletedAt == null)
             .Select(p => p.MetaTitle).ToListAsync(ct);
@@ -117,7 +126,7 @@ public class LandingPageGenerationService(
         keyword.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
 
-        await SafeEmailAsync(detail.MetaTitle, detail.Slug, status, score, ct);
+        await SafeEmailAsync(detail.MetaTitle, detail.Slug, status, score, $"/{detail.Slug}", "/admin/landing", ct);
         return (true, $"Generated '{detail.MetaTitle}' (score {score}, {status}).");
     }
 
@@ -145,6 +154,96 @@ public class LandingPageGenerationService(
         await db.SaveChangesAsync(ct);
         log.LogInformation("Generated brief for queued keyword '{Keyword}'.", k.Keyword);
         return true;
+    }
+
+    /// <summary>Generate a blog POST from a keyword: generate → featured image → score → create → publish-if-passes → email.</summary>
+    private async Task<(bool, string)> GeneratePostAsync(LandingPageKeyword keyword, CancellationToken ct)
+    {
+        var categories = await db.BlogCategories.AsNoTracking().OrderBy(c => c.Position).ToListAsync(ct);
+        var categoryNames = categories.Select(c => c.Name).ToList();
+        var existingTitles = await db.BlogPosts.AsNoTracking().Where(p => p.DeletedAt == null).Select(p => p.Title).ToListAsync(ct);
+        var existingKeywords = await db.BlogPosts.AsNoTracking().Where(p => p.DeletedAt == null).Select(p => p.TargetKeyword).ToListAsync(ct);
+
+        var gen = await generator.GenerateBlogPostAsync(keyword.Keyword, keyword.Brief, categoryNames, existingTitles, ct);
+        if (gen is null)
+        {
+            keyword.Status = LandingPageKeywordStatus.Failed;
+            keyword.LastError = "Post generation returned nothing (API error or unparseable output).";
+            keyword.UpdatedAt = DateTime.UtcNow;
+            await db.SaveChangesAsync(ct);
+            return (false, $"Post generation failed for '{keyword.Keyword}'.");
+        }
+
+        // Featured image (blog cards/hero/OG). Best-effort via Pexels.
+        string? featuredUrl = null;
+        if (images.IsConfigured)
+        {
+            try { featuredUrl = await images.SourceForAsync(string.IsNullOrWhiteSpace(gen.FeaturedImageAlt) ? keyword.Keyword : gen.FeaturedImageAlt!, ct); }
+            catch (Exception ex) { log.LogWarning(ex, "Featured image fetch failed for '{Keyword}'.", keyword.Keyword); }
+        }
+
+        var score = await generator.ScoreBlogQualityAsync(gen, existingKeywords, ct);
+        var categoryId = MatchCategory(categories, gen.SuggestedCategory);
+
+        var content = new BlogContent { BodyHtml = gen.BodyHtml, Faq = gen.Faq };
+        var (detail, error) = await blog.CreateAsync(new BlogUpsertRequest(
+            gen.Slug, categoryId, keyword.Keyword, gen.Title, gen.Dek, gen.MetaTitle, gen.MetaDescription,
+            CanonicalUrl: null, NoIndex: false, FeaturedImageUrl: featuredUrl, FeaturedImageAlt: gen.FeaturedImageAlt,
+            Snippet: null, Pinned: false, PinnedPosition: null, ScheduledFor: null, content), generatedByAi: true, qualityScore: score, ct);
+        if (detail is null)
+        {
+            keyword.Status = LandingPageKeywordStatus.Failed;
+            keyword.LastError = error ?? "Could not save the generated post.";
+            keyword.UpdatedAt = DateTime.UtcNow;
+            await db.SaveChangesAsync(ct);
+            return (false, error ?? "Save failed.");
+        }
+
+        var settings = await GetSettingsAsync(ct);
+        var publish = settings.AutoPublishEnabled && score >= settings.QualityThreshold;
+        var status = "Draft";
+        if (publish && await blog.SetStatusAsync(detail.Id, LandingPageStatus.Published, ct)) status = "Published";
+
+        keyword.Status = LandingPageKeywordStatus.Generated;
+        keyword.GeneratedPostId = detail.Id;
+        keyword.LastError = null;
+        keyword.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync(ct);
+
+        await SafeEmailAsync($"[Blog] {detail.Title}", $"{detail.CategorySlug}/{detail.Slug}", status, score,
+            $"/blog/{detail.CategorySlug}/{detail.Slug}", "/admin/blog", ct);
+        return (true, $"Generated post '{detail.Title}' (score {score}, {status}).");
+    }
+
+    /// <summary>
+    /// Publish any scheduled posts whose time has arrived. Runs each tick from the
+    /// worker — no static rebuild needed since the blog renders dynamically.
+    /// Returns the number published.
+    /// </summary>
+    public async Task<int> PublishDueScheduledPostsAsync(CancellationToken ct)
+    {
+        var now = DateTime.UtcNow;
+        var due = await db.BlogPosts
+            .Where(p => p.DeletedAt == null && p.Status != LandingPageStatus.Published
+                        && p.ScheduledFor != null && p.ScheduledFor <= now)
+            .Select(p => p.Id).ToListAsync(ct);
+        var n = 0;
+        foreach (var id in due)
+            if (await blog.SetStatusAsync(id, LandingPageStatus.Published, ct)) n++;
+        if (n > 0) log.LogInformation("Published {N} scheduled blog post(s).", n);
+        return n;
+    }
+
+    private static Guid MatchCategory(List<Domain.Models.BlogCategory> categories, string? suggested)
+    {
+        if (!string.IsNullOrWhiteSpace(suggested))
+        {
+            var match = categories.FirstOrDefault(c => string.Equals(c.Name, suggested.Trim(), StringComparison.OrdinalIgnoreCase))
+                     ?? categories.FirstOrDefault(c => c.Name.Contains(suggested.Trim(), StringComparison.OrdinalIgnoreCase));
+            if (match is not null) return match.Id;
+        }
+        var uncategorized = categories.FirstOrDefault(c => c.IsSystem);
+        return uncategorized?.Id ?? (categories.Count > 0 ? categories[0].Id : Guid.Empty);
     }
 
     /// <summary>
@@ -179,15 +278,15 @@ public class LandingPageGenerationService(
         return slug;
     }
 
-    private async Task SafeEmailAsync(string title, string slug, string status, int score, CancellationToken ct)
+    private async Task SafeEmailAsync(string title, string slug, string status, int score, string pagePath, string adminPath, CancellationToken ct)
     {
         try
         {
             var marketingBase = (config["Marketing:BaseUrl"] ?? "https://www.creatorcompanionapp.com").TrimEnd('/');
-            var adminUrl = (config["App:WebUrl"] ?? "https://app.creatorcompanionapp.com").TrimEnd('/') + "/admin/landing";
-            await email.SendLandingPageReviewAsync(Recipient, title, slug, status, score, $"{marketingBase}/{slug}", adminUrl);
+            var adminUrl = (config["App:WebUrl"] ?? "https://app.creatorcompanionapp.com").TrimEnd('/') + adminPath;
+            await email.SendLandingPageReviewAsync(Recipient, title, slug, status, score, $"{marketingBase}{pagePath}", adminUrl);
         }
-        catch (Exception ex) { log.LogWarning(ex, "Landing-page review email failed."); }
+        catch (Exception ex) { log.LogWarning(ex, "Generation review email failed."); }
     }
 
     private async Task<Domain.Models.LandingPageSettings> GetSettingsAsync(CancellationToken ct)

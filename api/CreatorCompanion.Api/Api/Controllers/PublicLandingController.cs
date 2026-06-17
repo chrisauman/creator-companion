@@ -69,6 +69,21 @@ public class PublicLandingController(AppDbContext db, ILandingPageRenderer rende
         Url($"{_base}/resources", DateTime.UtcNow, "weekly", "0.6");
         Url($"{_base}/signup.html", DateTime.UtcNow, "monthly", "0.7");
         foreach (var p in pages) Url($"{_base}/{p.Slug}", p.UpdatedAt, "monthly", "0.8");
+
+        // Blog: index + each category that has posts + every published indexable
+        // post (nested URL). Drafts / noindex / soft-deleted are never included.
+        var posts = await db.BlogPosts.AsNoTracking()
+            .Where(p => p.Status == LandingPageStatus.Published && p.DeletedAt == null && !p.NoIndex)
+            .Join(db.BlogCategories.AsNoTracking(), p => p.CategoryId, c => c.Id,
+                  (p, c) => new { CatSlug = c.Slug, p.Slug, p.LastUpdatedAt })
+            .ToListAsync(ct);
+        if (posts.Count > 0)
+        {
+            Url($"{_base}/blog", DateTime.UtcNow, "daily", "0.7");
+            foreach (var catSlug in posts.Select(p => p.CatSlug).Distinct())
+                Url($"{_base}/blog/{catSlug}", DateTime.UtcNow, "weekly", "0.6");
+            foreach (var p in posts) Url($"{_base}/blog/{p.CatSlug}/{p.Slug}", p.LastUpdatedAt, "monthly", "0.7");
+        }
         sb.Append("</urlset>");
 
         Response.Headers.CacheControl = CacheHeader;

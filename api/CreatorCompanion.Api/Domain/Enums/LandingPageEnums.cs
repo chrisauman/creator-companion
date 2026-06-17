@@ -36,3 +36,16 @@ public enum LandingPageKeywordStatus
     Idea      = 4,
     Rejected  = 5,
 }
+
+/// <summary>
+/// What the automated pipeline builds from a keyword. Commercial-intent terms
+/// usually want a conversion <see cref="Page"/>; informational/how-to terms want
+/// a teaching <see cref="Post"/> (blog). The admin sets this per keyword (intent
+/// is only a hint) — a keyword routes to the matching generator + content table.
+/// Default Page keeps pre-existing keywords building landing pages as before.
+/// </summary>
+public enum LandingPageContentType
+{
+    Page = 0,
+    Post = 1,
+}

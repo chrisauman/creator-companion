@@ -228,8 +228,8 @@ public class LandingPageService(AppDbContext db, ILandingPageRenderer renderer, 
     public async Task<IReadOnlyList<LpKeywordDto>> ListKeywordsAsync(CancellationToken ct) =>
         await db.LandingPageKeywords.AsNoTracking()
             .OrderBy(k => k.Status).ThenByDescending(k => k.Priority).ThenBy(k => k.CreatedAt)
-            .Select(k => new LpKeywordDto(k.Id, k.Keyword, k.Brief, k.Priority, k.Status.ToString(), k.GeneratedPageId,
-                k.LastError, k.Theme, k.Discipline, k.PainPoint, k.Intent, k.CreatedAt))
+            .Select(k => new LpKeywordDto(k.Id, k.Keyword, k.Brief, k.Priority, k.Status.ToString(), k.ContentType.ToString(),
+                k.GeneratedPageId, k.GeneratedPostId, k.LastError, k.Theme, k.Discipline, k.PainPoint, k.Intent, k.CreatedAt))
             .ToListAsync(ct);
 
     public async Task<LpKeywordDto> CreateKeywordAsync(LpKeywordUpsert req, CancellationToken ct)
@@ -238,12 +238,16 @@ public class LandingPageService(AppDbContext db, ILandingPageRenderer renderer, 
         {
             Keyword = req.Keyword.Trim(), Brief = req.Brief?.Trim(), Priority = req.Priority,
             Signature = KeywordDedup.Signature(req.Keyword),
+            ContentType = ParseContentType(req.ContentType),
         };
         db.LandingPageKeywords.Add(k);
         await db.SaveChangesAsync(ct);
-        return new LpKeywordDto(k.Id, k.Keyword, k.Brief, k.Priority, k.Status.ToString(), null, null,
-            k.Theme, k.Discipline, k.PainPoint, k.Intent, k.CreatedAt);
+        return new LpKeywordDto(k.Id, k.Keyword, k.Brief, k.Priority, k.Status.ToString(), k.ContentType.ToString(),
+            null, null, k.LastError, k.Theme, k.Discipline, k.PainPoint, k.Intent, k.CreatedAt);
     }
+
+    private static LandingPageContentType ParseContentType(string? s) =>
+        Enum.TryParse<LandingPageContentType>(s, true, out var t) ? t : LandingPageContentType.Page;
 
     public async Task<int> ImportKeywordsAsync(string csv, CancellationToken ct)
     {
@@ -305,11 +309,12 @@ public class LandingPageService(AppDbContext db, ILandingPageRenderer renderer, 
         k.Brief = req.Brief?.Trim();
         k.Priority = req.Priority;
         k.Signature = KeywordDedup.Signature(req.Keyword);
+        if (!string.IsNullOrWhiteSpace(req.ContentType)) k.ContentType = ParseContentType(req.ContentType);
         if (Enum.TryParse<LandingPageKeywordStatus>(req.Status, true, out var st)) k.Status = st;
         k.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
-        return new LpKeywordDto(k.Id, k.Keyword, k.Brief, k.Priority, k.Status.ToString(), k.GeneratedPageId,
-            k.LastError, k.Theme, k.Discipline, k.PainPoint, k.Intent, k.CreatedAt);
+        return new LpKeywordDto(k.Id, k.Keyword, k.Brief, k.Priority, k.Status.ToString(), k.ContentType.ToString(),
+            k.GeneratedPageId, k.GeneratedPostId, k.LastError, k.Theme, k.Discipline, k.PainPoint, k.Intent, k.CreatedAt);
     }
 
     public async Task<bool> DeleteKeywordAsync(Guid id, CancellationToken ct)

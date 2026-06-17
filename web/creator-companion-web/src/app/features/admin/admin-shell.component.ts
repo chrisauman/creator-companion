@@ -47,6 +47,7 @@ import { RouterLink } from '@angular/router';
         <a routerLink="/admin/substack"   class="admin-nav__link" [class.admin-nav__link--active]="active === 'substack'">Substack</a>
         <a routerLink="/admin/marketing"  class="admin-nav__link" [class.admin-nav__link--active]="active === 'marketing'">Marketing</a>
         <a routerLink="/admin/landing"    class="admin-nav__link" [class.admin-nav__link--active]="active === 'landing'">Landing Pages</a>
+        <a routerLink="/admin/blog"       class="admin-nav__link" [class.admin-nav__link--active]="active === 'blog'">Blog</a>
       </nav>
 
       <ng-content></ng-content>
@@ -121,5 +122,5 @@ export class AdminShellComponent {
   /** Which section is currently active. Drives the nav highlight. */
   @Input() active:
     'overview' | 'users' | 'motivation' | 'reminders'
-    | 'emails' | 'faq' | 'prompts' | 'substack' | 'marketing' | 'landing' = 'overview';
+    | 'emails' | 'faq' | 'prompts' | 'substack' | 'marketing' | 'landing' | 'blog' = 'overview';
 }

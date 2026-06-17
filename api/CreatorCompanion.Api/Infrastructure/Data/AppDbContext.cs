@@ -43,6 +43,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<LandingPageSettings> LandingPageSettings => Set<LandingPageSettings>();
     public DbSet<ResearchBatch> ResearchBatches => Set<ResearchBatch>();
     public DbSet<ResearchVocabulary> ResearchVocabulary => Set<ResearchVocabulary>();
+    public DbSet<BlogPost> BlogPosts => Set<BlogPost>();
+    public DbSet<BlogCategory> BlogCategories => Set<BlogCategory>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -81,5 +83,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.ApplyConfiguration(new LandingPageKeywordConfiguration());
         modelBuilder.ApplyConfiguration(new ResearchBatchConfiguration());
         modelBuilder.ApplyConfiguration(new ResearchVocabularyConfiguration());
+        modelBuilder.ApplyConfiguration(new BlogPostConfiguration());
+        modelBuilder.ApplyConfiguration(new BlogCategoryConfiguration());
     }
 }

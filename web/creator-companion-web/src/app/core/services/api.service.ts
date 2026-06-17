@@ -645,9 +645,9 @@ export class ApiService {
   adminLpRevert(id: string): Observable<LpDetail> { return this.http.post<LpDetail>(`${this.base}/admin/landing/pages/${id}/revert`, {}); }
   adminLpPreview(id: string): Observable<{ url: string }> { return this.http.get<{ url: string }>(`${this.base}/admin/landing/pages/${id}/preview`); }
   adminLpKeywords(): Observable<LpKeyword[]> { return this.http.get<LpKeyword[]>(`${this.base}/admin/landing/keywords`); }
-  adminLpCreateKeyword(p: { keyword: string; brief?: string | null; priority: number; status?: string | null }): Observable<LpKeyword> { return this.http.post<LpKeyword>(`${this.base}/admin/landing/keywords`, p); }
+  adminLpCreateKeyword(p: { keyword: string; brief?: string | null; priority: number; status?: string | null; contentType?: string | null }): Observable<LpKeyword> { return this.http.post<LpKeyword>(`${this.base}/admin/landing/keywords`, p); }
   adminLpImportKeywords(file: File): Observable<{ imported: number }> { const fd = new FormData(); fd.append('file', file, file.name); return this.http.post<{ imported: number }>(`${this.base}/admin/landing/keywords/import`, fd); }
-  adminLpUpdateKeyword(id: string, p: { keyword: string; brief?: string | null; priority: number; status?: string | null }): Observable<LpKeyword> { return this.http.put<LpKeyword>(`${this.base}/admin/landing/keywords/${id}`, p); }
+  adminLpUpdateKeyword(id: string, p: { keyword: string; brief?: string | null; priority: number; status?: string | null; contentType?: string | null }): Observable<LpKeyword> { return this.http.put<LpKeyword>(`${this.base}/admin/landing/keywords/${id}`, p); }
   adminLpDeleteKeyword(id: string): Observable<void> { return this.http.delete<void>(`${this.base}/admin/landing/keywords/${id}`); }
   adminLpSettings(): Observable<LpSettings> { return this.http.get<LpSettings>(`${this.base}/admin/landing/settings`); }
   adminLpUpdateSettings(p: { autoGenerateEnabled: boolean; autoPublishEnabled: boolean; qualityThreshold: number; generateHourLocalEt: number }): Observable<LpSettings> { return this.http.put<LpSettings>(`${this.base}/admin/landing/settings`, p); }
@@ -666,6 +666,27 @@ export class ApiService {
   adminLpBrainstorm(p: { theme: string; discipline?: string | null; painPoint?: string | null; hints?: string | null }): Observable<BrainstormResponse> { return this.http.post<BrainstormResponse>(`${this.base}/admin/landing/research/brainstorm`, p); }
   adminLpCommitResearch(p: CommitRequest): Observable<CommitResponse> { return this.http.post<CommitResponse>(`${this.base}/admin/landing/research/commit`, p); }
   adminLpBatches(): Observable<ResearchBatch[]> { return this.http.get<ResearchBatch[]>(`${this.base}/admin/landing/research/batches`); }
+
+  // ── Blog ──────────────────────────────────────────────────────────────
+  adminBlogCategories(): Observable<BlogCategory[]> { return this.http.get<BlogCategory[]>(`${this.base}/admin/blog/categories`); }
+  adminBlogCreateCategory(p: BlogCategoryUpsert): Observable<BlogCategory> { return this.http.post<BlogCategory>(`${this.base}/admin/blog/categories`, p); }
+  adminBlogUpdateCategory(id: string, p: BlogCategoryUpsert): Observable<BlogCategory> { return this.http.put<BlogCategory>(`${this.base}/admin/blog/categories/${id}`, p); }
+  adminBlogDeleteCategory(id: string): Observable<void> { return this.http.delete<void>(`${this.base}/admin/blog/categories/${id}`); }
+
+  adminBlogList(p: { search?: string; status?: string; category?: string; sort?: string; skip?: number; take?: number }): Observable<BlogListResponse> {
+    let params = new HttpParams();
+    for (const [k, v] of Object.entries(p)) if (v !== undefined && v !== null && v !== '') params = params.set(k, String(v));
+    return this.http.get<BlogListResponse>(`${this.base}/admin/blog/posts`, { params });
+  }
+  adminBlogGet(id: string): Observable<BlogDetail> { return this.http.get<BlogDetail>(`${this.base}/admin/blog/posts/${id}`); }
+  adminBlogCreate(p: BlogUpsert): Observable<BlogDetail> { return this.http.post<BlogDetail>(`${this.base}/admin/blog/posts`, p); }
+  adminBlogUpdate(id: string, p: BlogUpsert): Observable<BlogDetail> { return this.http.put<BlogDetail>(`${this.base}/admin/blog/posts/${id}`, p); }
+  adminBlogSetStatus(id: string, status: string): Observable<void> { return this.http.post<void>(`${this.base}/admin/blog/posts/${id}/status`, { status }); }
+  adminBlogDelete(id: string): Observable<void> { return this.http.delete<void>(`${this.base}/admin/blog/posts/${id}`); }
+  adminBlogRevert(id: string): Observable<BlogDetail> { return this.http.post<BlogDetail>(`${this.base}/admin/blog/posts/${id}/revert`, {}); }
+  adminBlogUndo(id: string): Observable<BlogDetail> { return this.http.post<BlogDetail>(`${this.base}/admin/blog/posts/${id}/undo`, {}); }
+  adminBlogAiEdit(id: string, instruction: string): Observable<BlogAiEditProposal> { return this.http.post<BlogAiEditProposal>(`${this.base}/admin/blog/posts/${id}/ai-edit`, { instruction }); }
+  adminBlogPreview(id: string): Observable<{ url: string }> { return this.http.get<{ url: string }>(`${this.base}/admin/blog/posts/${id}/preview`); }
 }
 
 // ── Marketing auto-poster types ───────────────────────────────────────────
@@ -797,7 +818,7 @@ export interface LpListItem { id: string; slug: string; status: string; targetKe
 export interface LpListResponse { items: LpListItem[]; total: number; }
 export interface LpDetail { id: string; slug: string; status: string; targetKeyword: string; metaTitle: string; metaDescription: string; noIndex: boolean; qualityScore: number | null; generatedByAi: boolean; content: LpContent; hasOriginal: boolean; hasPrevious: boolean; createdAt: string; updatedAt: string; publishedAt: string | null; }
 export interface LpUpsert { slug: string; targetKeyword: string; metaTitle: string; metaDescription: string; noIndex: boolean; content: LpContent; }
-export interface LpKeyword { id: string; keyword: string; brief: string | null; priority: number; status: string; generatedPageId: string | null; lastError: string | null; theme: string | null; discipline: string | null; painPoint: string | null; intent: string | null; createdAt: string; }
+export interface LpKeyword { id: string; keyword: string; brief: string | null; priority: number; status: string; contentType: string; generatedPageId: string | null; generatedPostId: string | null; lastError: string | null; theme: string | null; discipline: string | null; painPoint: string | null; intent: string | null; createdAt: string; }
 export interface LpSettings { autoGenerateEnabled: boolean; autoPublishEnabled: boolean; qualityThreshold: number; generateHourLocalEt: number; lastGeneratedDate: string | null; ga4Configured: boolean; pexelsConfigured: boolean; anthropicConfigured: boolean; }
 export interface PexelsPhoto { id: number; photographer: string; alt: string; thumbUrl: string; fullUrl: string; }
 
@@ -807,7 +828,30 @@ export interface Vocab { id: string; kind: string; value: string; sortOrder: num
 export interface VocabList { disciplines: Vocab[]; painPoints: Vocab[]; }
 export interface CandidateResult { keyword: string; intent: string | null; bucket: 'New' | 'NearDuplicate' | 'Duplicate'; matchedKeyword: string | null; matchedSlug: string | null; }
 export interface BrainstormResponse { candidates: CandidateResult[]; newCount: number; nearCount: number; dupCount: number; }
-export interface CommitItem { keyword: string; intent?: string | null; action: 'queue' | 'idea'; }
+export interface CommitItem { keyword: string; intent?: string | null; action: 'queue' | 'idea'; contentType?: 'page' | 'post'; }
 export interface CommitRequest { theme: string; method: string; discipline?: string | null; painPoint?: string | null; notes?: string | null; items: CommitItem[]; }
 export interface CommitResponse { batchId: string; queued: number; ideas: number; skippedAsDup: number; }
 export interface ResearchBatch { id: string; theme: string; method: string; discipline: string | null; painPoint: string | null; candidateCount: number; addedCount: number; createdAt: string; }
+
+// ── Blog types ────────────────────────────────────────────────────────────
+export interface LpQaItem { q?: string; a?: string; }
+export interface BlogContent { bodyHtml: string; faq: LpQaItem[]; ctaHeading?: string | null; ctaLabel?: string | null; }
+export interface BlogCategory { id: string; slug: string; name: string; description: string | null; position: number; isSystem: boolean; postCount: number; }
+export interface BlogCategoryUpsert { name: string; slug?: string | null; description?: string | null; position: number; }
+export interface BlogListItem { id: string; slug: string; status: string; title: string; targetKeyword: string; categorySlug: string; categoryName: string; pinned: boolean; noIndex: boolean; qualityScore: number | null; generatedByAi: boolean; readingTimeMinutes: number; publishDate: string | null; scheduledFor: string | null; updatedAt: string; }
+export interface BlogListResponse { items: BlogListItem[]; total: number; }
+export interface BlogDetail {
+  id: string; slug: string; status: string; categoryId: string; categorySlug: string; targetKeyword: string;
+  title: string; dek: string | null; metaTitle: string; metaDescription: string; canonicalUrl: string | null; noIndex: boolean;
+  featuredImageUrl: string | null; featuredImageAlt: string | null; snippet: string | null; readingTimeMinutes: number;
+  pinned: boolean; pinnedPosition: number | null; content: BlogContent; hasOriginal: boolean; hasPrevious: boolean;
+  qualityScore: number | null; generatedByAi: boolean; publishDate: string | null; scheduledFor: string | null;
+  lastUpdatedAt: string; createdAt: string; updatedAt: string; publishedAt: string | null;
+}
+export interface BlogUpsert {
+  slug: string; categoryId: string; targetKeyword: string; title: string; dek?: string | null; metaTitle: string;
+  metaDescription: string; canonicalUrl?: string | null; noIndex: boolean; featuredImageUrl?: string | null;
+  featuredImageAlt?: string | null; snippet?: string | null; pinned: boolean; pinnedPosition?: number | null;
+  scheduledFor?: string | null; content: BlogContent;
+}
+export interface BlogAiEditProposal { content: BlogContent; changes: string[]; }

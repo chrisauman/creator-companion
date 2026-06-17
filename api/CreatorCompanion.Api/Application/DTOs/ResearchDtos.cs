@@ -14,8 +14,8 @@ public record CandidateResult(string Keyword, string? Intent, string Bucket, str
 
 public record BrainstormResponse(IReadOnlyList<CandidateResult> Candidates, int NewCount, int NearCount, int DupCount);
 
-/// <summary>What the admin chose to do with one candidate: "queue" | "idea" (skip = omit it).</summary>
-public record CommitItem(string Keyword, string? Intent, string Action);
+/// <summary>What the admin chose for one candidate: action ("queue" | "idea") + type ("page" | "post").</summary>
+public record CommitItem(string Keyword, string? Intent, string Action, string? ContentType);
 
 public record CommitRequest(
     string Theme, string Method, string? Discipline, string? PainPoint, string? Notes, IReadOnlyList<CommitItem> Items);

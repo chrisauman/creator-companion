@@ -237,6 +237,7 @@ import { ApiService, LpListItem, LpDetail, LpKeyword, LpSettings, LpUpsert, LpCo
           <div class="lpa-card">
             <h3>Add a keyword</h3>
             <div class="lpa-row"><input class="lpa-input" placeholder="Keyword (e.g. private journaling app)" [(ngModel)]="kwNew.keyword">
+              <span class="lpa-seg" title="Build as a landing page or a blog post"><button [class.on]="kwNew.contentType==='page'" (click)="kwNew.contentType='page'">Page</button><button [class.on]="kwNew.contentType==='post'" (click)="kwNew.contentType='post'">Post</button></span>
               <input class="lpa-input lpa-input--sm" type="number" placeholder="Priority" [(ngModel)]="kwNew.priority">
               <button class="lpa-btn" [disabled]="!kwNew.keyword.trim()" (click)="addKeyword()">Add</button></div>
             <textarea class="lpa-input" rows="2" placeholder="Optional brief — angle / audience / must-haves" [(ngModel)]="kwNew.brief"></textarea>
@@ -252,12 +253,13 @@ import { ApiService, LpListItem, LpDetail, LpKeyword, LpSettings, LpUpsert, LpCo
           @if (!keywords().length) { <p class="lpa-muted">No keywords queued. Add some above; the 7am worker generates one page per day.</p> }
           @else {
             <table class="lpa-table">
-              <thead><tr><th>Keyword</th><th>Brief</th><th>Priority</th><th>Status</th><th></th></tr></thead>
+              <thead><tr><th>Keyword</th><th>Type</th><th>Brief</th><th>Priority</th><th>Status</th><th></th></tr></thead>
               <tbody>
                 @for (k of keywords(); track k.id) {
                   <tr>
                     <td>{{ k.keyword }}@if (k.intent) { <span class="lpa-tag lpa-tag--sm">{{ k.intent }}</span> }
                       @if (k.discipline || k.painPoint) { <div class="lpa-kwmeta">{{ k.discipline }}@if (k.discipline && k.painPoint) { · }{{ k.painPoint }}</div> }</td>
+                    <td><span class="lpa-seg" title="Landing page or blog post"><button [class.on]="k.contentType==='Page'" (click)="k.contentType='Page'; saveKeyword(k)">Page</button><button [class.on]="k.contentType==='Post'" (click)="k.contentType='Post'; saveKeyword(k)">Post</button></span></td>
                     <td class="lpa-muted lpa-brief">
                       @if (k.brief) { <span [title]="k.brief">{{ k.brief.slice(0, 90) }}{{ k.brief.length > 90 ? '…' : '' }}</span> }
                       @else if (k.status === 'Pending') { <span class="lpa-gen">generating…</span> }
@@ -318,6 +320,11 @@ import { ApiService, LpListItem, LpDetail, LpKeyword, LpSettings, LpUpsert, LpCo
                     @if (c.bucket==='Duplicate' && c.matchedKeyword) { <span class="lpa-cand__match lpa-cand__match--dup">already: {{ c.matchedSlug ? ('/' + c.matchedSlug) : c.matchedKeyword }}</span> }
                   </div>
                   @if (c.intent) { <span class="lpa-tag">{{ c.intent }}</span> }
+                  @if (c.bucket !== 'Duplicate') {
+                    <span class="lpa-seg" title="Build this as a landing page or a blog post">
+                      <button [class.on]="c.ctype==='page'" (click)="c.ctype='page'">Page</button><button [class.on]="c.ctype==='post'" (click)="c.ctype='post'">Post</button>
+                    </span>
+                  }
                   <span class="lpa-bk" [class.lpa-bk--new]="c.bucket==='New'" [class.lpa-bk--near]="c.bucket==='NearDuplicate'" [class.lpa-bk--dup]="c.bucket==='Duplicate'">{{ bucketLabel(c.bucket) }}</span>
                 </div>
               }
@@ -481,6 +488,9 @@ import { ApiService, LpListItem, LpDetail, LpKeyword, LpSettings, LpUpsert, LpCo
     .lpa-kwmeta { font-size: .72rem; color: #9ca3af; margin-top: .1rem; }
     .lpa-brief { max-width: 320px; } .lpa-gen { color: #0a93ab; font-style: italic; }
     .lpa-pill--idea { background: #ede9fe; color: #6d28d9; }
+    .lpa-seg { display: inline-flex; border: 1px solid #d1d5db; border-radius: 999px; overflow: hidden; flex: none; }
+    .lpa-seg button { border: none; background: #fff; color: #6b7280; font-size: .72rem; font-weight: 700; padding: .25rem .6rem; cursor: pointer; }
+    .lpa-seg button.on { background: #12C4E3; color: #053b45; }
   `]
 })
 export class AdminLandingComponent implements OnInit, OnDestroy {
@@ -507,7 +517,7 @@ export class AdminLandingComponent implements OnInit, OnDestroy {
   // Research
   rTheme = ''; rDiscipline: string | null = null; rPainPoint: string | null = null; rHints = '';
   rBusy = signal(false); rCommitting = signal(false); rMsg = signal('');
-  cands = signal<Array<CandidateResult & { sel: boolean }>>([]);
+  cands = signal<Array<CandidateResult & { sel: boolean; ctype: 'page' | 'post' }>>([]);
   newCount = signal(0); nearCount = signal(0); dupCount = signal(0);
   disciplines = signal<Vocab[]>([]); painPoints = signal<Vocab[]>([]);
   newDiscipline = ''; newPainPoint = '';
@@ -520,7 +530,7 @@ export class AdminLandingComponent implements OnInit, OnDestroy {
   editing = signal<LpDetail | null>(null);
 
   keywords = signal<LpKeyword[]>([]);
-  kwNew = { keyword: '', brief: '', priority: 0 };
+  kwNew = { keyword: '', brief: '', priority: 0, contentType: 'page' as 'page' | 'post' };
 
   settings = signal<LpSettings | null>(null);
 
@@ -676,8 +686,8 @@ export class AdminLandingComponent implements OnInit, OnDestroy {
 
   // Keywords
   loadKeywords(): void { this.api.adminLpKeywords().subscribe(k => this.keywords.set(k)); }
-  addKeyword(): void { this.api.adminLpCreateKeyword({ keyword: this.kwNew.keyword, brief: this.kwNew.brief || null, priority: this.kwNew.priority }).subscribe(() => { this.kwNew = { keyword: '', brief: '', priority: 0 }; this.loadKeywords(); }); }
-  saveKeyword(k: LpKeyword): void { this.api.adminLpUpdateKeyword(k.id, { keyword: k.keyword, brief: k.brief, priority: k.priority, status: k.status }).subscribe(); }
+  addKeyword(): void { this.api.adminLpCreateKeyword({ keyword: this.kwNew.keyword, brief: this.kwNew.brief || null, priority: this.kwNew.priority, contentType: this.kwNew.contentType }).subscribe(() => { this.kwNew = { keyword: '', brief: '', priority: 0, contentType: 'page' }; this.loadKeywords(); }); }
+  saveKeyword(k: LpKeyword): void { this.api.adminLpUpdateKeyword(k.id, { keyword: k.keyword, brief: k.brief, priority: k.priority, status: k.status, contentType: k.contentType }).subscribe(); }
   delKeyword(k: LpKeyword): void { if (confirm(`Remove keyword "${k.keyword}"?`)) this.api.adminLpDeleteKeyword(k.id).subscribe(() => this.loadKeywords()); }
 
   // ── Edit with AI ──────────────────────────────────────────────────
@@ -714,7 +724,7 @@ export class AdminLandingComponent implements OnInit, OnDestroy {
     this.api.adminLpBrainstorm({ theme: this.rTheme.trim(), discipline: this.rDiscipline, painPoint: this.rPainPoint, hints: this.rHints || null }).subscribe({
       next: r => {
         this.rBusy.set(false);
-        this.cands.set(r.candidates.map(c => ({ ...c, sel: c.bucket === 'New' })));
+        this.cands.set(r.candidates.map(c => ({ ...c, sel: c.bucket === 'New', ctype: this.suggestType(c.intent) })));
         this.newCount.set(r.newCount); this.nearCount.set(r.nearCount); this.dupCount.set(r.dupCount);
         if (!r.candidates.length) this.rMsg.set('No candidates came back — try a different angle or check the Anthropic key.');
       },
@@ -723,9 +733,11 @@ export class AdminLandingComponent implements OnInit, OnDestroy {
   }
   bucketLabel(b: string): string { return b === 'New' ? 'new' : b === 'NearDuplicate' ? 'near-dup' : 'duplicate'; }
   selectedCount(): number { return this.cands().filter(c => c.sel && c.bucket !== 'Duplicate').length; }
+  /** Intent is only a hint — informational/method usually reads as a blog post; commercial as a landing page. */
+  private suggestType(intent: string | null): 'page' | 'post' { return intent === 'commercial' || intent === 'navigational' ? 'page' : 'post'; }
   commitResearch(): void {
     const items = this.cands().filter(c => c.bucket !== 'Duplicate')
-      .map(c => ({ keyword: c.keyword, intent: c.intent, action: (c.sel ? 'queue' : 'idea') as 'queue' | 'idea' }));
+      .map(c => ({ keyword: c.keyword, intent: c.intent, action: (c.sel ? 'queue' : 'idea') as 'queue' | 'idea', contentType: c.ctype }));
     if (!items.length) { this.rMsg.set('Nothing to add.'); return; }
     this.rCommitting.set(true);
     this.api.adminLpCommitResearch({ theme: this.rTheme.trim(), method: 'ai', discipline: this.rDiscipline, painPoint: this.rPainPoint, notes: null, items }).subscribe({

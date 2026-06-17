@@ -162,6 +162,12 @@ export const routes: Routes = [
   },
 
   {
+    path: 'admin/blog',
+    canActivate: [adminGuard],
+    loadComponent: () => import('./features/admin/admin-blog.component').then(m => m.AdminBlogComponent)
+  },
+
+  {
     path: 'billing/success',
     canActivate: [authGuard],
     loadComponent: () => import('./features/billing/billing-success.component').then(m => m.BillingSuccessComponent)

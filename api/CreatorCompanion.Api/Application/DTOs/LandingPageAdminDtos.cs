@@ -18,10 +18,11 @@ public record LpUpsertRequest(
 
 // ── Keyword queue ────────────────────────────────────────────────────
 public record LpKeywordDto(
-    Guid Id, string Keyword, string? Brief, int Priority, string Status, Guid? GeneratedPageId,
-    string? LastError, string? Theme, string? Discipline, string? PainPoint, string? Intent, DateTime CreatedAt);
+    Guid Id, string Keyword, string? Brief, int Priority, string Status, string ContentType,
+    Guid? GeneratedPageId, Guid? GeneratedPostId, string? LastError, string? Theme, string? Discipline,
+    string? PainPoint, string? Intent, DateTime CreatedAt);
 
-public record LpKeywordUpsert(string Keyword, string? Brief, int Priority, string? Status);
+public record LpKeywordUpsert(string Keyword, string? Brief, int Priority, string? Status, string? ContentType);
 
 // ── Settings ─────────────────────────────────────────────────────────
 public record LpSettingsDto(

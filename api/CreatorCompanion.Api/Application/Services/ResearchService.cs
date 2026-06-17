@@ -130,6 +130,7 @@ public class ResearchService(AppDbContext db, ILandingPageGenerator generator, I
             {
                 Keyword = item.Keyword.Trim(),
                 Status = queue ? LandingPageKeywordStatus.Pending : LandingPageKeywordStatus.Idea,
+                ContentType = Enum.TryParse<LandingPageContentType>(item.ContentType, true, out var ctype) ? ctype : LandingPageContentType.Page,
                 Theme = batch.Theme, Discipline = batch.Discipline, PainPoint = batch.PainPoint,
                 Intent = Clean(item.Intent), Signature = KeywordDedup.Signature(item.Keyword), BatchId = batch.Id,
             });

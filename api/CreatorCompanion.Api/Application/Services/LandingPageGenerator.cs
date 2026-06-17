@@ -13,6 +13,14 @@ public record KeywordCandidate(string Keyword, string? Intent);
 /// <summary>Result of an AI content edit: the new content + a human-readable change list.</summary>
 public record AiEditResult(LpContent Content, IReadOnlyList<string> Changes);
 
+/// <summary>A generated blog post: SEO + the rich-text body + a suggested category.</summary>
+public record GeneratedBlogPost(
+    string Slug, string Title, string? Dek, string MetaTitle, string MetaDescription,
+    string BodyHtml, List<LpQa> Faq, string? FeaturedImageAlt, string? SuggestedCategory);
+
+/// <summary>Result of an AI blog-body edit.</summary>
+public record BlogAiEditResult(BlogContent Content, IReadOnlyList<string> Changes);
+
 public interface ILandingPageGenerator
 {
     bool IsConfigured { get; }
@@ -53,6 +61,20 @@ public interface ILandingPageGenerator
     /// invalid — callers must never apply a null/partial result.
     /// </summary>
     Task<AiEditResult?> EditContentAsync(LpContent current, string instruction, CancellationToken ct);
+
+    /// <summary>
+    /// Generate a complete, genuinely useful BLOG POST (SEO + rich-text body +
+    /// suggested category) for an informational keyword via Claude. Returns null
+    /// on no-key/failure. The body is semantic HTML the caller sanitizes before storing.
+    /// </summary>
+    Task<GeneratedBlogPost?> GenerateBlogPostAsync(
+        string keyword, string? brief, IReadOnlyList<string> categories, IReadOnlyList<string> existingTitles, CancellationToken ct);
+
+    /// <summary>Quality-score a generated blog post 0–100 (depth, usefulness, uniqueness). Conservative 50 on failure.</summary>
+    Task<int> ScoreBlogQualityAsync(GeneratedBlogPost post, IReadOnlyList<string> existingKeywords, CancellationToken ct);
+
+    /// <summary>Apply a natural-language edit to a blog post's body/FAQ/CTA. Schema-locked; null on failure.</summary>
+    Task<BlogAiEditResult?> EditBlogContentAsync(BlogContent current, string instruction, CancellationToken ct);
 }
 
 /// <summary>
@@ -225,6 +247,93 @@ public class LandingPageGenerator(IHttpClientFactory httpFactory, IConfiguration
         catch (Exception ex) { log.LogWarning(ex, "AI content edit failed."); return null; }
     }
 
+    public async Task<GeneratedBlogPost?> GenerateBlogPostAsync(
+        string keyword, string? brief, IReadOnlyList<string> categories, IReadOnlyList<string> existingTitles, CancellationToken ct)
+    {
+        if (!IsConfigured || string.IsNullOrWhiteSpace(keyword)) return null;
+        var cats = categories.Count == 0 ? "Uncategorized" : string.Join(", ", categories);
+        var existing = existingTitles.Count == 0 ? "(none yet)" : string.Join("; ", existingTitles.Take(40));
+        var user =
+            $"Topic / target keyword: \"{keyword}\"\n" +
+            (string.IsNullOrWhiteSpace(brief) ? "" : $"Brief: {brief}\n") +
+            $"Available categories (pick the single best fit): {cats}\n" +
+            $"Existing post titles (do NOT duplicate their angle): {existing}\n\n" +
+            "Write the complete blog post now. Return ONLY the JSON object.";
+        var payload = new
+        {
+            model = _genModel,
+            max_tokens = 6000,
+            system = BlogPrompt,
+            messages = new[] { new { role = "user", content = user } },
+        };
+        try
+        {
+            var text = await CallAsync(payload, ct);
+            if (text is null) return null;
+            var dto = ParseJson<BlogGenDto>(text);
+            if (dto is null || string.IsNullOrWhiteSpace(dto.Title) || string.IsNullOrWhiteSpace(dto.BodyHtml)) return null;
+            var slug = string.IsNullOrWhiteSpace(dto.Slug) ? dto.Title! : dto.Slug!;
+            var faq = (dto.Faq ?? new()).Where(q => !string.IsNullOrWhiteSpace(q.Q)).ToList();
+            return new GeneratedBlogPost(slug, dto.Title!, dto.Dek, dto.MetaTitle ?? dto.Title!,
+                dto.MetaDescription ?? "", dto.BodyHtml!, faq, dto.FeaturedImageAlt, dto.Category);
+        }
+        catch (Exception ex) { log.LogWarning(ex, "Blog post generation failed for '{Keyword}'.", keyword); return null; }
+    }
+
+    public async Task<int> ScoreBlogQualityAsync(GeneratedBlogPost post, IReadOnlyList<string> existingKeywords, CancellationToken ct)
+    {
+        if (!IsConfigured) return 50;
+        var existing = existingKeywords.Count == 0 ? "(none)" : string.Join(", ", existingKeywords.Take(60));
+        var words = post.BodyHtml.Length / 6;   // rough; the model also sees the body
+        var summary = $"Title: {post.Title}\nDek: {post.Dek}\nDescription: {post.MetaDescription}\n" +
+                      $"Approx body length: ~{words} words\nFAQ items: {post.Faq.Count}\nBody:\n{Truncate(post.BodyHtml, 4000)}";
+        var payload = new
+        {
+            model = _scoreModel,
+            max_tokens = 10,
+            system = "You are a strict blog editor. Score a blog post 0-100 on genuine usefulness/depth, uniqueness vs the " +
+                     "existing topic list (penalise near-duplicates heavily), readability, and on-topic completeness. A thin, " +
+                     "generic, or padded post scores under 50. Reply with ONLY the integer.",
+            messages = new[] { new { role = "user", content = $"Existing topics: {existing}\n\n{summary}\n\nScore (0-100):" } },
+        };
+        try
+        {
+            var text = await CallAsync(payload, ct);
+            if (text is not null && int.TryParse(new string(text.Where(char.IsDigit).ToArray()).Trim(), out var n))
+                return Math.Clamp(n, 0, 100);
+        }
+        catch (Exception ex) { log.LogWarning(ex, "Blog quality scoring failed."); }
+        return 50;
+    }
+
+    public async Task<BlogAiEditResult?> EditBlogContentAsync(BlogContent current, string instruction, CancellationToken ct)
+    {
+        if (!IsConfigured || string.IsNullOrWhiteSpace(instruction)) return null;
+        var currentJson = JsonSerializer.Serialize(current, Json);
+        var user = "Here is the current blog content JSON:\n\n" + currentJson +
+                   "\n\nInstruction: " + instruction.Trim() +
+                   "\n\nReturn ONLY {\"content\": {...}, \"changes\": [...]}.";
+        var payload = new
+        {
+            model = _genModel,
+            max_tokens = 6000,
+            system = BlogEditPrompt,
+            messages = new[] { new { role = "user", content = user } },
+        };
+        try
+        {
+            var text = await CallAsync(payload, ct);
+            if (text is null) return null;
+            var dto = ParseJson<BlogEditDto>(text);
+            if (dto?.Content is null || dto.Content.BodyHtml is null) return null;
+            var changes = (dto.Changes ?? new()).Where(s => !string.IsNullOrWhiteSpace(s)).Select(s => s.Trim()).ToList();
+            return new BlogAiEditResult(dto.Content, changes);
+        }
+        catch (Exception ex) { log.LogWarning(ex, "AI blog edit failed."); return null; }
+    }
+
+    private static string Truncate(string s, int max) => s.Length <= max ? s : s[..max];
+
     private async Task<string?> CallAsync(object payload, CancellationToken ct)
     {
         var http = httpFactory.CreateClient("social");
@@ -264,6 +373,57 @@ public class LandingPageGenerator(IHttpClientFactory httpFactory, IConfiguration
     private class BrainstormDto { public List<CandidateDto>? Candidates { get; set; } }
     private class CandidateDto { public string? Keyword { get; set; } public string? Intent { get; set; } }
     private class EditDto { public LpContent? Content { get; set; } public List<string>? Changes { get; set; } }
+
+    private class BlogGenDto
+    {
+        public string? Slug { get; set; }
+        public string? Title { get; set; }
+        public string? Dek { get; set; }
+        public string? MetaTitle { get; set; }
+        public string? MetaDescription { get; set; }
+        public string? BodyHtml { get; set; }
+        public string? Category { get; set; }
+        public string? FeaturedImageAlt { get; set; }
+        public List<LpQa>? Faq { get; set; }
+    }
+    private class BlogEditDto { public BlogContent? Content { get; set; } public List<string>? Changes { get; set; } }
+
+    private const string BlogPrompt = """
+You are the senior writer for the Creator Companion blog — a private daily journaling app for creative people (writers, musicians, visual artists, filmmakers, photographers, and more) that helps them keep a consistent creative practice. Features you may reference: streaks / "don't break the chain" with a 48-hour grace window + milestone badges; a daily Spark of encouragement + rotating prompts; up to 5 custom reminders; fully private (no feed, no ads, encrypted, export/delete anytime); 10-day free trial then $5.99/month.
+
+VOICE: warm, calm, literary, encouraging — a cheerleader, never a drill sergeant. Frame creativity as "showing up" and "daily practice". Speak to ALL creatives, never just writers. Never shame; reframe setbacks gently. American English.
+
+TASK: write a genuinely useful, original blog POST that teaches and resonates — real substance, specific advice, not thin or generic. Naturally weave in the app where it helps (don't hard-sell; the post must stand on its own). 700–1100 words.
+
+BODY FORMAT: clean semantic HTML for the body ONLY (no <html>/<head>/<body>). Allowed tags: <p>, <h2>, <h3>, <ul>/<ol>/<li>, <blockquote>, <strong>, <em>, <a href>. NO <h1> (the post title is the page's only H1). NO inline styles, scripts, or images (images are added separately). Use 3–6 <h2> sections; <h3> for sub-points where useful.
+
+Return ONLY this JSON (no markdown, no prose outside it):
+{
+  "slug": "kebab-case-from-title",
+  "title": "the post's H1 — compelling, includes the topic naturally",
+  "dek": "one-sentence standfirst under the title",
+  "metaTitle": "<=60 chars, includes the keyword, ends ' | Creator Companion'",
+  "metaDescription": "<=155 chars, compelling, includes the keyword",
+  "category": "exactly one of the provided category names that best fits",
+  "featuredImageAlt": "describe an apt featured photo for this post",
+  "bodyHtml": "<p>…</p><h2>…</h2><p>…</p> … the full article body as semantic HTML",
+  "faq": [ { "q": "a real question about this topic", "a": "a helpful, specific answer" } ]
+}
+RULES: 3–5 FAQ items. Output valid JSON only — escape all quotes/newlines inside bodyHtml properly.
+""";
+
+    private const string BlogEditPrompt = """
+You edit the CONTENT of an existing Creator Companion blog post. A fixed template renders whatever you return, so you only change the DATA in this schema:
+content = { bodyHtml: string (semantic HTML), faq: [{q,a}], ctaHeading: string|null, ctaLabel: string|null }
+
+ABSOLUTE RULES:
+- Return the ENTIRE content object; change ONLY what the instruction asks; preserve everything else verbatim.
+- bodyHtml allowed tags: <p>,<h2>,<h3>,<ul>,<ol>,<li>,<blockquote>,<strong>,<em>,<a href>. NO <h1>, no inline styles, no scripts.
+- To remove the FAQ, set it to []. Stay on-brand: warm, calm, encouraging, speaks to all creatives, never shames. American English.
+- Never invent new top-level fields.
+
+Return ONLY: { "content": { ...full edited content... }, "changes": ["+ added X", "- removed Y", "~ reworded Z"] }
+""";
 
     private const string BrainstormPrompt = """
 You are an SEO keyword researcher for Creator Companion — a private daily journaling app that helps creative people (writers, musicians, visual artists, filmmakers, photographers, and more) keep a consistent creative practice. Features you can lean on: streaks / "don't break the chain", a daily Spark + rotating prompts, up to 5 custom reminders, fully private (no feed/ads), 10-day free trial.

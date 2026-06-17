@@ -24,7 +24,9 @@ public class LandingPageBackgroundService(IServiceProvider services, ILogger<Lan
                 // Brief-on-add: fill one queued keyword's brief per tick (cheap,
                 // throttled) so briefs appear soon after queueing without a burst.
                 await gen.FillNextBriefAsync(stoppingToken);
-                // Daily page generation (no-ops until the scheduled hour).
+                // Scheduled posts whose time has arrived (dynamic render — no rebuild).
+                await gen.PublishDueScheduledPostsAsync(stoppingToken);
+                // Daily content generation (no-ops until the scheduled hour).
                 await gen.TickAsync(stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { break; }
