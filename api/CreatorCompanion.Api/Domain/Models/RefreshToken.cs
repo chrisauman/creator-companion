@@ -23,6 +23,24 @@ public class RefreshToken
     /// </summary>
     public string? TokenHash { get; set; }
 
+    /// <summary>
+    /// Session-family id. A fresh login/register starts a new family; each
+    /// rotation on /auth/refresh inherits it. If an ALREADY-REVOKED token from a
+    /// family is presented again (replay of a rotated token = theft signal), the
+    /// whole family is revoked at once — severing both the attacker's and the
+    /// victim's chain. Legacy rows (pre-migration) carry Guid.Empty and are exempt
+    /// from family-revoke (they fall back to plain rejection).
+    /// </summary>
+    public Guid FamilyId { get; set; } = Guid.NewGuid();
+
+    /// <summary>
+    /// When this session (family) first began — inherited across rotations. Bounds
+    /// absolute session age: the session is force-expired this long after login
+    /// regardless of how often it's refreshed, so a silently-stolen token can't be
+    /// rotated forever.
+    /// </summary>
+    public DateTime SessionStartedAt { get; set; } = DateTime.UtcNow;
+
     public DateTime ExpiresAt { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? RevokedAt { get; set; }

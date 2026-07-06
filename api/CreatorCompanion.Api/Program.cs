@@ -253,6 +253,8 @@ try
         var authMax     = builder.Configuration.GetValue<int>("RateLimit:AuthMaxRequests", 10);
         var writeWindow = builder.Configuration.GetValue<int>("RateLimit:WriteWindowSeconds", 60);
         var writeMax    = builder.Configuration.GetValue<int>("RateLimit:WriteMaxRequests", 30);
+        var readWindow  = builder.Configuration.GetValue<int>("RateLimit:ReadWindowSeconds", 60);
+        var readMax     = builder.Configuration.GetValue<int>("RateLimit:ReadMaxRequests", 300);
 
         options.EnableEndpointRateLimiting = true;
         options.StackBlockedRequests       = false;
@@ -288,6 +290,11 @@ try
             new RateLimitRule { Endpoint = "PUT:*",    Limit = writeMax, Period = $"{writeWindow}s" },
             new RateLimitRule { Endpoint = "DELETE:*", Limit = writeMax, Period = $"{writeWindow}s" },
             new RateLimitRule { Endpoint = "PATCH:*",  Limit = writeMax, Period = $"{writeWindow}s" },
+            // Reads — generous per-IP cap so a normal dashboard load (many GETs)
+            // is never throttled, but abusive scraping / the unauth public-render
+            // endpoints (blog/lp misses hit an unindexed old-slug scan) and the
+            // unmetered GET verify-email can't be hammered. Applies to every GET.
+            new RateLimitRule { Endpoint = "GET:*",    Limit = readMax,  Period = $"{readWindow}s" },
         ];
     });
     builder.Services.AddSingleton<IIpPolicyStore, MemoryCacheIpPolicyStore>();

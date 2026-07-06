@@ -214,6 +214,28 @@ public class AuthServiceTests
     }
 
     [Fact]
+    public async Task Refresh_ReplayOfRotatedToken_RevokesWholeFamily()
+    {
+        var db  = DbFactory.Create();
+        var svc = Build(db);
+
+        var reg = await svc.RegisterAsync(NewRegister("Grace", "grace@test.com"));
+
+        // Rotate T1 -> T2 (legitimate refresh).
+        var t2 = await svc.RefreshAsync(reg.RefreshToken);
+
+        // Replaying the now-revoked T1 is the theft signal — reuse detection
+        // must revoke the entire session family.
+        var replay = async () => await svc.RefreshAsync(reg.RefreshToken);
+        await replay.Should().ThrowAsync<UnauthorizedAccessException>();
+
+        // T2 belongs to the same family, so it must now be dead too — the
+        // legitimate session is severed rather than left alive alongside a thief.
+        var t2Refresh = async () => await svc.RefreshAsync(t2.RefreshToken);
+        await t2Refresh.Should().ThrowAsync<UnauthorizedAccessException>();
+    }
+
+    [Fact]
     public async Task Revoke_Token_CannotBeRefreshedAfter()
     {
         var db  = DbFactory.Create();

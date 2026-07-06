@@ -27,15 +27,18 @@ public class CloudflareTurnstileVerifier : ITurnstileVerifier
 {
     private readonly HttpClient _http;
     private readonly IConfiguration _config;
+    private readonly IHostEnvironment _env;
     private readonly ILogger<CloudflareTurnstileVerifier> _logger;
 
     public CloudflareTurnstileVerifier(
         HttpClient http,
         IConfiguration config,
+        IHostEnvironment env,
         ILogger<CloudflareTurnstileVerifier> logger)
     {
         _http = http;
         _config = config;
+        _env = env;
         _logger = logger;
     }
 
@@ -46,17 +49,22 @@ public class CloudflareTurnstileVerifier : ITurnstileVerifier
     {
         var secret = _config["Turnstile:SecretKey"];
 
-        // Operator-disabled path: blank secret key means Turnstile is
-        // turned off for this environment (typical for local dev or an
-        // emergency "disable" without a redeploy). Log a warning so the
-        // posture is visible in any environment where it lands; never
-        // silently pass without leaving a trail.
+        // Blank secret means Turnstile isn't configured. In development we let it
+        // pass (no widget locally); in ANY non-dev environment we fail CLOSED —
+        // a missing/cleared env var must never silently drop the login-surface bot
+        // gate. That would leave only the (in-memory, per-replica) IP rate limit.
         if (string.IsNullOrWhiteSpace(secret))
         {
-            _logger.LogWarning(
-                "Turnstile:SecretKey is not configured; verification is disabled. " +
-                "Auth requests will pass without bot-defense. Set the env var to enable.");
-            return true;
+            if (_env.IsDevelopment())
+            {
+                _logger.LogWarning(
+                    "Turnstile:SecretKey is not configured; verification is disabled in Development.");
+                return true;
+            }
+            _logger.LogError(
+                "Turnstile:SecretKey is not configured in a non-Development environment; " +
+                "failing CLOSED (rejecting) so the login surface never loses its bot gate. Set the env var.");
+            return false;
         }
 
         // Missing token from the caller — always reject. The frontend

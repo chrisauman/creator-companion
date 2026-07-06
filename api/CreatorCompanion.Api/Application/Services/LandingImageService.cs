@@ -72,9 +72,29 @@ public class LandingImageService(
         catch (Exception ex) { log.LogWarning(ex, "Pexels search failed."); return []; }
     }
 
+    // Only Pexels' own hosts may be fetched server-side. This is the SSRF guard:
+    // the URL comes from an admin request body, so without an allowlist it could
+    // point at internal services / the cloud metadata endpoint (169.254.169.254).
+    // The legitimate callers only ever pass Pexels URLs, so this never blocks a
+    // real fetch. Redirects can't escape it — the INITIAL host must be allowed,
+    // and Pexels never redirects off-network.
+    private static bool IsAllowedImageHost(string url)
+    {
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri)) return false;
+        if (uri.Scheme != Uri.UriSchemeHttps) return false;
+        return uri.Host.Equals("images.pexels.com", StringComparison.OrdinalIgnoreCase)
+            || uri.Host.Equals("api.pexels.com", StringComparison.OrdinalIgnoreCase)
+            || uri.Host.EndsWith(".pexels.com", StringComparison.OrdinalIgnoreCase);
+    }
+
     public async Task<string?> StoreFromUrlAsync(string url, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(url)) return null;
+        if (!IsAllowedImageHost(url))
+        {
+            log.LogWarning("Refusing to fetch non-allowlisted image URL (SSRF guard).");
+            return null;
+        }
         try
         {
             // Normalize to a web-sized landscape JPEG via Pexels' own CDN params.

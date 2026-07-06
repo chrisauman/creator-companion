@@ -270,7 +270,32 @@ public class AuthService(
                 .Include(r => r.User)
                 .FirstOrDefaultAsync(r => r.Token == refreshToken);
 
-        if (token is null || !token.IsActive)
+        if (token is null)
+            throw new UnauthorizedAccessException("Invalid or expired refresh token.");
+
+        // Reuse detection: an ALREADY-REVOKED token being presented means a
+        // rotated (dead) token was replayed — the classic token-theft signal.
+        // Revoke the entire session family so neither the attacker's nor the
+        // victim's chain survives; the legitimate user simply logs in again.
+        // Legacy rows (FamilyId == Guid.Empty, pre-migration) are exempt — they
+        // fall through to plain rejection so one old replay can't nuke them all.
+        if (token.IsRevoked && token.FamilyId != Guid.Empty)
+        {
+            if (db.Database.IsRelational())
+                await db.RefreshTokens
+                    .Where(r => r.FamilyId == token.FamilyId && r.RevokedAt == null)
+                    .ExecuteUpdateAsync(s => s.SetProperty(r => r.RevokedAt, DateTime.UtcNow));
+            else
+            {
+                var fam = await db.RefreshTokens.Where(r => r.FamilyId == token.FamilyId && r.RevokedAt == null).ToListAsync();
+                foreach (var t in fam) t.RevokedAt = DateTime.UtcNow;
+                await db.SaveChangesAsync();
+            }
+            Sentry.SentrySdk.CaptureMessage($"Refresh-token reuse detected (family {token.FamilyId}); session revoked.");
+            throw new UnauthorizedAccessException("Invalid or expired refresh token.");
+        }
+
+        if (!token.IsActive)
             throw new UnauthorizedAccessException("Invalid or expired refresh token.");
 
         // Also reject if the user has been admin-deactivated since the
@@ -278,6 +303,13 @@ public class AuthService(
         // token continues working for up to 30 days after IsActive=false.
         if (!token.User.IsActive)
             throw new UnauthorizedAccessException("Invalid or expired refresh token.");
+
+        // Absolute session cap: force re-login once a session has lived longer
+        // than the hard limit, regardless of how often it's been refreshed —
+        // bounds the lifetime of a silently-stolen token that's never replayed.
+        var absoluteDays = config.GetValue<int>("Jwt:AbsoluteSessionDays", 60);
+        if (token.FamilyId != Guid.Empty && DateTime.UtcNow - token.SessionStartedAt > TimeSpan.FromDays(absoluteDays))
+            throw new UnauthorizedAccessException("Session expired. Please sign in again.");
 
         // Atomic rotate: only ONE concurrent caller wins. Without this,
         // two simultaneous /v1/auth/refresh calls (two tabs racing on
@@ -313,7 +345,8 @@ public class AuthService(
         if (revoked == 0)
             throw new UnauthorizedAccessException("Invalid or expired refresh token.");
 
-        return await IssueTokensAsync(token.User);
+        // Rotation: the new token inherits this token's family + session start.
+        return await IssueTokensAsync(token.User, rotatingFrom: token);
     }
 
     public async Task RevokeAsync(string refreshToken, string? requestingUserId = null)
@@ -553,7 +586,7 @@ public class AuthService(
         catch (Exception ex) { Console.WriteLine($"[WARN] Failed to send password changed email: {ex.Message}"); }
     }
 
-    private async Task<AuthResponse> IssueTokensAsync(User user)
+    private async Task<AuthResponse> IssueTokensAsync(User user, RefreshToken? rotatingFrom = null)
     {
         var expiryMinutes = config.GetValue<int>("Jwt:ExpiryMinutes", 60);
         var expiresAt = DateTime.UtcNow.AddMinutes(expiryMinutes);
@@ -595,6 +628,13 @@ public class AuthService(
             // column can be dropped entirely.
             Token = refreshHash,
             TokenHash = refreshHash,
+            // Rotation inherits the family + original session start. A fresh
+            // login/register — OR a rotation off a legacy pre-migration token
+            // (FamilyId == Guid.Empty) — begins a new protected session, so old
+            // sessions upgrade into reuse-detection + the absolute cap on their
+            // next refresh rather than staying exempt forever.
+            FamilyId = rotatingFrom is { } rf && rf.FamilyId != Guid.Empty ? rf.FamilyId : Guid.NewGuid(),
+            SessionStartedAt = rotatingFrom is { } rs && rs.FamilyId != Guid.Empty ? rs.SessionStartedAt : DateTime.UtcNow,
             ExpiresAt = DateTime.UtcNow.AddDays(refreshDays)
         };
         db.RefreshTokens.Add(refreshToken);

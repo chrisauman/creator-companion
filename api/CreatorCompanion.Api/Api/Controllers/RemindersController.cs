@@ -20,8 +20,6 @@ public class RemindersController(AppDbContext db, IEntitlementService entitlemen
     private Guid UserId => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)
         ?? User.FindFirstValue("sub")!);
 
-    private bool IsPaid => User.HasClaim("tier", "Paid");
-
     // ── GET /v1/reminders ────────────────────────────────────────────────────
     // Reminders are now a fixed set of five slots per user. This endpoint
     // lazy-creates disabled noon slots up to that count whenever the user's
@@ -70,14 +68,13 @@ public class RemindersController(AppDbContext db, IEntitlementService entitlemen
     }
 
     // ── POST /v1/reminders ───────────────────────────────────────────────────
-    // Paid users only. Creates a CUSTOM (non-default) reminder.
+    // Creates a CUSTOM (non-default) reminder. Gated by EnforceAccessAsync — the
+    // single source of truth for entitlement (active sub OR in-trial). The app is
+    // trial-only now (no separate free/paid claim), so this is the whole gate.
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateReminderRequest request)
     {
         await EnforceAccessAsync();  // 402 if trial expired and no active sub
-
-        if (!IsPaid)
-            return BadRequest(new { error = "Custom reminders are available on the Paid plan." });
 
         if (!TimeOnly.TryParseExact(request.Time, "HH:mm", out var time))
             return BadRequest(new { error = "Invalid time format. Use HH:mm (e.g. '08:30')." });

@@ -107,7 +107,7 @@ public class AuthController(
             // Set HttpOnly cookie (works when cookies aren't blocked) and
             // also return the token in the body so the client can store it
             // in localStorage as a cross-origin fallback.
-            SetRefreshCookie(result.RefreshToken, DateTime.UtcNow.AddDays(90));
+            SetRefreshCookie(result.RefreshToken, DateTime.UtcNow.AddDays(config.GetValue<int>("Jwt:RefreshExpiryDays", 30)));
             return Ok(result);
         }
         catch (InvalidOperationException ex)
@@ -129,7 +129,7 @@ public class AuthController(
         try
         {
             var result = await authService.LoginAsync(request);
-            SetRefreshCookie(result.RefreshToken, DateTime.UtcNow.AddDays(90));
+            SetRefreshCookie(result.RefreshToken, DateTime.UtcNow.AddDays(config.GetValue<int>("Jwt:RefreshExpiryDays", 30)));
             return Ok(result);
         }
         catch (UnauthorizedAccessException ex)
@@ -156,7 +156,7 @@ public class AuthController(
         try
         {
             var result = await authService.RefreshAsync(refreshToken);
-            SetRefreshCookie(result.RefreshToken, DateTime.UtcNow.AddDays(90));
+            SetRefreshCookie(result.RefreshToken, DateTime.UtcNow.AddDays(config.GetValue<int>("Jwt:RefreshExpiryDays", 30)));
             return Ok(result);
         }
         catch (UnauthorizedAccessException ex)
@@ -205,6 +205,10 @@ public class AuthController(
     [AllowAnonymous]
     public async Task<IActionResult> ResendVerification([FromBody] ResendVerificationRequest request)
     {
+        // No Turnstile gate here (unlike login/register/forgot): resend is invoked
+        // from the post-auth verify-email screen, which has no widget. It's already
+        // IP-rate-limited and only ever emails a registered-but-unverified address,
+        // so the flood value is low; the rate limit is the control.
         await authService.ResendVerificationAsync(request.Email);
         // Same generic-response pattern as ForgotPassword. Don't
         // surface whether the email is registered OR whether the
