@@ -13,9 +13,11 @@ section. This doc is the long-form reference behind it. **If anything here
 disagrees with the running code, the code wins — open a follow-up to fix the
 drift.**
 
-**Last full audit:** 2026-05-25 (defensive review pass)
-**Prior audit:** 2026-05 (original hardening pass referenced throughout
-CLAUDE.md)
+**Last full audit:** 2026-07-06 (four-boundary pass — auth, public surface,
+user-data isolation, admin/secrets/billing — after the landing-page + blog
+build; see the campaign log below)
+**Prior audits:** 2026-05-25 (defensive review pass); 2026-05 (original
+hardening pass referenced throughout CLAUDE.md)
 
 **Active hardening campaign (post-2026-05-25 review):**
 - 2026-05-25 — **Phase 1 shipped** (commit `eb4bcd2`): closes risks #1
@@ -56,6 +58,19 @@ CLAUDE.md)
   resend button, sign-out escape hatch, and a link-landing page
   at `/verify-email`. Closes "sign up with any email, get 10
   days free." See §1.11 below.
+- 2026-07-06 — **Four-boundary audit pass shipped** (commit `52a59e6`):
+  parallel review of auth, public surface, user-data isolation, and
+  admin/secrets/billing after the landing-page + blog build. Confirmed
+  no IDOR / cross-user access / mass-assignment / privilege-escalation /
+  billing or secrets-at-rest holes. Closed five edge findings:
+  **refresh-token reuse detection + absolute session cap + TTL 90→30d**
+  (§1.2), **Turnstile fail-closed in non-Development** (§4.7),
+  **SSRF allowlist on the admin image-fetch** (§4.8, new),
+  **GET rate-limit rule** (§7.3), and a dead reminders paid-gate removed.
+  Deliberately skipped: Turnstile on `resend-verification` (post-auth
+  screen has no widget; already rate-limited). Owner action outstanding:
+  rotate the Railway Postgres password in the gitignored
+  `appsettings.Development.json`.
 - **Open phases:** 4 (TOTP 2FA — deferred at user's request),
   5 (login telemetry + new-device email — next up). Tracked in the
   conversation triage.
@@ -85,7 +100,24 @@ CLAUDE.md)
   `app.*` and `api.*` subdomains share it. Without `Domain` set, mobile
   Chrome's tracking-protection blocks the cross-subdomain cookie even
   when both subdomains share the same eTLD+1.
-- 90-day expiry on the cookie.
+- **Per-token TTL 30 days** (`Jwt:RefreshExpiryDays`, was 90). Cookie
+  expiry tracks that config value rather than a hard-coded 90 (2026-07-06).
+- **Absolute session cap 60 days** (`Jwt:AbsoluteSessionDays`). Each token
+  carries a `SessionStartedAt` inherited across rotations; a session is
+  force-expired 60 days after login no matter how often it's refreshed, so
+  a silently-stolen token that's never replayed still can't be rotated
+  forever (2026-07-06).
+- **Reuse detection via session families (2026-07-06).** Each token has a
+  `FamilyId` — a fresh login starts a new family, every rotation inherits
+  it. Presenting an *already-revoked* (rotated) token is the token-theft
+  signal: the entire family is revoked at once (`ExecuteUpdate WHERE
+  FamilyId = … AND RevokedAt IS NULL`), a Sentry message is captured, and
+  the request 401s — severing both the attacker's and the victim's chain so
+  the legitimate user simply logs in again. Legacy pre-migration rows carry
+  `FamilyId = Guid.Empty` and are exempt (fall back to plain rejection), then
+  upgrade into the protected scheme on their next refresh. Closes the
+  previously-deferred "family-based reuse detection" item. Covered by
+  `AuthServiceTests.Refresh_ReplayOfRotatedToken_RevokesWholeFamily`.
 - SHA-256 hashed at rest in `RefreshTokens` table.
 - Partial unique index on `TokenHash IS NOT NULL` — prevents the all-NULL
   uniqueness conflict during the legacy column drop migration.
@@ -496,14 +528,39 @@ chosen and justified:
   IS the bot defense; failing open would defeat the purpose.
   Cloudflare's siteverify runs at 99.99%+ availability so the
   false-positive lockout risk is tiny.
-- **Operator escape hatch:** blanking `Turnstile__SecretKey` in
-  Railway disables Turnstile entirely (verifier returns true,
-  logs warning). Lets an emergency operator turn it off without
-  a code deploy. Documented as the explicit posture for any env
-  that doesn't have the key configured.
+- **Unset-secret posture (revised 2026-07-06 — fail closed in prod):**
+  a blank `Turnstile__SecretKey` is a no-op **only in Development**
+  (no local widget). In **any non-Development environment the verifier
+  now fails CLOSED** (returns false, logs an error) — a missing or
+  accidentally-cleared env var can no longer silently drop the login-
+  surface bot gate and leave only the in-memory IP limit. The prior
+  "blank to disable in prod as an emergency escape hatch" behavior was
+  removed: the audit judged a fail-open bot gate on the auth surface a
+  worse risk than the lack of a no-deploy off switch. To intentionally
+  disable in prod, set a non-blank sentinel and handle it explicitly, or
+  ship a config flag — don't rely on the blank-secret path.
 - **CSP updates:** `https://challenges.cloudflare.com` added to
   `script-src` and `frame-src` in both `web/.../vercel.json`
   and `marketing/vercel.json`.
+
+### 4.8 SSRF guard on server-side image fetch (2026-07-06)
+- **Where:** `LandingImageService.StoreFromUrlAsync` — the only path that
+  fetches a caller-supplied URL server-side (the landing/blog generators
+  and the admin image picker download a chosen photo and re-store it in R2).
+- **Guard:** before any `HttpClient.GetAsync`, the URL must be `https://`
+  **and** its host must be a Pexels host (`images.pexels.com`,
+  `api.pexels.com`, or `*.pexels.com`). Anything else is refused and logged.
+  The only legitimate callers always pass Pexels URLs, so the allowlist
+  never blocks a real fetch.
+- **Why:** without it, an admin (or a stolen admin session) could point the
+  fetch at `169.254.169.254` (cloud metadata), `localhost`, or an RFC-1918
+  address from inside Railway's network — blind SSRF / internal port-scan.
+  The endpoint is `[Authorize(Roles="Admin")]`, so this was gated, not open;
+  the allowlist removes the primitive entirely and future-proofs it against
+  any lower-trust role ever reaching that code.
+- **Scope note:** the shared `"social"` `HttpClient` follows redirects, but
+  the allowlist is enforced on the *initial* host and Pexels never redirects
+  off-network, so redirect-to-internal is closed too.
 
 ---
 
@@ -582,6 +639,12 @@ Three paths that delete user content also clean orphaned R2 media:
 - Auth endpoints (login/register/forgot-password/reset-password):
   **10 / 60s per IP**.
 - All POST/PUT/PATCH/DELETE globally: **30 / 60s per IP**.
+- **All GET globally: 300 / 60s per IP** (`GET:*`, added 2026-07-06). A
+  normal dashboard load fires many GETs so the cap is generous, but it stops
+  the previously-unthrottled public render endpoints (`/v1/blog/*`,
+  `/v1/lp/{slug}` — whose slug-miss path hits an unindexed `OldSlugsJson`
+  scan) and the unmetered GET `verify-email` from being hammered. Configurable
+  via `RateLimit:ReadMaxRequests` / `ReadWindowSeconds`.
 - Counter store: **in-memory** (`MemoryCacheRateLimitCounterStore`).
   Per-process, lost on restart, not shared across replicas. This is
   Risk #5 from the 2026-05-25 audit; **deferred as acceptable on
@@ -763,6 +826,8 @@ changes.
 | JWT `sub` claim contains the user GUID | Standard, correct. |
 | CORS uses `AllowCredentials()` | Required for the cookie refresh flow. Locked to the explicit allowlist in production. |
 | No CSRF token middleware | Cookie is `SameSite=None; Secure` + CORS allowlist + Origin checks. Cross-origin state-changing requests still need CORS approval. Acceptable for current threat model; an explicit CSRF token would be belt-and-suspenders. |
+| `resend-verification` has no Turnstile gate (2026-07-06) | Unlike login/register/forgot, it's invoked from the post-auth verify-email screen, which mounts no Turnstile widget — gating it would 403 the flow in production. It's already IP-rate-limited (10/60s) and only ever emails a registered-but-unverified address, so the flood value is low. Revisit only if it's ever exposed on a surface that already has a widget. |
+| **OWNER ACTION — rotate the dev/prod Postgres password (2026-07-06)** | `appsettings.Development.json` holds a real Railway Postgres superuser password pointing at the production DB. It is **gitignored + untracked** (verified — not a repo leak), but it's a live secret on disk and wires local dev straight to prod data. Not something code can fix: rotate the password in Railway and point local dev at a throwaway DB / user-secrets. Tracked here until done. |
 | In-memory rate-limit counter store (Risk #5 deferral, 2026-05-26) | The IP rate limit is layer 4 of the four-layer brute-force defense (see §7.4). Layers 1–3 — Turnstile at the door, DB-backed per-account lockout, BCrypt-12 per-attempt cost — carry the real load against credential stuffing. The IP limit's role is "casual probing slowdown," not "primary defense." A distributed counter store (Redis, Postgres-backed, or Cloudflare-edge) would close the per-replica / restart-resets gap but adds infrastructure for a threat already heavily defended. Decision: accept the in-memory limitation; revisit if Sentry/Railway logs show real distributed credential-stuffing traffic that's bypassing Turnstile. |
 
 ### 13.1 Phase 3 deferral — full reasoning (Risk #5, 2026-05-26)
